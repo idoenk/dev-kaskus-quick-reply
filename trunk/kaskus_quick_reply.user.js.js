@@ -12,11 +12,16 @@
 //
 // -!--latestupdate
 // v3.0.2 - 2010-11-19
-//   adjusting, recaptcha flow sys
+//   adjusting, recaptcha work-flow
+//   Add optional, botgreets :D
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.0.1 - 2010-11-18
+//   Adapting tinypic's behaviour in showing capcay
+//
 // v3.0b - 2010-11-17
 //   Adapting to Kaskus reCAPTCHA ( mode-noscript & FF-Only :norose: )
 //   Fix failed fetch post
@@ -77,7 +82,6 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // settings update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // settings hide avatar
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // settings dynamic QR
- ,KEY_SAVE_INLINE_CAPCAY:    ['1'] // settings reCAPCTHA Inline-Mode
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // settings serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
@@ -188,7 +192,6 @@ function getSettings(){
     qrtoggle: (getValue(KS+'QR_COLLAPSE')=='1'),
     widethread: (getValue(KS+'WIDE_THREAD')=='1'),
     hideavatar: (getValue(KS+'HIDE_AVATAR')=='1'),
-    inline_capcay: (getValue(KS+'INLINE_CAPCAY')=='1'),
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
@@ -497,7 +500,7 @@ function capcay_parser(page){
    gvar.hash = ret = (match[1]);  
    $('#imgcapcay').innerHTML = ''
      +'<input id="hash" name="humanverify[hash]" value="'+gvar.hash+'" type="hidden">\n'
- 	 ;
+      ;
   }
   
   //if( $('#imgcapcay_dots') ) $('#imgcapcay_dots').innerHTML+='...';
@@ -530,7 +533,7 @@ function create_tplcapcay(){
     +'<div id="imgcapcay"><div class="g_notice normal_notice" style="display:block;font-size:9px;text-align:center;">[capcay-space]</div></div>\n'
     
     
-	//+'<div id="recaptcha_container"></div>\n\n'
+    //+'<div id="recaptcha_container"></div>\n\n'
     //+'<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="doalert(\'recaptcha_div\');" />' // fake button    
     //+'<script type="text\/javascript" src="http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js"><\/script>\n'
     //+'<script type="text\/javascript">'
@@ -540,7 +543,7 @@ function create_tplcapcay(){
     //+'    lang: "en"});'
     //+' }'
     //+'<\/script>'
-	
+    
     +'<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="showRecaptcha(\'recaptcha_container\');" />' // fake button create
     +'<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:" onclick="Recaptcha.reload();" />' // fake button reload
     +'<input id="docapcayfocus" value="" type="hidden"  />' // flag for callback caller click capcay
@@ -571,8 +574,8 @@ function ajax_buildcapcay(reply_html){
     if(additional_options_notloaded()) 
         build_additional_opt(reply_html);
         
-	// need to parse & store hash humaninput
-	capcay_parser(reply_html);
+    // need to parse & store hash humaninput
+    capcay_parser(reply_html);
  
   }
 }
@@ -720,19 +723,30 @@ function toogleLayerDiv(tgt) {
        $('#recaptcha_image').style.borderColor = (doCh ? '#FF0000':'transparent');
   }
 }
-
+ 
 function loadLayer_reCaptcha(){
     
-	gvar.sITryFocusOnLoad = window.setInterval(function() {
-		try {
-			if ($('#recaptcha_response_field')) { 
-			  clearInterval(gvar.sITryFocusOnLoad); 
-			  $('#recaptcha_response_field').focus();
-			}
-		} catch(e) {}
-	}, 100);
-	
-	var is_capcay_filled = function(tgt){
+    gvar.sITryFocusOnLoad = window.setInterval(function() {
+        try {
+            if ($('#recaptcha_response_field')) { // got it, recapcay is loaded.
+              clearInterval(gvar.sITryFocusOnLoad);
+			  Dom.Ev( $('#recaptcha_response_field'), 'keydown', function(e){
+                var C = (!e ? window.event : e );
+                if(C.keyCode==13){ // mijit enter
+                  C = do_an_e(C);
+                  SimulateMouse($('#recaptcha_submit'), 'click', true);
+                }else if(C.keyCode==27){ // escape?
+                  closeLayerBox('hideshow_recaptcha');
+                }else{
+                  return;
+                }
+              });
+              $('#recaptcha_response_field').focus();
+            }
+        } catch(e) {}
+    }, 100);
+    
+    var is_capcay_filled = function(tgt){
         if($('#recaptcha_response_field') && !$('#recaptcha_response_field').value){
           alert('Belum Isi Image Verification');
           try{if(typeof(tgt)=='object') tgt.focus()}catch(e){}
@@ -741,52 +755,52 @@ function loadLayer_reCaptcha(){
           return ($('#recaptcha_response_field').value);
         }
     }
-	  
-	if($('#hideshow'))
-	  closeLayerBox('hideshow');
-	
-	var Attr,el;
+      
+    if($('#hideshow'))
+      closeLayerBox('hideshow');
+    
+    var Attr,el;
     Attr = {id:'hideshow_recaptcha',style:'display:none;'};
     el = createEl('div', Attr, getTPL_prompt_reCAPTCHA() );
-	//Dom.add(el, $('#fieldset_capcay') );
-	Dom.add(el, $('#submit_container') );
-	//getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
-	
+    //Dom.add(el, $('#fieldset_capcay') );
+    Dom.add(el, $('#submit_container') );
+    //getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+    
     // event close button
     Dom.Ev($("#imghideshow_precap"), 'click', function(){closeLayerBox('hideshow_recaptcha');});
-
-	// submit recaptcha
+ 
+    // submit recaptcha
     Dom.Ev($('#recaptcha_submit'), 'click', function(e){
-	  if( !is_capcay_filled($('#recaptcha_response_field')) ){
+      if( !is_capcay_filled($('#recaptcha_response_field')) ){
         //do_an_e(window.event);
         e.preventDefault;
         return false;
       }
-	  e=e.target||e;
-	  e.value='posting...';	  
-	  e.setAttribute('disabled','disabled');
-	  window.setTimeout(function() {
+      e=e.target||e;
+      e.value='posting...';      
+      e.setAttribute('disabled','disabled');
+      window.setTimeout(function() {
           SimulateMouse($('#qr_submit'), 'click', true); 
       }, 200);
-	} );
+    } );
     
-	// calibrate width/position container
+    // calibrate width/position container
     $('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
     $('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
-
-	
-	window.setTimeout(function() {
+ 
+    
+    window.setTimeout(function() {
         SimulateMouse($('#hidrecap_btn'), 'click', true);
-		window.setTimeout(function() { 
-		  if($('#button_preview')) $('#button_preview').style.display = ''; 
-		  if($('#recaptcha_response_field')) $('#recaptcha_response_field').focus(); 
-		}, 200);
-		SimulateMouse($('#hidrecap_reload_btn'), 'click', true);		
+        window.setTimeout(function() { 
+          if($('#button_preview')) $('#button_preview').style.display = ''; 
+          if($('#recaptcha_response_field')) $('#recaptcha_response_field').focus(); 
+        }, 200);
+        SimulateMouse($('#hidrecap_reload_btn'), 'click', true);        
     }, 100);
-
-
+ 
+ 
 } // end loadLayer_reCaptcha
-
+ 
 function loadLayer(){
     var Attr,el;
     Attr = {id:'hideshow',style:'display:none;'};
@@ -796,68 +810,26 @@ function loadLayer(){
     // event close button
     Dom.Ev($("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
     
-	// calibrate width container
+    // calibrate width container
     $('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
-    
-    if(!gvar.user.isDonatur)
-      $('#popup_container').style.width = '75%';
+          
     // cancel preview
     Dom.Ev($('#preview_cancel'), 'click', function(){ SimulateMouse($('#imghideshow'), 'click', true); } );
-    
-	//remote capcay
-    if(false && !gvar.user.isDonatur){
-      var is_capcay_filled = function(tgt){
-        if($('#recaptcha_response_field') && !$('#recaptcha_response_field').value){
-          alert('Belum Isi Image Verification');
-          try{if(typeof(tgt)=='object') tgt.focus()}catch(e){}
-          return false;
-        }else{
-          return ($('#recaptcha_response_field').value);
-        }
-      }
-      Attr = {id:'reload_remote_capcay',title:'refresh capcay',alt:'recapcay',src:gvar.B.refreshcapcay_gif,border:'0',style:'margin-right:3px;cursor:pointer;'}
-      el = createEl('img', Attr)
-      Dom.Ev(el, 'click', function(){ 
-       //clickIt(true); // without focus
-       ajax_buildcapcay();
-       window.setTimeout(function() {
-         var hirem = $('#hi_remote_capcay');
-         hirem.value=''; hirem.focus();
-       }, 300);       
-      });
-      Dom.add(el, $('#remote_capcay'));
-      
-      Attr = {id:'hi_remote_capcay',title:'Remote Capcay',value:$('#recaptcha_response_field').value, 'class':'bginput idleinput', size:'15', style:'font-size:15px !important;'}
-      el = createEl('input', Attr);
-      Dom.add(el, $('#remote_capcay'));
-      Dom.Ev(el, 'keyup', function(e){
-       var obj=$('#hi_remote_capcay');
-       var C = (!e ? window.event : e);
-       var A = C.keyCode ? C.keyCode : C.charCode;       
-       if(A==13) { // enter?
-         if(is_capcay_filled(obj))
-           SimulateMouse($('#preview_presubmit'), 'click', true);
-       }
-       else
-         if($('#recaptcha_response_field'))         
-           $('#recaptcha_response_field').value=obj.value 
-      });
-    }
-    
+ 
     //submit from preview
     if($('#preview_presubmit'))
       Dom.Ev($('#preview_presubmit'), 'click', function(e){
-	     if( !gvar.user.isDonatur ){
-          loadLayer_reCaptcha();
-		  toogleLayerDiv('hideshow_recaptcha');
-		 }else{
-		  e=e.target||e;
-	      e.value='posting...';
-		  e.setAttribute('disabled','disabled');
-	      window.setTimeout(function() {
+         if( !gvar.user.isDonatur ){
+           loadLayer_reCaptcha();
+           toogleLayerDiv('hideshow_recaptcha');
+         }else{
+           e=e.target||e;
+           e.value='posting...';
+           e.setAttribute('disabled','disabled');
+           window.setTimeout(function() {
              SimulateMouse($('#qr_submit'), 'click', true); 
-          }, 200);
-		 }
+           }, 200);
+         }
       });
     
 }
@@ -960,7 +932,7 @@ function initEventTpl(){
         var uriact,nxDo;            
         if($('#clicker').value!='Go Advanced'){
           // post quickreply
-		  
+          
           var hi=($('#recaptcha_response_field') ? $('#recaptcha_response_field') : null);
           if(hi && hi.value==''){
             if(hi.getAttribute('disabled')=='disabled') 
@@ -979,10 +951,27 @@ function initEventTpl(){
         $('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
       });
       Dom.Ev($('#qr_advanced'), 'click', function(){$('#clicker').setAttribute('value','Go Advanced');});
-      Dom.Ev($('#qr_prepost_submit'), 'click', function(){
-	      loadLayer_reCaptcha();
-		  toogleLayerDiv('hideshow_recaptcha');	  
-	  });
+      Dom.Ev($('#qr_prepost_submit'), 'click', function(e){
+         if( !gvar.user.isDonatur ){
+           if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
+           e=e.target||e;
+           var msg = trimStr(Dom.g(gvar.id_textarea).value);
+           if(!(msg.length>=5)){
+             // show warning message is too short
+             alert(gvar.tooshort);
+             e.preventDefault(); return false;
+           }
+           loadLayer_reCaptcha();
+           toogleLayerDiv('hideshow_recaptcha');
+         }else{
+           e=e.target||e;
+           e.value='posting...';
+           e.setAttribute('disabled','disabled');
+           window.setTimeout(function() {
+             SimulateMouse($('#qr_submit'), 'click', true); 
+           }, 200);
+         }
+      });
       // end of vb_Textarea submit Event ------
     
       Dom.Ev($('#qr_preview_ajx'), 'click', function(e){
@@ -993,7 +982,7 @@ function initEventTpl(){
           // show warning message is too short
           alert(gvar.tooshort);
           e.preventDefault(); return false;
-        } 
+        }
         if(!$('#hideshow')){
           loadLayer(); 
           toogleLayerDiv('hideshow');
@@ -1369,7 +1358,7 @@ function reset_setting(){
      '\n\n'+HtmlUnicodeDecode('&#187;')+' Continue with Reset?';
     var yakin = confirm(msg);
     if(yakin) {
-      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','HIDE_AVATAR','INLINE_CAPCAY','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR',
+      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR',
                   'HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER','SHOW_SMILE'
                   ,'QR_HOTKEY_KEY'
                   ,'QR_HOTKEY_CHAR'
@@ -1424,7 +1413,6 @@ function save_setting(e){
        'misc_updates':KS+'UPDATES'
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
-      ,'misc_inline_capcay':KS+'INLINE_CAPCAY'
     };
     for(var id in misc){
       if(!isString(misc[id])) continue;
@@ -1434,8 +1422,6 @@ function save_setting(e){
         setValue(misc[id], value.toString());
       }
     }
-    // check if inline capcay is changed, do hard-restart instead of restart
-    gvar.restart = (gvar.restart && !(gvar.settings.inline_capcay ^ $('#misc_inline_capcay').checked) );
     
     // saving update interval
     if( $('#misc_updates_interval') ){
@@ -2850,13 +2836,14 @@ function getTPL(){
     +'</td>'
  
      // Image Verification container
-    +(!gvar.user.isDonatur && gvar.settings.inline_capcay ? ''
+    +( false && !gvar.user.isDonatur  ? ''
     +'<td width="300"><table cellpadding="0" cellspacing="0">'
      +'<tr><td id="capcay_header" style="width:150px !important;"></td></tr>'
      +'<tr><td><div id="capcay_container">'+
      +'</div></td></tr>'
     +'</table></td>'
     :'')
+    
   +'</tr></table>'
     // Multi quote container
     +'<input id="mq_container" type="text" value="" '+(gvar.__DEBUG__ ? 'readonly="true" class="txa_readonly" style="width:100%;"':'style="display:none;"')+'/>\n'
@@ -2897,15 +2884,15 @@ function getTPL(){
     +'<center><div style="max-width:350px;">'
  
     // Image Verification container
-    +(!gvar.user.isDonatur && !gvar.settings.inline_capcay ? ''
-     +'<div id="capcay_container" style="position:relative;"></div>'
+    +(!gvar.user.isDonatur ? ''
+     +'<div id="capcay_container" style="position:relative; display:none;"></div>'
     :'')
  
-    +'<input class="button" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" id="qr_submit"/>'
-    +'<input class="button" type="button" title="(Alt + S)" name="sbutton" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" id="qr_prepost_submit"/>'
+    +'<input id="qr_submit" class="button" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />'
+    +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" name="sbutton" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
     +'&nbsp;&nbsp;'
-    +'<input class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" id="qr_preview_ajx"/>'
-    +'<input class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" id="qr_advanced" onclick="clickedelm(this.value)"/>'
+    +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
+    +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
     +'</div></center>'
     
     
@@ -3083,8 +3070,7 @@ function getTPL_Settings(){
    
    
    +'<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/> Hide Avatar<br />'
-   +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/> Dynamic QR<br />'
-   +'<input id="misc_inline_capcay" type="checkbox" '+(gvar.settings.inline_capcay=='1' ? 'checked':'')+'/> InLine reCAPTCHA'
+   +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/> Dynamic QR'
    +spacer
    +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1' ? 'checked':'')+'/> AutoExpand<br />'
    +'<small style="margin-left:10px;">'
@@ -3128,7 +3114,23 @@ function getTPL_Settings(){
    return sett;
     
 }
+ 
+ 
 function getTPL_prompt_reCAPTCHA(){
+ 
+  var get_botgreet = function(min, max){
+    var c = [
+      'Are you Human?'
+     ,'Tell me, what are you?'
+     ,'This is not a test, really. :D'
+     ,'Show me what you got.'
+     ,'Everyone thinks they are human. But are they?'
+    ];
+    if( max>=(c.length-1) ) max = parseInt(c.length-1);
+    show_alert(Math.random());
+    return c[Math.floor(Math.random() * (max - min + 1) + min)];
+  }
+ 
   var divInner = '\
    <div class="trfade"></div> \
    <div class="fade"></div> \
@@ -3137,9 +3139,14 @@ function getTPL_prompt_reCAPTCHA(){
      <a href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>\
      <table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">\
      <tbody><tr>\
-      <td class="tcat">Title reCAPTCHA Input</td>\
+      <td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>\
      </tr><tr>\
      <td class="alt1">\
+      <div id="recaptcha_container_header">\
+      <span class="qrsmallfont"><a title="stop spam, stop junk, read post#1 :hammer:" style="cursor:help;margin:0;float:left;">'+get_botgreet(0, 10)+'</a>\
+      <span style="float:right;"><a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a></span>\
+      </div>\
+      <div class="spacer"></div>\
       <div id="recaptcha_container">\
        <div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>\
       </div>\
@@ -3147,12 +3154,12 @@ function getTPL_prompt_reCAPTCHA(){
      <tbody></table>\
       <div id="button_preview" style="display:none;">\
        <span id="remote_capcay"></span>\
-	   <input id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;\
+       <input id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;\
       </div>\
     </div>\
    </div>';
   return divInner;  
-
+ 
 }
 function getTPL_Preview(){
   var divInner = '\
@@ -3522,12 +3529,12 @@ function getSCRIPT() {
   return (''
     +'function showRecaptcha(element){'
     +'  Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
-	+'    { theme:"red",lang:"en"'
-	+'     ,custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
-	+'    }'
-	+'  );'
+    +'    { theme:"red",lang:"en"'
+    +'     ,custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
+    +'    }'
+    +'  );'
     +'};'
-	
+    
     +'function clickedelm(val){ document.getElementById("clicker").value=val; };'
     +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
     +' this.open_smilie_window=function(width,height){'
@@ -3742,7 +3749,7 @@ function getCSS() {
     }\
     #popup_container_precap  {\
       background: #ddd; color:black; padding: 5px; border: 5px solid #fff;\
-      float: left; width: 350px; position: absolute; top: 10px; left: 50%;\
+      float: left; width: 340px; position: absolute; top: 10px; left: 50%;\
       -moz-border-radius:5px; z-index: 99999;\
     }\
     #popup_container .popup, #popup_container_precap .popup {\
@@ -4417,8 +4424,8 @@ DOMTimer={
  get:function(){var nT=new Date();return(nT.getTime()-this.dtStart)}
 };
 // =============== /END Global Var ===
-
-
+ 
+ 
 // ------
 init();
 // ------
