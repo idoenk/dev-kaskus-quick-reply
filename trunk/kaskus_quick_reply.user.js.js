@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @vversion      v3.0.3
 // @version       101121303
-// @timestamp     1290335132375
+// @timestamp     1290370223914
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,10 +13,12 @@
 // -!--latestupdate
 //   
 // v3.0.3 - 2010-11-21
-//   Try focus (pre-)Post on preview mode
+//   Fix quote_parser, back to stone-age method, :hammer:
+//   Fix CSS3 (Chrome; Opera)
+//   Try focus on (pre-)Post preview mode
 //   Fix avoid Kaskus-Wide kill QR's button, replace <center> tag,
-//   Deprecated #mq_container, no longer used (since multi-quote based on cookie)
-//   Add tabindex on some elements
+//   Deprecated #mq_container, no longer used (since multi-quote w/ cookie based)
+//   Add & set tabindex on some elements
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -30,11 +32,6 @@
 // v3.0.1 - 2010-11-18
 //   Adapting tinypic's behaviour in showing capcay
 //
-// v3.0b - 2010-11-17
-//   Adapting to Kaskus reCAPTCHA ( mode-noscript & FF-Only :norose: )
-//   Fix failed fetch post
-//   Deprecated clickIt()
-//   Deprecated Expired-Capcay
 //
 // -more: http://userscripts.org/topics/56051
 // 
@@ -53,7 +50,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.3';
 gvar.scriptMeta = {
-  timestamp: 1290335132375 // version.timestamp
+  timestamp: 1290370223914 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -63,7 +60,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -2516,11 +2513,17 @@ function unescapeHtml(text){
 }
 
 function quote_parser(page){
-   var match,rets;
-   clog(page);
-   match = /<textarea\sname=\"message\"(?:[^>]+.)([^<]+)*</i.exec(page);
-   if(match) rets = unescapeHtml(match[1]);
-   return (match ? rets : null);
+   var parts;   
+     //clog(page);
+   // this regexp failed on symbolize userid : http://bit.ly/9A9GMg
+   //match = /<textarea\sname=\"message\"(?:[^>]+.)([^<]+)*</i.exec(page); 
+   
+   // back to stone-age method :hammer:
+   var pos = [ page.indexOf(gvar.id_textarea), page.lastIndexOf('</textarea') ];
+   parts = page.substring(pos[0], pos[1]);
+   pos[0] = parts.indexOf('>');
+   parts = parts.substring( (pos[0]+1), parts.length);
+   return (parts ? unescapeHtml(parts) : null);
 }
 function ajax_chk_newval(reply_html){
   // initialize 
@@ -2545,16 +2548,32 @@ function ajax_chk_newval(reply_html){
       ajax_additional_opt(reply_html);
     var rets = quote_parser(reply_html.responseText);
     
-    vB_textarea.init();
-    if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
-    vB_textarea.add(rets);
-    vB_textarea.lastfocus();
-    var notice = $('#quoted_notice');
-    notice.innerHTML='';
-    showhide(notice, false); // hide notice    
-    deselect_it(); // clear selected quotes    
-    if(gvar.settings.textareaExpander[0]) 
-      vB_textarea.adjustGrow(); // retrigger autogrow now
+	vB_textarea.init();
+	var notice = $('#quoted_notice');
+	if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
+	if(rets==null){
+	   addClass('g_notice-error', notice);
+	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Try again</a>'
+        + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+       Dom.Ev($('#quote_now'), 'click', function(){         
+         vB_textarea.readonly();
+		 removeClass('g_notice-error', notice);
+         notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
+         ajax_chk_newval();
+       });
+	   Dom.Ev($('#deselect_them'), 'click', function(){
+	    removeClass('g_notice-error', notice);
+		deselect_it();
+	   });
+	}else{
+       vB_textarea.add(rets);     
+       notice.innerHTML='';
+       showhide(notice, false); // hide notice
+       deselect_it(); // clear selected quotes	   
+       if(gvar.settings.textareaExpander[0]) 
+         vB_textarea.adjustGrow(); // retrigger autogrow now
+	}
+	vB_textarea.lastfocus();
   }
 }
 
@@ -2571,7 +2590,7 @@ function chk_newval(val){
       notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
       ajax_chk_newval();
     });
-    Dom.Ev($('#deselect_them'), 'click', function(){deselect_it();});    
+    Dom.Ev($('#deselect_them'), 'click', function(){deselect_it();});
   }else{
     showhide(notice, false); // hide notice
     return;
@@ -3529,6 +3548,8 @@ function getCSS() {
    +'{background:#DFC;border-bottom:1px solid #CDA;}'
   +'.g_notice'
    +'{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
+  +'.g_notice-error'
+   +'{background:#FFD7FF !important;}'
   +'.avafetch'
    +'{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'
   +'#vbform .tborder'
@@ -3659,7 +3680,7 @@ function getCSS() {
   +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover'
    +'{background-color:#DDDDDD;}'
   +'.qbutton'
-   +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;-moz-border-radius:3px;}'
+   +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;border-radius:3px;-moz-border-radius:3px;-khtml-border-radius:3px;-webkit-border-radius:3px;}'
   +'#tb_setting td{padding:1px 5px;}'
   +'#tb_setting textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
   +'.cancel_layout {float:right;margin:6px 3px 0 0;}'
@@ -3668,7 +3689,7 @@ function getCSS() {
   +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
   +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
   +'.qrdialog-child'
-   +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;-moz-border-radius:5px;-moz-box-shadow:3px 3px 15px #888;}'
+   +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'
   
   /* for preview popup */ 
   +'#hideshow, #hideshow_recaptcha {\
@@ -3687,15 +3708,16 @@ function getCSS() {
       filter:alpha(opacity=60); opacity: .60;\
       -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";\
     }\
-    #popup_container {\
+    #popup_container, #popup_container_precap  {\
       background: #ddd; color:black; padding: 5px; border: 5px solid #fff;\
-      float: left; width: 88%; position: absolute; top: 10px; left: 5%;\
-      -moz-border-radius:5px; z-index: 99999;\
+      float: left; position: absolute; top: 10px;\
+      border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;\
+    }\
+    #popup_container {\
+      width: 88%; left: 5%;\
     }\
     #popup_container_precap  {\
-      background: #ddd; color:black; padding: 5px; border: 5px solid #fff;\
-      float: left; width: 340px; position: absolute; top: 10px; left: 50%;\
-      -moz-border-radius:5px; z-index: 99999;\
+      width: 340px; left: 50%;\
     }\
     .popup_block .popup {\
       float: left; width: 100%; background: #D1D4E0; margin: 0;\
