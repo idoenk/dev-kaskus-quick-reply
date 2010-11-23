@@ -5,14 +5,16 @@
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @include        http://blackberry.kaskus.us/*
-// @vversion       v0.1.4
-// @version        101124014
+// @vversion       v0.1.5
+// @version        101124015
 // @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
 /*
 //
+// v0.1.5 - 2010-11-24
+//  Fix add/clear msg
 // v0.1.4 - 2010-11-24
 //  Fix minor stat_qrcontent indicator
 //
@@ -118,8 +120,10 @@ function getTPL(){
        +'<a id="title_add" href="javascript:;">[+] Title</a>:<div id="title_cont" style="display:none;"><div class="spacer"></div>'
        +'<input id="title" name="title" class="field" value="" type="text">'
        +'<div class="spacer"></div></div>'
-       +'&nbsp;Message:&nbsp;<a id="message_clear" href="javascript:;" title="Clear Message">reset</a><br>'
-       +'<textarea id="'+gvar.msgID+'" name="message" class="field"></textarea><br>'
+       +'&nbsp;Message:&nbsp;<a id="message_clear" href="javascript:;" title="Clear Message">reset</a>'
+       +'<div id="message_container">'
+        +'<textarea id="'+gvar.msgID+'" name="message" class="field"></textarea>'
+       +'</div>'
        +'<div id="submit_cont">'
         +'<input name="reply" class="button" value="Submit Reply" type="submit">'
         +'<input name="threadid" value="'+THREAD.id+'" type="hidden">'
@@ -336,8 +340,8 @@ QR = {
      property: function(){}
  
     ,msg: {
-      addMsg: function(x){ Dom.g(gvar.msgID).innerHTML+= x + (x!='' ? '\r\n'+'\r\n' : ''); }
-     ,clear: function(){ try{Dom.g(gvar.msgID).value='';Dom.g(gvar.msgID).innerHTML='';}catch(e){} }
+      addMsg: function(x){ Dom.g(gvar.msgID).value+= x + (x!='' ? '\r\n'+'\r\n' : ''); }
+     ,clear: function(){ Dom.g(gvar.msgID).value=''; }
      ,focus: function(){ Dom.g(gvar.msgID).focus(); }
  	 ,lastfocus: function (){
  		var Obj = Dom.g(gvar.msgID);
@@ -480,6 +484,7 @@ THREAD = {
      GM_XHR.request(null,'GET',THREAD.doQuote_Callback);
    }
   ,doQuote_Callback: function(html){
+     //alert(html);
      var par = Dom.g('fetching_quote').parentNode;
      var e = getTag('a', par)[0];
      if(e) e.style.display='';
