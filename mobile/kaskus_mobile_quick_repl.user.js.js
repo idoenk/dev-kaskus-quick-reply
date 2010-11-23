@@ -5,13 +5,16 @@
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @include        http://blackberry.kaskus.us/*
-// @vversion       v0.1.3
-// @version        101123013
+// @vversion       v0.1.4
+// @version        101124014
 // @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
 /*
+//
+// v0.1.4 - 2010-11-24
+//  Fix minor stat_qrcontent indicator
 //
 // v0.1.3 - 2010-11-23
 //  Fix minor CSS
@@ -334,7 +337,7 @@ QR = {
  
     ,msg: {
       addMsg: function(x){ Dom.g(gvar.msgID).innerHTML+= x + (x!='' ? '\r\n'+'\r\n' : ''); }
-     ,clear: function(){ Dom.g(gvar.msgID).innerHTML = ''; }
+     ,clear: function(){ try{Dom.g(gvar.msgID).value='';Dom.g(gvar.msgID).innerHTML='';}catch(e){} }
      ,focus: function(){ Dom.g(gvar.msgID).focus(); }
  	 ,lastfocus: function (){
  		var Obj = Dom.g(gvar.msgID);
@@ -375,8 +378,8 @@ QR = {
  	 // event qr_min
       Dom.Ev(Dom.g('qr_min'), 'click', function(){
 	    Dom.g('footer_spacer').setAttribute('style', 'height:15px');
-		alert(Dom.g(gvar.msgID).value)
-		Dom.g('stat_qrcontent').value=( Dom.g(gvar.msgID).innerHTML!='' ? '...':'' );
+		var curval = Dom.g(gvar.msgID).value || Dom.g(gvar.msgID).innerHTML;
+		Dom.g('stat_qrcontent').innerHTML=( curval!='' ? '...':'' );
 	    showhide(Dom.g('qrfixed_thumb'), true);
 	    showhide(Dom.g('qr_container'), false);
 	  });
