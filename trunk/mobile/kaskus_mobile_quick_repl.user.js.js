@@ -2,13 +2,32 @@
 // @name           Kaskus Mobile Quick Reply
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
-// @include        http://m.kaskus.us/thread/*
-// @vversion       v0.1.1
-// @version        101123011
+// @include        http://m.kaskus.us/*
+// @include        http://opera.kaskus.us/*
+// @include        http://blackberry.kaskus.us/*
+// @vversion       v0.1.3
+// @version        101123013
 // @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
+/*
+//
+// v0.1.3 - 2010-11-23
+//  Fix minor CSS
+//
+// v0.1.2 - 2010-11-23
+//  Fix minor THREAD core
+//  Support multiple mobile devices subdomain
+//
+// v0.1.1 - 2010-11-23
+// Init
+//------
+//
+// Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
+// http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
+// --------------------------------------------------------
+*/
 (function () {
 
 var gvar=function(){};
@@ -16,25 +35,17 @@ var gvar=function(){};
 function init(){
  
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
-  gvar.loc= location.href;
+
   gvar.msgID= 'message';  
   gvar.hash= '';
-  gvar.reply= '';
   gvar.B = getBtn();
   
   gvar.settings = {
       msgheight: '90'     
   };  
   
-  
-  var hVal = getByXPath_containing('//a[@class="btn_link"]', false, 'REPLY');
-  gvar.reply = (isDefined(hVal[0]) ? hVal[0] : null);
-  if(gvar.reply){
-    var match = /m\.kaskus\.us\/reply\/(\d+)/i.exec(gvar.reply);
-    if(match) gvar.threadid = match[1];
-  } 
-  
-  GM_addGlobalStyle( getCSS() );  
+  // inject CSS
+  GM_addGlobalStyle( getCSS() );
   
   // -- let's roll --
   start_Main();
@@ -43,8 +54,8 @@ function init(){
 
 
 function start_Main(){
- 
-   THREAD.user = THREAD.getUser(); 
+    
+   THREAD.init();
    if(THREAD.user===false) {
      if(location.hash=='#login'){
        var tgtusername = $('.//input[@name="username"]', null, true);
@@ -54,12 +65,11 @@ function start_Main(){
 	 return; // dead end
    }
    
-   show_alert('id='+THREAD.user.id + '; name='+THREAD.user.name);
+   // di dalem thread ato bukan?
+   if( !THREAD.inside() ) return; 
+
+   // initialize QR
    QR.init();
- 
-   // do event on quote button
-   THREAD.eventQuote();
-   THREAD.add_footter_spacer();
 }
 
 // clean-up fetched post
@@ -77,10 +87,7 @@ function unescapeHtml(text){
 
 function getBtn(){
   return {
-     btn_down:'' 
-	  +'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAMCAIAAAA21aCOAAAABnRSTlMAAAAAAABupgeRAAAASUlEQVR42mNkYGBQcpnJgBfc25POSF'
-	  +'ARBDAxEAeIVccCoe7uTsOlQtl1FsI8CAeXIhR7MZUiizDhkkDTxoTVDEyzqR1+jETGGwCNvRMlKIX9TAAAAABJRU5ErkJggg=='
-    ,btn_x: ''
+     btn_x: ''
 	  +'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAMCAIAAAA21aCOAAAABnRSTlMAAAAAAABupgeRAAAAWUlEQVR42mNkYGBQcpnJgBfc25POSFA'
 	  +'RBDBBqLu70+7uTkOTQxZkQpPAykaoU3adhSwNVwQXR3EfmhlwRej2EvYHVruQjWfCqghTKRMuByGz0f2BBzASGW8AbwkrB9tgY94AAAAASUVORK5CYII='
     ,btn_max: ''
@@ -103,7 +110,7 @@ function getTPL(){
 	  +'</div>'
      +'</div>'
      +'<div id="main_content" class="fade">\n'
-       +'<form method="post" action="http://'+'m.kaskus.us/reply/'+gvar.threadid+'">'
+       +'<form method="post" action="http://'+'m.kaskus.us/reply/'+THREAD.id+'">'
        +'<div class="spacer"></div>'
        +'<a id="title_add" href="javascript:;">[+] Title</a>:<div id="title_cont" style="display:none;"><div class="spacer"></div>'
        +'<input id="title" name="title" class="field" value="" type="text">'
@@ -112,28 +119,39 @@ function getTPL(){
        +'<textarea id="'+gvar.msgID+'" name="message" class="field"></textarea><br>'
        +'<div id="submit_cont">'
         +'<input name="reply" class="button" value="Submit Reply" type="submit">'
-        +'<input name="threadid" value="'+gvar.threadid+'" type="hidden">'
+        +'<input name="threadid" value="'+THREAD.id+'" type="hidden">'
         +'<input name="hash" id="hash" value="'+gvar.hash+'" type="hidden">'
        +'</div>'
        +'</form>\n'
      +'</div>' // main_content
-    +'</div>' // main_cont
-    
+    +'</div>' // main_cont    
    );
 }
-function getCSS(){
-   return (''
-    +'.poster{background-color:#5353FF;}'
+function getCSS(additional){  
+    return (''
+	+'.header1, .tracking {font-size:9pt;font-weight:bold !important;}'
+	+'.poster, .header1, .tracking {background:#294D8B url(http://'+'www.kaskus.us/newhomeimages/fr_bgjudule.jpg) repeat-x !important; color:#fff !important;}'
+	+'.tracking a{font-size:8pt !important; color:#DBD7DF !important;font-weight:normal !important;}'
+	+'.tracking a:hover{color:#000 !important;}'
     +'.poster{margin-bottom:2px;}'
-    +'.post{border:1px solid #0000C6;}'
-    +'.post strong{margin-top:-7px;}'
-    +'.post hr{margin-top:2px;border:0; border-top:1px solid #9F9F9F;}'
-    +'.left,.right{color:#fff;}'
+    +'.post, #forum, #profile, #postreply {background-color:#F5F5FF; padding:1px;}'
+    +'.post{border:1px solid #D1D1E1; border-left:0; border-right:0; }'
+    +'#forum, #profile, #postreply {border:1px solid #0000C6; }'
+    +'.post strong {margin-top:-7px;}'
+    +'.post hr {margin-top:2px;border:0; border-top:1px solid #D1D1E1;}'
+    +'.left, .right{color:#fff;margin:1px 0 !important;}'
+	+'.poster .right{margin:0 !important;}'
+	+'.right{margin-right:5px !important;}'
+    
     +'.left a{font-weight:bold;color:#FFB56A;}'
     +'/* ------ */'
+
+	+'.paging a:hover{background:#ff9933;color:#FFF;}'
+	+'.paging a, .paging strong{background:#0569cd; padding:2px 2px;color:#FFF; }'
+	+'.paging strong{background:#ff9933;padding:2px 3px; }'
+    +'/* ------ */'
     +'#qr_container, #qrfixed_thumb {position:fixed;bottom:0;width:100%;}'
-    +'#qrfixed_thumb { z-index:99990; left:43%; }'
-	
+    +'#qrfixed_thumb { z-index:99990; left:43%; }'    
 	
     +'.trfade {position:fixed; width:100%; height:100%; left:0; background:#000; z-index:99990; filter:alpha(opacity=25); opacity:.25; }'
     +'#main_cont{float:right; width:50%;  padding:0;margin:5px 15px 0 0;}'
@@ -145,6 +163,7 @@ function getCSS(){
 		
     +'#qr_max {background:url("'+gvar.B.btn_max+'") no-repeat scroll 1px 1px transparent; padding-left:20px; color:#3A3A3A;}'
     +'#qrfixed_thumb:hover a, #qr_max:hover, .fade a:hover { color:#000; }'
+	+'#stat_qrcontent { font-weight:bold; }'	
 	
     +'#qr_min, #qr_close {margin-top:2px; padding:0 3px 0 0;text-decoration:none; }'
     +'#qr_min {background:url("'+gvar.B.btn_min+'") repeat scroll 1px 1px transparent; padding:0 2px 0 0;}'
@@ -162,7 +181,6 @@ function getCSS(){
     +'#submit_cont {text-align:center;}'
     +'.button {margin:2px 0;}'
     +'.spacer {height:2px;}'
- 
    );
 }
  
@@ -315,7 +333,7 @@ QR = {
      property: function(){}
  
     ,msg: {
-      addMsg: function(x){ Dom.g(gvar.msgID).innerHTML+= x + '\r\n' + '\r\n'; }
+      addMsg: function(x){ Dom.g(gvar.msgID).innerHTML+= x + (x!='' ? '\r\n'+'\r\n' : ''); }
      ,clear: function(){ Dom.g(gvar.msgID).innerHTML = ''; }
      ,focus: function(){ Dom.g(gvar.msgID).focus(); }
  	 ,lastfocus: function (){
@@ -332,7 +350,8 @@ QR = {
     ,init: function(){
       var el = createEl('div', {id:'qr_container','class':'qr_cont', style:'display:none;'}, getTPL() );
       Dom.add(el, document.body);
-      var el = createEl('div', {id:'qrfixed_thumb', style:'display:;'}, '<div id="thumb_qr" class="main_head fixed_thumb"><a id="qr_max" title="Show Quick Reply" href="javascript:;">Quick Reply</a></div>' );
+	  var inner = '<div id="thumb_qr" class="main_head fixed_thumb"><a id="qr_max" title="Show Quick Reply" href="javascript:;">Quick Reply</a><span id="stat_qrcontent"></span></div>';
+      var el = createEl('div', {id:'qrfixed_thumb', style:'display:;'}, inner );
       Dom.add(el, document.body);
       QR.event_tpl();
     }
@@ -350,14 +369,14 @@ QR = {
         tgt_focus.focus();
       });
  	 // event qr_close
-      Dom.Ev(Dom.g('qr_close'), 'click', function(){ 
-		Dom.g('footer_spacer').setAttribute('style', 'height:15px');
-		showhide(Dom.g('qrfixed_thumb'), true);
+      Dom.Ev(Dom.g('qr_close'), 'click', function(){		
 	    QR.close();
 	  });
  	 // event qr_min
       Dom.Ev(Dom.g('qr_min'), 'click', function(){
 	    Dom.g('footer_spacer').setAttribute('style', 'height:15px');
+		alert(Dom.g(gvar.msgID).value)
+		Dom.g('stat_qrcontent').value=( Dom.g(gvar.msgID).innerHTML!='' ? '...':'' );
 	    showhide(Dom.g('qrfixed_thumb'), true);
 	    showhide(Dom.g('qr_container'), false);
 	  });
@@ -369,7 +388,7 @@ QR = {
       Dom.Ev(Dom.g('qrfixed_thumb'), 'click', function(){
 	    Dom.g('footer_spacer').setAttribute('style', 'height:150px');
 	    if(Dom.g('hash').value==''){
-		   THREAD.doQuote(gvar.reply);
+		   THREAD.doQuote(THREAD.reply);
 		}else{
 	      showhide(Dom.g('qr_container'), true);
 	      showhide(Dom.g('qrfixed_thumb'), false);
@@ -378,6 +397,9 @@ QR = {
 	  });
     }
     ,close: function(){
+	  Dom.g('footer_spacer').setAttribute('style', 'height:15px');
+	  Dom.g('stat_qrcontent').innerHTML='';
+	  showhide(Dom.g('qrfixed_thumb'), true);
 	  QR.msg.clear();
 	  QR.toggle(false);
 	}
@@ -390,15 +412,28 @@ QR = {
  
 THREAD = {
    user:function(){}
+  ,init: function (){
+    THREAD.user = THREAD.getUser();
+	THREAD.id = THREAD.getThreadId();
+	if(THREAD.user===false) return;
+	// do event on quote button (onlly  on logged in)
+    THREAD.eventQuote();
+    THREAD.add_footter_spacer();
+  }
+  ,getThreadId: function (){
+    var match, hVal = getByXPath_containing('//a[@class="btn_link"]', false, 'REPLY');	
+    THREAD.reply = (isDefined(hVal[0]) ? hVal[0] : null);
+    if(THREAD.reply)
+       match = /m\.kaskus\.us\/reply\/(\d+)/i.exec(THREAD.reply);
+    return (match ? match[1] : null);    
+  }
   ,getUser: function (){
-     var node = $('.//div[@id="menu"]', null, true);
-     var as = getTag('a', node);
-     if(isDefined(as[0]) && as[0].href.indexOf('#login')!=-1) {
+     var alogins = $('//a[contains(@href, "#login")]', null);
+     if(alogins.snapshotLength > 0) {
 	   var tgtusername = $('.//input[@name="username"]', null, true);
 	   var ogi = getAbsoluteTop( Dom.g('login') );
-       node = $('.//a[contains(@href,"#login")]', null);
-	   for(var i=0;i<node.snapshotLength; i++){
-			var el = node.snapshotItem(i);
+	   for(var i=0;i<alogins.snapshotLength; i++){
+			var el = alogins.snapshotItem(i);
 			el.setAttribute('onclick','return false');
 			Dom.Ev(el, 'click', function(){
 			  scrollTo(0,ogi);
@@ -407,7 +442,7 @@ THREAD = {
 	   }
 	   return false;
      }else{
-       if(!as) return false;
+	   var node = $('.//div[@id="menu"]', null, true);
        var html = node.innerHTML;
        var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/m\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
        return (match ? {id:match[1], name:match[2]} : false);
@@ -432,7 +467,7 @@ THREAD = {
      e = e.target || e;
      if(e.nodeName=='IMG') e=e.parentNode; // make sure get tag <a>
      var par = e.parentNode; // get tag <div class="right">
-	 if( isUndefined(par.className) ) par = Dom.g('qrfixed_thumb');
+	 if( !par.className ) par = Dom.g('thumb_qr');
      var inner = '<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>';
      var el = createEl('span', {id:'fetching_quote','class':'smallfont',style:'color:blue;font:11pt;'}, inner);
      Dom.add(el, par);
@@ -464,6 +499,9 @@ THREAD = {
 	 ret[1] = (match ? match[1]:'');
      return (match ? [ unescapeHtml(ret[0]), ret[1] ]  : [null,null] );
    }
+  ,inside: function(){
+    return ( /\/thread\/.*/.test(location.pathname) );
+  }
   ,add_footter_spacer: function(flag){
      flag = (isUndefined(flag) ? true : flag);
      if(flag){
