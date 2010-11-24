@@ -5,14 +5,16 @@
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @include        http://blackberry.kaskus.us/*
-// @vversion       v0.1.5
-// @version        101124015
+// @vversion       v0.1.6
+// @version        101124016
 // @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
 /*
 //
+// v0.1.6 - 2010-11-24
+//  Fix CSS blockquote
 // v0.1.5 - 2010-11-24
 //  Fix add/clear msg
 // v0.1.4 - 2010-11-24
@@ -149,8 +151,13 @@ function getCSS(additional){
     +'.left, .right{color:#fff;margin:1px 0 !important;}'
 	+'.poster .right{margin:0 !important;}'
 	+'.right{margin-right:5px !important;}'
-    
     +'.left a{font-weight:bold;color:#FFB56A;}'
+    +'.post blockquote {border-style: solid !important; border-width:2px 1px 1px 3px !important; border-color: #CCFFBB #99DD99 #99DD99 #CCFFBB !important;'
+      +'max-width:none !important; overflow-x:auto !important; padding:3px 6px !important; margin: 0 !important;'
+      +'background: #DDFFDD !important; color:#0099cc; font-family:"Lucida Grande",Tahoma,Arial,Helvetica,sans-serif; font-size:8pt;'
+    +'}'
+    +'.post > blockquote {margin-top:-20px !important;}'
+
     +'/* ------ */'
 
 	+'.paging a:hover{background:#ff9933;color:#FFF;}'
@@ -422,7 +429,11 @@ THREAD = {
   ,init: function (){
     THREAD.user = THREAD.getUser();
 	THREAD.id = THREAD.getThreadId();
+	// reFormat post
+    THREAD.reFormat();
+	
 	if(THREAD.user===false) return;
+	
 	// do event on quote button (onlly  on logged in)
     THREAD.eventQuote();
     THREAD.add_footter_spacer();
@@ -454,6 +465,21 @@ THREAD = {
        var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/m\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
        return (match ? {id:match[1], name:match[2]} : false);
      }
+   }
+  ,reFormat: function(){
+     var posts = $('.//div[@class="post"]',null);
+	 var inner, pos, idClose, idHead, match;
+	 for(var i=0; i<posts.snapshotLength; i++){
+	    inner = posts.snapshotItem(i).innerHTML;
+		idHead = '<font color="#0099cc">';
+		idClose = '</font>';
+		if(inner.indexOf(idHead)!=-1){
+		  inner = inner.replace(/\"<\/font>/gim, function(str, $1) { return('<\/blockquote>'); });		  
+		  inner = inner.replace(/<font\scolor=\"\#0099cc\">([^\:]+.)\"/gim, function(str, $1) { return('<blockquote>&#187;&nbsp;Posted by <b>'+$1+'<\/b><br>'); });
+		  posts.snapshotItem(i).innerHTML = inner;
+		}
+	 }
+	 //alert(posts.snapshotLength);
    }
   ,eventQuote: function(){
      var quotes = getByXPath_containing('//a', false, 'quote');
