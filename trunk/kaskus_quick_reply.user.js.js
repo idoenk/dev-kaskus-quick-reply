@@ -2,9 +2,10 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @vversion      v3.0.3
-// @version       101121303
-// @timestamp     1290370223914
+// @version       3.0.4
+// @vversion      v3.0.4
+// @dtversion     101125304
+// @timestamp     1290653161996
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -12,6 +13,13 @@
 //
 // -!--latestupdate
 //   
+// v3.0.4 - 2010-11-25
+//   Fix minor
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 // v3.0.3 - 2010-11-21
 //   Fix quote_parser, back to stone-age method, :hammer:
 //   Fix CSS3 (Chrome; Opera)
@@ -19,10 +27,6 @@
 //   Fix avoid Kaskus-Wide kill QR's button, replace <center> tag,
 //   Deprecated #mq_container, no longer used (since multi-quote w/ cookie based)
 //   Add & set tabindex on some elements
-//   
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.0.2 - 2010-11-20
 //   adjusting, recaptcha work-flow
@@ -50,7 +54,8 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.3';
 gvar.scriptMeta = {
-  timestamp: 1290370223914 // version.timestamp
+  //timestamp: 1290370223914 // version.timestamp
+  timestamp: 1290370123914 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -274,7 +279,7 @@ function start_Main(){
     
     // cuma untuk fresh load
     if(!gvar.restart) {
-     nodes = getByXPath_containing('//a', false, 'QUOTE');     
+     nodes = getByXPath_containing('//a', false, 'QUOTE');
      for(var i=0; i<nodes.length; i++){
       hr = nodes[i].href.split("&p=");      
       nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" border="0" title="Reply With Quote" />';      
@@ -4236,7 +4241,7 @@ Updater = {
  ,initiatePopup: function(rt){
     var mparsed=Updater.mparser(rt);
     Updater.showDialog(
-     '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+mparsed.cvv+') is available'
+     '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ (mparsed.cvv ? 'Version: '+mparsed.cvv:'') +') is available'
       + '<div style="float:right;margin:10px 0 0 20px;"><a class="qbutton" href="http://'+ 'userscripts.org'
       +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
       + '<div style="float:right;margin-top:10px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
@@ -4289,7 +4294,7 @@ Updater = {
  ,mparser: function(rt){
     return {
      tv:rt.match(/@timestamp(?:[^\d]+)([\d]+)/)[1],
-     cvv:rt.match(/@vversion(?:[^v]+)(v[\d\.\w]+)/)[1]
+     cvv:rt.match(/@version(?:[^v\d]+)([\d\.\w]+)/)[1]
     };
   }
 }; // -end Updater
