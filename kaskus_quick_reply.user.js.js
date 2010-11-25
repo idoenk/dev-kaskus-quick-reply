@@ -2,10 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.4
-// @vversion      v3.0.4
-// @dtversion     101125304
-// @timestamp     1290653161996
+// @version       3.0.5
+// @dtversion     101126305
+// @timestamp     1290718219716
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,15 +13,19 @@
 //
 // -!--latestupdate
 //   
+// v3.0.5 - 2010-11-26
+//   Fix failed shortcut Ctrl+[B-I-U]
+//   Improve Updater nfo last-log-update
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//   
 // v3.0.4 - 2010-11-25
 //   Add shortcut: Ctrl+Enter=Post;
 //   Add shortcut(global): Esc=Close-Popup;
 //   Fix failed disable textareaExpander
 //   Fix minor meta format (version;contributor)
-//   
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.0.3 - 2010-11-21
 //   Fix quote_parser, back to stone-age method, :hammer:
@@ -32,13 +35,6 @@
 //   Deprecated #mq_container, no longer used (since multi-quote w/ cookie based)
 //   Add & set tabindex on some elements
 //
-// v3.0.2 - 2010-11-20
-//   adjusting, recaptcha work-flow
-//   Add optional, botgreets :D
-//   browser compatibility (Chrome; Opera)
-//
-// v3.0.1 - 2010-11-18
-//   Adapting tinypic's behaviour in showing capcay
 //
 //
 // -more: http://userscripts.org/topics/56051
@@ -56,9 +52,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.4';
+gvar.sversion = 'v' + '3.0.5';
 gvar.scriptMeta = {
-  timestamp: 1290653161996 // version.timestamp
+  timestamp: 1290718219716 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1060,10 +1056,11 @@ function is_keydown_pressed(e){
         return;
     }
     C = do_an_e(C);
-	if(A==13)
+	if(A==13){
 	  if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
-	else
+	}else{
       do_align_BIU(B);
+	}
    }else
    if(C.altKey){ // mijit + Alt
 	var B='', A = C.keyCode ? C.keyCode : C.charCode;
@@ -1482,9 +1479,9 @@ function toggle_setting(){
       Dom.Ev( $('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
       if(!gvar.noCrossDomain) // unavailable on Chrome|Opera T_T
        Dom.Ev( $('#chk_upd_now'), 'click',  function(e){
-        if($('#fetch_update')) return; // there is a fetch update in progress
-        if($('#upd_cnt')) Dom.remove($('#upd_cnt'));
-        Updater.notify_progres();
+        if($('#fetch_update')) return; // there is a fetch update in progress		
+		if($('#upd_cnt')) Dom.remove($('#upd_cnt'));
+        Updater.notify_progres('chk_upd_now');
         Updater.check(true);
        });
 
@@ -3493,14 +3490,6 @@ function getSetOf(type){
         +'LeGK2HCgoKqKSkhNDZ5fj+/fvPNTU1teDvBQW/IuMWEx29g6rkYSv5zlfu8Xgae3p6fGKaD1z4N0i/xtqPALR/WgssAuawK1XNto7eaZSVVhVPl6ruM9Baiuvr'
         +'6+fBzRUul2sWxPKQWA5Yqg0NDekIwfXe3t4h3EfZ10PAVWXRIMBj16VlRvFLj7smTiB1qArPxPnKcrdqpE5VG0lVEC6EYdUIgsp9ITXGc0mzaU26CGeQampTp7'
         +'I4W8GlXK/R2MUxoTaOZMAk0jNv4VNe9RXpRGK7IrIrD2QS6mrzpCKfSDRK8q8AAwCF/L1ktjcKFAAAAABJRU5ErkJggg%3D%3D'
-      ,refreshcapcay_gif : ''
-        +'data:image/gif;base64,R0lGODlhEQAOAOZQAOHo7dzk6tHb4zVjg/n6+4WhtDtoh/r7/JSsvu7y9fT3+DZkhGSHoP39/pauv77N10VvjbHDz1F5lZ2zw1Z8m'
-        +'MXS3FqAmn2br+3x9Ojt8d7m62WIobPE0X6bsJ+1xK3Azenu8pWtvqO4x/v8/WiKo+bs8NLc42CEnkdxjtri6ERvjWOGoEFsi6G2xXyarz5qidDb4qm9ymaJoUly'
-        +'kKy/zDdkhXWUq7vK1V6DndXf5XmXrT9rioKes5evv+/z9UpzkPP2+HCRqEJti8LQ2urv8t3l6uzw80x1kTRig6W5yLjI1JGqvJKrvI+ouoeitjNhgv///wAAAAA'
-        +'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-        +'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAFAALAAAAAARAA4AAAengFCCg4I+AgEYhIqCAR1CAwYsLgKLgjc/TyoF'
-        +'PQg8DBOJhBUvTxYBhCUcGlAHIgVLEk9PK0kwUEAAihEDsr0QOVBNM5SEH0i9Bg9QDwZPFLmDDU6yCzFQJii9J0aECjpPF1AAsb1PQQmECQgZUB4MFLI7OBA0gg'
-        +'eKDVAOTwsRCikgBBVpoYQIAQIBmPAKUanCBgskZNR4cmTCiEpQCAwpYOOCA2iEAgEAOw=='
       ,updates_png : ''
         +'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAARCAIAAACNaGH2AAAABnRSTlMA/wD/AP83WBt9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABg0'
         +'lEQVR42n2SPW4UQRCFX417MXh3JbJ1hIwRxyBCGImjICQHIALOYF+Bi8AduIYdIeT9m5mq9xHMYhLMUwUt9Wu9r6orvv64/Nn/2o61NvvyOnNbtRkzbZepciZVT'
@@ -3508,6 +3497,10 @@ function getSetOf(type){
         +'FGpbbKIGOzR9NCDEDaG8p9eNYG1TVnBYKcZjKdQeRrEAYPCKKLtsko2SiOMLXAac18ThqDtXUyIAYXLwgJXyWDbU45ALfd9N2sytiVxSOAAXBaOCEC4HWe3G3fRd'
         +'YojYaZ/G0ZXSaKmd4E9ny3jZn1zu7mV9On7RxBOzNvzi4uX7yYAxTQPnS5P22q+Ws1XklyF3bX24unZ51df9C+1+xNZR0+Oz5fPr95c6wH9dc8WJ2eLZ1evrxePF'
         +'g+5D+sCvP/24a6/47/6DW1k0UQglGH2AAAAAElFTkSuQmCC'
+      ,news_png : ''
+        +'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1'
+		+'4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2'
+		+'07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC'
      };
     break;
   };
@@ -3687,7 +3680,7 @@ function getCSS() {
    +'{padding-top:10px !important;}'
   +'#skecil_container img, #sbesar_container img, #scustom_container img'
    +'{margin:0 1px;border:1px solid transparent;}'
-  +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover'
+  +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'
    +'{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
   +'.ul_tabsmile'
    +'{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'
@@ -4234,10 +4227,12 @@ GM_XHR = {
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
 Updater = {
-  check: function(forced){
+  caller:''
+ ,check: function(forced){
     var intval = (1000*60*60*gvar.settings.updates_interval);
     if((forced)||(parseInt(getValue("KEY_SAVE_"+"QR_LastUpdate", "0")) + parseInt(intval) <= (new Date().getTime()))) {
      gvar.updateForced = forced;
+	 if(!forced) Updater.caller='';
      // prep xhr request
      GM_XHR.uri = 'http://'+'userscripts.org'+'/scripts/source/'
        + gvar.scriptMeta.scriptID + '.meta.js';
@@ -4247,22 +4242,25 @@ Updater = {
   }
  ,callback: function(r){
     setValue("KEY_SAVE_"+"QR_LastUpdate", new Date().getTime() + "");
+	if(Dom.g(Updater.caller)) 
+	  Dom.g(Updater.caller).innerHTML = 'check now';
     if (r&&r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp) { 
       Updater.initiatePopup(r.responseText); 
     } else {
       Updater.notify_done(false);
       if (gvar.updateForced)
-        alert("No update is available for QR.");
+        alert("No update is available for QR.");	  
     }
   }
- ,initiatePopup: function(rt){
-    var mparsed=Updater.mparser(rt);
-    Updater.showDialog(
-        '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ mparsed.cvv +') is available'
-      + '<div style="float:right;margin:10px 0 0 20px;"><a class="qbutton" href="http://'+ 'userscripts.org'
-      + '/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
-      + '<div style="float:right;margin-top:10px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
-      + '<div style="margin-left:19px;">Wanna make an action?</div>'
+ ,initiatePopup: function(rt){    
+    Updater.meta=Updater.mparser(rt);
+	Updater.showDialog(
+       '<img id="nfo_version" src="'+gvar.B.news_png+'" class="qbutton" style="float:left; margin:3px 5px 0 2px;padding:3px;"/> '
+	  +'<b>New'+' '+gvar.titlename+'</b> (v'+ Updater.meta.cvv[1]+') is available'
+      +'<div style="float:right;margin:9px 0 0 15px;"><a class="qbutton" href="http://'+ 'userscripts.org'
+      +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
+      +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
+      +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
     Dom.Ev($('#upd_close'),'click', function(){
        Dom.remove('upd_cnt');
@@ -4289,17 +4287,27 @@ Updater = {
     
     Attr = {'class':'qrdialog-close'};
     el = createEl('div', Attr, '<a id="upd_close" class="qbutton" javascript:; title="Close"><img src="'+gvar.domainstatic+'images/misc/menu_open.gif" /></a>');
-    Dom.add(el, $('#upd_cnt'))
+    Dom.add(el, $('#upd_cnt'));
 
     Attr = {id:'upd_child','class':'qrdialog-child'};
     el = createEl('div', Attr, inner);
-    Dom.add(el, $('#upd_cnt'))
+    Dom.add(el, $('#upd_cnt'));
+	// nfo news
+	if( Updater.meta.news ){
+	  $('#nfo_version').setAttribute('title', 'What\' New...');
+	  $('#nfo_version').style.setProperty('cursor', 'pointer', '');
+	  Dom.Ev($('#nfo_version'), 'click', function(){ alert( gvar.titlename+'\n== Last LOG Update ==' + Updater.meta.news );});
+	}
     
     Updater.notify_done(true);
  }
   
- ,notify_progres: function(){
+ ,notify_progres: function(caller){
     $('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+	if(Dom.g(caller)) {
+	  Updater.caller=caller;
+	  Dom.g(caller).innerHTML='checking..'; // OR check now
+	}
  }
  ,notify_done: function(anyupd){
     $('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
@@ -4309,10 +4317,15 @@ Updater = {
     }
  }
  ,mparser: function(rt){
-    return {
-     tv:rt.match(/@timestamp(?:[^\d]+)([\d]+)/)[1],
-     cvv:rt.match(/@version(?:[^v\d]+)([\d\.\w]+)/)[1]
-    };
+	return {
+     tv:rt.match(/@timestamp(?:[^\d]+)([\d]+)/)||[null],
+     cvv:rt.match(/@version(?:[^v\d]+)([\d\.\w]+)/)||[null],
+     news:(function(x){
+	      var wrp=['// -!--latestupdate','// -/!latestupdate---'];
+	      var p=[x.indexOf(wrp[0]), x.indexOf(wrp[1])];
+		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/\/\/\s/gm, function($str,$1){return '';}) : '');
+	    })(rt)
+    };	
   }
 }; // -end Updater
 /* Modified Smooth scrolling
