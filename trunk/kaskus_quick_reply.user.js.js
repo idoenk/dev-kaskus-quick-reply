@@ -14,7 +14,7 @@
 // -!--latestupdate
 //   
 // v3.0.4 - 2010-11-25
-//   Fix minor
+//   Fix minor versioning.rev-1
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -52,10 +52,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.3';
+gvar.sversion = 'v' + '3.0.4';
 gvar.scriptMeta = {
-  //timestamp: 1290370223914 // version.timestamp
-  timestamp: 1290370123914 // version.timestamp
+  timestamp: 1190653161996 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -4241,7 +4240,7 @@ Updater = {
  ,initiatePopup: function(rt){
     var mparsed=Updater.mparser(rt);
     Updater.showDialog(
-     '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ (mparsed.cvv ? 'Version: '+mparsed.cvv:'') +') is available'
+     '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ mparsed.cvv +') is available'
       + '<div style="float:right;margin:10px 0 0 20px;"><a class="qbutton" href="http://'+ 'userscripts.org'
       +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
       + '<div style="float:right;margin-top:10px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
