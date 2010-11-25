@@ -9,12 +9,13 @@
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
+// @contributor   Sanji,riza_kasela,p1nky,b3g0,fazar,bagosbanget,eric.,Sanjito,bedjho & all kaskuser @t=3170414
 // @license       (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //   
 // v3.0.4 - 2010-11-25
-//   Fix minor versioning.rev-1
+//   Fix minor version format; contributor
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -4240,9 +4241,9 @@ Updater = {
  ,initiatePopup: function(rt){
     var mparsed=Updater.mparser(rt);
     Updater.showDialog(
-     '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ mparsed.cvv +') is available'
+        '<blink>(!)</blink> <b>New'+' '+gvar.titlename+'</b> ('+ mparsed.cvv +') is available'
       + '<div style="float:right;margin:10px 0 0 20px;"><a class="qbutton" href="http://'+ 'userscripts.org'
-      +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
+      + '/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto QR Home">Home</a></div>'
       + '<div style="float:right;margin-top:10px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
       + '<div style="margin-left:19px;">Wanna make an action?</div>'
     );
