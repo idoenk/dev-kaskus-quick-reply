@@ -9,12 +9,14 @@
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
-// @contributor   Sanji,riza_kasela,p1nky,b3g0,fazar,bagosbanget,eric.,Sanjito,bedjho & all kaskuser @t=3170414
 // @license       (CC) by-nc-sa 3.0
+// @contributor   Sanji,riza_kasela,p1nky,b3g0,fazar,bagosbanget,eric.,Sanjito,bedjho,Piluze,intruder.master,Rh354,gr0,hermawan64,slifer2006,gzt,Duljondul,reongkacun,otnaibef, all-kaskuser@t=3170414
 //
 // -!--latestupdate
 //   
 // v3.0.4 - 2010-11-25
+//   Add shortcut Ctrl+Enter=Post; Esc=Close-Popup
+//   Fix failed disable textareaExpander
 //   Fix minor version format; contributor
 //   
 // -/!latestupdate---
@@ -220,6 +222,7 @@ function getSettings(){
   // setting textarea expander
   hVal=getValue(KS+'TEXTA_EXPANDER');
   gvar.settings.textareaExpander=(!hVal.match(/^([01]{1}),(\d+),(\d+)/)?['1,100,500']:hVal.split(',') );
+  gvar.settings.textareaExpander[0] = (gvar.settings.textareaExpander[0]=='1');
   // hotkey settings, predefine [ctrl,shift,alt]; [01]
   hVal = gvar.settings.hotkeykey; 
   gvar.settings.hotkeykey = (!hVal.match(/^([01]{1}),([01]{1}),([01]{1})/)?['1','0','0'] : hVal.split(',') );
@@ -332,7 +335,7 @@ function start_Main(){
            vB_textarea.readonly();
          }
          gvar.tmp_text=null;
-         if(gvar.settings.textareaExpander[0]) 
+         if(gvar.settings.textareaExpander[0])
            vB_textarea.adjustGrow(); // retrigger autogrow now
        }else{ // disable|readonly textarea.
          vB_textarea.readonly();
@@ -654,8 +657,6 @@ function loadLayer_reCaptcha(){
             if(C.keyCode==13){ // mijit enter
                 C = do_an_e(C);
                 SimulateMouse($('#recaptcha_submit'), 'click', true);
-            }else if(C.keyCode==27){ // escape?                
-                SimulateMouse($("#imghideshow_precap"), 'click', true);
             }
         });
         // order tabindex
@@ -989,14 +990,25 @@ function scrollto_QR(C){
 function is_keydown_pressed_ondocument(e){
   var C = (!e ? window.event : e);
   var pressedCSA = (C.ctrlKey ? '1':'0')+','+(C.shiftKey ? '1':'0')+','+(C.altKey ? '1':'0');
+  var A = C.keyCode ? C.keyCode : C.charCode;
+  
+  // without pressedCSA or just Shift | there's no hideshow layer ? forget it
+  if( (pressedCSA=='0,0,0' || pressedCSA=='0,1,0') && !$('#hideshow') )
+    return;
+
+  if($('#hideshow') && A==27){
+    closeLayerBox('hideshow');
+	if($('#hideshow_recaptcha')) closeLayerBox('hideshow_recaptcha');
+	return;
+  }
+  
   var CSA_tasks = {
      quickreply: gvar.settings.hotkeykey.toString() // default: Ctrl+Q
     ,fetchpost: '0,0,1' // Alt+Q
     ,deselectquote: '1,0,1' // Ctrl+Alt+Q    
   };
-  if(pressedCSA=='0,0,0' || pressedCSA=='0,1,0') return; // without pressedCSA or just Shift ? forget it
-       //clog('pressedCSA='+pressedCSA)
-  var A = C.keyCode ? C.keyCode : C.charCode;
+  
+    //clog('pressedCSA='+pressedCSA)  
   switch(pressedCSA){ // key match in [Ctrl-Shift-Alt]
     case CSA_tasks.quickreply:
       var cCode = gvar.settings.hotkeychar.charCodeAt();
@@ -1038,13 +1050,19 @@ function is_keydown_pressed(e){
         B = 'Italic';
         break;
       case 85:
-        B = 'Underline';      
+        B = 'Underline';
+        break;
+      case 13:  // [S] Submit post
+        B = 'qr_prepost_submit';
         break;
       default:
         return;
     }
     C = do_an_e(C);
-    do_align_BIU(B);
+	if(A==13)
+	  if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
+	else
+      do_align_BIU(B);
    }else
    if(C.altKey){ // mijit + Alt
 	var B='', A = C.keyCode ? C.keyCode : C.charCode;
@@ -1062,10 +1080,8 @@ function is_keydown_pressed(e){
       default:
         return;
     }
-	if(B){
-	  C = do_an_e(C);
-	  if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
-	}
+	C = do_an_e(C);
+	if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
 
    }else
    if(C.keyCode==9){ // mijit tab
@@ -4020,7 +4036,7 @@ vB_textarea = {
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.set('');
     this.enabled();
-    this.adjustGrow();
+    if(gvar.settings.textareaExpander[0]) this.adjustGrow();
     this.focus();
   },
   disabled: function(){ 
