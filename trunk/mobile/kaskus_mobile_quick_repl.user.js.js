@@ -2,19 +2,23 @@
 // @name           Kaskus Mobile Quick Reply
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
+// @author         idx (http://userscripts.org/users/idx)
+// @version        0.1.8
+// @dtversion      101125018
 // @include        http://m.kaskus.us/*
+// @include        http://wap.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @include        http://blackberry.kaskus.us/*
-// @vversion       v0.1.7
-// @version        101125017
-// @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
 /*
 //
+// v0.1.8 - 2010-11-25
+//  Fix CSS blockquote.rv2; pre
 // v0.1.7 - 2010-11-25
 //  Fix CSS blockquote.R1
+//  Add subdomain(wap)
 // v0.1.6 - 2010-11-24
 //  Fix CSS blockquote
 // v0.1.5 - 2010-11-24
@@ -155,11 +159,16 @@ function getCSS(additional){
 	+'.right{margin-right:5px !important;}'
 	+'#fetching_quote{display:inline; padding:0; margin-left:3px; line-height:22px;}'
     +'.left a{font-weight:bold;color:#FFB56A;}'
-    +'.post blockquote {border-style: solid !important; border-width:2px 1px 1px 3px !important; border-color: #CCFFBB #99DD99 #99DD99 #CCFFBB !important;'
-      +'max-width:none !important; overflow-x:auto !important; padding:3px 10px !important; margin: 7px 1px 0 1px !important;'
-      +'background: #DDFFDD !important; color:#0099cc; font-family:"Lucida Grande",Tahoma,Arial,Helvetica,sans-serif; font-size:8pt;'
+    
+    +'.post blockquote, .post .code {border-style: solid !important; border-width:2px 1px 1px 3px !important; '
+      +'border-color: #CCFFBB #99DD99 #99DD99 #CCFFBB !important; max-width:none !important; overflow-x:auto !important; '
+      +'background: #DDFFDD !important; color:#0099cc; font-size:8pt;'//#3E3E3E //0099cc
+      +'padding:3px 10px !important; margin: 7px 1px 0 1px !important;'
     +'}'
-    +'.post .posted_by {color:#000 !important;}'
+    +'.post .code {color:#191919 !important;}'
+    +'.post .posted_by, .post .tcode {color:#000 !important; font-family: verdana, arial;}'
+    +'.post .tcode {margin:5px 0 -7px 10px;}'
+    +'.post .posted_by {margin:5px 0 1px 0;}'
 
     +'/* ------ */'
 
@@ -470,18 +479,40 @@ THREAD = {
      }
    }
   ,reFormat: function(){
+     
+	 
      var posts = $('.//div[@class="post"]',null);
-	 var inner, pos, idClose, idHead, match;
+	 var html, prahtml, pos, idClose, idHead, match, pra;
 	 for(var i=0; i<posts.snapshotLength; i++){
-	    inner = posts.snapshotItem(i).innerHTML;
+	    html = posts.snapshotItem(i).innerHTML;
+	    // spoiler parser
 		idHead = '<font color="#0099cc">';
 		idClose = '</font>';
-		if(inner.indexOf(idHead)!=-1){
-		  inner = inner.replace(/\"<\/font><br>/gim, function(str, $1) { return('<\/blockquote>'); });		  
-		  inner = inner.replace(/(?:<br>\n)*<font\scolor=\"\#0099cc\">([^\"]+)*\"(.+)/gi, function(str, $1, $2) { 
+		if(html.indexOf(idHead)!=-1){
+		  html = html.replace(/\"<\/font><br>/gim, function(str, $1) { return('<\/blockquote>'); });
+		  html = html.replace(/(?:<br>\n)*<font\scolor=\"\#0099cc\">([^\"]+)*\"(.+)/gi, function(str, $1, $2) { 
 		    return('<blockquote>'+($1 ? '<div class="posted_by">&#187;&nbsp;Posted by <b>'+$1+'<\/b></div>' :'') + ($2?$2.replace(/<br>/,''):'') ); 
 		  });
-		  posts.snapshotItem(i).innerHTML = inner;
+		}
+		
+		if(posts.snapshotItem(i).innerHTML != html)
+		   posts.snapshotItem(i).innerHTML = html;
+		   
+		// code parser
+		var parsecode = true;
+		if(parsecode){
+		   html = html.replace(/\[code\](?:<br>|\n)*/gim, function(str) { return('<div class="tcode">Code:</div><pre class="code">'); });
+		   html = html.replace(/(?:<br>|\n)*\[\/code\]/gim, function(str) { return('</pre>'); });		
+		   posts.snapshotItem(i).innerHTML = html;
+		   pra = $('.//pre[@class="code"]', posts.snapshotItem(i) );
+		   //show_alert(pra.snapshotLength)
+		   if(pra.snapshotLength > 0)
+		    for(var j=0; j<pra.snapshotLength; j++){
+		        prahtml = pra.snapshotItem(j).innerHTML;
+			    prahtml = prahtml.replace(/\n/gm, '');
+		        if(pra.snapshotItem(j).innerHTML != prahtml)
+			       pra.snapshotItem(j).innerHTML = prahtml;
+		    }
 		}
 	 }
 
