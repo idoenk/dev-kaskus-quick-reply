@@ -5,14 +5,16 @@
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @include        http://blackberry.kaskus.us/*
-// @vversion       v0.1.6
-// @version        101124016
+// @vversion       v0.1.7
+// @version        101125017
 // @author         idx (http://userscripts.org/users/idx)
 // @license        (CC) by-nc-sa 3.0
 // ==/UserScript==
 //
 /*
 //
+// v0.1.7 - 2010-11-25
+//  Fix CSS blockquote.R1
 // v0.1.6 - 2010-11-24
 //  Fix CSS blockquote
 // v0.1.5 - 2010-11-24
@@ -151,12 +153,13 @@ function getCSS(additional){
     +'.left, .right{color:#fff;margin:1px 0 !important;}'
 	+'.poster .right{margin:0 !important;}'
 	+'.right{margin-right:5px !important;}'
+	+'#fetching_quote{display:inline; padding:0; margin-left:3px; line-height:22px;}'
     +'.left a{font-weight:bold;color:#FFB56A;}'
     +'.post blockquote {border-style: solid !important; border-width:2px 1px 1px 3px !important; border-color: #CCFFBB #99DD99 #99DD99 #CCFFBB !important;'
-      +'max-width:none !important; overflow-x:auto !important; padding:3px 6px !important; margin: 0 !important;'
+      +'max-width:none !important; overflow-x:auto !important; padding:3px 10px !important; margin: 7px 1px 0 1px !important;'
       +'background: #DDFFDD !important; color:#0099cc; font-family:"Lucida Grande",Tahoma,Arial,Helvetica,sans-serif; font-size:8pt;'
     +'}'
-    +'.post > blockquote {margin-top:-20px !important;}'
+    +'.post .posted_by {color:#000 !important;}'
 
     +'/* ------ */'
 
@@ -474,12 +477,14 @@ THREAD = {
 		idHead = '<font color="#0099cc">';
 		idClose = '</font>';
 		if(inner.indexOf(idHead)!=-1){
-		  inner = inner.replace(/\"<\/font>/gim, function(str, $1) { return('<\/blockquote>'); });		  
-		  inner = inner.replace(/<font\scolor=\"\#0099cc\">([^\:]+.)\"/gim, function(str, $1) { return('<blockquote>&#187;&nbsp;Posted by <b>'+$1+'<\/b><br>'); });
+		  inner = inner.replace(/\"<\/font><br>/gim, function(str, $1) { return('<\/blockquote>'); });		  
+		  inner = inner.replace(/(?:<br>\n)*<font\scolor=\"\#0099cc\">([^\"]+)*\"(.+)/gi, function(str, $1, $2) { 
+		    return('<blockquote>'+($1 ? '<div class="posted_by">&#187;&nbsp;Posted by <b>'+$1+'<\/b></div>' :'') + ($2?$2.replace(/<br>/,''):'') ); 
+		  });
 		  posts.snapshotItem(i).innerHTML = inner;
 		}
 	 }
-	 //alert(posts.snapshotLength);
+
    }
   ,eventQuote: function(){
      var quotes = getByXPath_containing('//a', false, 'quote');
@@ -500,20 +505,25 @@ THREAD = {
      e = e.target || e;
      if(e.nodeName=='IMG') e=e.parentNode; // make sure get tag <a>
      var par = e.parentNode; // get tag <div class="right">
-	 if( !par.className ) par = Dom.g('thumb_qr');
+	 if( !par.className ) 
+	  par = Dom.g('thumb_qr');
+	 else
+	  e.style.display = 'none';
+
      var inner = '<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>';
-     var el = createEl('span', {id:'fetching_quote','class':'smallfont',style:'color:blue;font:11pt;'}, inner);
+     var el = createEl('div', {id:'fetching_quote','class':'smallfont',style:'color:blue;font:11pt;'}, inner);
      Dom.add(el, par);
-     e.style.display = 'none';
+     
+
      GM_XHR.uri = e.href;
      GM_XHR.cached = true;
      GM_XHR.request(null,'GET',THREAD.doQuote_Callback);
    }
   ,doQuote_Callback: function(html){
-     //alert(html);
+
      var par = Dom.g('fetching_quote').parentNode;
      var e = getTag('a', par)[0];
-     if(e) e.style.display='';
+     if(e && e.id!='qr_max') e.style.display='';
      Dom.remove('fetching_quote');	 
      var ret = THREAD.doQuote_Parser(html.responseText);
 	 Dom.g('hash').value = gvar.hash = ret[1];
