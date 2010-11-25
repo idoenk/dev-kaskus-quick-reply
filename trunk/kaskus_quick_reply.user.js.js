@@ -15,9 +15,10 @@
 // -!--latestupdate
 //   
 // v3.0.4 - 2010-11-25
-//   Add shortcut Ctrl+Enter=Post; Esc=Close-Popup
+//   Add shortcut: Ctrl+Enter=Post;
+//   Add shortcut(global): Esc=Close-Popup;
 //   Fix failed disable textareaExpander
-//   Fix minor version format; contributor
+//   Fix minor meta format (version;contributor)
 //   
 // -/!latestupdate---
 // ==/UserScript==
