@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.5
-// @dtversion     101126305
-// @timestamp     1290718219716
+// @version       3.0.6
+// @dtversion     101126306
+// @timestamp     1290742974910
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,13 +13,16 @@
 //
 // -!--latestupdate
 //   
-// v3.0.5 - 2010-11-26
-//   Fix failed shortcut Ctrl+[B-I-U]
-//   Improve Updater nfo last-log-update
+// v3.0.6 - 2010-11-26
+//   Fix failed load custom-smiley content on bad link last-img
 //   
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//   
+// v3.0.5 - 2010-11-26
+//   Fix failed shortcut Ctrl+[B-I-U]
+//   Improve Updater nfo last-log-update
 //   
 // v3.0.4 - 2010-11-25
 //   Add shortcut: Ctrl+Enter=Post;
@@ -52,9 +55,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.5';
+gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1290718219716 // version.timestamp
+  timestamp: 1290742974910 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1692,7 +1695,7 @@ function create_smile_tab(caller){
 
 function insert_smile_content(scontent_Id, smileyset){
        //clog('in insert_smile_content');
-  var target,dumycont,Attr,img,imgEl=false;
+  var target,dumycont,Attr,img,imgEl2,imgEl=false;
   var countSmiley=0;
   if(!scontent_Id || !smileyset) return;
   target = Dom.g(scontent_Id);
@@ -1707,7 +1710,7 @@ function insert_smile_content(scontent_Id, smileyset){
     for (var i in smileyset) {
      img=smileyset[i];
      if( !isString(img) ){
-       if(scontent_Id=='scustom_container'){       
+       if(scontent_Id=='scustom_container'){
              //clog('ekstrakting ['+typeof(img)+']='+img);
           Attr={onclick:'return false;',href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0], src:img[0], alt:'_alt_'+img[1],
                 style:'text-decoration:none;cursor:pointer;','class':'ofont qrsmallfont'};
@@ -1720,7 +1723,7 @@ function insert_smile_content(scontent_Id, smileyset){
             Attr['style']+='margin-left:2px;';
             imgEl = createEl('a',Attr);
             Attr = {src:img[0], alt:'_alt_'+img[1], style:maxDim};
-            var imgEl2 = createEl('img',Attr);
+            imgEl2 = createEl('img',Attr);
             Dom.add(imgEl2,imgEl);
           }
        }else{
@@ -1748,6 +1751,14 @@ function insert_smile_content(scontent_Id, smileyset){
      }
     }
        //clog('Inner=\n'+realcont.innerHTML)
+	// make a dummy last-img that, avoid bad img on last element
+	if( scontent_Id=='scustom_container' && !gvar.settings.scustom_alt) {
+	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
+        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
+        imgEl2 = createEl('img',Attr);
+        Dom.add(imgEl2,imgEl);
+		Dom.add(imgEl,realcont);
+	}
   }
 
   if(countSmiley<=0){
@@ -1755,8 +1766,8 @@ function insert_smile_content(scontent_Id, smileyset){
     if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
     realcont.innerHTML = 'No Images found ';
     realcont.style.display='';
-  } else 
-  if(imgEl){
+  } else {
+    if(imgEl){
      // find last element
      var showContent = function(){
         el=$('#loader_'+scontent_Id);
@@ -1776,6 +1787,7 @@ function insert_smile_content(scontent_Id, smileyset){
             if(imgEl.height) // obj has beed loaded before this line executed
                showContent();
      }
+    }
   }
    
   // custom images ?
