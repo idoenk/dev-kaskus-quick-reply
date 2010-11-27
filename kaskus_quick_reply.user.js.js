@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.6
-// @dtversion     101126306
-// @timestamp     1290742974910
+// @dtversion     101127306
+// @timestamp     1290819874797
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,8 +13,9 @@
 //
 // -!--latestupdate
 //   
-// v3.0.6 - 2010-11-26
+// v3.0.6 - 2010-11-27
 //   Fix failed load custom-smiley content on bad link last-img
+//   Improve string optimized on scustom content
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -57,7 +58,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1290742974910 // version.timestamp
+  timestamp: 1290819874797 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1706,31 +1707,32 @@ function insert_smile_content(scontent_Id, smileyset){
   Dom.add(dumycont,target);
   Dom.add(realcont,target);
   if(smileyset){
-    var maxDim = 'max-width:120px;max-height:120px;';
+    var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb');
     for (var i in smileyset) {
      img=smileyset[i];
      if( !isString(img) ){
        if(scontent_Id=='scustom_container'){
              //clog('ekstrakting ['+typeof(img)+']='+img);
-          Attr={onclick:'return false;',href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0], src:img[0], alt:'_alt_'+img[1],
-                style:'text-decoration:none;cursor:pointer;','class':'ofont qrsmallfont'};
+          Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
+		        src:img[0], alt:'_alt_'+img[1],'class':adclass };
+          // gak pake thumbnail ?
           if(gvar.settings.scustom_alt) {
-            // gak pake thumbnail ? 
-            Attr['style']+='padding:1px 3px;';
             imgEl = createEl('a',Attr,'[['+img[1]+']');
           }else{
-            Attr['class']='';
-            Attr['style']+='margin-left:2px;';
             imgEl = createEl('a',Attr);
-            Attr = {src:img[0], alt:'_alt_'+img[1], style:maxDim};
+            Attr = {src:img[0], alt:'_alt_'+img[1]};
             imgEl2 = createEl('img',Attr);
             Dom.add(imgEl2,imgEl);
           }
        }else{
-          Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1],style:maxDim};
+          Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
           imgEl = createEl('img',Attr);
-       }       
-       Dom.Ev(imgEl, 'click', function(e){ e=e.target||e; do_smile(e); try{return false; e.preventDefault();}catch(ev){} });
+       }
+       Dom.Ev(imgEl, 'click', function(e){ 
+	      var C = e; e=e.target||e; do_smile(e); 
+		  // stop default action
+		  try{do_an_e(C);return false;}catch(ev){} 
+	   });
        Dom.add(imgEl,realcont);
        countSmiley++;
      }else { // this is string and do replace to suitable value
@@ -1744,7 +1746,7 @@ function insert_smile_content(scontent_Id, smileyset){
          }
          Dom.add(retEl,realcont);
          sep = createEl('br', {});
-         Dom.add(sep,realcont);       
+         Dom.add(sep,realcont);
        }else{
          Dom.add(retEl,realcont);
        }
@@ -3120,11 +3122,13 @@ function getTPL_prompt_reCAPTCHA(){
 
   var get_botgreet = function(min, max){
     var c = [
-	  'Are you Human?'
-	 ,'Tell me, what are you?'
-	 ,'This is not a test, really. :D'
-	 ,'Show me what you got.'
-	 ,'Everyone thinks they are human. But are they?'
+	  'Are you a robot? :o'
+	 ,'It is really a fact this captcha is annoying. :nohope:'
+	 ,'But we hate spammer just as much as you do, :)'	 
+	 ,'Get pain in the a*s? It estimate 50% you are legitimate as human, then. :)'
+	 ,'About 200 million CAPTCHAs are solved by humans around the world every day.'
+	 ,'You can do better than that, :D'
+	 ,'Fight Spam and Save Shakespeare, '
 	];
 	if( max>=(c.length-1) ) max = parseInt(c.length-1);
 	return c[Math.floor(Math.random() * (max - min + 1) + min)];
@@ -3140,7 +3144,10 @@ function getTPL_prompt_reCAPTCHA(){
      <td class="alt1">\
       <div id="recaptcha_container_header">\
       <span class="qrsmallfont"><a title="stop spam, stop junk, read post#1 :hammer:" style="cursor:help;margin:0;float:left;">'+get_botgreet(0, 10)+'</a>\
-      <span style="float:right;"><a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a></span>\
+      <span style="float:right;">\
+	  <a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a>&nbsp;&#8212;&nbsp;\
+	  <a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a>\
+	  </span>\
       </div>\
       <div class="spacer"></div>\
       <div id="recaptcha_container">\
@@ -3691,9 +3698,15 @@ function getCSS() {
   +'#scustom_container'
    +'{padding-top:10px !important;}'
   +'#skecil_container img, #sbesar_container img, #scustom_container img'
-   +'{margin:0 1px;border:1px solid transparent;}'
+   +'{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'
   +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'
    +'{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'#content_scustom_container .ofont'
+   +'{text-decoration:none;cursor:pointer;}'
+  +'#content_scustom_container .nothumb'
+   +'{padding:1px 3px;}'
+  +'#content_scustom_container .scustom-thumb'
+   +'{margin-left:2px;}'
   +'.ul_tabsmile'
    +'{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'
   +'.ul_tabsmile li'
@@ -4194,9 +4207,9 @@ Dom = {
   },
   Ev: function() {
     if (window.addEventListener) {
-      return function(el, type, fn) {
+      return function(el, type, fn, ph) {
         if(typeof(el)=='object')
-         this.g(el).addEventListener(type, function(e){fn(e);}, false);
+         this.g(el).addEventListener(type, function(e){fn(e);}, (isUndefined(ph) ? false : ph));
       };      
     }else if (window.attachEvent) {
       return function(el, type, fn) {
