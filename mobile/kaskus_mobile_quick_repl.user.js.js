@@ -3,8 +3,8 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        0.1.8
-// @dtversion      101125018
+// @version        0.2.0
+// @dtversion      101128020
 // @include        http://m.kaskus.us/*
 // @include        http://wap.kaskus.us/*
 // @include        http://opera.kaskus.us/*
@@ -14,24 +14,10 @@
 //
 /*
 //
-// v0.1.8 - 2010-11-25
-//  Fix CSS blockquote.rv2; pre
-// v0.1.7 - 2010-11-25
-//  Fix CSS blockquote.R1
-//  Add subdomain(wap)
-// v0.1.6 - 2010-11-24
-//  Fix CSS blockquote
-// v0.1.5 - 2010-11-24
-//  Fix add/clear msg
-// v0.1.4 - 2010-11-24
-//  Fix minor stat_qrcontent indicator
+// v0.2 - 2010-11-28
+//  Fix Hover-Preview
 //
-// v0.1.3 - 2010-11-23
-//  Fix minor CSS
-//
-// v0.1.2 - 2010-11-23
-//  Fix minor THREAD core
-//  Support multiple mobile devices subdomain
+// more: 
 //
 // v0.1.1 - 2010-11-23
 // Init
@@ -53,12 +39,23 @@ function init(){
   gvar.hash= '';
   gvar.B = getBtn();
   
+  // gvar initialized - 
+  gvar.hidePopupPicTimeout;
+  gvar.showPopupPicTimeout;
   gvar.settings = {
       msgheight: '90'     
   };  
+  gvar.prefs = {
+     'PopupPosition' : 'auto'
+    ,'DelayPopupPics' : '1'
+    ,'DelayPopupPicsTimeout' : '500'
+  };
   
   // inject CSS
   GM_addGlobalStyle( getCSS() );
+  // init load div layer for popup
+  GM_addGlobalStyle( loadStyle() );
+  loadPopup();
   
   // -- let's roll --
   start_Main();
@@ -97,7 +94,6 @@ function unescapeHtml(text){
    temp.removeChild(temp.firstChild);
    return cleanRet;
 }
-
 function getBtn(){
   return {
      btn_x: ''
@@ -142,10 +138,80 @@ function getTPL(){
     +'</div>' // main_cont    
    );
 }
-function getCSS(additional){  
+/**
+Snippet from FFixer.
+FFixer is Copyright (c) 2010, Vaughan Chandler
+*/
+function showPopupPic(e){
+   var t=e.target||e;
+   if(t.tagName!='A') { return; }
+   
+   var oldSrc, newSrc, profileLink;
+   if (t.tagName == 'A') { oldSrc = t.href + '#1'; }
+   
+   // mouseover on popup it self
+   if( oldSrc && oldSrc.indexOf('#1#1')!=-1 ) { return; }
+   
+   if (oldSrc || newSrc) {
+        show_alert(oldSrc)
+        if (!newSrc) {
+           //newSrc = oldSrc.replace(/_thumb\./, ".");
+           newSrc = oldSrc;
+        }
+         // need some condition ? later...        
+        window.clearTimeout(gvar.hidePopupPicTimeout);
+        Dom.remEv(t, 'mouseout', function(e){hidePopupPic(e)});
+        Dom.Ev(t, 'mouseout', function(e){hidePopupPic(e)});
+        if (t.parentNode.href) { profileLink = '#'; }
+                  
+        gvar.showPopupPicTimeout = window.setTimeout(function(){
+          $('#kf-popup-pic-image').innerHTML = '<a href="' + profileLink + '"><img id="" src="' + newSrc + '" alt="Kaskus QR-Mobile - Loading Pic" style="max-height:' + (window.innerHeight-35) + 'px;"/></a>';
+          $('#kf-popup-pic-div').style.display = 'block';
+          $('#kf-popup-pic-div').className = 'kpfPopup kf-popup-pic-div-' + (gvar.prefs['PopupPosition'] == 'auto' ? (e.pageX>document.body.clientWidth/2 ? 'left' : 'right') : gvar.prefs['PopupPosition']);
+        }, gvar.prefs['DelayPopupPics'] ? gvar.prefs['DelayPopupPicsTimeout'] : 0);
+   }
+}
+function loadPopup(){
+  var el = createEl('div', {id:'kf-popup-pic-div', 'class':'kpfPopup kf-popup-pic-div-'}, '<div id="kf-popup-pic-close" title="close">x</div><div id="kf-popup-pic-image"><span></span></div>');
+  try{
+    Dom.add(el, document.body);
+    Dom.Ev($('#kf-popup-pic-close'), 'click',  function(){ $('#kf-popup-pic-div').style.display='none'; });
+  }catch(x){
+    var kpDivAdder = setInterval(function() {
+        try {
+            Dom.add(el, document.body.lastChild.nextSibling);
+            Dom.Ev($('#kf-popup-pic-close'), 'click',  function(){ $('#kf-popup-pic-div').style.display='none'; });
+            if ($('#kf-popup-pic-div')) { clearInterval(kpDivAdder); }
+        } catch(x2) { clog('CSS', x);  }
+    }, 100);
+  }
+}
+function hidePopupPic(e) {
+    if (gvar.prefs['DelayPopupPics']) { window.clearTimeout(gvar.showPopupPicTimeout); }
+    if (!e.shiftKey && !e.ctrlKey && !e.altKey) {
+        gvar.hidePopupPicTimeout = window.setTimeout(function() { document.getElementById('kf-popup-pic-div').style.display = 'none'; }, 300);
+    }
+}
+function loadStyle(){  
+  return(
+     '\n\n'
+    +'.kpfPopup { padding:10px; background:#f6f6f6; border:3px double #666666; -moz-border-radius:5px; -webkit-border-radius:5px; -khtml-border-radius:5px; border-radius:5px; }'
+    +'.kpfPopupContainer { display:none; top:0; right:0; bottom:0; left:0; }'
+    +'#kf-popup-pic-div { display:none; background:white; border:1px solid #333; position:fixed !important; top:3px !important; padding:4px; min-width:130px; z-index:99999 !important; -moz-border-radius:3px; -webkit-border-radius:3px; -khtml-border-radius:3px; border-radius:3px; }'
+    +'.kf-popup-pic-div-left { left:3px !important; right:auto !important; -moz-box-shadow:5px 5px 5px rgba(0,0,0,0.6); -webkit-box-shadow:5px 5px 5px rgba(0,0,0,0.6); -khtml-box-shadow:5px 5px 5px rgba(0,0,0,0.6); box-shadow:5px 5px 5px rgba(0,0,0,0.6); }'
+    +'.kf-popup-pic-div-right { right:3px !important; left:auto !important; -moz-box-shadow:-5px 5px 5px rgba(0,0,0,0.6); -webkit-box-shadow:-5px 5px 5px rgba(0,0,0,0.6); -khtml-box-shadow:-5px 5px 5px rgba(0,0,0,0.6); box-shadow:-5px 5px 5px rgba(0,0,0,0.6); }'
+    +'#kf-popup-pic-div img { max-height: ' + (window.innerHeight-35) + 'px; }'
+    +'#kf-popup-pic-close { display:none; position:absolute; top:4px; right:10px; color:#ff9999; cursor:pointer; font-weight:bold; font-size:14px; }'
+    +'#kf-popup-pic-div:hover #kf-popup-pic-close { display:block; }'
+    +'#kf-popup-pic-close:hover { color:#aa6666; }'
+    +'#kf-popup-pic-image { text-align:center; }'
+    +'#kf-popup-pic-image img { color:#999999; display:block; }'
+  );
+}  // end loadStyle
+
+function getCSS(additional){
     return (''
 	+'.header1, .tracking {font-size:9pt;font-weight:bold !important;}'
-	+'.poster, .header1, .tracking {background:#294D8B url(http://'+'www.kaskus.us/newhomeimages/fr_bgjudule.jpg) repeat-x !important; color:#fff !important;}'
 	+'.tracking a{font-size:8pt !important; color:#DBD7DF !important;font-weight:normal !important;}'
 	+'.tracking a:hover{color:#000 !important;}'
     +'.poster{margin-bottom:2px;}'
@@ -207,10 +273,15 @@ function getCSS(additional){
     +'#submit_cont {text-align:center;}'
     +'.button {margin:2px 0;}'
     +'.spacer {height:2px;}'
+    +'.imgthumb:hover {background-color:#80FF80 !important;}'
+	
+	+'.imgthumb {line-height:20px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVaNQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENGX5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOudiXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXzRSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAUBEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVkHAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
+	+'.poster, .header1, .tracking {background:#294D8B url(http://'+'www.kaskus.us/newhomeimages/fr_bgjudule.jpg) repeat-x !important; color:#fff !important;}'
+
    );
 }
- 
- 
+
+
 // static routine
 function isDefined(x) { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
@@ -333,7 +404,15 @@ Dom= {
          this.g(el).attachEvent('on' + type, f);
        };
      }
-   }()
+   }(),
+   remEv: function() {
+    if (window.removeEventListener) {
+      return function(el, type, fn) {
+        if(typeof(el)=='object')
+         this.g(el).removeEventListener(type, function(e){fn(e);}, false);
+      };      
+    }
+  }()
 };
 
 GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a better routine
@@ -479,43 +558,55 @@ THREAD = {
      }
    }
   ,reFormat: function(){
-     
-	 
-     var posts = $('.//div[@class="post"]',null);
-	 var html, prahtml, pos, idClose, idHead, match, pra;
-	 for(var i=0; i<posts.snapshotLength; i++){
+    var posts = $('.//div[@class="post"]',null);
+	var html, prahtml, pos, idHead, match, pra;
+	for(var i=0; i<posts.snapshotLength; i++){
 	    html = posts.snapshotItem(i).innerHTML;
 	    // spoiler parser
-		idHead = '<font color="#0099cc">';
-		idClose = '</font>';
-		if(html.indexOf(idHead)!=-1){
-		  html = html.replace(/\"<\/font><br>/gim, function(str, $1) { return('<\/blockquote>'); });
-		  html = html.replace(/(?:<br>\n)*<font\scolor=\"\#0099cc\">([^\"]+)*\"(.+)/gi, function(str, $1, $2) { 
-		    return('<blockquote>'+($1 ? '<div class="posted_by">&#187;&nbsp;Posted by <b>'+$1+'<\/b></div>' :'') + ($2?$2.replace(/<br>/,''):'') ); 
-		  });
-		}
-		
-		if(posts.snapshotItem(i).innerHTML != html)
-		   posts.snapshotItem(i).innerHTML = html;
+	    idHead = '<font color="#0099cc">';
+	    if(html.indexOf(idHead)!=-1){
+	      html = html.replace(/\"<\/font><br>/gim, function(str, $1) { return('<\/blockquote>'); });
+	      html = html.replace(/(?:<br>\n)*<font\scolor=\"\#0099cc\">([^\"]+)*\"(.+)/gi, function(str, $1, $2) { 
+	        return('<blockquote>'+($1 ? '<div class="posted_by">&#187;&nbsp;Posted by <b>'+$1+'<\/b></div>' :'') + ($2?$2.replace(/<br>/,''):'') ); 
+	      });
+	    }
+	    // implement
+	    if(posts.snapshotItem(i).innerHTML != html)
+	       posts.snapshotItem(i).innerHTML = html;
+	       
+	    // code parser
+	    var parsecode = true;
+	    if(parsecode){
+	       html = html.replace(/\n/gm,'');
+	       html = html.replace(/\[code\](?:<br>)*/gim, function(str) { return('<div class="tcode">Code:</div><pre class="code">'); });
+	       html = html.replace(/(?:<br>|\n)*\[\/code\]/gim, function(str) { return('</pre>'); });		
+	       posts.snapshotItem(i).innerHTML = html;
+	       pra = $('.//pre[@class="code"]', posts.snapshotItem(i) );
+	       if(pra.snapshotLength > 0)
+	        for(var j=0; j<pra.snapshotLength; j++){
+	            prahtml = pra.snapshotItem(j).innerHTML;
+	    	    prahtml = prahtml.replace(/\n/gm, '');
+	            if(pra.snapshotItem(j).innerHTML != prahtml)
+	    	       pra.snapshotItem(j).innerHTML = prahtml;
+	        }
+	    }
+	
+	} // end for postbit
+	 
+	// event hover the ink to image
+	var link, links = $('//a[@target="_blank"]',null);
+	if(links.snapshotLength > 0){
+	    for(var i=0; i<links.snapshotLength; i++){
+	       link = links.snapshotItem(i);		   
+		   if( !link.href || (link.href && link.href!=link.innerHTML) ) continue;
+		   link.setAttribute('class','imgthumb');
+		   //link.innerHTML='<div class="imgthumb"></div> '+link.innerHTML;
 		   
-		// code parser
-		var parsecode = true;
-		if(parsecode){
-		   html = html.replace(/\[code\](?:<br>|\n)*/gim, function(str) { return('<div class="tcode">Code:</div><pre class="code">'); });
-		   html = html.replace(/(?:<br>|\n)*\[\/code\]/gim, function(str) { return('</pre>'); });		
-		   posts.snapshotItem(i).innerHTML = html;
-		   pra = $('.//pre[@class="code"]', posts.snapshotItem(i) );
-		   //show_alert(pra.snapshotLength)
-		   if(pra.snapshotLength > 0)
-		    for(var j=0; j<pra.snapshotLength; j++){
-		        prahtml = pra.snapshotItem(j).innerHTML;
-			    prahtml = prahtml.replace(/\n/gm, '');
-		        if(pra.snapshotItem(j).innerHTML != prahtml)
-			       pra.snapshotItem(j).innerHTML = prahtml;
-		    }
-		}
-	 }
-
+           Dom.Ev(link, 'mouseover', function(e) {
+             if (!e.shiftKey && !e.ctrlKey && !e.altKey) { showPopupPic(e); }
+           });
+	    }
+	}
    }
   ,eventQuote: function(){
      var quotes = getByXPath_containing('//a', false, 'quote');
