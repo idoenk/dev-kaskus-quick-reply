@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.6
-// @dtversion     101127306
-// @timestamp     1290819874797
+// @dtversion     101128306
+// @timestamp     1290926008519
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,7 +13,8 @@
 //
 // -!--latestupdate
 //   
-// v3.0.6 - 2010-11-27
+// v3.0.6 - 2010-11-28
+//   Add :( emote
 //   Fix failed load custom-smiley content on bad link last-img
 //   Improve string optimized on scustom content
 //   
@@ -58,7 +59,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1290819874797 // version.timestamp
+  timestamp: 1290926008519 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -3281,7 +3282,7 @@ Format will be valid like this:
 ,'51': [H+s+'1.gif', ':malu:', 'Malu']
 ,'52': [H+s+'14.gif', ':D', 'Big Grin']
 ,'91': [H+s+'15.gif', ':)', 'Smilie']
-
+,'92': [H+s+'06.gif', ':(', 'Frown']
 
 ,'53': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
 ,'54': [H+s + '26.gif', ':linux2:', 'linux2']
