@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.6
 // @dtversion     101128306
-// @timestamp     1290926008519
+// @timestamp     1291147457330
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,7 +13,8 @@
 //
 // -!--latestupdate
 //   
-// v3.0.6 - 2010-11-28
+// v3.0.6 - 2010-12-01
+//   Improve botgreet; add RTFM link
 //   Add :( emote
 //   Fix failed load custom-smiley content on bad link last-img
 //   Improve string optimized on scustom content
@@ -59,7 +60,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1290926008519 // version.timestamp
+  timestamp: 1291147457330 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -3125,14 +3126,27 @@ function getTPL_prompt_reCAPTCHA(){
     var c = [
 	  'Are you a robot? :o'
 	 ,'It is really a fact this captcha is annoying. :nohope:'
-	 ,'But we hate spammer just as much as you do, :)'	 
-	 ,'Get pain in the a*s? It estimate 50% you are legitimate as human, then. :)'
+	 ,'We hate spammer just as much as you do, :)'	 
+	 ,'Get pain in the <s>arse</s>? Then you might be 50% legitimate human for feel the pain. :D'
 	 ,'About 200 million CAPTCHAs are solved by humans around the world every day.'
-	 ,'You can do better than that, :D'
-	 ,'Fight Spam and Save Shakespeare, '
+	 ,'Fight Spam and Save Shakespeare.'
 	];
 	if( max>=(c.length-1) ) max = parseInt(c.length-1);
-	return c[Math.floor(Math.random() * (max - min + 1) + min)];
+	
+	var lastgreet = cK.g('last_greet');
+	if(!lastgreet || isNaN(lastgreet)){
+	  lastgreet = Math.floor(Math.random() * (max - min + 1) + min);
+	}else{
+	  var dice, done = false;
+	  while(!done){
+	    dice = Math.floor(Math.random() * (max - min + 1) + min);
+		done=(dice != lastgreet);
+	  }
+	  lastgreet = dice;
+	}
+	// avoid repetitive greet, store last index greet .
+	cK.s('last_greet', String(lastgreet), '/', 'www.kaskus.us');
+	return c[lastgreet];
   };
   var divInner = '\
    <div id="popup_container_precap" class="popup_block"> \
@@ -3144,14 +3158,14 @@ function getTPL_prompt_reCAPTCHA(){
      </tr><tr>\
      <td class="alt1">\
       <div id="recaptcha_container_header">\
-      <span class="qrsmallfont"><a title="stop spam, stop junk, read post#1 :hammer:" style="cursor:help;margin:0;float:left;">'+get_botgreet(0, 10)+'</a>\
-      <span style="float:right;">\
-	  <a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a>&nbsp;&#8212;&nbsp;\
-	  <a href="http://'+'kask.us/5954390" target="_blank" title="Info, Tips-Trick, RTFM">NFO</a>\
+      <span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0, 10)+'</span>\
+      <span style="float:right;padding:auto 0;">\
+	  <a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;\
+	  <a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>\
 	  </span>\
       </div>\
       <div class="spacer"></div>\
-      <div id="recaptcha_container">\
+      <div id="recaptcha_container" style="text-align:center;">\
        <div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>\
       </div>\
      </td></tr>\
@@ -4438,13 +4452,15 @@ cK={
     return unescape(D.substring(p[0]+A.length,p[1]));
   }
  ,d:function(n){
-    if(cK.g(n))
-      document.cookie=n+"=; expires=Thu, 01-Jan-70 00:00:01 GMT";
+    if(cK.g(n)) document.cookie=n+"=; expires=Thu, 01-Jan-70 00:00:01 GMT";
   }
+ ,s:function(n,v,B,C){
+    document.cookie=n+"="+v+(isDefined(B)?"; path="+B:"")+(isDefined(C)?"; host="+C:"");
+ }
  ,a:function(n,v,B,C){
     document.cookie=n+"="+(cK.g(n)||'')+v
        +(isDefined(B)?"; path="+B:"")
-       +(isDefined(C)?"; domain="+C:"")       
+       +(isDefined(C)?"; host="+C:"");
   }
 };
 DOMTimer={
