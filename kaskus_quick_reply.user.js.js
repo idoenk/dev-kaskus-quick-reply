@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.6
-// @dtversion     101128306
-// @timestamp     1291147457330
+// @dtversion     101203306
+// @timestamp     1291316187680
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,7 +13,8 @@
 //
 // -!--latestupdate
 //   
-// v3.0.6 - 2010-12-01
+// v3.0.6 - 2010-12-03
+//   Fix global $ collision with jQuery's (eg.KaskusSkinner; or is it just only a weirdness on Opera?)
 //   Improve botgreet; add RTFM link
 //   Add :( emote
 //   Fix failed load custom-smiley content on bad link last-img
@@ -33,16 +34,6 @@
 //   Fix failed disable textareaExpander
 //   Fix minor meta format (version;contributor)
 //
-// v3.0.3 - 2010-11-21
-//   Fix quote_parser, back to stone-age method, :hammer:
-//   Fix CSS3 (Chrome; Opera)
-//   Try focus on (pre-)Post preview mode
-//   Fix avoid Kaskus-Wide kill QR's button, replace <center> tag,
-//   Deprecated #mq_container, no longer used (since multi-quote w/ cookie based)
-//   Add & set tabindex on some elements
-//
-//
-//
 // -more: http://userscripts.org/topics/56051
 // 
 // version 0.1 - 2010-06-29
@@ -60,7 +51,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1291147457330 // version.timestamp
+  timestamp: 1291316187680 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -162,7 +153,7 @@ function init(){
   getSettings();
 
   if(gvar.settings.widethread)
-    Dom.add( createTextEl( getCSS_fixup() ), $('#css_fixups') );
+    Dom.add( createTextEl( getCSS_fixup() ), $D('#css_fixups') );
   
   //------------
   start_Main();
@@ -271,7 +262,7 @@ function start_Main(){
     }
     var Attr,child,el,nodes,par,hr,bufftxt = '';
     
-    if( !$('#quickreply') ){
+    if( !$D('#quickreply') ){
        el = createEl('div',{id:'quickreply'},getTPL() );
        nodes = getByXPath_containing('//script', false, 'mqlimit')[0];
        nodes.parentNode.insertBefore(el, nodes.nextSibling);       
@@ -281,7 +272,7 @@ function start_Main(){
           init_buildcapcay();
        }
     }
-    $('#qr_maincontainer').innerHTML = getTPL_main();
+    $D('#qr_maincontainer').innerHTML = getTPL_main();
     
     // cuma untuk fresh load
     if(!gvar.restart) {
@@ -327,7 +318,7 @@ function start_Main(){
        re_event_vbEditor();
 
        if(gvar.settings.autoload_smiley[0]=='1')
-         create_smile_tab( $('#vB_Editor_001_cmd_insertsmile') );
+         create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
        
        if(gvar.tmp_text){
          if(gvar.tmp_text!=gvar.silahken){
@@ -349,12 +340,12 @@ function start_Main(){
        if(gvar.user.isDonatur) 
          Dom.remove('qrform'); // destroy original QR
          
-       SimulateMouse( $('#remote_scustom_container'), 'click', true);
+       SimulateMouse( $D('#remote_scustom_container'), 'click', true);
 
     }, 50);
        
     if(gvar.__DEBUG__){
-     $('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
+     $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
     }
 }
@@ -365,7 +356,7 @@ function start_Main(){
 function do_click_qr(e){
   e = e.target || e;
   if(gvar.settings.dynamic){ // is dynamic QR enabled
-    var qr = $('#quickreply');
+    var qr = $D('#quickreply');
     if(!qr) return;
     if(e){
       var parent_postbit = find_parent(e);
@@ -373,17 +364,17 @@ function do_click_qr(e){
           Dom.add(qr,parent_postbit);
     }
   }
-  $('#collapseobj_quickreply').setAttribute('style','display:;');
+  $D('#collapseobj_quickreply').setAttribute('style','display:;');
   var snapTo = function(){
-    if( !$('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
-    if( $('#quoted_notice').style.display!='none' && $('#current_fetch_post') ){ // theres a fetching progres
+    if( !$D('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
+    if( $D('#quoted_notice').style.display!='none' && $D('#current_fetch_post') ){ // theres a fetching progres
             //clog('theres a fetch progres, txta still readonly')
        vB_textarea.readonly();
        return;
     }    
     toogle_quickreply(true); // show it again to save state and load capcay if any    
     vB_textarea.init();
-    var elset = $('#settings_cont');
+    var elset = $D('#settings_cont');
     if(elset && elset.innerHTML!='')
        toggle_setting();
     if(vB_textarea.content==gvar.silahken)
@@ -434,7 +425,7 @@ function buildRate(){
 function additional_opt_parser(text){   
    var pos = [text.indexOf('collapseobj_newpost_options'), text.lastIndexOf('</select')];
    var rets = text.substring(pos[0], pos[1]);
-   var par_adt_opt = $('#additional_options');
+   var par_adt_opt = $D('#additional_options');
    pos[0] = rets.indexOf('<select');
    rets = rets.substring(pos[0], pos[1]);
    var selects = rets.split('</select');
@@ -453,11 +444,11 @@ function additional_opt_parser(text){
 };
 // this func check wheter the additional func has been loaded or not.
 function additional_options_notloaded(){
-   var adt_opt = $('#additional_options');
+   var adt_opt = $D('#additional_options');
    if(!adt_opt){
-     if( !$('#submit_container') ) return;
+     if( !$D('#submit_container') ) return;
      adt_opt = createEl('div',{id:'additional_options'})
-     Dom.add(adt_opt, $('#submit_container'));
+     Dom.add(adt_opt, $D('#submit_container'));
    }
    return (adt_opt && adt_opt.innerHTML=='');
 }
@@ -466,18 +457,18 @@ function additional_options_notloaded(){
 function capcay_parser(page){
   var match = /id=\"hash\".*value=\"(\w+)/.exec(page);
   if(match)    
-    $('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
+    $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
 }
 
 function capcay_notloaded(){  
-  return ( $('#imgcapcay') && !Dom.g('hash', $('#imgcapcay') ) );
+  return ( $D('#imgcapcay') && !Dom.g('hash', $D('#imgcapcay') ) );
 }
 function init_buildcapcay(){
     create_tplcapcay();
     //ajax_buildcapcay(); 
 }
 function create_tplcapcay(){
-    $('#capcay_container').innerHTML = ''    
+    $D('#capcay_container').innerHTML = ''    
     +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'
     +'<div id="imgcapcay"><div class="g_notice normal_notice" style="display:block;font-size:9px;text-align:center;">[capcay-space]</div></div>\n'    
     +'<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="showRecaptcha(\'recaptcha_container\');" />' // fake button create
@@ -490,7 +481,7 @@ function create_tplcapcay(){
 // this will only fetch additional opt only
 function ajax_buildcapcay(reply_html){
   // initialize
-  if( $('#rate_thread')) $('#rate_thread').style.display='';
+  if( $D('#rate_thread')) $D('#rate_thread').style.display='';
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
     // prep xhr request  
     GM_XHR.uri = gvar.newreply;
@@ -512,9 +503,9 @@ function ajax_buildcapcay(reply_html){
 function build_additional_opt(html){
     additional_opt_parser(html);
     var rate = (html.indexOf('a rating')!=-1 ? buildRate() : false);
-    if($('#rate_thread')){
-      $('#rate_thread').innerHTML='';
-      Dom.add(rate ? rate : createTextEl('Thread Rated'), $('#rate_thread'));
+    if($D('#rate_thread')){
+      $D('#rate_thread').innerHTML='';
+      Dom.add(rate ? rate : createTextEl('Thread Rated'), $D('#rate_thread'));
     }
 }
 
@@ -524,7 +515,7 @@ function ajax_additional_opt(reply_html){
   // not donatur | already do this ? get out
   if(!gvar.user.isDonatur || !additional_options_notloaded() ) return;
   // initialize
-  if($('#rate_thread')) $('#rate_thread').style.display='';
+  if($D('#rate_thread')) $D('#rate_thread').style.display='';
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
     GM_XHR.uri = gvar.newreply;
     GM_XHR.cached = true;    
@@ -549,34 +540,34 @@ function qr_preview(reply_html){
   // initialize
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
     var prep = prep_preview(); // [nxDo, uriact]
-    $('#qr_do').setAttribute('value', prep[0]);
+    $D('#qr_do').setAttribute('value', prep[0]);
      // prep xhr request
     if(gvar.__DEBUG__) DOMTimer.start();
     var spost = buildQuery();
     if(spost===false) {
-      SimulateMouse($('#imghideshow'), 'click', true);
+      SimulateMouse($D('#imghideshow'), 'click', true);
       return false;
     }
 	if(gvar.__DEBUG__) {
 	    clog('buildQuery elapsed='+DOMTimer.get());
         DOMTimer.start();
 	}
-	$('#preview_presubmit').value = 'working...';
-	$('#preview_presubmit').focus();
+	$D('#preview_presubmit').value = 'working...';
+	$D('#preview_presubmit').focus();
     GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
     GM_XHR.request(spost.toString(),'post', qr_preview);    
   } else {
-    if( !reply_html || !$('#preview_content') ) return;
+    if( !reply_html || !$D('#preview_content') ) return;
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
-    if($('#preview_content')) $('#preview_content').innerHTML = rets;
+    if($D('#preview_content')) $D('#preview_content').innerHTML = rets;
     if(gvar.__DEBUG__) {
         clog('previewResponse elapsed='+DOMTimer.get());
 	}
-	if($('#preview_presubmit')){
-	   $('#preview_presubmit').removeAttribute('disabled');
-	   $('#preview_presubmit').value = (gvar.user.isDonatur ? '':'pre-') + 'Post';
+	if($D('#preview_presubmit')){
+	   $D('#preview_presubmit').removeAttribute('disabled');
+	   $D('#preview_presubmit').value = (gvar.user.isDonatur ? '':'pre-') + 'Post';
 	}
   }
 }
@@ -614,12 +605,12 @@ function template_wrapper(txt){
       tmsg += gen_Char('\n', margin_sigi, ' ') + gvar.settings.userLayout.signature;
    }
    if(Dom.g(gvar.id_textarea) && tmsg!=retTx)
-     if(!$('#hideshow') || ($('#hideshow') && $('#hideshow').style.display=='none') ) vB_textarea.readonly();
+     if(!$D('#hideshow') || ($D('#hideshow') && $D('#hideshow').style.display=='none') ) vB_textarea.readonly();
    return tmsg;
 };
 
 function buildQuery(){
-  var hidden = getTag( 'input', $('#submit_container') );
+  var hidden = getTag( 'input', $D('#submit_container') );
   var el, q='';
   for(var h in hidden)
     if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
@@ -653,36 +644,36 @@ function toogleLayerDiv(tgt) {
 function loadLayer_reCaptcha(){
     
     gvar.sITryFocusOnLoad = window.setInterval(function() {
-      if ($('#recaptcha_response_field')) {
+      if ($D('#recaptcha_response_field')) {
 	    clearInterval(gvar.sITryFocusOnLoad);
-		Dom.Ev( $('#recaptcha_response_field'), 'keydown', function(e){
+		Dom.Ev( $D('#recaptcha_response_field'), 'keydown', function(e){
             var C = (!e ? window.event : e );
             if(C.keyCode==13){ // mijit enter
                 C = do_an_e(C);
-                SimulateMouse($('#recaptcha_submit'), 'click', true);
+                SimulateMouse($D('#recaptcha_submit'), 'click', true);
             }
         });
         // order tabindex
 		var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
-		  if( $('#'+reCp_field[i]) ) $('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '')
+		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '')
 		
-        $('#button_preview').style.display = ''; 
-	    $('#recaptcha_response_field').focus();
+        $D('#button_preview').style.display = ''; 
+	    $D('#recaptcha_response_field').focus();
       }
     }, 200);
     
     var is_capcay_filled = function(tgt){
-        if($('#recaptcha_response_field') && !$('#recaptcha_response_field').value){
+        if($D('#recaptcha_response_field') && !$D('#recaptcha_response_field').value){
           alert('Belum Isi Image Verification');
           try{if(typeof(tgt)=='object') tgt.focus()}catch(e){}
           return false;
         }else{
-          return ($('#recaptcha_response_field').value);
+          return ($D('#recaptcha_response_field').value);
         }
     }
       
-    if($('#hideshow'))
+    if($D('#hideshow'))
       closeLayerBox('hideshow');
     
     var Attr,el;
@@ -694,16 +685,16 @@ function loadLayer_reCaptcha(){
 	// this container must inside form
     Attr = {id:'hideshow_recaptcha',style:'display:none;'};
     el = createEl('div', Attr, getTPL_prompt_reCAPTCHA() );
-    Dom.add(el, $('#vbform') );
+    Dom.add(el, $D('#vbform') );
     
     // event close button
-    Dom.Ev($("#imghideshow_precap"), 'click', function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
+    Dom.Ev($D("#imghideshow_precap"), 'click', function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
 	// cancel
-    Dom.Ev($("#recaptcha_cancel"), 'click', function(){ SimulateMouse($("#imghideshow_precap"), 'click', true); });
+    Dom.Ev($D("#recaptcha_cancel"), 'click', function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
 
     // submit recaptcha
-    Dom.Ev($('#recaptcha_submit'), 'click', function(e){
-        if( !is_capcay_filled($('#recaptcha_response_field')) ){
+    Dom.Ev($D('#recaptcha_submit'), 'click', function(e){
+        if( !is_capcay_filled($D('#recaptcha_response_field')) ){
           e.preventDefault;
           return false;
         }
@@ -711,16 +702,16 @@ function loadLayer_reCaptcha(){
         e.value='posting...';      
         e.setAttribute('disabled','disabled');
         window.setTimeout(function() {
-            SimulateMouse($('#qr_submit'), 'click', true); 
+            SimulateMouse($D('#qr_submit'), 'click', true); 
         }, 200);
     } );
     
     // calibrate width/position container
-    $('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
-    $('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
+    $D('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
+    $D('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
 
     window.setTimeout(function() {
-        SimulateMouse($('#hidrecap_btn'), 'click', true);
+        SimulateMouse($D('#hidrecap_btn'), 'click', true);
     }, 100);
 
 
@@ -733,20 +724,20 @@ function loadLayer(){
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
     
     // event close button
-    Dom.Ev($("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
+    Dom.Ev($D("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
     
     // calibrate width container
-    $('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
+    $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
     	  
     // cancel preview
-    Dom.Ev($('#preview_cancel'), 'click', function(){ SimulateMouse($('#imghideshow'), 'click', true); } );
+    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
 
 
     //submit from preview
-    if($('#preview_presubmit'))
-      Dom.Ev($('#preview_presubmit'), 'click', function(e){
+    if($D('#preview_presubmit'))
+      Dom.Ev($D('#preview_presubmit'), 'click', function(e){
          if( !gvar.user.isDonatur ){
-		   if($('#preview_loading')) return;		   
+		   if($D('#preview_loading')) return;		   
            loadLayer_reCaptcha();
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
@@ -755,7 +746,7 @@ function loadLayer(){
            e.value='posting...';
            e.setAttribute('disabled','disabled');
            window.setTimeout(function() {
-             SimulateMouse($('#qr_submit'), 'click', true); 
+             SimulateMouse($D('#qr_submit'), 'click', true); 
            }, 200);
          }
       });
@@ -771,7 +762,7 @@ function scustom_parser(msg){
     pmsg = do_parse_scustom(msg);
     Dom.g(gvar.id_textarea).value=pmsg;
     if(vB_textarea.Obj && pmsg!=msg)
-      if(!$('#hideshow') || ($('#hideshow') && $('#hideshow').style.display=='none') ) vB_textarea.readonly();
+      if(!$D('#hideshow') || ($D('#hideshow') && $D('#hideshow').style.display=='none') ) vB_textarea.readonly();
     msg=pmsg;
   }
   return msg;
@@ -791,14 +782,14 @@ function initEventTpl(){
     }
     vB_textarea.set(gvar.tmp_text ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
     
-    var dvacs = $('#dv_accessible');
+    var dvacs = $D('#dv_accessible');
     if(dvacs){
       dvacs.style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
       dvacs.style.display='';
       Dom.Ev(dvacs, 'click', function(){
         var etxta = Dom.g(gvar.id_textarea);
         if(etxta.getAttribute('readonly') || etxta.getAttribute('disabled')=='disabled'){
-            var cont=$('#settings_cont');
+            var cont=$D('#settings_cont');
           if(!vB_textarea.Obj) vB_textarea.init();
           if(cont&&cont.innerHTML!=''){ // gonna close it
             toggle_setting();
@@ -815,22 +806,22 @@ function initEventTpl(){
     }
     Dom.Ev(Dom.g(gvar.id_textarea), 'keydown', function(e) { return is_keydown_pressed(e);  });    
     
-    Dom.Ev($('#atitle'), 'click', function() {
-      $('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
-      var disp=$('#titlecont');
+    Dom.Ev($D('#atitle'), 'click', function() {
+      $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+      var disp=$D('#titlecont');
       disp.style.display=(disp.style.display=='none' ? 'block':'none');
-      $('#atitle').innerHTML = '['+(disp.style.display=='none'?'+':'-')+']';
-      var mt=$('#controller_wraper').style.marginTop.replace('px','');
+      $D('#atitle').innerHTML = '['+(disp.style.display=='none'?'+':'-')+']';
+      var mt=$D('#controller_wraper').style.marginTop.replace('px','');
       if(disp.style.display!='none')
         window.setTimeout(function() {
-          $('#controller_wraper').style.marginTop=(parseInt(mt)-20)+'px';
-          try{$('#input_title').focus();}catch(e){};
+          $D('#controller_wraper').style.marginTop=(parseInt(mt)-20)+'px';
+          try{$D('#input_title').focus();}catch(e){};
         }, 100);
       else
         window.setTimeout(function() {
-          $('#controller_wraper').style.marginTop=(parseInt(mt)+20)+'px';
+          $D('#controller_wraper').style.marginTop=(parseInt(mt)+20)+'px';
           try{Dom.g(gvar.id_textarea).focus();}catch(e){};
-          $('#input_title').value='';
+          $D('#input_title').value='';
         }, 100);
     });
 
@@ -840,28 +831,28 @@ function initEventTpl(){
     // ====---==No-Repost-Event-Gan==---===
     if(!gvar.restart){
     
-      Dom.Ev($('#atoggle'), 'click', function(e){toogle_quickreply(); e.preventDefault();});      
+      Dom.Ev($D('#atoggle'), 'click', function(e){toogle_quickreply(); e.preventDefault();});      
       
-      Dom.Ev($('#chk_fixups'), 'click', function(e) {
+      Dom.Ev($D('#chk_fixups'), 'click', function(e) {
         e=e.target||e;
         var chk=e.getAttribute('checked');        
         if(chk){
-            $('#css_fixups').innerHTML='';
+            $D('#css_fixups').innerHTML='';
             e.removeAttribute('checked')
           } else{
-            Dom.add( createTextEl( getCSS_fixup() ), $('#css_fixups') );
+            Dom.add( createTextEl( getCSS_fixup() ), $D('#css_fixups') );
             e.setAttribute('checked','checked');
           }
           setValue('KEY_SAVE_WIDE_THREAD', (chk ? 0:1));        
         controler_resizer(); // resize elements width
       });
       
-      Dom.Ev($('#vbform'), 'submit', function(e){
+      Dom.Ev($D('#vbform'), 'submit', function(e){
         var uriact,nxDo;            
-        if($('#clicker').value!='Go Advanced'){
+        if($D('#clicker').value!='Go Advanced'){
           // post quickreply
           
-          var hi=($('#recaptcha_response_field') ? $('#recaptcha_response_field') : null);
+          var hi=($D('#recaptcha_response_field') ? $D('#recaptcha_response_field') : null);
           if(hi && hi.value==''){
             if(hi.getAttribute('disabled')=='disabled') 
               e.preventDefault(); // return false;
@@ -875,11 +866,11 @@ function initEventTpl(){
         uriact = prp[1];
         var msg=template_wrapper();
         if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
-        $('#vbform').setAttribute('action', uriact);
-        $('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
+        $D('#vbform').setAttribute('action', uriact);
+        $D('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
       });
-      Dom.Ev($('#qr_advanced'), 'click', function(){$('#clicker').setAttribute('value','Go Advanced');});
-      Dom.Ev($('#qr_prepost_submit'), 'click', function(e){
+      Dom.Ev($D('#qr_advanced'), 'click', function(){$D('#clicker').setAttribute('value','Go Advanced');});
+      Dom.Ev($D('#qr_prepost_submit'), 'click', function(e){
          if( !gvar.user.isDonatur ){
            if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
 		   e=e.target||e;
@@ -897,13 +888,13 @@ function initEventTpl(){
            e.value='posting...';
            e.setAttribute('disabled','disabled');
            window.setTimeout(function() {
-             SimulateMouse($('#qr_submit'), 'click', true); 
+             SimulateMouse($D('#qr_submit'), 'click', true); 
            }, 200);
          }
       });
       // end of vb_Textarea submit Event ------
     
-      Dom.Ev($('#qr_preview_ajx'), 'click', function(e){
+      Dom.Ev($D('#qr_preview_ajx'), 'click', function(e){
         if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
         e=e.target||e;
         var msg = trimStr(Dom.g(gvar.id_textarea).value);
@@ -912,7 +903,7 @@ function initEventTpl(){
           alert(gvar.tooshort);
           e.preventDefault(); return false;
         }
-        if(!$('#hideshow')){
+        if(!$D('#hideshow')){
           loadLayer(); 
           toogleLayerDiv('hideshow');
         }else{
@@ -931,7 +922,7 @@ function initEventTpl(){
       var ck_mquote = cK.g('vbulletin_multiquote');
       chk_newval(ck_mquote ? ck_mquote:'');
       
-      var nodes = $('//img[contains(@id,"mq_")]');
+      var nodes = $D('//img[contains(@id,"mq_")]');
       if(nodes){
         var colorize_td = function(t,td){
           if( /multiquote_on\..+/.test(basename(t)) )
@@ -962,18 +953,18 @@ function initEventTpl(){
 
 function controler_resizer(){
    window.setTimeout(function() {
-     var obj = $('#input_title');
+     var obj = $D('#input_title');
      if(obj){
        obj.style.display='none';
        obj.style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
        obj.style.display='block';
      }
-     obj = $('#dv_accessible');
-     if(obj && $('#dv_accessible').style.display!='none'){
+     obj = $D('#dv_accessible');
+     if(obj && $D('#dv_accessible').style.display!='none'){
       obj.style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
      }
    }, 100);
-   var obj = $('#controller_wraper');
+   var obj = $D('#controller_wraper');
    if(obj) obj.style.width=(Dom.g(gvar.id_textarea).clientWidth)+'px';
 }
 
@@ -996,12 +987,12 @@ function is_keydown_pressed_ondocument(e){
   var A = C.keyCode ? C.keyCode : C.charCode;
   
   // without pressedCSA or just Shift | there's no hideshow layer ? forget it
-  if( (pressedCSA=='0,0,0' || pressedCSA=='0,1,0') && !$('#hideshow') )
+  if( (pressedCSA=='0,0,0' || pressedCSA=='0,1,0') && !$D('#hideshow') )
     return;
 
-  if($('#hideshow') && A==27){
+  if($D('#hideshow') && A==27){
     closeLayerBox('hideshow');
-	if($('#hideshow_recaptcha')) closeLayerBox('hideshow_recaptcha');
+	if($D('#hideshow_recaptcha')) closeLayerBox('hideshow_recaptcha');
 	return;
   }
   
@@ -1022,7 +1013,7 @@ function is_keydown_pressed_ondocument(e){
     break;
     case CSA_tasks.fetchpost:
       if(A==81) { // keyCode for Q
-        SimulateMouse($('#quote_now'), 'click', true);
+        SimulateMouse($D('#quote_now'), 'click', true);
         scrollto_QR(C);
         return false;
       }
@@ -1030,8 +1021,8 @@ function is_keydown_pressed_ondocument(e){
     case CSA_tasks.deselectquote:
       if(A==81) { // keyCode for Q
         window.setTimeout(function() { 
-         if($('#quoted_notice').style.display!='none')
-           SimulateMouse($('#deselect_them'), 'click', true); 
+         if($D('#quoted_notice').style.display!='none')
+           SimulateMouse($D('#deselect_them'), 'click', true); 
         }, 100);
         return false;
       }
@@ -1090,11 +1081,11 @@ function is_keydown_pressed(e){
    }else
    if(C.keyCode==9){ // mijit tab
      C = do_an_e(C);
-     if($('#recaptcha_response_field'))
-       window.setTimeout(function() { try{$('#recaptcha_response_field').focus()}catch(e){}; }, 150);
+     if($D('#recaptcha_response_field'))
+       window.setTimeout(function() { try{$D('#recaptcha_response_field').focus()}catch(e){}; }, 150);
      else
-       $('#qr_prepost_submit').focus();     
-       //$('#qr_submit').focus();     
+       $D('#qr_prepost_submit').focus();     
+       //$D('#qr_submit').focus();     
    }else
    // end keyCode==9 
    
@@ -1109,11 +1100,11 @@ function is_keydown_pressed(e){
 }
 
 function insert_custom_control(){  
-  if(!$('#customed_control')) return;
+  if(!$D('#customed_control')) return;
   
   var Attr,div1,el,idx;
     div1 = createEl('div',{'class':'customed_addcontroller'});    
-    Dom.add(div1,$('#customed_control'));
+    Dom.add(div1,$D('#customed_control'));
     idx=7;
     // tombol youtube
     if(gvar.settings.hidecontroll[idx] != '1'){
@@ -1122,7 +1113,7 @@ function insert_custom_control(){
            };
       el = createEl('img',Attr);
       Dom.Ev(el, 'click', function(e){ return do_btncustom(e); });
-      Dom.add(el,$('#vB_Editor_001_cmd_insertyoutube'));
+      Dom.add(el,$D('#vB_Editor_001_cmd_insertyoutube'));
     }
     idx=11;
     // tombol spoiler
@@ -1160,7 +1151,7 @@ function insert_custom_control(){
 // create event controler on vbEditor & settings
 function re_event_vbEditor(){
   // event reset / clear textarrea
-  Dom.Ev($('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
+  Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
   
   // event textarea autogrowth
   if(gvar.settings.textareaExpander[0])
@@ -1171,8 +1162,8 @@ function re_event_vbEditor(){
   Dom.add(el,document.body);
        
   // event common button controller
-  if($('#vB_Editor_001')) {
-   var imgs = $('#vB_Editor_001').getElementsByTagName('img');
+  if($D('#vB_Editor_001')) {
+   var imgs = $D('#vB_Editor_001').getElementsByTagName('img');
    for(var i in imgs){
     var el = imgs[i];
     var  alt = el.alt;
@@ -1204,16 +1195,16 @@ function re_event_vbEditor(){
   {
        //clog('in create_popup_color');
   var el = create_popup_color();
-  var par = $('#vB_Editor_001_popup_forecolor');
+  var par = $D('#vB_Editor_001_popup_forecolor');
   if(par) Dom.add(el,par);
   
-  el = $('#pick_kolor');
+  el = $D('#pick_kolor');
   if(el)
    Dom.Ev(el, 'click', function(e){
     clickpick(e, 'vB_Editor_001_popup_forecolor_menu');
    });
 
-  el = $('#vB_Editor_001_color_out');
+  el = $D('#vB_Editor_001_color_out');
   if(el)
    Dom.Ev(el, 'click', function(){
      var etitle = gvar.settings.lastused.color;
@@ -1221,7 +1212,7 @@ function re_event_vbEditor(){
        do_insertTag('color',etitle);
        return false;
      }
-     SimulateMouse($('#pick_kolor'), 'click', true);
+     SimulateMouse($D('#pick_kolor'), 'click', true);
    });
   }
 
@@ -1229,16 +1220,16 @@ function re_event_vbEditor(){
   {
        //clog('in create_popup_font');
   el = create_popup_font();
-  par = $('#vB_Editor_001_popup_fontname');
+  par = $D('#vB_Editor_001_popup_fontname');
   if(par) Dom.add(el,par);
   
-  el = $('#pick_font');
+  el = $D('#pick_font');
   if(el)
    Dom.Ev(el, 'click', function(e){ 
      clickpick(e,'vB_Editor_001_popup_fontname_menu');
    });
    
-  el = $('#vB_Editor_001_font_parentout');
+  el = $D('#vB_Editor_001_font_parentout');
   if(el)
    Dom.Ev(el, 'click', function(e){
      var etitle = gvar.settings.lastused.font;
@@ -1246,7 +1237,7 @@ function re_event_vbEditor(){
        do_insertTag('font',etitle);
        return false;
      }
-     SimulateMouse($('#pick_font'), 'click', true);     
+     SimulateMouse($D('#pick_font'), 'click', true);     
    });  
   }
   
@@ -1254,16 +1245,16 @@ function re_event_vbEditor(){
   {
        //clog('in create_popup_size');
   el = create_popup_size();
-  par = $('#vB_Editor_001_popup_fontsize');
+  par = $D('#vB_Editor_001_popup_fontsize');
   if(par && el) Dom.add(el,par);
   
-  el = $('#pick_size');
+  el = $D('#pick_size');
   if(el)
    Dom.Ev(el, 'click', function(e){
      clickpick(e,'vB_Editor_001_popup_size_menu');
    });
    
-  el = $('#vB_Editor_001_size_parentout');
+  el = $D('#vB_Editor_001_size_parentout');
   if(el)
    Dom.Ev(el, 'click', function(e){
      var etitle = gvar.settings.lastused.size;
@@ -1271,22 +1262,22 @@ function re_event_vbEditor(){
        do_insertTag('size',etitle);
        return false;
      }
-     SimulateMouse($('#pick_size'), 'click', true);     
+     SimulateMouse($D('#pick_size'), 'click', true);     
    });  
   } 
   
   // event buat smile
   {
         //clog('event smiley');
-   par = $('#vB_Editor_001_cmd_insertsmile');
+   par = $D('#vB_Editor_001_cmd_insertsmile');
    
    if(par) {
      Dom.Ev(par, 'click', function(e){ create_smile_tab(e); });
      Dom.Ev(par, 'mouseout', function(e){
         e.target||e;
         window.setTimeout(function() {
-          obj = $('#vB_Editor_001_cmd_insertsmile_img');
-          if($('#smile_cont').style.display!=''){
+          obj = $D('#vB_Editor_001_cmd_insertsmile_img');
+          if($D('#smile_cont').style.display!=''){
             obj.style.backgroundColor='transparent';
             obj.style.border='1px solid transparent';
           }
@@ -1295,8 +1286,8 @@ function re_event_vbEditor(){
      Dom.Ev(par, 'mouseover', function(e){
         e.target||e;
         window.setTimeout(function() {
-          obj = $('#vB_Editor_001_cmd_insertsmile_img');
-          if($('#smile_cont').style.display!=''){
+          obj = $D('#vB_Editor_001_cmd_insertsmile_img');
+          if($D('#smile_cont').style.display!=''){
             obj.style.backgroundColor='#B0DAF2';
             obj.style.border='1px solid #2085C1';
           }
@@ -1306,7 +1297,7 @@ function re_event_vbEditor(){
   }
   
   // event buat settings
-  Dom.Ev( $('#settings_btn'), 'click', function(){ toggle_setting() });
+  Dom.Ev( $D('#settings_btn'), 'click', function(){ toggle_setting() });
 
 }
 // end re_event_vbEditor
@@ -1353,7 +1344,7 @@ function save_setting(e){
         if(par) value.push( par.checked ? '1' : '0' );  
       }
       value = value.toString();
-      par = $('#misc_hotkey_char');
+      par = $D('#misc_hotkey_char');
       if(par) Chr=par.value.toUpperCase();
       if( Chr=='Q' && (reserved_CSA[0]==value || reserved_CSA[1]==value) ){ // bentrok
         var koreksi = confirm('Hotkey is already reserved:\n [Alt + Q] : Fetch Quoted Post\n [Ctrl + Alt + Q] : Deselect Quote\n\nDo you want to make a correction?');
@@ -1368,7 +1359,7 @@ function save_setting(e){
       }
     }
     // saving serial controller
-    par = getTag('input',$('#td_setting_control'));
+    par = getTag('input',$D('#td_setting_control'));
     if(par){
       value = [];
       for(var i in par)     
@@ -1391,17 +1382,17 @@ function save_setting(e){
     }
     
     // saving update interval
-    if( $('#misc_updates_interval') ){
-      value = Math.abs($('#misc_updates_interval').value);
+    if( $D('#misc_updates_interval') ){
+      value = Math.abs($D('#misc_updates_interval').value);
       value = (isNaN(value)||value <= 0 ? 1 : (value > 99 ? 99 : value) );
       setValue(KS+'UPDATES_INTERVAL', value.toString());
     }
     
     // saving autoexpand
     value = [];
-    value.push($('#misc_autoexpand_0').checked ? '1':'0');
+    value.push($D('#misc_autoexpand_0').checked ? '1':'0');
     for(var i=1;i<3;i++){
-      par = $('#misc_autoexpand_'+i);
+      par = $D('#misc_autoexpand_'+i);
       if(par){
         var tVal = parseInt( trimStr(par.value) );
         if(isNaN(tVal))
@@ -1420,11 +1411,11 @@ function save_setting(e){
     // saving autoshow_smiley
     value = [];
     misc = ['kecil','besar','custom'];
-    par = $('#misc_autoshow_smile');
+    par = $D('#misc_autoshow_smile');
     if(par) value.push(par.checked ? '1':'0');
     for(var id in misc){
       if(!isString(misc[id])) continue;
-      par = $('#misc_autoshow_smile'+'_'+misc[id]);
+      par = $D('#misc_autoshow_smile'+'_'+misc[id]);
       if(par && par.checked){
         value.push(misc[id]);
         break;
@@ -1451,20 +1442,20 @@ function save_setting(e){
     
     // destroy all qr, on !restart
     if(!gvar.restart)
-      Dom.remove($('#quickreply'));
+      Dom.remove($D('#quickreply'));
 
     // -- Restart Main with new settings--
-    if($('#qr_maincontainer'))
-      $('#qr_maincontainer').innerHTML = '';
+    if($D('#qr_maincontainer'))
+      $D('#qr_maincontainer').innerHTML = '';
 
     start_Main();
     // --
 }; // end save_setting() 
 function toggle_setting(){
-    var disp, cont = $('#settings_cont');
+    var disp, cont = $D('#settings_cont');
     if(!cont) return;
     var updown = function(show){
-      var small = $('#updown_setting');
+      var small = $D('#updown_setting');
       small.innerHTML = HtmlUnicodeDecode(show ? '&#9650;' : '&#9660;');
     }
     if(cont && cont.innerHTML!='') {
@@ -1473,20 +1464,20 @@ function toggle_setting(){
     }else{
       cont.innerHTML=getTPL_Settings();
       disp=true;
-      Dom.Ev( $('#save_settings'), 'click', function(e){ e=e.target||e; save_setting(e)} );
-      Dom.Ev( $('#cancel_settings'), 'click', function(){ toggle_setting()} );
-      Dom.Ev( $('#reset_default'), 'click', function(){ reset_setting() });
+      Dom.Ev( $D('#save_settings'), 'click', function(e){ e=e.target||e; save_setting(e)} );
+      Dom.Ev( $D('#cancel_settings'), 'click', function(){ toggle_setting()} );
+      Dom.Ev( $D('#reset_default'), 'click', function(){ reset_setting() });
       if(!gvar.isOpera){
-        Dom.Ev( $('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
-        Dom.Ev( $('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
-        Dom.Ev( $('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
+        Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
+        Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
+        Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
       }
-      Dom.Ev( $('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
-      Dom.Ev( $('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
+      Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
+      Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
       if(!gvar.noCrossDomain) // unavailable on Chrome|Opera T_T
-       Dom.Ev( $('#chk_upd_now'), 'click',  function(e){
-        if($('#fetch_update')) return; // there is a fetch update in progress		
-		if($('#upd_cnt')) Dom.remove($('#upd_cnt'));
+       Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
+        if($D('#fetch_update')) return; // there is a fetch update in progress		
+		if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
         Updater.notify_progres('chk_upd_now');
         Updater.check(true);
        });
@@ -1596,20 +1587,20 @@ function precheck_shift(e){
          hChk = false;
        }
     }
-    hVal=$('#misc_hotkey_char').value;
+    hVal=$D('#misc_hotkey_char').value;
   }else{
     hVal=e.value;
-    hChk= !(!$('#misc_hotkey_ctrl').checked && !$('#misc_hotkey_alt').checked && !$('#misc_hotkey_shift').checked);
+    hChk= !(!$D('#misc_hotkey_ctrl').checked && !$D('#misc_hotkey_alt').checked && !$D('#misc_hotkey_shift').checked);
   }
-  $('#misc_hotkey').checked=(!hChk || hVal=='' ? false : 'checked');
+  $D('#misc_hotkey').checked=(!hChk || hVal=='' ? false : 'checked');
 }
 
 function create_smile_tab(caller){
        //clog('in create_smile_tab');
-  var parent = $('#smile_cont');
+  var parent = $D('#smile_cont');
   if(parent.innerHTML!='') {
     parent.style.display=(parent.style.display=='none' ? '':'none');
-    showhide($('#settings_btn'), (parent.style.display=='none'));
+    showhide($D('#settings_btn'), (parent.style.display=='none'));
     force_focus(10);
     return;
   }
@@ -1651,11 +1642,11 @@ function create_smile_tab(caller){
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
   Dom.Ev(el2, 'click', function(){ 
-    $('#smile_cont').style.display='none';
-    var obj = $('#vB_Editor_001_cmd_insertsmile_img');
+    $D('#smile_cont').style.display='none';
+    var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
     obj.style.backgroundColor='transparent';
     obj.style.border='1px solid transparent';
-    showhide($('#settings_btn'), true);
+    showhide($D('#settings_btn'), true);
     force_focus(10); return; 
   });
   el = createEl('li',{'class':'li_tabsmile tab_close'});
@@ -1681,17 +1672,17 @@ function create_smile_tab(caller){
     var id= ('s'+gvar.settings.autoload_smiley[1]+'_container');
     insert_smile_content(id, eval('gvar.smilie'+gvar.settings.autoload_smiley[1]));
     window.setTimeout(function() {
-      SimulateMouse($('#remote_'+id), 'click', true);
+      SimulateMouse($D('#remote_'+id), 'click', true);
     }, 50);
   }else{
     toggle_tabsmile(Dom.g(scontent[0]));
     window.setTimeout(function() {
-      SimulateMouse($('#remote_'+scontent[0]), 'click', true); // trigger click tab for smiley kecil
+      SimulateMouse($D('#remote_'+scontent[0]), 'click', true); // trigger click tab for smiley kecil
       force_focus(10);
     }, 50);
   }
   parent.style.display='';
-  showhide($('#settings_btn'), false);
+  showhide($D('#settings_btn'), false);
   
 }
 // end create_smile_tab
@@ -1766,7 +1757,7 @@ function insert_smile_content(scontent_Id, smileyset){
   }
 
   if(countSmiley<=0){
-    var el = $('#loader_'+scontent_Id);
+    var el = $D('#loader_'+scontent_Id);
     if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
     realcont.innerHTML = 'No Images found ';
     realcont.style.display='';
@@ -1774,9 +1765,9 @@ function insert_smile_content(scontent_Id, smileyset){
     if(imgEl){
      // find last element
      var showContent = function(){
-        el=$('#loader_'+scontent_Id);
+        el=$D('#loader_'+scontent_Id);
         if(el) el.style.display='none';
-        el = $('#content_'+scontent_Id);
+        el = $D('#content_'+scontent_Id);
         if(el) el.style.display='';
      }
      if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
@@ -1802,12 +1793,12 @@ function insert_smile_content(scontent_Id, smileyset){
     Dom.add(el,cont);
     Dom.Ev(el, 'click', function(e){
       var imgtxta,obj,obj2,task,buff;
-      var mcPar=$('#manage_container');
+      var mcPar=$D('#manage_container');
       var cont_id = 'scustom_container';
       e=e.target||e;
       task = e.innerHTML;
       if(task=='Manage'){
-        if($('#help_manage')) $('#help_manage').style.display='';
+        if($D('#help_manage')) $D('#help_manage').style.display='';
         if(mcPar){
           mcPar.style.display=(mcPar.style.display=='none' ? '':'none');          
         }else{
@@ -1843,7 +1834,7 @@ function insert_smile_content(scontent_Id, smileyset){
           Dom.add(obj2,obj);
           Dom.add(obj,mcPar);
           
-          Dom.add(mcPar, $('#content_'+cont_id));
+          Dom.add(mcPar, $D('#content_'+cont_id));
           try{imgtxta.focus();}catch(e){}
         }
       }else{
@@ -1852,11 +1843,11 @@ function insert_smile_content(scontent_Id, smileyset){
         var KS = 'KEY_SAVE_';
         var lastsave = getValue(KS+'CUSTOM_SMILEY');
         var lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
-        imgtxta = $('#textarea_'+cont_id);
+        imgtxta = $D('#textarea_'+cont_id);
         if(imgtxta)
            buff = do_filter_scustom(imgtxta.value).toString();
-        gvar.settings.scustom_alt = ($('#scustom_alt').checked);
-        gvar.settings.scustom_noparse = ($('#scustom_noparse').checked);
+        gvar.settings.scustom_alt = ($D('#scustom_alt').checked);
+        gvar.settings.scustom_noparse = ($D('#scustom_noparse').checked);
            //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
         if( (buff && lastsave!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse) {
           setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
@@ -1871,7 +1862,7 @@ function insert_smile_content(scontent_Id, smileyset){
         }
         //mcPar.style.display='none';
         Dom.remove(mcPar);
-        if($('#help_manage')) $('#help_manage').style.display='none';
+        if($D('#help_manage')) $D('#help_manage').style.display='none';
       }
       e.innerHTML = (task=='Manage' ? 'Save' : 'Manage');
     }); // end event click Manage-Save
@@ -1896,7 +1887,7 @@ function toggle_tabsmile(e){
         //clog('in toggle_tabsmile');
    e=e.target||e; 
    if(!e) return;
-   var elem = getTag('a',$('#tab_parent'));
+   var elem = getTag('a',$D('#tab_parent'));
    for(var i in elem){ // hideall tab
      var id = elem[i].id;
      if(id && id.indexOf('remote_')!=-1) {
@@ -1906,7 +1897,7 @@ function toggle_tabsmile(e){
    }
    var tgt=e.id.replace('remote_',''); 
    showhide(Dom.g(tgt), true);
-   addClass('current',$('#remote_'+tgt));
+   addClass('current',$D('#remote_'+tgt));
 
    force_focus(10);
 }
@@ -1931,7 +1922,7 @@ function create_popup_size(){
       var cont=Dom.g(id);
       cont.style.display='none';
       var eTitle = e.getAttribute('title');
-      var eOut=$('#vB_Editor_001_size_out');
+      var eOut=$D('#vB_Editor_001_size_out');
       eOut.setAttribute('title',eTitle);
       eOut.innerHTML=eTitle;
       do_insertTag('size',eTitle);
@@ -1964,7 +1955,7 @@ function create_popup_font(){
       var cont=Dom.g(id);
       cont.style.display='none';
       var sfont = e.getAttribute('title');
-      var out=$('#vB_Editor_001_font_out');
+      var out=$D('#vB_Editor_001_font_out');
       out.setAttribute('title',sfont);
       out.innerHTML=sfont.substring(0,11)+(sfont.length>11?'..':''); // cut up to 12 char only      
       do_insertTag('font',sfont);
@@ -2011,7 +2002,7 @@ function create_popup_color(){
       var etitle = e.id.replace('pick_color_','');
       do_insertTag('color',etitle);
       Dom.g(id).style.display='none';
-      var bar=$('#vB_Editor_001_color_bar');
+      var bar=$D('#vB_Editor_001_color_bar');
       bar.style.backgroundColor=etitle;
       bar.setAttribute('title',etitle);
       gvar.settings.lastused.color = etitle;
@@ -2211,8 +2202,8 @@ function prep_paired_scustom(){
 // action to do insert smile
 function do_smile(Obj, nospace){
   var bbcode;  
-  if($('#dv_accessible') && $('#dv_accessible').style.display!='none')
-    SimulateMouse($('#dv_accessible'), 'click', true);
+  if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none')
+    SimulateMouse($D('#dv_accessible'), 'click', true);
   vB_textarea.init();
   if(Obj.getAttribute("alt"))
     bbcode = Obj.getAttribute("alt");
@@ -2340,7 +2331,7 @@ function do_btncustom(e){
 
 function event_ckck(){
        //clog('in event_ckck');
-  if($('#quickreply')) gvar.motion_target=$('#quickreply');  
+  if($D('#quickreply')) gvar.motion_target=$D('#quickreply');  
   Dom.Ev(gvar.motion_target, 'mousemove', function(){
       var ck=document.cookie.toString().split(';');
       gvar.ck.hotbb=-1;
@@ -2371,23 +2362,23 @@ function massive_lock(isChanged){
        //show_alert('bbuserid changed, re-attach Avatar');
       if(isDefined(gvar.user.id))
         appendAvatar();
-      $('#qravatar_refetch').innerHTML='';
+      $D('#qravatar_refetch').innerHTML='';
     }
     
     var tokill = ['textarea_clear','capcay_container','capcay_header','settings_btn'];
     for(var i=0; i<tokill.length;i++)
        if(Dom.g(tokill[i])) showhide(Dom.g(tokill[i]), false);
        
-    if($('#vB_Editor_001_controls'))
-      $('#vB_Editor_001_controls').style.display='none';
-    if($('#capcay_container')) 
-      $('#capcay_container').innerHTML = '';
-    $('#submit_container').innerHTML = '<h1>User Changed, please <a href="javascript:location.reload(false);">reload this page</a></h1>';
+    if($D('#vB_Editor_001_controls'))
+      $D('#vB_Editor_001_controls').style.display='none';
+    if($D('#capcay_container')) 
+      $D('#capcay_container').innerHTML = '';
+    $D('#submit_container').innerHTML = '<h1>User Changed, please <a href="javascript:location.reload(false);">reload this page</a></h1>';
     addClass('reado', Dom.g(gvar.id_textarea));
     vB_textarea.init();    
     vB_textarea.readonly();
     
-    var tokill = [$('#atitle').parentNode,'settings_cont','smile_cont'];
+    var tokill = [$D('#atitle').parentNode,'settings_cont','smile_cont'];
     for(var i=0; i<tokill.length;i++)
        if(Dom.g(tokill[i])) Dom.remove(Dom.g(tokill[i]));
 
@@ -2397,21 +2388,21 @@ function massive_lock(isChanged){
       setValue('KEY_SAVE_TMP_TEXT',value.toString());
     }
  }else{ // not changed
-    if($('#quickreply').parentNode)
-      Dom.remove($('#quickreply'));
+    if($D('#quickreply').parentNode)
+      Dom.remove($D('#quickreply'));
     start_Main();
  }
 }
 
 function toogle_quickreply(show, nofocus){
        //clog('in toogle_quickreply');
-  var obj = $('#collapseobj_quickreply');
+  var obj = $D('#collapseobj_quickreply');
   var state = (obj.style.display=='none');
   var lastCollapse = getValue('KEY_SAVE_QR_COLLAPSE');
   if(isDefined(show))
     if(show) state = true; // force open toggle, trigered by bulu pena
 
-  $('#collapseimg_quickreply').src = 'images/buttons/collapse_tcat' + (state ? '':'_collapsed') + '.gif';
+  $D('#collapseimg_quickreply').src = 'images/buttons/collapse_tcat' + (state ? '':'_collapsed') + '.gif';
   obj.setAttribute('style','display:'+(state ? '':'none')+';');
   
   if(state){ // will open qr ? (from display=none become '')
@@ -2476,8 +2467,8 @@ function profile_parser(page,user){
 function appendAvatar(){
     var dvCon, dv, el, Attr
     var avId = 'imgAvatar';
-    $('#qravatar_cont').innerHTML='';
-    $('#avatar_header').innerHTML='';   
+    $D('#qravatar_cont').innerHTML='';
+    $D('#avatar_header').innerHTML='';   
     if(isDefined(gvar.user.id)){
        dvCon=createEl('div',{style:'border:1px solid red;text-align:center;padding:2px;'});       
        if(isDefined(gvar.user.avatar) &&gvar.user.avatar!='' ){
@@ -2490,7 +2481,7 @@ function appendAvatar(){
        }
        dv=createEl('div',{id:'qravatar_refetch',style:'display:none;position:absolute;'},'<a id="refetch" class="cleanlink" href="javascript:;"><small>refetch</small></a>');
        Dom.add(dv,dvCon);
-       Dom.add(dvCon,$('#qravatar_cont'));
+       Dom.add(dvCon,$D('#qravatar_cont'));
        
        Dom.Ev(dvCon, 'mouseover', function(){dv.style.display='';});
        Dom.Ev(dvCon, 'mouseout', function(){dv.style.display='none';});
@@ -2499,38 +2490,38 @@ function appendAvatar(){
         Dom.Ev(Dom.g(avId), 'load', function(){
          var cls;
          if(Dom.g(avId).clientWidth > 0)
-            $('#qravatar_cont').style.minWidth=Dom.g(avId).clientWidth.toString()+'px';
+            $D('#qravatar_cont').style.minWidth=Dom.g(avId).clientWidth.toString()+'px';
          Dom.Ev(dvCon, 'mouseover', function(){
            cls = 'qravatar_refetch_hover' + (Dom.g(avId).clientHeight==0 ? '_0':'').toString();
-           $('#qravatar_refetch').setAttribute('class',cls);
+           $D('#qravatar_refetch').setAttribute('class',cls);
          });
          Dom.Ev(dvCon, 'mouseout', function(){
            cls = 'qravatar_refetch_hover' + (Dom.g(avId).clientHeight==0 ? '_0':'').toString();
-           removeClass(cls, $('#qravatar_refetch'));
+           removeClass(cls, $D('#qravatar_refetch'));
          });
-         if($('#dv_accessible')) // resize accesible width
-           $('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+         if($D('#dv_accessible')) // resize accesible width
+           $D('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
         } );
       else
-       if($('#dv_accessible')) $('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
-       Dom.Ev($('#refetch'), 'click', function(){
-         if($('#fetching_avatar')) return;
+       if($D('#dv_accessible')) $D('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+       Dom.Ev($D('#refetch'), 'click', function(){
+         if($D('#fetching_avatar')) return;
          refetch_avatar();
        });   
          el=createEl('a',{href:'http:/'+'/www.kaskus.us/member.php?u='+gvar.user.id,'class':'cleanlink'},'<b><small>'+gvar.user.name+'</small>'+(gvar.user.isDonatur ? ' <span style="color:red;">$</span>':'')+'</b>');
-         Dom.add(el,$('#qravatar_cont'));
+         Dom.add(el,$D('#qravatar_cont'));
     }
    
     // hide the avatar ? 
     if(gvar.settings.hideavatar){
-     showhide($('#avatar_header'), false); // hide ava header
-     showhide($('#qravatar_cont'), false); // hide ava container     
+     showhide($D('#avatar_header'), false); // hide ava header
+     showhide($D('#qravatar_cont'), false); // hide ava container     
     }
 }
 
 function refetch_avatar(){
   var el=createEl('div',{id:'fetching_avatar',style:'min-width:auto;'},'<div class="g_notice avafetch">Fetching..</div>');
-  Dom.add(el,$('#avatar_header'));
+  Dom.add(el,$D('#avatar_header'));
   delValueForId(gvar.user.id,'SAVED_AVATAR');
   check_avatar();
 }
@@ -2564,8 +2555,8 @@ function ajax_chk_newval(reply_html){
   // initialize 
   reply_html=(isDefined(reply_html) && reply_html ? reply_html : null);
   if(!reply_html){
-    if($('#imgcapcay') && capcay_notloaded())
-       $('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
+    if($D('#imgcapcay') && capcay_notloaded())
+       $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
         +'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;Loading&nbsp;capcay<span id="imgcapcay_dots">...</span></div>';
     // prep xhr request  
     GM_XHR.uri = gvar.newreply;
@@ -2584,19 +2575,19 @@ function ajax_chk_newval(reply_html){
     var rets = quote_parser(reply_html.responseText);
     
 	vB_textarea.init();
-	var notice = $('#quoted_notice');
+	var notice = $D('#quoted_notice');
 	if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
 	if(rets==null){
 	   addClass('g_notice-error', notice);
 	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Try again</a>'
         + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
-       Dom.Ev($('#quote_now'), 'click', function(){         
+       Dom.Ev($D('#quote_now'), 'click', function(){         
          vB_textarea.readonly();
 		 removeClass('g_notice-error', notice);
          notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
          ajax_chk_newval();
        });
-	   Dom.Ev($('#deselect_them'), 'click', function(){
+	   Dom.Ev($D('#deselect_them'), 'click', function(){
 	    removeClass('g_notice-error', notice);
 		deselect_it();
 	   });
@@ -2614,18 +2605,18 @@ function ajax_chk_newval(reply_html){
 
 // routine for fetching quoted post
 function chk_newval(val){
-  var tgt, notice = $('#quoted_notice');
+  var tgt, notice = $D('#quoted_notice');
   if(val.length>1){
     notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Quote these posts now</a>'
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
-    Dom.Ev($('#quote_now'), 'click', function(){
+    Dom.Ev($D('#quote_now'), 'click', function(){
       vB_textarea.init();
       vB_textarea.readonly();      
       notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
       ajax_chk_newval();
     });
-    Dom.Ev($('#deselect_them'), 'click', function(){deselect_it();});
+    Dom.Ev($D('#deselect_them'), 'click', function(){deselect_it();});
   }else{
     showhide(notice, false); // hide notice
     return;
@@ -2644,9 +2635,9 @@ function do_deselect(mqs) {
   ids = mqs.split(',');
   while(gvar.idx_mq > 0) {
     gvar.idx_mq--;
-    if($("#mq_"+ids[parseInt(gvar.idx_mq)])) {
+    if($D("#mq_"+ids[parseInt(gvar.idx_mq)])) {
         var mq=(mqs && mqs.indexOf(',')!=-1 ? mqs.split(','):[mqs]);
-        SimulateMouse($("#mq_"+mq[parseInt(gvar.idx_mq)]), 'click', true);
+        SimulateMouse($D("#mq_"+mq[parseInt(gvar.idx_mq)]), 'click', true);
     }
   }
   // delete cookie
@@ -2682,11 +2673,11 @@ function autoGrow(f, batas) {
 function fetch_property(){
    var match=null;   
    gvar.page = gvar.newreply = match;
-   gvar.securitytoken = $('//input[@name="securitytoken"]', null, true);
+   gvar.securitytoken = $D('//input[@name="securitytoken"]', null, true);
    if(!gvar.securitytoken) return;
    gvar.securitytoken = gvar.securitytoken.value;
    
-   gvar.threadid = $('//a[contains(@href,"nextoldest")]', null, true).href;
+   gvar.threadid = $D('//a[contains(@href,"nextoldest")]', null, true).href;
    match= /\Wt=(\d+)/.exec(gvar.threadid);
    if(match) gvar.threadid = match[1];
    
@@ -2702,7 +2693,7 @@ function fetch_property(){
 
 function is_opened_thread(){
     // find first href with noquote    
-    var anode = $('.//a[contains(@href,"noquote")]', null, true);
+    var anode = $D('.//a[contains(@href,"noquote")]', null, true);
     return (!anode ? false : (anode.innerHTML.indexOf('Closed Thread')==-1 ? anode.href : false) );
 }
 
@@ -2763,7 +2754,7 @@ function delValueForId(userID, gmkey){
 // if type is not defined, return [id,username,isDonatur]
 function getUserId(type){
   var ret=false;
-  var logusers = $("//a[contains(@href, 'member.php')]", null, true);
+  var logusers = $D("//a[contains(@href, 'member.php')]", null, true);
   if(logusers){
     var cDonat = getByXPath_containing('//a', false, 'QUICK REPLY');    
     var uid = logusers.href.match(/member\.php\?u=(\d+$)/);    
@@ -4082,7 +4073,7 @@ vB_textarea = {
     removeClass('txa_enable', this.Obj);
     addClass('txa_readonly', this.Obj);
     this.Obj.setAttribute('readonly',true);
-    var cw=$('#controller_wraper');
+    var cw=$D('#controller_wraper');
     if(cw){ // this is transparent layer to disable the controlers
       cw.style.width=(Dom.g(gvar.id_textarea).clientWidth)+'px';
       cw.style.display='';
@@ -4095,11 +4086,11 @@ vB_textarea = {
 
     this.Obj.removeAttribute('readonly');
 
-    if($('#recaptcha_response_field')) $('#recaptcha_response_field').removeAttribute('disabled');
+    if($D('#recaptcha_response_field')) $D('#recaptcha_response_field').removeAttribute('disabled');
     removeClass('txa_readonly', this.Obj);
     addClass('txa_enable', this.Obj);
-    $('#controller_wraper').style.display='none';
-    $('#dv_accessible').style.display='none';
+    $D('#controller_wraper').style.display='none';
+    $D('#dv_accessible').style.display='none';
   },
   focus: function(){
          //clog('txta focused');
@@ -4188,9 +4179,9 @@ vB_textarea = {
   }  
 };
 // Get Elements
-$=function (q, root, single) {
+$D=function (q, root, single) {
   if (root && typeof root == 'string') {
-      root = $(root, null, true);
+      root = $D(root, null, true);
       if (!root) { return null; }
   }
   if( !q ) return false;
@@ -4302,58 +4293,58 @@ Updater = {
       +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
       +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
-    Dom.Ev($('#upd_close'),'click', function(){
+    Dom.Ev($D('#upd_close'),'click', function(){
        Dom.remove('upd_cnt');
     });    
-    Dom.Ev($('#upd_notify_lnk'),'click', function(){
-       if($('#upd_cnt'))
+    Dom.Ev($D('#upd_notify_lnk'),'click', function(){
+       if($D('#upd_cnt'))
          Dom.remove('upd_cnt');
        else{         
          Updater.notify_progres();
          Updater.check(true);
        }
     });    
-    Dom.Ev($('#do_update'),'click', function(){  
+    Dom.Ev($D('#do_update'),'click', function(){  
       GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');      
       window.setTimeout(function(){ Dom.remove('upd_cnt'); }, 1000);
     });    
   }
  ,showDialog: function(inner){
     var Attr, el;
-    if($('#upd_cnt')) Dom.remove($('#upd_cnt'));
+    if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
     Attr = {id:'upd_cnt','class':'tborder qrdialog',style:'position:fixed;z-index:999999;'};
     el = createEl('div', Attr);
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
     
     Attr = {'class':'qrdialog-close'};
     el = createEl('div', Attr, '<a id="upd_close" class="qbutton" javascript:; title="Close"><img src="'+gvar.domainstatic+'images/misc/menu_open.gif" /></a>');
-    Dom.add(el, $('#upd_cnt'));
+    Dom.add(el, $D('#upd_cnt'));
 
     Attr = {id:'upd_child','class':'qrdialog-child'};
     el = createEl('div', Attr, inner);
-    Dom.add(el, $('#upd_cnt'));
+    Dom.add(el, $D('#upd_cnt'));
 	// nfo news
 	if( Updater.meta.news ){
-	  $('#nfo_version').setAttribute('title', 'What\' New...');
-	  $('#nfo_version').style.setProperty('cursor', 'pointer', '');
-	  Dom.Ev($('#nfo_version'), 'click', function(){ alert( gvar.titlename+'\n== Last LOG Update ==' + Updater.meta.news );});
+	  $D('#nfo_version').setAttribute('title', 'What\' New...');
+	  $D('#nfo_version').style.setProperty('cursor', 'pointer', '');
+	  Dom.Ev($D('#nfo_version'), 'click', function(){ alert( gvar.titlename+'\n== Last LOG Update ==' + Updater.meta.news );});
 	}
     
     Updater.notify_done(true);
  }
   
  ,notify_progres: function(caller){
-    $('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+    $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
 	if(Dom.g(caller)) {
 	  Updater.caller=caller;
 	  Dom.g(caller).innerHTML='checking..'; // OR check now
 	}
  }
  ,notify_done: function(anyupd){
-    $('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
-    if($('#upd_notify').innerHTML==''){
-       $('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
-       window.setTimeout(function(){ $('#upd_notify').innerHTML=''; }, 4000);
+    $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
+    if($D('#upd_notify').innerHTML==''){
+       $D('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
+       window.setTimeout(function(){ $D('#upd_notify').innerHTML=''; }, 4000);
     }
  }
  ,mparser: function(rt){
