@@ -3,18 +3,18 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.6
-// @dtversion     101203306
-// @timestamp     1291316187680
+// @dtversion     101204306
+// @timestamp     1291469152450
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
-// @contributor   Sanji,riza_kasela,p1nky,b3g0,fazar,bagosbanget,eric.,Sanjito,bedjho,Piluze,intruder.master,Rh354,gr0,hermawan64,slifer2006,gzt,Duljondul,reongkacun,otnaibef, all-kaskuser@t=3170414
+// @contributor   Sanji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., Sanjito, bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
-//   
-// v3.0.6 - 2010-12-03
-//   Fix global $ collision with jQuery's (eg.KaskusSkinner; or is it just only a weirdness on Opera?)
+//
+// v3.0.6 - 2010-12-04
+//   Fix global $ collision with jQuery's (or is it just only a weirdness on Opera?)
 //   Improve botgreet; add RTFM link
 //   Add :( emote
 //   Fix failed load custom-smiley content on bad link last-img
@@ -51,7 +51,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1291316187680 // version.timestamp
+  timestamp: 1291469152450 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
