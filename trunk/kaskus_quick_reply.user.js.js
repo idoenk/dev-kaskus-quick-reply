@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.6
-// @dtversion     101204306
-// @timestamp     1291469152450
+// @version       3.0.7
+// @dtversion     101215307
+// @timestamp     1292425019651
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,16 +13,19 @@
 //
 // -!--latestupdate
 //
+// v3.0.7 - 2010-12-15
+//   Fix Syntax validation
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//   
 // v3.0.6 - 2010-12-04
 //   Fix global $ collision with jQuery's (or is it just only a weirdness on Opera?)
 //   Improve botgreet; add RTFM link
 //   Add :( emote
 //   Fix failed load custom-smiley content on bad link last-img
 //   Improve string optimized on scustom content
-//   
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //   
 // v3.0.5 - 2010-11-26
 //   Fix failed shortcut Ctrl+[B-I-U]
@@ -49,9 +52,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.6';
+gvar.sversion = 'v' + '3.0.7';
 gvar.scriptMeta = {
-  timestamp: 1291469152450 // version.timestamp
+  timestamp: 1292425019651 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -447,7 +450,7 @@ function additional_options_notloaded(){
    var adt_opt = $D('#additional_options');
    if(!adt_opt){
      if( !$D('#submit_container') ) return;
-     adt_opt = createEl('div',{id:'additional_options'})
+     adt_opt = createEl('div',{id:'additional_options'});
      Dom.add(adt_opt, $D('#submit_container'));
    }
    return (adt_opt && adt_opt.innerHTML=='');
@@ -656,7 +659,7 @@ function loadLayer_reCaptcha(){
         // order tabindex
 		var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
-		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '')
+		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '');
 		
         $D('#button_preview').style.display = ''; 
 	    $D('#recaptcha_response_field').focus();
@@ -671,7 +674,7 @@ function loadLayer_reCaptcha(){
         }else{
           return ($D('#recaptcha_response_field').value);
         }
-    }
+    };
       
     if($D('#hideshow'))
       closeLayerBox('hideshow');
@@ -1189,10 +1192,10 @@ function re_event_vbEditor(){
    var ve=Dom.g(id);
    ve.style.display=(ve.style.display==''?'none':'');
    if(ve.style.display!='none') try{Dom.g(id+'_dumy').focus();}catch(el){}
-  }
+  };
   
   // event buat kolor
-  {
+  
        //clog('in create_popup_color');
   var el = create_popup_color();
   var par = $D('#vB_Editor_001_popup_forecolor');
@@ -1214,10 +1217,10 @@ function re_event_vbEditor(){
      }
      SimulateMouse($D('#pick_kolor'), 'click', true);
    });
-  }
+  
 
   // event buat font
-  {
+  
        //clog('in create_popup_font');
   el = create_popup_font();
   par = $D('#vB_Editor_001_popup_fontname');
@@ -1239,10 +1242,10 @@ function re_event_vbEditor(){
      }
      SimulateMouse($D('#pick_font'), 'click', true);     
    });  
-  }
+  
   
   // event buat size
-  {
+  
        //clog('in create_popup_size');
   el = create_popup_size();
   par = $D('#vB_Editor_001_popup_fontsize');
@@ -1264,10 +1267,10 @@ function re_event_vbEditor(){
      }
      SimulateMouse($D('#pick_size'), 'click', true);     
    });  
-  } 
+  
   
   // event buat smile
-  {
+  
         //clog('event smiley');
    par = $D('#vB_Editor_001_cmd_insertsmile');
    
@@ -1294,7 +1297,7 @@ function re_event_vbEditor(){
         }, 10);
      });     
    }
-  }
+  
   
   // event buat settings
   Dom.Ev( $D('#settings_btn'), 'click', function(){ toggle_setting() });
@@ -1457,7 +1460,7 @@ function toggle_setting(){
     var updown = function(show){
       var small = $D('#updown_setting');
       small.innerHTML = HtmlUnicodeDecode(show ? '&#9650;' : '&#9660;');
-    }
+    };
     if(cont && cont.innerHTML!='') {
       disp = false; // gonna hide it
       cont.innerHTML='';
@@ -1769,7 +1772,7 @@ function insert_smile_content(scontent_Id, smileyset){
         if(el) el.style.display='none';
         el = $D('#content_'+scontent_Id);
         if(el) el.style.display='';
-     }
+     };
      if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
         showContent();
      }else{
@@ -2465,7 +2468,7 @@ function profile_parser(page,user){
 }
 
 function appendAvatar(){
-    var dvCon, dv, el, Attr
+    var dvCon, dv, el, Attr;
     var avId = 'imgAvatar';
     $D('#qravatar_cont').innerHTML='';
     $D('#avatar_header').innerHTML='';   
@@ -2912,16 +2915,16 @@ function getTPL_vbEditor(){
   var vbe =
     '<table cellpadding="0" cellspacing="0" border="0">'
     +'<tr>'
-    +'    <td id="vB_Editor_001" class="vBulletin_editor">'
-    +'        <div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
+    +    '<td id="vB_Editor_001" class="vBulletin_editor">'
+    +        '<div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
         
     + konst._tbo
     +'<tr>'
     
     +(gvar.settings.hidecontroll[0] != '1' ? ''
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
      +konst.__sep__
     :'')
 
@@ -2995,17 +2998,17 @@ function getTPL_vbEditor(){
     +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[9] == '1' ? '':konst.__sep__)
     
     
-    +'                <td id="customed_control"></td>'
+    +                '<td id="customed_control"></td>'
     +(   gvar.settings.hidecontroll[11] == '1' && gvar.settings.hidecontroll[13] == '1' 
       && gvar.settings.hidecontroll[12] == '1' ? '' : '')
-    +'                <td width="100%"></td>'
-    +'            </tr>'
+    +                '<td width="100%"></td>'
+    +            '</tr>'
     +konst.tbo_
-    +'        </div>' // end #vB_Editor_001_controls
+    +        '</div>' // end #vB_Editor_001_controls
     
-    +'        <table cellpadding="0" cellspacing="0" border="0" width="100%">'
-    +'        <tr valign="top">'
-    +'            <td class="controlbar">'    
+    +        '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
+    +        '<tr valign="top">'
+    +            '<td class="controlbar">'    
     +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
     +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
     +(!gvar.isOpera && gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
@@ -3014,17 +3017,17 @@ function getTPL_vbEditor(){
       +''+gvar.settings.hotkeychar+'</b>'
     :'')
     +'</div>'
-    +'             <textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-    +'            </td>'
-    +'        </tr>'
-    +'        </table>'
+    +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
+    +            '</td>'
+    +        '</tr>'
+    +        '</table>'
     
     +'<div id="smile_cont" style="display:none;"></div>'
     
     // setting toggle link
     +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
 
-    +'    </td>'
+    +    '</td>'
     +'</tr>'
     +'</table>'
     +'';
@@ -3105,10 +3108,10 @@ function getTPL_Settings(){
 
 
 function getTPL_layer_Only(){
-  return ('\
-   <div class="trfade"></div> \
-   <div class="fade"></div>\
-  ');
+  return (''
+ +'<div class="trfade"></div>'
+ +'<div class="fade"></div>'
+  );
 }
 
 function getTPL_prompt_reCAPTCHA(){
@@ -3139,59 +3142,61 @@ function getTPL_prompt_reCAPTCHA(){
 	cK.s('last_greet', String(lastgreet), '/', 'www.kaskus.us');
 	return c[lastgreet];
   };
-  var divInner = '\
-   <div id="popup_container_precap" class="popup_block"> \
-    <div class="popup">\
-     <a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>\
-     <table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">\
-     <tbody><tr>\
-      <td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>\
-     </tr><tr>\
-     <td class="alt1">\
-      <div id="recaptcha_container_header">\
-      <span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0, 10)+'</span>\
-      <span style="float:right;padding:auto 0;">\
-	  <a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;\
-	  <a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>\
-	  </span>\
-      </div>\
-      <div class="spacer"></div>\
-      <div id="recaptcha_container" style="text-align:center;">\
-       <div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>\
-      </div>\
-     </td></tr>\
-     <tbody></table>\
-      <div id="button_preview" style="display:none;">\
-       <span id="remote_capcay"></span>\
-       <input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;\
-       <a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>\
-      </div>\
-    </div>\
-   </div>';
+  var divInner = ''
+ +'<div id="popup_container_precap" class="popup_block"> '
+ + '<div class="popup">'
+ +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
+ +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+ +  '<tbody><tr>'
+ +   '<td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>'
+ +  '</tr><tr>'
+ +  '<td class="alt1">'
+ +   '<div id="recaptcha_container_header">'
+ +   '<span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0, 10)+'</span>'
+ +   '<span style="float:right;padding:auto 0;">'
+ +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
+ +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
+ +  '</span>'
+ +   '</div>'
+ +   '<div class="spacer"></div>'
+ +   '<div id="recaptcha_container" style="text-align:center;">'
+ +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
+ +   '</div>'
+ +  '</td></tr>'
+ +  '<tbody></table>'
+ +   '<div id="button_preview" style="display:none;">'
+ +    '<span id="remote_capcay"></span>'
+ +    '<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+ +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+ +   '</div>'
+ + '</div>'
+ +'</div>';
+
   return divInner;  
 
 }
 function getTPL_Preview(){
-  var divInner = '\
-   <div class="trfade"></div> \
-   <div class="fade"></div> \
-   <div id="popup_container" class="popup_block"> \
-    <div class="popup">\
-     <a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>\
-     <table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">\
-     <tbody><tr>\
-      <td class="tcat">Preview Quick Reply</td>\
-     </tr><tr>\
-     <td class="alt1">\
-      <div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>\
-     </td></tr>\
-     <tbody></table>\
-      <div id="button_preview" >\
-       <input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;\
-       <a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>\
-      </div>\
-    </div>\
-   </div>';
+  var divInner = ''
+ +'<div class="trfade"></div> '
+ +'<div class="fade"></div> '
+ +'<div id="popup_container" class="popup_block"> '
+ + '<div class="popup">'
+ +  '<a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
+ +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+ +  '<tbody><tr>'
+ +   '<td class="tcat">Preview Quick Reply</td>'
+ +  '</tr><tr>'
+ +  '<td class="alt1">'
+ +   '<div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>'
+ +  '</td></tr>'
+ +  '<tbody></table>'
+ +   '<div id="button_preview" >'
+ +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
+ +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+ +   '</div>'
+ + '</div>'
+ +'</div>';
+
   return divInner;  
 }
 // end tpl
@@ -3534,18 +3539,18 @@ function getSetOf(type){
 function getSCRIPT() {
   return (''
     +'function showRecaptcha(element){'
-    +'  Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
-    +'    { theme:"red",lang:"en"'
-    +'     ,custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
-    +'    }'
-    +'  );'
+    +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
+    +    '{theme:"red",lang:"en"'
+    +     ',custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
+    +    '}'
+    +  ');'
     +'};'
     
     +'function clickedelm(val){ document.getElementById("clicker").value=val; };'
     +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
-    +' this.open_smilie_window=function(width,height){'
-    +'  smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'
-    +' };'
+    + 'this.open_smilie_window=function(width,height){'
+    +  'smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'
+    + '};'
     +'};'
     +''
   );
@@ -3738,55 +3743,55 @@ function getCSS() {
    +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'
   
   /* for preview popup */ 
-  +'#hideshow, #hideshow_recaptcha {\
-      position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;\
-    }\
-    .trfade, .fade {\
-      position: fixed; width: 100%; height: 100%; left: 0;\
-    }\
-    .trfade {\
-      background: #000; z-index: 99998;\
-      filter:alpha(opacity=25); opacity: .25;\
-      -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";\
-    }\
-    .fade {\
-      background: #000; z-index: 99990;\
-      filter:alpha(opacity=60); opacity: .60;\
-      -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";\
-    }\
-    #popup_container, #popup_container_precap  {\
-      background: #ddd; color:black; padding: 5px; border: 5px solid #fff;\
-      float: left; position: absolute; top: 10px;\
-      border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;\
-    }\
-    #popup_container {\
-      width: 88%; left: 5%;\
-    }\
-    #popup_container_precap  {\
-      width: 340px; left: 50%;\
-    }\
-    .popup_block .popup {\
-      float: left; width: 100%; background: #D1D4E0; margin: 0;\
-      padding: 0; border: 1px solid #bbb;\
-    }\
-    .popup img.cntrl {\
-      position: absolute; right: -20px; top: -20px; border: 0px;\
-    }\
-    #button_preview {\
-      padding:3px;text-align:center;\
-    }\
-    *html .fade {\
-      position: absolute;\
-      top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);\
-    }\
-    *html #popup_container, *html #popup_container_precap {\
-      position: absolute;\
-      top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop\
-      +((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop\
-      +((document.body.clientHeight-this.clientHeight)/2));\
-      left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft\
-      +(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));\
-    }';
+  	+'#hideshow, #hideshow_recaptcha {'
+    +  'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'
+    +'}'
+    +'.trfade, .fade {'
+    +  'position: fixed; width: 100%; height: 100%; left: 0;'
+    +'}'
+    +'.trfade {'
+    +  'background: #000; z-index: 99998;'
+    +  'filter:alpha(opacity=25); opacity: .25;'
+    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
+    +'}'
+    +'.fade {'
+    +  'background: #000; z-index: 99990;'
+    +  'filter:alpha(opacity=60); opacity: .60;'
+    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
+    +'}'
+    +'#popup_container, #popup_container_precap  {'
+    +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
+    +  'float: left; position: absolute; top: 10px;'
+    +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
+    +'}'
+    +'#popup_container {'
+    +  'width: 88%; left: 5%;'
+    +'}'
+    +'#popup_container_precap  {'
+    +  'width: 340px; left: 50%;'
+    +'}'
+    +'.popup_block .popup {'
+    +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
+    +  'padding: 0; border: 1px solid #bbb;'
+    +'}'
+    +'.popup img.cntrl {'
+    +  'position: absolute; right: -20px; top: -20px; border: 0px;'
+    +'}'
+    +'#button_preview {'
+    +  'padding:3px;text-align:center;'
+    +'}'
+    +'*html .fade {'
+    +  'position: absolute;'
+    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'
+    +'}'
+    +'*html #popup_container, *html #popup_container_precap {'
+    +  'position: absolute;'
+    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'
+    +  '+((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop'
+    +  '+((document.body.clientHeight-this.clientHeight)/2));'
+    +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
+    +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
+    +'}'
   +'';
   return css;
 }
@@ -3966,28 +3971,28 @@ function ApiBrowserCheck() {
     var ws=null; try { ws=typeof(unsafeWindow.localStorage) } catch(e) { ws=null; } // Catch Security error
     if(ws=='object') {
       show_alert('Using localStorage for GM Api.',0);
-      GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; }
-      GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } }
-      GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); }
+      GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; };
+      GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } };
+      GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); };
     } else if(!gvar.isOpera || typeof(GM_setValue)=='undefined') {
       show_alert('Using temporarilyStorage for GM Api.',0); gvar.temporarilyStorage=new Array();
-      GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } }
-      GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } }
+      GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } };
+      GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } };
       GM_deleteValue=function(name) { delete gvar.temporarilyStorage[GMSTORAGE_PATH+name]; };
     }
-    if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); } }
-    if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); } } // Dummy
+    if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); }; }
+    if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); }; } // Dummy
     if(!gvar.isOpera || typeof(GM_xmlhttpRequest)=='undefined') {
       show_alert('Using XMLHttpRequest for GM Api.',0);
       GM_xmlhttpRequest=function(obj) {
         var request=new XMLHttpRequest();
-        request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
-        request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+        request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } };
+        request.onerror=function() { if(obj.onerror) { obj.onerror(request); } };
         try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
         if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
         request.send(obj.data); return request;
-  } } } // end needApiUpgrade
-  GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); }
+  }; } } // end needApiUpgrade
+  GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); };
 }
 // ----my ge-debug--------
 function show_alert(msg, force) {
@@ -4016,7 +4021,7 @@ GM_addGlobalScript=function(script, id) { // Redefine GM_addGlobalScript with a 
   else
    document.body.insertBefore(sel, document.body.firstChild);
   return sel;
-}
+};
 GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a better routine 
   var sel=createEl('style',{type:'text/css'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
@@ -4027,7 +4032,7 @@ GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a bette
   else
    document.body.insertBefore(sel,document.body.firstChild);    
   return sel;
-}
+};
 Avatar = {
   uri:null,
   cached:null,
