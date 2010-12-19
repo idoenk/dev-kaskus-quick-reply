@@ -15,6 +15,7 @@
 // v0.3.0 - 2010-12-19
 //  Fix Login check on subdomain (opera)
 //  Deprecate include subdomain (wap, blackberry)
+//  Add Logged in as
 //  Add Quick-Edit - beta
 //   
 // -/!latestupdate---
@@ -189,9 +190,11 @@ function getTPL(){
      +'<div id="main_content" class="fade">\n'
        +'<form id="frmQR" method="post" action="/'+(gvar.mode=='qr' ? gvar.mode_qr.action : gvar.mode_qe.action)+'/'+THREAD.id+'">'
        +'<div class="spacer"></div>'
-       +'<a id="title_add" href="javascript:;">[+] Title</a>:<div id="title_cont" style="display:none;"><div class="spacer"></div>'
-       +'<input id="title" name="title" class="field" value="" type="text" />'
-       +'<div class="spacer"></div></div>'
+       +'<div id="login_as">Logged in as <a href="/user/profile/'+THREAD.user.id+'" target="_blank"><b>'+THREAD.user.name+'</b></a></div>'
+       +'<a id="title_add" href="javascript:;">[+] Title</a>:'
+	   +'<div id="title_cont" style="display:none;">'
+       +  '<div class="spacer"></div><input id="title" name="title" class="field" value="" type="text" /><div class="spacer"></div>'
+       +'</div>'
        +'&nbsp;Message:&nbsp;<a id="message_clear" href="javascript:;" title="Clear Message">reset</a>'
        +'<div id="message_container"><textarea id="'+gvar.msgID+'" name="message" class="field"></textarea></div>'
        +'<div id="submit_cont">'
@@ -363,7 +366,8 @@ function getCSS(additional){
     +'.field{verdana,arial,helvetica,sans-serif;font-size:12px;}'
     +'.field:focus {background-color:#FFFFA4;border:1px solid #FBC779;}'
     
-    +'#submit_cont {text-align:center;}'
+    +'#login_as {float:right;margin-right:5px;}'
+    +'#submit_cont {text-align:center;}'	
     +'.button {margin:2px 0;}'
     +'.spacer {height:2px;}'
     +'.imgthumb:hover {background-color:#80FF80 !important;}'
@@ -633,8 +637,7 @@ QR = {
       Dom.Ev(Dom.g('message_clear'), 'click', function(){ QR.msg.clear(); QR.msg.focus(); });
 	 //--
 	 // event qrfixed_thumb | qr_max
-      Dom.Ev(Dom.g('qrfixed_thumb'), 'click', function(){
-	    Dom.g('footer_spacer').setAttribute('style', 'height:150px');
+      Dom.Ev(Dom.g('qrfixed_thumb'), 'click', function(){	    
 	    if(Dom.g('hash').value==''){
 		   THREAD.doQuote(THREAD.reply);
 		}else{
@@ -642,6 +645,7 @@ QR = {
 	      showhide(Dom.g('qrfixed_thumb'), false);
 		  QR.msg.focus(); 
 		}
+		Dom.g('footer_spacer').setAttribute('style', 'height:'+THREAD.get_footerHeight()+'px');
 	  });
 	  // event resizer
       Dom.Ev(Dom.g('rez_up'), 'click', function(){
@@ -659,7 +663,7 @@ QR = {
 		h = (h > 90 ? h : 90 );
 		Dom.g(gvar.msgID).style.height = h + 'px';
 		var fh=Dom.g('footer_spacer').clientHeight;
-		Dom.g('footer_spacer').setAttribute('style', 'height:'+( h > 90 ? fh-50:fh)+'px');
+		Dom.g('footer_spacer').setAttribute('style', 'height:'+( h > 90 ? fh-50 : 200)+'px');
 		setValue( KS+'msgheight', h.toString() );
 		Dom.g(gvar.msgID).focus();
 	  });
@@ -867,8 +871,7 @@ THREAD = {
 	 if(e && e.id!='qr_max') e.style.display='';
      Dom.remove('fetching_edit');
 	 var ret = THREAD.do_Parse(html.responseText);
-	 Dom.g('footer_spacer').setAttribute('style', 'height:150px');
-	 showhide(Dom.g('qrfixed_thumb'), false);
+	 showhide(Dom.g('qrfixed_thumb'), false);	 
 	 QR.msg.clear();
 	 QR.msg.addMsg(ret[0]);
 	 QR.msg.title(ret[1]);
@@ -877,6 +880,7 @@ THREAD = {
 	 QR.check_mode(gvar.mode);
 	 QR.chk_postID(ret[2]); // create postid el
 	 QR.toggle(true);
+	 Dom.g('footer_spacer').setAttribute('style', 'height:'+THREAD.get_footerHeight()+'px');
   }
   ,doQuote: function(e){
 	 if( THREAD.isProcessing('fetching_quote') ) return;
@@ -906,12 +910,13 @@ THREAD = {
      if(e && e.id!='qr_max') e.style.display='';
      Dom.remove('fetching_quote');
      var ret = THREAD.do_Parse(html.responseText);
-	 Dom.g('footer_spacer').setAttribute('style', 'height:150px');
 	 showhide(Dom.g('qrfixed_thumb'), false);
+	 
 	 QR.msg.addMsg(ret[0]);
 	 Dom.g('hash').value = gvar.mode_qr.hash = ret[ret.length-1];
 	 QR.check_mode(gvar.mode);
 	 QR.toggle(true);
+	 Dom.g('footer_spacer').setAttribute('style', 'height:'+THREAD.get_footerHeight()+'px');
    }
   ,do_Parse: function(page){
      var match, parts, ret;
@@ -935,9 +940,11 @@ THREAD = {
    }
    
   ,get_footerHeight: function(){
-    var h = parseInt(Dom.g(gvar.msgID).clientHeight);
-	var fh = (h - 90);
-	
+    var h, fh=200;
+	h = parseInt(Dom.g(gvar.msgID).clientHeight);	
+	if(h > 0)
+	  fh = parseInt(Dom.g('footer_spacer').clientHeight) + (h - 90);	  
+	return fh;
   }
   ,inside: function(){
     return ( /\/thread\/.*/.test(location.pathname) );
