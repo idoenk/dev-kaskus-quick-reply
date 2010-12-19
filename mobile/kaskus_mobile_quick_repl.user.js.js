@@ -5,7 +5,7 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        0.3.0
 // @dtversion      101219030
-// @timestamp      1292744271923
+// @timestamp      1292768536784
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @license        (CC) by-nc-sa 3.0
@@ -32,7 +32,7 @@
 // Init
 //------
 //
-// FYI:
+// ###@@###
 // *dependency            https://addons.mozilla.org/en-US/firefox/addon/59/
 // *XML of User Agent     http://techpatterns.com/downloads/firefox/useragentswitcher.xml
 //
@@ -46,7 +46,7 @@ var gvar=function(){};
 
 gvar.sversion = 'v' + '0.3.0';
 gvar.scriptMeta = {
-  timestamp: 1292744271923 // version.timestamp
+  timestamp: 1292768536784 // version.timestamp
 
  ,scriptID: 91051 // script-Id
 };
@@ -91,6 +91,7 @@ function init(){
   // gvar initialized - 
   gvar.hidePopupPicTimeout;
   gvar.showPopupPicTimeout;
+  gvar.lastEdit_id;
 
   // preferences scratch
   gvar.prefs = {
@@ -308,6 +309,7 @@ function getCSS(additional){
     +'.left, .right{color:#fff;margin:1px 0 !important;}'
 	+'.poster .right{margin:0 !important;}'
 	+'.right{margin-right:5px !important;}'
+	+'.transp_me{color:transparent;}'	
 	+'#fetching_quote{display:inline; padding:0; margin-left:3px; line-height:22px;}'
     +'.left a{font-weight:bold;color:#FFB56A;}'
     
@@ -320,6 +322,7 @@ function getCSS(additional){
     +'.post .posted_by, .post .tcode {color:#000 !important; font-family: verdana, arial;}'
     +'.post .tcode {margin:5px 0 -7px 10px;}'
     +'.post .posted_by {margin:5px 0 1px 0;}'
+    +'.current_edit {background-color:#FFDFFF;}'
 
     +'/* ------ */'
 
@@ -696,8 +699,10 @@ QR = {
 	  QR.check_mode('qr');	  
 	}
     ,close: function(){
-	  if(gvar.mode=='qe') // closing from Quick Edit
-	    QR.cancel_edit();
+	  if(gvar.mode=='qe') {// closing from Quick Edit
+	    THREAD.reset_post_coloring();
+		QR.cancel_edit();
+	  }
 	  Dom.g('footer_spacer').setAttribute('style', 'height:15px');
 	  Dom.g('stat_qrcontent').innerHTML='';
 	  showhide(Dom.g('qrfixed_thumb'), true);
@@ -822,22 +827,24 @@ THREAD = {
   ,eventQuote: function(){
 	 var nodes,child, el;
 	 nodes = getByXPath_containing('//a', false, 'edit');
-	 for(var i=0; i < nodes.length; i++){
-	    child = '<img src="'+gvar.domainstatic + 'images/buttons/edit.gif' + '" border="0" alt="edit" />&nbsp;';
+	 for(var i=0; i < nodes.length; i++){	    
+	    child = '<img src="'+gvar.domainstatic + 'images/buttons/edit.gif' + '" border="0" alt="edit" />';
 		el = createEl('a', {href:nodes[i].href, 'onclick':'return false;', id:'edit_'+i}, child);
 		Dom.Ev(el, 'click', function(e){ 
 		  THREAD.doEdit(e); 
 		  return true;
-		});
-        Dom.add(el, nodes[i].parentNode);
+		});        
+		nodes[i].parentNode.insertBefore(el, nodes[i].parentNode.firstChild);		
         Dom.remove(nodes[i]);
 	 }
 	 nodes = getByXPath_containing('//a', false, 'quote');
      for(var i=0; i < nodes.length; i++){
+	    var par = nodes[i].parentNode;		
         child = '<img src="'+gvar.domainstatic + 'images/buttons/quickreply.gif' + '" border="0" alt="quote" />';
         el = createEl('a', {href:nodes[i].href, 'onclick':'return false;', id:'quote_'+i}, child);
         Dom.Ev(el, 'click', function(e){ THREAD.doQuote(e); });
-        Dom.add(el, nodes[i].parentNode);
+        Dom.add(el, par);		
+		addClass('transp_me', par);
         Dom.remove(nodes[i]);
      }
    }
@@ -847,18 +854,40 @@ THREAD = {
 	if(yes) show_alert('There is still fetch progress..', 0);
 	return yes;
   }
+  
+  ,reset_post_coloring: function(){
+    if(!gvar.lastEdit_id) return;
+	var par, el = Dom.g(gvar.lastEdit_id);
+	if(el){
+	  par = el.parentNode.parentNode;
+	  removeClass('current_edit', par);
+	}
+  }
+  ,post_coloring: function(e){
+     // coloring parent, .post
+	 if(!e) return;
+	 var el = Dom.g(e);
+	 var post = el.parentNode.parentNode;	 
+	 if(isDefined(post.className) && post.className == 'post'){
+	    addClass('current_edit', post);
+	 }
+  }
   ,doEdit: function(e){
      if( THREAD.isProcessing('fetching_edit') ) return;
 	 // set mode edit
 	 gvar.mode = 'qe';	 
 	 
+	 THREAD.reset_post_coloring();
 	 e = e.target || e;
 	 if(e.nodeName=='IMG') e=e.parentNode; // make sure get tag <a>
+	 if(isDefined(e.id)) gvar.lastEdit_id = e.id;
 	 var par = e.parentNode; // get tag <div class="right">
 	 e.style.display = 'none';
 	 var inner = '<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>';
      var el = createEl('div', {id:'fetching_edit','class':'smallfont',style:'color:blue;font:11pt;float:left;margin-top:5px;'}, inner);
      Dom.add(el, par);
+	 
+	 THREAD.post_coloring(gvar.lastEdit_id); 
 	 
 	 GM_XHR.uri = e.href;
      GM_XHR.cached = true;
