@@ -54,7 +54,7 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.6';
+gvar.sversion = 'v' + '3.0.7';
 gvar.scriptMeta = {
   timestamp: 1293050493274 // version.timestamp
 
