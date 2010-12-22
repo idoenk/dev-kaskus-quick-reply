@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.7
-// @dtversion     101215307
-// @timestamp     1292425019651
+// @dtversion     101222307
+// @timestamp     1293023745277
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,8 +13,9 @@
 //
 // -!--latestupdate
 //
-// v3.0.7 - 2010-12-15
-//   Fix Syntax validation
+// v3.0.7 - 2010-12-22
+//   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
+//   Fix deprecate trick on keydown keyCode=13
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -52,9 +53,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.7';
+gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1292425019651 // version.timestamp
+  timestamp: 1293023745277 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -374,7 +375,7 @@ function do_click_qr(e){
             //clog('theres a fetch progres, txta still readonly')
        vB_textarea.readonly();
        return;
-    }    
+    }
     toogle_quickreply(true); // show it again to save state and load capcay if any    
     vB_textarea.init();
     var elset = $D('#settings_cont');
@@ -450,7 +451,7 @@ function additional_options_notloaded(){
    var adt_opt = $D('#additional_options');
    if(!adt_opt){
      if( !$D('#submit_container') ) return;
-     adt_opt = createEl('div',{id:'additional_options'});
+     adt_opt = createEl('div',{id:'additional_options'})
      Dom.add(adt_opt, $D('#submit_container'));
    }
    return (adt_opt && adt_opt.innerHTML=='');
@@ -659,7 +660,7 @@ function loadLayer_reCaptcha(){
         // order tabindex
 		var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
-		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '');
+		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '')
 		
         $D('#button_preview').style.display = ''; 
 	    $D('#recaptcha_response_field').focus();
@@ -1087,17 +1088,10 @@ function is_keydown_pressed(e){
      if($D('#recaptcha_response_field'))
        window.setTimeout(function() { try{$D('#recaptcha_response_field').focus()}catch(e){}; }, 150);
      else
-       $D('#qr_prepost_submit').focus();     
-       //$D('#qr_submit').focus();     
-   }else
+       $D('#qr_prepost_submit').focus();   
+   }
    // end keyCode==9 
    
-   if(C.keyCode==13) // mijit enter
-     if(!gvar.isBuggedChrome) // Chrome dont need this hack
-        window.setTimeout(function() {
-              Dom.g(gvar.id_textarea).blur();
-            window.setTimeout(function() { Dom.g(gvar.id_textarea).focus(); }, 5);
-        }, 10);
   } // end event C
   return false;
 }
@@ -1194,8 +1188,7 @@ function re_event_vbEditor(){
    if(ve.style.display!='none') try{Dom.g(id+'_dumy').focus();}catch(el){}
   };
   
-  // event buat kolor
-  
+  // event buat kolor  
        //clog('in create_popup_color');
   var el = create_popup_color();
   var par = $D('#vB_Editor_001_popup_forecolor');
@@ -1219,8 +1212,7 @@ function re_event_vbEditor(){
    });
   
 
-  // event buat font
-  
+  // event buat font  
        //clog('in create_popup_font');
   el = create_popup_font();
   par = $D('#vB_Editor_001_popup_fontname');
@@ -1244,8 +1236,7 @@ function re_event_vbEditor(){
    });  
   
   
-  // event buat size
-  
+  // event buat size  
        //clog('in create_popup_size');
   el = create_popup_size();
   par = $D('#vB_Editor_001_popup_fontsize');
@@ -1269,8 +1260,7 @@ function re_event_vbEditor(){
    });  
   
   
-  // event buat smile
-  
+  // event buat smile  
         //clog('event smiley');
    par = $D('#vB_Editor_001_cmd_insertsmile');
    
@@ -2468,7 +2458,7 @@ function profile_parser(page,user){
 }
 
 function appendAvatar(){
-    var dvCon, dv, el, Attr;
+    var dvCon, dv, el, Attr
     var avId = 'imgAvatar';
     $D('#qravatar_cont').innerHTML='';
     $D('#avatar_header').innerHTML='';   
@@ -2649,8 +2639,11 @@ function do_deselect(mqs) {
 }
 
 function growIt(T,minmax){
+    gvar.lastTopGrow = null;
     Dom.Ev(T, 'mousemove', function(){ autoGrow(T,minmax);});
-    Dom.Ev(T, 'keydown', function(){ autoGrow(T,minmax);});
+    Dom.Ev(T, 'keydown', function(){ gvar.lastTopGrow = ss.getCurrentYPos(); });
+    Dom.Ev(T, 'keyup', function(){ autoGrow(T,minmax);});
+    //Dom.Ev(T, 'keypress', function(){ autoGrow(T,minmax);});
     Dom.Ev(T, 'focus', function(){ autoGrow(T,minmax);});
 }
 function autoGrow(f, batas) {
@@ -2661,15 +2654,20 @@ function autoGrow(f, batas) {
    f.style.paddingTop = f.style.paddingBottom = '0px';
    //var hCheck = !($.browser.msie || $.browser.opera);
    var hCheck = true; // assumed browser is not msie nor opera
-   var vlen = f.value.length, ewidth = f.offsetWidth;   
-   if (vlen != f.valLength || ewidth != f.boxWidth) {
-     if (hCheck && (vlen < f.valLength || ewidth != f.boxWidth)) f.style.height = "0px";
+   var vlen = f.value.length;
+   if (vlen != f.valLength ) {
+     if (hCheck && (vlen < f.valLength )) f.style.height = "0px";
      var h = Math.max(min, Math.min(f.scrollHeight, max));
-     //show_alert('len= '+f.value.length+'; flen= '+f.valLength+'; sH= '+f.scrollHeight+'; h= '+h+'; maxmin= '+(Math.min(f.scrollHeight, max)));
+      //show_alert('len= '+f.value.length+'; flen= '+f.valLength+'; sH= '+f.scrollHeight+'; h= '+h+'; maxmin= '+(Math.min(f.scrollHeight, max)) + 'f.style.overflow='+f.style.overflow);	  
      f.style.overflow = (f.scrollHeight > h ? "auto" : "hidden");
+	 if(f.style.overflow=='auto' && f.style.height==(h+"px") ) 
+	   return true;
      f.style.height = h + "px";
      f.valLength = vlen;
-     f.boxWidth = ewidth;
+	 if(f.style.overflow=='auto' && gvar.lastTopGrow) {
+	   window.scrollTo(0,gvar.lastTopGrow);
+	   gvar.lastTopGrow = null;
+	 }
    }
 }
 
@@ -2915,16 +2913,16 @@ function getTPL_vbEditor(){
   var vbe =
     '<table cellpadding="0" cellspacing="0" border="0">'
     +'<tr>'
-    +    '<td id="vB_Editor_001" class="vBulletin_editor">'
-    +        '<div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
+    +'    <td id="vB_Editor_001" class="vBulletin_editor">'
+    +'        <div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
         
     + konst._tbo
     +'<tr>'
     
     +(gvar.settings.hidecontroll[0] != '1' ? ''
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
      +konst.__sep__
     :'')
 
@@ -3018,16 +3016,16 @@ function getTPL_vbEditor(){
     :'')
     +'</div>'
     +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-    +            '</td>'
-    +        '</tr>'
-    +        '</table>'
+    +'            </td>'
+    +'        </tr>'
+    +'        </table>'
     
     +'<div id="smile_cont" style="display:none;"></div>'
     
     // setting toggle link
     +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
 
-    +    '</td>'
+    +'    </td>'
     +'</tr>'
     +'</table>'
     +'';
@@ -3108,10 +3106,10 @@ function getTPL_Settings(){
 
 
 function getTPL_layer_Only(){
-  return (''
- +'<div class="trfade"></div>'
- +'<div class="fade"></div>'
-  );
+  return ('\
+   <div class="trfade"></div> \
+   <div class="fade"></div>\
+  ');
 }
 
 function getTPL_prompt_reCAPTCHA(){
@@ -3157,10 +3155,12 @@ function getTPL_prompt_reCAPTCHA(){
  +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
  +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
  +  '</span>'
+
  +   '</div>'
  +   '<div class="spacer"></div>'
  +   '<div id="recaptcha_container" style="text-align:center;">'
  +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
+
  +   '</div>'
  +  '</td></tr>'
  +  '<tbody></table>'
@@ -3168,12 +3168,13 @@ function getTPL_prompt_reCAPTCHA(){
  +    '<span id="remote_capcay"></span>'
  +    '<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
  +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+
+
  +   '</div>'
  + '</div>'
  +'</div>';
 
-  return divInner;  
-
+  return divInner;
 }
 function getTPL_Preview(){
   var divInner = ''
@@ -3193,6 +3194,8 @@ function getTPL_Preview(){
  +   '<div id="button_preview" >'
  +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
  +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+
+
  +   '</div>'
  + '</div>'
  +'</div>';
@@ -3745,44 +3748,56 @@ function getCSS() {
   /* for preview popup */ 
   	+'#hideshow, #hideshow_recaptcha {'
     +  'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'
+
     +'}'
     +'.trfade, .fade {'
     +  'position: fixed; width: 100%; height: 100%; left: 0;'
+
     +'}'
     +'.trfade {'
     +  'background: #000; z-index: 99998;'
     +  'filter:alpha(opacity=25); opacity: .25;'
     +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
+
+
     +'}'
     +'.fade {'
     +  'background: #000; z-index: 99990;'
     +  'filter:alpha(opacity=60); opacity: .60;'
     +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
+
     +'}'
     +'#popup_container, #popup_container_precap  {'
     +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
     +  'float: left; position: absolute; top: 10px;'
     +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
+
     +'}'
     +'#popup_container {'
     +  'width: 88%; left: 5%;'
+
     +'}'
     +'#popup_container_precap  {'
     +  'width: 340px; left: 50%;'
+
     +'}'
     +'.popup_block .popup {'
     +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
     +  'padding: 0; border: 1px solid #bbb;'
+
     +'}'
     +'.popup img.cntrl {'
     +  'position: absolute; right: -20px; top: -20px; border: 0px;'
+
     +'}'
     +'#button_preview {'
     +  'padding:3px;text-align:center;'
+
     +'}'
     +'*html .fade {'
     +  'position: absolute;'
     +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'
+
     +'}'
     +'*html #popup_container, *html #popup_container_precap {'
     +  'position: absolute;'
@@ -3791,6 +3806,7 @@ function getCSS() {
     +  '+((document.body.clientHeight-this.clientHeight)/2));'
     +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
     +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
+
     +'}'
   +'';
   return css;
@@ -3986,8 +4002,8 @@ function ApiBrowserCheck() {
       show_alert('Using XMLHttpRequest for GM Api.',0);
       GM_xmlhttpRequest=function(obj) {
         var request=new XMLHttpRequest();
-        request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } };
-        request.onerror=function() { if(obj.onerror) { obj.onerror(request); } };
+        request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+        request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
         try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
         if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
         request.send(obj.data); return request;
