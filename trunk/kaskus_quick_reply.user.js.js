@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.7
-// @dtversion     101222307
-// @timestamp     1293023745277
+// @dtversion     101223307
+// @timestamp     1293050493274
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,9 +13,10 @@
 //
 // -!--latestupdate
 //
-// v3.0.7 - 2010-12-22
+// v3.0.7 - 2010-12-23
 //   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
 //   Fix deprecate trick on keydown keyCode=13
+//   Improve onclose preview keep last char as "\n\n" 
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -55,7 +56,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.6';
 gvar.scriptMeta = {
-  timestamp: 1293023745277 // version.timestamp
+  timestamp: 1293050493274 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -635,14 +636,20 @@ function buildQuery(){
 }
 
 function closeLayerBox(tgt){
+   if(tgt=='hideshow'){
+     if(!$D('#hideshow')) return;
+	 // chk & restore last char as \n\n
+	 var curv = Dom.g(gvar.id_textarea).value;
+	 if(curv.substring(curv.length-2, curv.length)!='\n\n')
+	   vB_textarea.add('\n\n');
+   }
    Dom.remove( Dom.g(tgt) );
-   try{ Dom.g(gvar.id_textarea).focus(); }catch(e){}
+   try{ vB_textarea.lastfocus(); }catch(e){}
 }
 
 function toogleLayerDiv(tgt) {
   var currentVisible = Dom.g(tgt); //
   Dom.g(tgt).style.display= (currentVisible.style.display == 'none' ? '' : 'none');
-  //showhide(Dom.g(tgt), (currentVisible.style.display == 'none') );
 }
 
 function loadLayer_reCaptcha(){
