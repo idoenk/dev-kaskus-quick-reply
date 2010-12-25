@@ -2774,55 +2774,1212 @@ function getUserId(type){
 }
 
 // set of tpl
-function getTPL_main(){var tpl=''+'<table cellpadding="0" cellspacing="0"><tr>'+'<td id="avatar_header"></td>'+'<td><div class="qrsmallfont">'+'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'+'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'+'</div></td>'+'</tr><tr>'+'<td id="qravatar_cont" align="left"></td>'+'<td class="txta_cont panelsurrounds">'+'<div id="controller_wraper" style="border:1px solid transparent;background-color:transparent;position:absolute;margin-top:-20px;line-height:80px;">&nbsp;</div>'+(!gvar.user.isDonatur?''+'<div class="panel"><div>':'')+getTPL_vbEditor()+(!gvar.user.isDonatur?''+'</div></div>':'')+'<div id="settings_cont"></div>'+'</td>'+'</tr></table>';return tpl}
+function getTPL_main(){
+  var tpl = ''
+    +'<table cellpadding="0" cellspacing="0"><tr>'
+    +'<td id="avatar_header"></td>'
+    +'<td><div class="qrsmallfont">'
+    +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
+    +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
+    +'</div></td>'
+    +'</tr><tr>'    
+    
+    // Avatar container
+    +'<td id="qravatar_cont" align="left"></td>'    
+    // vB_Editor_QR_textarea
+    +'<td class="txta_cont panelsurrounds">'    
+    +'<div id="controller_wraper" style="border:1px solid transparent;background-color:transparent;position:absolute;margin-top:-20px;line-height:80px;">&nbsp;</div>'
+    
+    +(!gvar.user.isDonatur ? ''
+       +'<div class="panel"><div>'
+    :'')
+    
+    +getTPL_vbEditor()
+    
+    +(!gvar.user.isDonatur ? ''
+       +'</div></div>'
+    :'')
+    
+    // Setting container will be containing from getTPL_Settings()    
+    +'<div id="settings_cont"></div>'    
+    +'</td>'    
+    +'</tr></table>'
+    ;
+    return tpl;
+}
+function getTPL(){
 
-function getTPL(){var tpl='\n<br/>'+'<form action="newreply.php?do=postreply&amp;t='+gvar.threadid+'" method="post" name="vbform" id="vbform">'+'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'+'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'+'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_1')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+HtmlUnicodeDecode('&#8212;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_0" title="Home Kaskus Quick Reply - '+gvar.sversion+'">'+gvar.sversion+'</a>'+'<span id="upd_notify"></span>'+(gvar.__DEBUG__===true?'<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')+'</td></tr></thead>'+'<tbody id="collapseobj_quickreply" style="display:'+(gvar.settings.qrtoggle==1?'':'none')+';"><tr><td class="panelsurround" align="center">'+'<div class="panel">'+'<div class="qr_container">'+'<div id="quoted_notice" class="g_notice"></div>'+'<div class="MYvBulletin_editor">'+'<table cellpadding="0" cellspacing="0"><tr>'+'<td>'+'<div id="qr_maincontainer"></div>'+'</td>'+(false&&!gvar.user.isDonatur?''+'<td width="300"><table cellpadding="0" cellspacing="0">'+'<tr><td id="capcay_header" style="width:150px !important;"></td></tr>'+'<tr><td><div id="capcay_container">'+ +'</div></td></tr>'+'</table></td>':'')+'</tr></table>'+'</div>'+'</div>'+'</div>'+'<div id="submit_container" style="margin-top:6px;text-align:center;">\n'+'<input type="hidden" name="s" value="" />'+'<input type="hidden" name="securitytoken" value="'+gvar.securitytoken+'" />'+'<input type="hidden" name="do" value="postreply" id="qr_do" />'+'<input type="hidden" name="t" value="'+gvar.threadid+'" id="qr_threadid" />'+'<input type="hidden" name="p" value="'+gvar.page+'" id="qr_postid" />'+'<input type="hidden" name="specifiedpost" value="0" id="qr_specifiedpost" />'+'<input type="hidden" name="parseurl" value="1" />'+'<input type="hidden" name="loggedinuser" value="'+gvar.user.id+'" />'+'<input type="hidden" name="multiquoteempty" id="multiquote_empty_input" value="only" />'+'<input type="hidden" name="wysiwyg" id="vB_Editor_001_mode" value="0" />'+'<input type="hidden" name="clicker" id="clicker" value="" />'+'<input type="hidden" name="styleid" value="0" />\n\n'+'<div class="sub-bottom sayapkiri">'+'<div id="rate_thread" style="display:none;"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/></div>'+'&nbsp;</div>\n'+'<div class="sub-bottom sayapkanan">'+'<input id="chk_fixups" tabindex="7" type="checkbox" '+(gvar.settings.widethread?'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread with Kaskus Fixups" for="chk_fixups">Expand</label></a>'+'</div>'+'<div style="text-align:center;width:100%;">'+'<div style="display:inline;max-width:350px;">'+(!gvar.user.isDonatur?''+'<div id="capcay_container" style="position:relative; display:none;"></div>':'')+'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />'+'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur?'':'pre-')+'Post Quick Reply" />'+'&nbsp;&nbsp;'+'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'+'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'+'</div>'+'</div>'+'</div>\n'+'</td></tr></tbody></table></form>\n';return tpl}
+  var tpl = 
+     '\n<br/>'
+    //+'<div id="quickreply">\n'
+    // '<!-- start form quick reply -->\n\n'
+    +'<form action="newreply.php?do=postreply&amp;t='+gvar.threadid+'" method="post" name="vbform" id="vbform">'
+    
+    +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
+    +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+HtmlUnicodeDecode('&#8212;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home Kaskus Quick Reply - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<span id="upd_notify"></span>'
+    +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
+    +'</td></tr></thead>'    
+    +'<tbody id="collapseobj_quickreply" style="display:'+(gvar.settings.qrtoggle==1?'':'none')+';"><tr><td class="panelsurround" align="center">'
+    +'<div class="panel">'
+    +'<div class="qr_container">'
+          
+    // Quoted notice
+    +'<div id="quoted_notice" class="g_notice"></div>'
+    
+    // header_component
+    +'<div class="MYvBulletin_editor">'
+  +'<table cellpadding="0" cellspacing="0"><tr>'
+    +'<td>'
+    +'<div id="qr_maincontainer"></div>' 
+    +'</td>'
 
-function getTPL_vbEditor(){var konst={__sep__:'<td style="padding:0 2px;"><img src="'+gvar.domainstatic+'images/editor/separator.gif" width="6" height="20" alt="|"/></td>',mnupop:'<img src="'+gvar.domainstatic+'images/editor/menupop.gif" alt="v" height="16" width="11">',_0:'<table cellpadding="0" cellspacing="0" border="0">',tbo_:'</table>'};var lUse,lF,lC,lS;if(lUse=gvar.settings.lastused){lF=[(lUse.font?lUse.font:''),''];lF[1]=(lF[0]?lF[0].substring(0,11)+(lF[0].length>11?'..':''):'Fonts');lC=[(lUse.color?lUse.color:'Black'),''];lC[1]=(lC[0]?lC[0].toLowerCase():'');lS=(lUse.size?lUse.size:'Size')}var vbe='<table cellpadding="0" cellspacing="0" border="0">'+'<tr>'+'    <td id="vB_Editor_001" class="vBulletin_editor">'+'        <div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'+konst._0+'<tr>'+(gvar.settings.hidecontroll[0]!='1'?''+' <td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'+' <td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'+' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[1]!='1'?''+'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'+'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifycenter"><img src="'+gvar.domainstatic+'images/editor/justifycenter.gif" alt="Align Center" /></div></td>'+'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyright"><img src="'+gvar.domainstatic+'images/editor/justifyright.gif" alt="Align Right" /></div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[2]!='1'?''+'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontname">'+konst._0+'<tbody><tr>'+'<td id="vB_Editor_001_font_parentout" class="popup_feedback">'+'<div id="vB_Editor_001_font_out" style="width:91px;" title="'+lF[0]+'">'+lF[1]+'</div>'+'</td>'+'<td id="pick_font" class="popup_pickbutton">'+konst.mnupop+'</td>'+'</tr></tbody>'+konst.tbo_+'</div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[3]!='1'?''+'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontsize">'+konst._0+'<tbody><tr>'+'<td id="vB_Editor_001_size_parentout" class="popup_feedback">'+'<div id="vB_Editor_001_size_out" style="width:25px;" title="'+lS+'">'+lS+'</div>'+'</td>'+'<td id="pick_size" class="popup_pickbutton">'+konst.mnupop+'</td>'+'</tr></tbody>'+konst.tbo_+'</div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[4]!='1'?''+'<td><div class="imagebutton_color" id="vB_Editor_001_popup_forecolor">'+konst._0+'<tr>'+'<td id="vB_Editor_001_color_out" style="background-color:transparent;" class="popup_feedback"><img src="'+gvar.domainstatic+'images/editor/color.gif" width="21" height="16" alt="" /><br /><img src="clear.gif" id="vB_Editor_001_color_bar" title="'+lC[0]+'" style="background-color:'+lC[1]+'" width="21" height="4" /></td>'+'<td id="pick_kolor" class="popup_pickbutton">'+konst.mnupop+'</td>'+'</tr>'+konst.tbo_+'</div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[5]!='1'?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" /></div></td>':'')+(gvar.settings.hidecontroll[6]!='1'?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" /></div></td>':'')+(gvar.settings.hidecontroll[7]!='1'?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>':'')+(gvar.settings.hidecontroll[5]=='1'&&gvar.settings.hidecontroll[6]=='1'&&gvar.settings.hidecontroll[7]=='1'?'':konst.__sep__)+(gvar.settings.hidecontroll[8]!='1'?''+' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Insert Smile" /></div></td>'+konst.__sep__:'')+(gvar.settings.hidecontroll[9]!='1'?' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>':'')+(gvar.settings.hidecontroll[10]!='1'?' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>':'')+(gvar.settings.hidecontroll[10]=='1'&&gvar.settings.hidecontroll[9]=='1'?'':konst.__sep__)+'<td id="customed_control"></td>'+(gvar.settings.hidecontroll[11]=='1'&&gvar.settings.hidecontroll[13]=='1'&&gvar.settings.hidecontroll[12]=='1'?'':'')+'<td width="100%"></td>'+'</tr>'+konst.tbo_+'</div>'+'<table cellpadding="0" cellspacing="0" border="0" width="100%">'+'<tr valign="top">'+'<td class="controlbar">'+'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses+'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'+(!gvar.isOpera&&gvar.settings.hotkeychar&&gvar.settings.hotkeykey.toString()!='0,0,0'?''+'<br />QR-Hotkey: <b>'+(gvar.settings.hotkeykey[0]=='1'?'Ctrl+':'')+(gvar.settings.hotkeykey[1]=='1'?'Shift+':'')+(gvar.settings.hotkeykey[2]=='1'?'Alt+':'')+''+gvar.settings.hotkeychar+'</b>':'')+'</div>'+'<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'+'            </td>'+'        </tr>'+'        </table>'+'<div id="smile_cont" style="display:none;"></div>'+'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'+'    </td>'+'</tr>'+'</table>'+'';return vbe}
+     // Image Verification container
+    +( false && !gvar.user.isDonatur  ? ''
+    +'<td width="300"><table cellpadding="0" cellspacing="0">'
+     +'<tr><td id="capcay_header" style="width:150px !important;"></td></tr>'
+     +'<tr><td><div id="capcay_container">'+
+     +'</div></td></tr>'
+    +'</table></td>'
+    :'')
+	
+  +'</tr></table>'
+     // Multi quote container
+     //+'<input id="mq_container" type="text" value="" '+(gvar.__DEBUG__ ? 'readonly="true" class="txa_readonly" style="width:100%;"':'style="display:none;"')+'/>\n'
+    +'</div>' // end .MYvBulletin_editor
+    // end header_component
+    
+    +'</div>' // end #qr_container
+    +'</div>' // end .panel
+    +'<div id="submit_container" style="margin-top:6px;text-align:center;">\n'
+    
+    /** gonna strip this, coz failed in sending title
+     # flag to ignore thread subscription
+     # additional options for subscription will be fetched on ajax build capcay
+    */
+    //+'<input type="hidden" name="fromquickreply" value="1" />'
+    
+    +'<input type="hidden" name="s" value="" />'
+    +'<input type="hidden" name="securitytoken" value="'+gvar.securitytoken+'" />'
+     +'<input type="hidden" name="do" value="postreply" id="qr_do" />'
+    +'<input type="hidden" name="t" value="'+gvar.threadid+'" id="qr_threadid" />'
+    +'<input type="hidden" name="p" value="'+gvar.page+'" id="qr_postid" />'
+    +'<input type="hidden" name="specifiedpost" value="0" id="qr_specifiedpost" />'
+    +'<input type="hidden" name="parseurl" value="1" />'
+    +'<input type="hidden" name="loggedinuser" value="'+gvar.user.id+'" />'
+    +'<input type="hidden" name="multiquoteempty" id="multiquote_empty_input" value="only" />'
+    +'<input type="hidden" name="wysiwyg" id="vB_Editor_001_mode" value="0" />'
+    +'<input type="hidden" name="clicker" id="clicker" value="" />'
+    +'<input type="hidden" name="styleid" value="0" />\n\n'
+    
+    +'<div class="sub-bottom sayapkiri">'
+     +'<div id="rate_thread" style="display:none;"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/></div>'
+    +'&nbsp;</div>\n'
 
-function getTPL_Settings(){var _0=''+'<div style="float:right;min-width:350px;border:2px outset;border-top:0;">'+'<table id="tb_setting" cellpadding="0" cellspacing="0" border="0">';var tbo_='</table></div>';var spacer='<div class="spacer">&nbsp;</div>';gvar.settings.autolayout=[1,1];var sett=''+_0+'<tr><td colspan="2" align="center">'+'<div class="g_notice" style="display:block;padding:0;height:20px;">'+'<div style="float:left;margin-left:20px;"><strong>Quick Reply Settings</strong></div>'+'<div style="float:right;margin-right:10px;"><a id="save_settings" href="javascript:;" class="qbutton">save</a>&nbsp;&nbsp;<a id="cancel_settings" href="javascript:;">cancel</a></div>'+'</div></td></tr> <tr>'+'<td id="td_setting_control" width="150">';for(var i in gvar.labelControl){if(isString(gvar.labelControl[i]))sett+='<input id="qrset_'+gvar.labelControl[i]+'" type="checkbox" '+(gvar.settings.hidecontroll[i]=='1'?'checked':'')+'/> Hide '+gvar.labelControl[i]+'<br />'}sett+=''+'</td><td id="td_setting_misc">'+(!gvar.noCrossDomain?'<label for="misc_updates" title="Check Userscripts.org for QR latest update"><input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1'?'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="qbutton" href="javascript:;" title="Check Update Now">check now</a></small><br />':'')+(!gvar.noCrossDomain?'<small style="margin-left:10px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval:&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small><br />':'')+'<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1'?'checked':'')+'/> Hide Avatar<br />'+'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1'?'checked':'')+'/> Dynamic QR'+spacer+'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1'?'checked':'')+'/> AutoExpand<br />'+'<small style="margin-left:10px;">'+'min:<input id="misc_autoexpand_1" type="text" title="MINIMUM Height &gt= 75" value="'+(gvar.settings.textareaExpander[1])+'" style="width:35px;padding:0" maxlength="4"/>'+'&nbsp;max:<input id="misc_autoexpand_2" type="text" title="MAXIMUM Height &lt;= 2048" value="'+(gvar.settings.textareaExpander[2])+'" style="width:35px;padding:0" maxlength="4"/>'+'</small>'+spacer+'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1'?'checked':'')+'/> AutoLoad Smiley<br />'+'<small>'+'<input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil'?'CHECKED':'')+'/>kecil&nbsp;'+'<input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar'?'CHECKED':'')+'/>besar&nbsp;'+'<input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom'?'CHECKED':'')+'/>[+]'+'</small>'+spacer+'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1'?'checked':'')+'/> AutoSignature&nbsp;'+'<small><a id="edit_sigi" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'+'<div id="edit_sigi_Editor" style="display:none;"></div>'+spacer+'<input id="misc_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1'?'checked':'')+'/> AutoLayout&nbsp;'+'<small><a id="edit_tpl" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'+'<div id="edit_tpl_Editor" style="display:none;"></div>'+spacer+(!gvar.isOpera?''+'<input id="misc_hotkey" type="checkbox" disabled="disabled" '+(gvar.settings.hotkeykey.toString()=='0,0,0'||gvar.settings.hotkeychar==''?'':'checked')+'/> QR-Hotkey<br />'+'<small>'+'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1'?'checked':'')+'/>ctrl&nbsp;'+'<input id="misc_hotkey_alt" type="checkbox" '+(gvar.settings.hotkeykey[2]=='1'?'checked':'')+'/>alt&nbsp;'+'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1'?'checked':'')+'/>shift&nbsp;'+'<br/>&nbsp;'+'&nbsp;<input id="misc_hotkey_char" type="text" title="alphnumeric [A-Z0-9]" value="'+(gvar.settings.hotkeychar)+'" style="width:20px;padding:0" maxlength="1" />&nbsp;blank=disable'+'<br/></small>':'')+'<div style="height:5px;">&nbsp;</div>'+'<a id="reset_default" href="javascript:;"><small>reset default</small></a>'+'</td></tr>'+tbo_;return sett}
+    +'<div class="sub-bottom sayapkanan">'
+    +'<input id="chk_fixups" tabindex="7" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread with Kaskus Fixups" for="chk_fixups">Expand</label></a>'
+    +'</div>'
 
-function getTPL_layer_Only(){return ('<div class="trfade"></div><div class="fade"></div>');}
+	// center container for buttons & folks
+    +'<div style="text-align:center;width:100%;">'	
+	 +'<div style="display:inline;max-width:350px;">'
+     // Image Verification container
+      +(!gvar.user.isDonatur ? ''
+      +'<div id="capcay_container" style="position:relative; display:none;"></div>'
+      :'')
+     +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
+     +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
+     +'&nbsp;&nbsp;'
+     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
+     +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
+     +'</div>'
+	+'</div>' // end center	
+	
+    +'</div>\n' // end #submit_container
+    
+    +'</td></tr></tbody></table></form>\n'
+    //+'<!-- / end form quick reply -->\n\n'
+    //+'\n</div>'
+    ;
+    return tpl;
+}
+function getTPL_vbEditor(){
+  var konst = { 
+    __sep__: '<td style="padding:0 2px;"><img src="'+gvar.domainstatic+'images/editor/separator.gif" width="6" height="20" alt="|"/></td>',
+    mnupop : '<img src="'+gvar.domainstatic+'images/editor/menupop.gif" alt="v" height="16" width="11">',
+    _tbo   : '<table cellpadding="0" cellspacing="0" border="0">',
+    tbo_   : '</table>'    
+  };  
+  var lUse,lF,lC,lS;
+  if(lUse = gvar.settings.lastused){
+    lF = [(lUse.font ? lUse.font:''), ''];
+     lF[1] = (lF[0] ? lF[0].substring(0,11)+(lF[0].length>11?'..':''):'Fonts');  
+    lC = [(lUse.color ? lUse.color:'Black'), ''];
+     lC[1] = (lC[0] ? lC[0].toLowerCase() : '');
+    lS = (lUse.size ? lUse.size:'Size');
+  }
+  var vbe =
+    '<table cellpadding="0" cellspacing="0" border="0">'
+    +'<tr>'
+    +'    <td id="vB_Editor_001" class="vBulletin_editor">'
+    +'        <div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
+        
+    + konst._tbo
+    +'<tr>'
+    
+    +(gvar.settings.hidecontroll[0] != '1' ? ''
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
+     +konst.__sep__
+    :'')
 
-function getTPL_prompt_reCAPTCHA(){var get_botgreet=function(min,max){var c=['Are you a robot? :o','It is really a fact this captcha is annoying. :nohope:','We hate spammer just as much as you do, :)','Get pain in the <s>arse</s>? Then you might be 50% legitimate human for feel the pain. :D','About 200 million CAPTCHAs are solved by humans around the world every day.','Fight Spam and Save Shakespeare.'];if(max>=(c.length-1))max=parseInt(c.length-1);var lastgreet=cK.g('last_greet');if(!lastgreet||isNaN(lastgreet)){lastgreet=Math.floor(Math.random()*(max-min+1)+min)}else{var dice,done=false;while(!done){dice=Math.floor(Math.random()*(max-min+1)+min);done=(dice!=lastgreet)}lastgreet=dice}cK.s('last_greet',String(lastgreet),'/','www.kaskus.us');return c[lastgreet]};var divInner=''+'<div id="popup_container_precap" class="popup_block"> '+'<div class="popup">'+'<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'+'<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'+'<tbody><tr>'+'<td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>'+'</tr><tr>'+'<td class="alt1">'+'<div id="recaptcha_container_header">'+'<span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0,10)+'</span>'+'<span style="float:right;padding:auto 0;">'+'<a href="http://'+'kask.us/5957067" target="_0" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'+'<a href="http://'+'kask.us/5954390" target="_0" title="Nice Info, Tips-Trick">TRICK</a>'+'</span>'+'</div>'+'<div class="spacer"></div>'+'<div id="recaptcha_container" style="text-align:center;">'+'<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'+'</div>'+'</td></tr>'+'<tbody></table>'+'<div id="button_preview" style="display:none;">'+'<span id="remote_capcay"></span>'+'<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'+'<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'+'</div>'+'</div>'+'</div>';return divInner}
+    +(gvar.settings.hidecontroll[1] != '1' ? ''
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifycenter"><img src="'+gvar.domainstatic+'images/editor/justifycenter.gif" alt="Align Center" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyright"><img src="'+gvar.domainstatic+'images/editor/justifyright.gif" alt="Align Right" /></div></td>'
+     +konst.__sep__
+    :'')
+    
+    // --Font 
+    +(gvar.settings.hidecontroll[2] != '1' ? ''
+     +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontname">'
+     +konst._tbo
+     +'<tbody><tr>'
+     +'<td id="vB_Editor_001_font_parentout" class="popup_feedback">'
+     +'<div id="vB_Editor_001_font_out" style="width:91px;" title="'+lF[0]+'">'+lF[1]+'</div>'    
+     +'</td>'
+     +'<td id="pick_font" class="popup_pickbutton">'+konst.mnupop+'</td>'
+     +'</tr></tbody>'
+     +konst.tbo_
+     +'</div></td>'
+     +konst.__sep__
+    :'')
+    
+    // --Size 
+    +(gvar.settings.hidecontroll[3] != '1' ? ''
+     +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontsize">'
+     +konst._tbo
+     +'<tbody><tr>'
+     +'<td id="vB_Editor_001_size_parentout" class="popup_feedback">'
+     +'<div id="vB_Editor_001_size_out" style="width:25px;" title="'+lS+'">'+lS+'</div>'    
+     +'</td>'
+     +'<td id="pick_size" class="popup_pickbutton">'+konst.mnupop+'</td>'
+     +'</tr></tbody>'
+     +konst.tbo_
+     +'</div></td>'
+     +konst.__sep__
+    :'')
+    
+    // --Color 
+    +(gvar.settings.hidecontroll[4] != '1' ? ''
+     +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_forecolor">'
+     +konst._tbo
+     +'<tr>'
+     +'<td id="vB_Editor_001_color_out" style="background-color:transparent;" class="popup_feedback"><img src="'+gvar.domainstatic+'images/editor/color.gif" width="21" height="16" alt="" /><br /><img src="clear.gif" id="vB_Editor_001_color_bar" title="'+lC[0]+'" style="background-color:'+lC[1]+'" width="21" height="4" /></td>'
+     +'<td id="pick_kolor" class="popup_pickbutton">'+konst.mnupop+'</td>'
+     +'</tr>'
+     +konst.tbo_
+     +'</div></td>'
+     +konst.__sep__
+    :'')    
+    
+    +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" /></div></td>'
+    :'')
+    +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" /></div></td>'
+    :'')
+    +(gvar.settings.hidecontroll[7] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>'
+    :'')
+    +(gvar.settings.hidecontroll[5] == '1' && gvar.settings.hidecontroll[6] == '1' && gvar.settings.hidecontroll[7] == '1' ? '':konst.__sep__)
+    
+    +(gvar.settings.hidecontroll[8] != '1' ? ''
+     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Insert Smile" /></div></td>'
+     +konst.__sep__
+    :'')    
+    
+    +(gvar.settings.hidecontroll[9] != '1' ? ' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
+    :'')
+    +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
+    :'')
+    +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[9] == '1' ? '':konst.__sep__)
+    
+    
+    +                '<td id="customed_control"></td>'
+    +(   gvar.settings.hidecontroll[11] == '1' && gvar.settings.hidecontroll[13] == '1' 
+      && gvar.settings.hidecontroll[12] == '1' ? '' : '')
+    +                '<td width="100%"></td>'
+    +            '</tr>'
+    +konst.tbo_
+    +        '</div>' // end #vB_Editor_001_controls
+    
+    +        '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
+    +        '<tr valign="top">'
+    +            '<td class="controlbar">'    
+    +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
+    +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
+    +(!gvar.isOpera && gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
+      +'<br />QR-Hotkey: <b>'
+      +(gvar.settings.hotkeykey[0]=='1'?'Ctrl+':'')+(gvar.settings.hotkeykey[1]=='1'?'Shift+':'')+(gvar.settings.hotkeykey[2]=='1'?'Alt+':'')
+      +''+gvar.settings.hotkeychar+'</b>'
+    :'')
+    +'</div>'
+    +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
+    +'            </td>'
+    +'        </tr>'
+    +'        </table>'
+    
+    +'<div id="smile_cont" style="display:none;"></div>'
+    
+    // setting toggle link
+    +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
 
-function getTPL_Preview(){var divInner=''+'<div class="trfade"></div> '+'<div class="fade"></div> '+'<div id="popup_container" class="popup_block"> '+'<div class="popup">'+'<a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'+'<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'+'<tbody><tr>'+'<td class="tcat">Preview Quick Reply</td>'+'</tr><tr>'+'<td class="alt1">'+'<div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>'+'</td></tr>'+'<tbody></table>'+'<div id="button_preview" >'+'<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur?'':'pre-')+'Post " />&nbsp;&nbsp;'+'<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'+'</div>'+'</div>'+'</div>';return divInner}
+    +'    </td>'
+    +'</tr>'
+    +'</table>'
+    +'';
+    return vbe;
+}
+function getTPL_Settings(){
+  var _tbo = ''
+   +'<div style="float:right;min-width:350px;border:2px outset;border-top:0;">'
+   +'<table id="tb_setting" cellpadding="0" cellspacing="0" border="0">';
+  var tbo_ = '</table></div>';
+  var spacer = '<div class="spacer">&nbsp;</div>';
+  
+  // ####
+  gvar.settings.autolayout = [1, 1]; // layout signature; layout template; 
+  var sett = ''
+   +_tbo
+   +'<tr><td colspan="2" align="center">'
+   +'<div class="g_notice" style="display:block;padding:0;height:20px;">'
+   +'<div style="float:left;margin-left:20px;"><strong>Quick Reply Settings</strong></div>'
+   +'<div style="float:right;margin-right:10px;"><a id="save_settings" href="javascript:;" class="qbutton">save</a>&nbsp;&nbsp;<a id="cancel_settings" href="javascript:;">cancel</a></div>'
+   +'</div></td></tr> <tr>'
+   +'<td id="td_setting_control" width="150">';
+   for(var i in gvar.labelControl){
+    if( isString(gvar.labelControl[i]) )
+     sett+= '<input id="qrset_'+gvar.labelControl[i]+'" type="checkbox" '+(gvar.settings.hidecontroll[i]=='1' ? 'checked':'')+'/> Hide ' + gvar.labelControl[i]+'<br />';
+   }
+   sett+=''
+   +'</td><td id="td_setting_misc">'
+   +(!gvar.noCrossDomain ? '<label for="misc_updates" title="Check Userscripts.org for QR latest update"><input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="qbutton" href="javascript:;" title="Check Update Now">check now</a></small><br />':'')
+   +(!gvar.noCrossDomain ? '<small style="margin-left:10px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval:&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small><br />':'')
+   
+   
+   +'<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/> Hide Avatar<br />'
+   +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/> Dynamic QR'
+   +spacer
+   +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1' ? 'checked':'')+'/> AutoExpand<br />'
+   +'<small style="margin-left:10px;">'
+   +'min:<input id="misc_autoexpand_1" type="text" title="MINIMUM Height &gt= 75" value="'+(gvar.settings.textareaExpander[1])+'" style="width:35px;padding:0" maxlength="4"/>'
+   +'&nbsp;max:<input id="misc_autoexpand_2" type="text" title="MAXIMUM Height &lt;= 2048" value="'+(gvar.settings.textareaExpander[2])+'" style="width:35px;padding:0" maxlength="4"/>'
+   +'</small>'
+   +spacer
+   +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/> AutoLoad Smiley<br />'
+   +'<small>'
+   +'<input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/>kecil&nbsp;'
+   +'<input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/>besar&nbsp;'
+   +'<input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/>[+]'
+   +'</small>'
+   +spacer
+   +'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/> AutoSignature&nbsp;'
+   +'<small><a id="edit_sigi" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
+   +'<div id="edit_sigi_Editor" style="display:none;"></div>'
+   +spacer
+   +'<input id="misc_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1' ? 'checked':'')+'/> AutoLayout&nbsp;'
+   +'<small><a id="edit_tpl" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
+   +'<div id="edit_tpl_Editor" style="display:none;"></div>'
+   +spacer
+   
+   + (!gvar.isOpera ? ''
+   +'<input id="misc_hotkey" type="checkbox" disabled="disabled" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/> QR-Hotkey<br />'
+   +'<small>'
+   +'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1' ? 'checked':'')+'/>ctrl&nbsp;'
+   +'<input id="misc_hotkey_alt" type="checkbox" '+(gvar.settings.hotkeykey[2]=='1' ? 'checked':'')+'/>alt&nbsp;'
+   +'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1' ? 'checked':'')+'/>shift&nbsp;'
+   +'<br/>&nbsp;'
+   +'&nbsp;<input id="misc_hotkey_char" type="text" title="alphnumeric [A-Z0-9]" value="'+(gvar.settings.hotkeychar)+'" style="width:20px;padding:0" maxlength="1" />&nbsp;blank=disable'
+   +'<br/></small>'
+    : '')
+   +'<div style="height:5px;">&nbsp;</div>'
+    
+   +'<a id="reset_default" href="javascript:;"><small>reset default</small></a>'
+   
+   +'</td></tr>'
+   +tbo_
+   ;
+   return sett;
+    
+}
+
+
+function getTPL_layer_Only(){
+  return ('\
+   <div class="trfade"></div> \
+   <div class="fade"></div>\
+  ');
+}
+
+function getTPL_prompt_reCAPTCHA(){
+
+  var get_botgreet = function(min, max){
+    var c = [
+	  'Are you a robot? :o'
+	 ,'It is really a fact this captcha is annoying. :nohope:'
+	 ,'We hate spammer just as much as you do, :)'	 
+	 ,'Get pain in the <s>arse</s>? Then you might be 50% legitimate human for feel the pain. :D'
+	 ,'About 200 million CAPTCHAs are solved by humans around the world every day.'
+	 ,'Fight Spam and Save Shakespeare.'
+	];
+	if( max>=(c.length-1) ) max = parseInt(c.length-1);
+	
+	var lastgreet = cK.g('last_greet');
+	if(!lastgreet || isNaN(lastgreet)){
+	  lastgreet = Math.floor(Math.random() * (max - min + 1) + min);
+	}else{
+	  var dice, done = false;
+	  while(!done){
+	    dice = Math.floor(Math.random() * (max - min + 1) + min);
+		done=(dice != lastgreet);
+	  }
+	  lastgreet = dice;
+	}
+	// avoid repetitive greet, store last index greet .
+	cK.s('last_greet', String(lastgreet), '/', 'www.kaskus.us');
+	return c[lastgreet];
+  };
+  var divInner = ''
+ +'<div id="popup_container_precap" class="popup_block"> '
+ + '<div class="popup">'
+ +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
+ +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+ +  '<tbody><tr>'
+ +   '<td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>'
+ +  '</tr><tr>'
+ +  '<td class="alt1">'
+ +   '<div id="recaptcha_container_header">'
+ +   '<span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0, 10)+'</span>'
+ +   '<span style="float:right;padding:auto 0;">'
+ +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
+ +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
+ +  '</span>'
+
+ +   '</div>'
+ +   '<div class="spacer"></div>'
+ +   '<div id="recaptcha_container" style="text-align:center;">'
+ +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
+
+ +   '</div>'
+ +  '</td></tr>'
+ +  '<tbody></table>'
+ +   '<div id="button_preview" style="display:none;">'
+ +    '<span id="remote_capcay"></span>'
+ +    '<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+ +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+
+
+ +   '</div>'
+ + '</div>'
+ +'</div>';
+
+  return divInner;
+}
+function getTPL_Preview(){
+  var divInner = ''
+ +'<div class="trfade"></div> '
+ +'<div class="fade"></div> '
+ +'<div id="popup_container" class="popup_block"> '
+ + '<div class="popup">'
+ +  '<a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
+ +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+ +  '<tbody><tr>'
+ +   '<td class="tcat">Preview Quick Reply</td>'
+ +  '</tr><tr>'
+ +  '<td class="alt1">'
+ +   '<div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>'
+ +  '</td></tr>'
+ +  '<tbody></table>'
+ +   '<div id="button_preview" >'
+ +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
+ +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+
+
+ +   '</div>'
+ + '</div>'
+ +'</div>';
+
+  return divInner;  
+}
 // end tpl
 
-// storage of smileySets
-function getSmileySet(custom){var H=gvar.domainstatic+'images/smilies/';var s='sumbangan/';gvar.smiliecustom={};var buff=getValue('KEY_SAVE_CUSTOM_SMILEY');if(buff!=''){var idx=1;var sepr=',';var customs={};var smileys=buff.split(sepr);if(isDefined(smileys[0]))for(var i in smileys){if(isString(smileys[i])&&smileys[i]!=''){var parts=smileys[i].split('|');customs[idx.toString()]=(isDefined(parts[1])?[parts[1],parts[0],parts[0]]:smileys[i]);idx++}}gvar.smiliecustom=customs}if(isDefined(custom)&&custom)return;gvar.smiliekecil={'1':[H+'ngakaks.gif',':ngakaks','Ngakak (S)'],'2':[H+'mahos.gif',':mahos','Maho (S)'],'3':[H+'s_sm_cendol.gif',':cendolb','Blue Guy Cendol (S)'],'4':[H+'s_sm_batamerah.gif',':bata','Blue Guy Bata (S)'],'5':[H+'cendols.gif',':cendols','Cendol (S)'],'6':[H+'takuts.gif',':takuts','Takut (S)'],'7':[H+'batas.gif',':batas','Bata (S)'],'8':[H+'s_sm_smile.gif',':)bs','Blue Guy Smile (S)'],'9':[H+'s_sm_peace.gif',':Yb','Blue Guy Peace'],'10':[H+'iloveindonesias.gif',':iloveindonesias','I Love Indonesia (S)'],'11':[H+'cekpms.gif',':cekpms','Cek PM (S)'],'12':[H+'berdukas.gif',':berdukas','Berduka (S)'],'13':[H+'capedes.gif',':capedes','Cape d... (S)'],'14':[H+'bingungs.gif',':bingungs','Bingung (S)'],'15':[H+'malus.gif',':malus','Malu (S)'],'16':[H+'iluvkaskuss.gif',':ilovekaskuss','I Love Kaskus (S)'],'17':[H+'kisss.gif',':kisss','Kiss (S)'],'18':[H+'mads.gif',':mads','Mad (S)'],'19':[H+'sundulgans.gif',':sundulgans','Sundul Gan (S)'],'20':[H+'najiss.gif',':najiss','Najis (S)'],'21':[H+'hammers.gif',':hammers','Hammer (S)'],'22':[H+'reposts.gif',':reposts','Repost (S)'],'23':[H+s+'004.gif',':matabelo:','Belo'],'24':[H+s+'q11.gif',':nohope:','Nohope'],'25':[H+s+'8.gif',':hammer:','Hammer'],'26':[H+s+'24.gif',':army:','army'],'27':[H+s+'005.gif',':Peace:','Peace'],'28':[H+s+'12.gif',':mad:','Mad'],'29':[H+s+'fuck-8.gif',':fuck3:','fuck3'],'30':[H+s+'fuck-6.gif',':fuck2:','fuck2'],'31':[H+s+'fuck-4.gif',':fuck:','fuck'],'32':[H+s+'7.gif',':confused:','Confused'],'33':[H+s+'34.gif',':rose:','rose'],'34':[H+s+'35.gif',':norose:','norose'],'35':[H+s+'017.gif',':angel:','angel'],'36':[H+s+'3.gif',':kagets:','Kagets'],'37':[H+s+'4.gif',':eek:','EEK!'],'38':[H+s+'014.gif',':kissing:','kisssing'],'39':[H+s+'q03.gif',':genit:','Genit'],'40':[H+s+'001.gif',':wowcantik','Wowcantik'],'41':[H+s+'amazed.gif',':amazed:','Amazed'],'42':[H+s+'vana-bum-vanaweb-dot-com.gif',':bikini:','Bikini'],'43':[H+s+'crazy.gif',':gila:','Gila'],'44':[H+s+'shit-3.gif',':tai:','Tai'],'45':[H+s+'5.gif',':shutup:','Shutup'],'46':[H+s+'q20.gif',':berbusa:','Busa'],'47':[H+s+'49.gif',':shakehand','shakehand'],'48':[H+s+'48.gif',':thumbdown','thumbdown'],'49':[H+s+'47.gif',':thumbup:','thumbsup'],'50':[H+s+'020.gif',':siul:','siul'],'51':[H+s+'1.gif',':malu:','Malu'],'52':[H+s+'14.gif',':D','Big Grin'],'91':[H+s+'15.gif',':)','Smilie'],'92':[H+s+'06.gif',':(','Frown'],'53':[H+'ngacir.gif',':ngacir:','Ngacir'],'54':[H+s+'26.gif',':linux2:','linux2'],'55':[H+'bolakbalik.gif',':bingung:','Bingung'],'56':[H+'tabrakan.gif',':tabrakan:','Ngacir Tubrukan'],'57':[H+s+'q17.gif',':metal:','Metal'],'58':[H+s+'05.gif',':cool:','Cool'],'59':[H+s+'hi.gif',':hi:','Hi'],'60':[H+s+'6.gif',':p','Stick Out Tongue'],'61':[H+s+'13.gif',';)','Wink'],'64':[H+s+'01.gif',':rolleyes:','Roll Eyes (Sarcastic)'],'65':[H+s+'18.gif',':doctor:','doctor'],'66':[H+s+'006.gif',':think:','Thinking'],'67':[H+s+'07.gif',':o','Embarrassment'],'68':[H+s+'36.gif',':kissmouth','kiss'],'69':[H+s+'37.gif',':heart:','heart'],'70':[H+s+'e03.gif',':flower:','flower'],'71':[H+s+'e02.gif',':rainbow:','rainbow'],'72':[H+s+'008.gif',':sun:','Matahari'],'73':[H+s+'007.gif',':moon:','Moon'],'74':[H+s+'40.gif',':present:','present'],'75':[H+s+'41.gif',':Phone:','phone'],'76':[H+s+'42.gif',':clock:','clock'],'77':[H+s+'44.gif',':tv:','televisi'],'78':[H+s+'39.gif',':table:','table'],'79':[H+s+'32.gif',':ricebowl:','ricebowl'],'80':[H+s+'rice.gif',':Onigiri:','Onigiri'],'81':[H+s+'31.gif',':coffee:','coffee'],'82':[H+s+'33.gif',':medicine:','medicine'],'83':[H+s+'43.gif',':email:','mail'],'84':[H+s+'paw.gif',':Paws:','Paw'],'85':[H+s+'29.gif',':anjing:','anjing'],'86':[H+s+'woof.gif',':buldog:','Buldog'],'87':[H+s+'28.gif',':kucing:','kucing'],'88':[H+s+'frog.gif',':frog:','frog'],'89':[H+s+'27.gif',':babi:','babi'],'90':[H+s+'52.gif',':exclamati','exclamation']};gvar.smiliebesar={'291':[H+s+'smiley_beer.gif',':beer:','Angkat Beer'],'292':[H+s+'kribo.gif',':afro:','afro'],'293':[H+'smileyfm329wj.gif',':fm:','Forum Music'],'294':[H+s+'kaskuslove.gif',':ck','Kaskus Lovers'],'295':[H+'s_sm_ilovekaskus.gif',':ilovekaskus','I Love Kaskus'],'500':[H+'I-Luv-Indonesia.gif',':iloveindonesia','I Love Indonesia'],'501':[H+'ngakak.gif',':ngakak','Ngakak'],'502':[H+'najis.gif',':najis','Najis'],'503':[H+'s_sm_maho.gif',':maho','Maho'],'504':[H+'hoax.gif',':hoax','Hoax'],'505':[H+'marah.gif',':marah','Marah'],'506':[H+'nosara.gif',':nosara','No Sara Please'],'507':[H+'berduka.gif',':berduka','Turut Berduka'],'508':[H+'sorry.gif',':sorry','Sorry'],'509':[H+'sundul.gif',':sup2:','Sundul'],'510':[H+'capede.gif',':cd','Cape d...'],'511':[H+'s_sm_repost1.gif',':repost','Blue Repost'],'512':[H+'hammer.gif',':hammer','Hammer2'],'513':[H+'s_big_batamerah.gif',':batabig','Blue Guy Bata (L)'],'514':[H+'s_big_cendol.gif',':cendolbig','Blue Guy Cendol (L)'],'515':[H+'toastcendol.gif',':toast','Toast'],'516':[H+'recseller.gif',':recsel','Recommended Seller'],'517':[H+'jempol2.gif',':2thumbup','2 Jempol'],'518':[H+'jempol1.gif',':thumbup','Jempol'],'519':[H+'shakehand2.gif',':shakehand2','Shakehand2'],'520':[H+'ngacir2.gif',':ngacir2','Ngacir2'],'521':[H+'matabelo1.gif',':matabelo','Matabelo'],'522':[H+'takut.gif',':takut','Takut'],'523':[H+'mewek.gif',':mewek','Mewek'],'524':[H+'selamat.gif',':selamat','Selamat'],'525':[H+'dp.gif',':dp','DP'],'526':[H+'cekpm.gif',':cekpm','Cek PM'],'527':[H+'request.gif',':request','Request'],'528':[H+'babyboy.gif',':babyboy','Baby Boy'],'529':[H+'babyboy1.gif',':babyboy1','Baby Boy 1'],'530':[H+'babygirl.gif',':babygirl','Baby Girl'],'531':[H+'kaskus_radio.gif',':kr','Kaskus Radio'],'532':[H+'traveller.gif',':travel','Traveller'],'533':[H+'nohope.gif',':nohope','No Hope'],'534':[H+'kimpoi.gif',':kimpoi','Kimpoi'],'535':[H+'ngacir3.gif',':ngacir','Ngacir'],'536':[H+'salah_kamar.gif',':salahkamar','Salah Kamar'],'537':[H+'ultah.gif',':ultah','Ultah'],'538':[H+'rate5.gif',':rate5','Rate 5 Star'],'901':[H+'fd_1.gif',':jrb:','Jangan ribut disini'],'901':[H+'fd_6.gif',':kts:','Kemana TSnya?'],'902':[H+'fd_5.gif',':sup:','Sundul Up'],'903':[H+'fd_4.gif',':kbgt:','Kaskus Banget'],'904':[H+'fd_8.gif',':kacau:','Thread Kacau'],'905':[H+'fd_3.gif',':bigo:','Bukan IGO'],'906':[H+'fd_7.gif',':repost:','Repost'],'907':[H+'fd_2.gif',':cd:','Cape deeehh']}};
+function getSmileySet(custom){
+
+  var H = gvar.domainstatic + 'images/smilies/';
+  var s = 'sumbangan/';
+  
+/**
+Format will be valid like this:
+ 'keyname1|link1,keyname2|link2'
+ eg. 
+ ':yoyocici|http://foo'
+*/
+  //var sample = 'lopeh|http://static.kaskus.us/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.us/images/smilies/sumbangan/06.gif';
+  gvar.smiliecustom = {};
+  var buff = getValue('KEY_SAVE_CUSTOM_SMILEY');
+  if(buff!=''){
+    var idx=1;
+    var sepr = ',';
+    var customs={};
+    var smileys = buff.split(sepr);
+    if(isDefined(smileys[0]))
+     for(var i in smileys){
+       if(isString(smileys[i]) && smileys[i]!=''){
+         var parts = smileys[i].split('|');
+         customs[idx.toString()] = (isDefined(parts[1]) ? [parts[1], parts[0], parts[0]] : smileys[i]);
+         idx++;
+       }
+     }
+    gvar.smiliecustom = customs;
+  }
+  if(isDefined(custom) && custom) return;
+
+  
+  gvar.smiliekecil = {
+ '1' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
+,'2' : [H+'mahos.gif', ':mahos', 'Maho (S)']
+,'3' : [H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
+,'4' : [H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
+,'5' : [H+'cendols.gif', ':cendols', 'Cendol (S)']
+,'6' : [H+'takuts.gif', ':takuts', 'Takut (S)']
+
+,'7' : [H+'batas.gif', ':batas', 'Bata (S)']
+,'8' : [H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
+,'9' : [H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
+,'10': [H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
+,'11': [H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
+,'12': [H+'berdukas.gif', ':berdukas', 'Berduka (S)']
+,'13': [H+'capedes.gif', ':capedes', 'Cape d... (S)']
+,'14': [H+'bingungs.gif', ':bingungs', 'Bingung (S)']
+
+,'15': [H+'malus.gif', ':malus', 'Malu (S)']
+,'16': [H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
+,'17': [H+'kisss.gif', ':kisss', 'Kiss (S)']
+,'18': [H+'mads.gif', ':mads', 'Mad (S)']
+,'19': [H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
+,'20': [H+'najiss.gif', ':najiss', 'Najis (S)']
+,'21': [H+'hammers.gif', ':hammers', 'Hammer (S)']
+,'22': [H+'reposts.gif', ':reposts', 'Repost (S)']
+,'23': [H+s+'004.gif', ':matabelo:', 'Belo']
+,'24': [H+s+'q11.gif', ':nohope:', 'Nohope']
+,'25': [H+s+'8.gif', ':hammer:', 'Hammer']
+,'26': [H+s+'24.gif', ':army:', 'army']
+,'27': [H+s+'005.gif', ':Peace:', 'Peace']
+,'28': [H+s+'12.gif', ':mad:', 'Mad']
+
+,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
+,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
+,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+
+,'32': [H+s+'7.gif', ':confused:', 'Confused']
+,'33': [H+s+'34.gif', ':rose:', 'rose']
+,'34': [H+s+'35.gif', ':norose:', 'norose']
+,'35': [H+s+'017.gif', ':angel:', 'angel']
+,'36': [H+s+'3.gif', ':kagets:', 'Kagets']
+,'37': [H+s+'4.gif', ':eek:', 'EEK!']
+,'38': [H+s+'014.gif', ':kissing:', 'kisssing']
+,'39': [H+s+'q03.gif', ':genit:', 'Genit']
+
+,'40': [H+s+'001.gif', ':wowcantik', 'Wowcantik']
+,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
+,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
+,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
+,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
+,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
+,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
+,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
+,'48': [H+s+'48.gif', ':thumbdown', 'thumbdown']
+,'49': [H+s+'47.gif', ':thumbup:', 'thumbsup']
+,'50': [H+s+'020.gif', ':siul:', 'siul']
+,'51': [H+s+'1.gif', ':malu:', 'Malu']
+,'52': [H+s+'14.gif', ':D', 'Big Grin']
+,'91': [H+s+'15.gif', ':)', 'Smilie']
+,'92': [H+s+'06.gif', ':(', 'Frown']
+
+,'53': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
+,'54': [H+s + '26.gif', ':linux2:', 'linux2']
+,'55': [H+'bolakbalik.gif', ':bingung:', 'Bingung']
+,'56': [H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
+
+,'57': [H+s+'q17.gif', ':metal:', 'Metal']
+,'58': [H+s+'05.gif', ':cool:', 'Cool']
+,'59': [H+s+'hi.gif', ':hi:', 'Hi']
+,'60': [H+s+'6.gif', ':p', 'Stick Out Tongue']
+,'61': [H+s+'13.gif', ';)', 'Wink']
+
+
+,'64': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
+,'65': [H+s+'18.gif', ':doctor:', 'doctor']
+
+,'66': [H+s+'006.gif', ':think:', 'Thinking']
+,'67': [H+s+'07.gif', ':o', 'Embarrassment']
+,'68': [H+s+'36.gif', ':kissmouth', 'kiss']
+,'69': [H+s+'37.gif', ':heart:', 'heart']
+,'70': [H+s+'e03.gif', ':flower:', 'flower']
+,'71': [H+s+'e02.gif', ':rainbow:', 'rainbow']
+,'72': [H+s+'008.gif', ':sun:', 'Matahari']
+,'73': [H+s+'007.gif', ':moon:', 'Moon']
+,'74': [H+s+'40.gif', ':present:', 'present']
+
+,'75': [H+s+'41.gif', ':Phone:', 'phone']
+,'76': [H+s+'42.gif', ':clock:', 'clock']
+,'77': [H+s+'44.gif', ':tv:', 'televisi']
+,'78': [H+s+'39.gif', ':table:', 'table']
+,'79': [H+s+'32.gif', ':ricebowl:', 'ricebowl']
+,'80': [H+s+'rice.gif', ':Onigiri:', 'Onigiri']
+,'81': [H+s+'31.gif', ':coffee:', 'coffee']
+,'82': [H+s+'33.gif', ':medicine:', 'medicine']
+,'83': [H+s+'43.gif', ':email:', 'mail']
+
+,'84': [H+s+'paw.gif', ':Paws:', 'Paw']
+,'85': [H+s+'29.gif', ':anjing:', 'anjing']
+,'86': [H+s+'woof.gif', ':buldog:', 'Buldog']
+,'87': [H+s+'28.gif', ':kucing:', 'kucing']
+,'88': [H+s+'frog.gif', ':frog:', 'frog']
+,'89': [H+s+'27.gif', ':babi:', 'babi']
+,'90': [H+s+'52.gif', ':exclamati', 'exclamation']
+
+  };
+  gvar.smiliebesar = {
+ '291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
+,'292': [H+s+'kribo.gif', ':afro:', 'afro']
+,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
+,'294': [H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
+,'295': [H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
+
+/* New Big Smilies */
+,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
+,'501': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+,'502': [H+'najis.gif', ':najis', 'Najis']
+,'503': [H+'s_sm_maho.gif', ':maho', 'Maho']
+,'504': [H+'hoax.gif', ':hoax', 'Hoax']
+,'505': [H+'marah.gif', ':marah', 'Marah']
+,'506': [H+'nosara.gif', ':nosara', 'No Sara Please']
+,'507': [H+'berduka.gif', ':berduka', 'Turut Berduka']
+,'508': [H+'sorry.gif', ':sorry', 'Sorry']
+,'509': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'510': [H+'capede.gif', ':cd', 'Cape d...']
+,'511': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
+,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'513': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'514': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'515': [H+'toastcendol.gif', ':toast', 'Toast']
+
+,'516': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'517': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'518': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'519': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+,'520': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'521': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,'522': [H+'takut.gif', ':takut', 'Takut']
+,'523': [H+'mewek.gif', ':mewek', 'Mewek']
+,'524': [H+'selamat.gif', ':selamat', 'Selamat']
+,'525': [H+'dp.gif', ':dp', 'DP']
+,'526': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'527': [H+'request.gif', ':request', 'Request']
+,'528': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'529': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'530': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'531': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'532': [H+'traveller.gif', ':travel', 'Traveller']
+,'533': [H+'nohope.gif', ':nohope', 'No Hope']
+/* new-emote Dec-2010 */
+,'534': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'535': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'536': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+,'537': [H+'ultah.gif', ':ultah', 'Ultah']
+,'538': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+
+// -- OLD ---
+,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
+,'901': [H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
+,'902': [H+'fd_5.gif', ':sup:', 'Sundul Up']
+,'903': [H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
+,'904': [H+'fd_8.gif', ':kacau:', 'Thread Kacau']
+,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
+,'906': [H+'fd_7.gif', ':repost:', 'Repost']
+,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
+  };
+
+};
 // end getSmileySet
-function getSetOf(type){if(isUndefined(type))return false;switch(type){case"color":return{"#000000":"Black","#A0522D":"Sienna","#556B2F":"DarkOliveGreen","#006400":"DarkGreen","#483D8B":"DarkSlateBlue","#000080":"Navy","#4B0082":"Indigo","#2F4F4F":"DarkSlateGray","#8B0000":"DarkRed","#FF8C00":"DarkOrange","#808000":"Olive","#008000":"Green","#008080":"Teal","#0000FF":"Blue","#708090":"SlateGray","#696969":"DimGray","#FF0000":"Red","#F4A460":"SandyBrown","#9ACD32":"YellowGreen","#2E8B57":"SeaGreen","#48D1CC":"MediumTurquoise","#4169E1":"RoyalBlue","#800080":"Purple","#808080":"Gray","#FF00FF":"Magenta","#FFA500":"Orange","#FFFF00":"Yellow","#00FF00":"Lime","#00FFFF":"Cyan","#00BFFF":"DeepSkyBlue","#9932CC":"DarkOrchid","#C0C0C0":"Silver","#FFC0CB":"Pink","#F5DEB3":"Wheat","#FFFACD":"LemonChiffon","#98FB98":"PaleGreen","#AFEEEE":"PaleTurquoise","#ADD8E6":"LightBlue","#DDA0DD":"Plum","#FFFFFF":"White"};break;case"font":return["Arial","Arial Black","Arial Narrow","Book Antiqua","Century Gothic","Comic Sans MS","Courier New","Fixedsys","Franklin Gothic Medium","Garamond","Georgia","Impact","Lucida Console","Lucida Sans Unicode","Microsoft Sans Serif","Palatino Linotype","System","Tahoma","Times New Roman","Trebuchet MS","Verdana"];break;case"size":return["1","2","3","4","5","6","7"];break;case"button":return{smile_gif:""+"data:image/gif;base64,R0lGODlhEwATAOYAAAAAAP///z5ivnKY26bP+f3tTPzlTPznTPviWfveTPvbXfvVTPvXTPnOTPvde5x7IfvUX829kP3qt6GZgaig"+"iPnGTPnITPrNXfvWe/zhm6+nksO7p8ajV/ven7Wmha+hg6+ihq+jiLyxl/3uzdDIt/i+TPi/TfjFXPrSf/3nu8m7n8O2ncq9pP3u0XpQB/vcpfznv9DCqP7u0u"+"TYwve6Vfi8V/jAYd28huPFlePLov7kuP7t0f7v1v3u1evgzvi9aPrPkePPsP3mxf7w2/7x3v7y4P7y4fi5Yfe6ZP3myP7v2/7x3/Lm1v7y4v7z5P705v726/i9"+"c/e8dsSWX/rFh/nKkvznzP7u2v716v7w4P7y5fnHksWWbsWfgMWfg8Whh0gRBP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"+"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAGEALAAAAAATABMAAAfZgGGCg4SFhoeEPiohIB8eiIMzExQsQTk"+"4N5BhKxpMS0RFRjs6kCIkTk9QT0ZDPDKCLi6EMRtKTVhaWVc9LSNhsbGwsUlgxVZCMCkSvyVbsrE0LmBeX11gLx0ZYMzOvzTRXFtVQFMoGA4c3M80zlRSPzYn"+"FxAKCOq/W85RSDUmFg0MEhxQFyufiyM0SlRosCCBgQK/XLBzYdDFg4sYMcJiV/HBgAABCIAUGSCixIouCAgIORIksG/5nMVSKaCmTYnQKjp7wLKnxGjAKMq82D"+"LAT6AxZYaJkPFBIAA7",spoiler_png:""+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAABnRSTlMA4QDhAOKdNtA9AAAACXBIWXMAAAsTAAALEwEAmpwYAAABg"+"0lEQVR42tVUPUsDQRB9M7dBQi4iypWJhgQsU1lIUtklIgg2tmJhK3b+gLT+AtHaP2AqtUmwslGMTSJcUgaSKEc+bu/DYmGJMR+glVs8HrO8fTOzs0u23cRvF+MP"+"609iodn1Y70SbC8UhL3O1a6vOOmaj6tWds32Xc9gigpDMEUYBvNyVESYIwZiERHaK6+1h8+P2unJ4WTaw6Hs9+WgL0cD6Q6lO/S8kRe4PqRP0mcvMNd7uf0tAC9"+"v79/SBpDaWIUfEkMwM0AEMC0JJqKAMDBYMrHB3U53smYA7tMNMRNzIASBiJmIXabFDQNwfnRWbTm5hFlutAtpS3GNABR5vitNEVdbTj5pAgAsAID5A1FpwpVyyj"+"3nEmal6YQhFN7W2xorTUcFZw5JudHOJ00iACBCMWMBKGYsFdFb08WFtKWPV24AdGSec7Z+r7pChHF/xVUvZjp77iiXMLXnuL/OYl7NynkWahKPxyZnG0Dp4tJx+"+"vMfRjwe28ykDvZ2JsX/5zP4AtVMzoKTk38hAAAAAElFTkSuQmCC",transp_gif:""+"data:image/gif;base64,R0lGODlhFAAUAPcAAAAAAIAAAACAAICAAAAAgIAAgACAgMDAwMDcwKbK8EAgAGAgAIAgAKAgAMAgAOAgAABAACBAAEBAAGBAAIBAA"+"KBAAMBAAOBAAABgACBgAEBgAGBgAIBgAKBgAMBgAOBgAACAACCAAECAAGCAAICAAKCAAMCAAOCAAACgACCgAECgAGCgAICgAKCgAMCgAOCgAADAACDAAEDAAGDA"+"AIDAAKDAAMDAAODAAADgACDgAEDgAGDgAIDgAKDgAMDgAODgAAAAQCAAQEAAQGAAQIAAQKAAQMAAQOAAQAAgQCAgQEAgQGAgQIAgQKAgQMAgQOAgQABAQCBAQEB"+"AQGBAQIBAQKBAQMBAQOBAQABgQCBgQEBgQGBgQIBgQKBgQMBgQOBgQACAQCCAQECAQGCAQICAQKCAQMCAQOCAQACgQCCgQECgQGCgQICgQKCgQMCgQOCgQADAQC"+"DAQEDAQGDAQIDAQKDAQMDAQODAQADgQCDgQEDgQGDgQIDgQKDgQMDgQODgQAAAgCAAgEAAgGAAgIAAgKAAgMAAgOAAgAAggCAggEAggGAggIAggKAggMAggOAgg"+"ABAgCBAgEBAgGBAgIBAgKBAgMBAgOBAgABggCBggEBggGBggIBggKBggMBggOBggACAgCCAgECAgGCAgICAgKCAgMCAgOCAgACggCCggECggGCggICggKCggMCg"+"gOCggADAgCDAgEDAgGDAgIDAgKDAgMDAgODAgADggCDggEDggGDggIDggKDggMDggODggAAAwCAAwEAAwGAAwIAAwKAAwMAAwOAAwAAgwCAgwEAgwGAgwIAgwKA"+"gwMAgwOAgwABAwCBAwEBAwGBAwIBAwKBAwMBAwOBAwABgwCBgwEBgwGBgwIBgwKBgwMBgwOBgwACAwCCAwECAwGCAwICAwKCAwMCAwOCAwACgwCCgwECgwGCgwI"+"CgwKCgwMCgwOCgwADAwCDAwEDAwGDAwIDAwKDAwP/78KCgpICAgP8AAAD/AP//AAAA//8A/wD//////yH5BAEAAP8ALAAAAAAUABQABwhMAP8JHEiwoMGDCBMqR"+"Eiq4b+GpB5GhGgw4kKLBDEm1FjQ4cSHGxeC7Djw48eRIkVaNHmSI8qQCj2+JHmxosqKHnNKdJmyp8+fQAUGBAA7",noparse_gif:""+"data:image/gif;base64,R0lGODlhFAAUAPcBAAAAAAEBAQICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsLCwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUF"+"BUVFRYWFhcXFxgYGBkZGRoaGhsbGxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisrKywsLC0tLS4uLi8vLzAwMDExMTIyMjMz"+"MzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktLS0xMTE1NTU5OTk9PT1BQUFFRUVJ"+"SUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltbW1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtra2xsbG1tbW5ubm9vb3Bwc"+"HFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+P"+"j5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6"+"urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM"+"3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6"+"+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///yH5BAHoAwEALAAAAAAUABQAAAhNAAMIHEiwoMGDCBMq"+"XMiwoUIAEBlCBCAwYkOLFiVSDBBxYsaJFTdipNiRpMmQKEtyPLky5UmVLVuqhFnSpE2UMTWG3Pgwo8OfQIMCDQgAOw==",youtube_gif:""+"data:image/gif;base64,R0lGODlhFAAUAPcAAAQCBLySRGSKzKTG5PTmrHxKDPzOzPzy7PyytERmrNz6/OweBPyanPxWTPza3Oyq/Pz+/NSubJza7JxyFPzS1"+"Py6vNz+/PwiFKBsyBQM6XeLEgMBADioAOboABISAAAAABZqYND/AEUjAHUCAAAANwAAFh8A7QAA/wBF/wAA/wAA/wAA/6goHxStiHciNgMAdVAAybYAiHMfNgMA"+"dQDgpACv6wAiEgAAAACwAQDoAAASAAAAAABFAAAAAAAAAAAAAAAoAACtAAAiAAAAAAAA5AAA5wAAEgAAAAASAgAAAB8AAAAAAFAc/Lbo6XMSEgMAAABF4wAAYgA"+"AOwAAdXwAiOYAihIfwQAAFggo/gCt/28i/wAA/wccjQDoiAASNgAAdeouMcdndkVpNnVmdZMARYE0OuPrXGN2AOAhcwKtZVFFcgB1czgAU7YB33MARQMAdQEAbw"+"AAjwAA4wAAY0iMALbnAHMSAAMAAHQnAOY7ABLrAAB2AK8saB87gOvrInZ2AFATALYsgHMcIgNzADEAVB8A6OsAEnYAAAAAEQABAQAAAAAAAEghsLat6HNFEgN1"+"AIBkmufnkxISTAAAdbwRt8IBuEUAtHUAFgBv/gCA/x/j/wBj/wC0UwDn3wASRQAAdVCRSbas2HNFRQN1dQAAaAAAgAAAIgAAAAAAPgEA0gAARgAAdcvYL8K1j0X"+"n43V2Y8xfAOcsABIcAABzAFB5ALbpAHMSAAMAAAwMAJ6hADtPAHUAAAFkSAAA6QAAEgAAAAIAAX8AAAAAAAAAAGeUkGnn6DUSEjEAAFwMEXShAXJPAGkAAGtgYG"+"/7+20SEnMAAGVNmmzXk1/nTHZ2dTJHp1zBtXPlt3QFFmH+/nT//2n//2P//1zYPmm10m3nRmF2dWdbiGV/gXNIQlx1AADcaPPogBISIgAAACBrAAB/AABIAAB1A"+"ACNeQCt6QBFEgB1ANABMfYArYsARQEAdQ4xMwEAjwAw4wAAY0XJMTqIrQA2RQF1dQUuagBncQBpSABmACH5BAEAABIALAAAAAAUABQABwipACUIHEiwoMGDCA1"+"CiFAAQoIBECJKnEgwIoAHACZqjFhxIQCIAQAIgJAxI8eBEQkAUKCSpIKSEjuqtNASgIUJL2OihKBSAYSQIyMASKBT4MajRSU4uMC0qVOnDghekOgUwlOmUqc+tX"+"o1K4QGVr9GrHChwgEDF7yCnboWAoOIFNIOZCqWbdi3TQkuYFshYgMDEBBceItW6oLDiBMrJgjgquMLABJKnkw5IAA7",closepreview_png:""+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAfCAYAAAD0ma06AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h"+"Z2VSZWFkeXHJZTwAAAY1SURBVHjapFZbbFRVFN0zd6Yz08dMoUNf9EGxUItJK62I4AOJEYiQoqE+0OgHCiqG+PgQozH6ofyIJiYEMRqNJpggHySlrRM+hCAtaj"+"AUaGgEi9BBSilMO0PnfWeOa597bjt9AEVvsubOPWefs/br7H0sQgj6P4/FYrk9+WkSuoAHgCrgLvV9DLgMdID02rQZmfAmaAJaxS2edDr9s67rL7EB/9XCUuAL"+"oEl+pZJEvTAo8A9s6iVKxojKYWheAWxuIMr2GGKp1KHh4eF3vF4vW59me6ZD2Ajsle6LXify7SI68iNROIgtIKtpBvQEB5DI7iC6Zw3Rmi1EM0vlBsFg8OX8/P"+"xvWQdFKm5E2KhiQ9R9iOjL17E6QFRUhAGQpFNjklYrhhT6YbndTtT8LtGjG+T0lStXNhcVFTGpnkE8jpAT4hdgNvm+Ivr+AyIHtM+Fu3Ss0RUZO8pqqos/NiDL"+"blgcQO48/CzRpk/l9KlTp56oq6s7gL8JkzST0AespN9/Itq2Hu7xQnsbRFOcWSBKT50FVpMUHrBD/iKsXb+V6KmtFI/H/3Q6nZzdEZPU1PVFSXbtEoltz0Nzm2"+"HRqleIvjsLa/9CoiSnBs99cwaym4lCYSRSHr4/REg64SBHTX9//2fqGNmVevJ5jn/0Xe+Rhd2SBVdGkInr3hizZI8fOibGg8fM5/EthgIJwxPJ7a/Jd05Ozn14"+"uQEHGRGXsVtOIwHS2nbDlTOIYlHoMoUL9w0Q/GSA/0/KeXglFmEWsp/uIjp9FAbnzWttbV3H3ECWFWdnubTuSBulQ9AwDs2jcSPGby6evGn7sIGJzwuzDUViMe"+"kdAZ0jrXvlVGVl5RK8ctlKq6ZpHFSKdBzCwSVjQRILAzh3508TPe29dbl6ZibiB/lrQeWBGFmykGe/dcjpwsLCeuVWpw1ZWskFWO/rM45ZNGWkPXt0ZIR/iJbi"+"gHfeoOYuU9UsbmbtWI2x+i+acWSt8yShCiaJVFwq50zeZrsYmapAgz/KFCmzo2gqhk7WJ8SDCY+bomF2qdI2E3/cpKPwXKYs1qdAlozwnjlSJBaLcbVxyqRBlT"+"8rB+fUkJuzGotEXB1TRvc02hfLKHk9btT6BCyPzJ0rpwcGBoLqHGpWVIMjsmLVPkTZhXgbMacUW3pGTB2z+4HA5fHjkE3EDELeYyaSJjx/qZzq6uq6pKJrsR4/"+"flwSeh98mIbmVpET7khBU20qw+4GEbda1ndZyaTpLDLWOtnSchdZVj4pxw8fPuzPLOD2SCSylxvpr9u3C1GDylkClAM73xrrsnfiu4JErMCAqAIW0Nj8DsiWkt"+"BnGXJdr24QiURCTuXm5n4MnmZWmQm1EydOPMITg4ODom/VEiHKsGgOyQ14sSQvJhF2j8eoYhXGvPzGmqF7K0V3d7ckQ5XhHHkbeAyoNU9ODpqmvEp0dHSIQEOV"+"sRhWjGSTuOq4OQJOMpQEWXS+RxzYs0cgGSUhCvgO7L+Jg6DKqLyHOGpra0tYgAV9Pp/oX1wnBLunXlnrgVXYfEAzEMzCmFsRLSIpG6opFa27d4twOCzJWlpa2L"+"r3lTsXAiUmIRcAN1z6Awuy7zs7O8WxjRtFvDDH2JhJG4ClCo1AtUGq59tEz9q1UlGTrK2t7QL2/ATYKJsDUTUwQzZgVAKrSrI89K+dxcXFzbiJUR/K3cmTJ2nW"+"wYNUcfQoeS+cJcdwQGZeIjuHAmV30KWGBjq/YgUtWLiQqquryWazUXt7u3/16tX7IIYbF50D+vjWwUXGJLQYlxZZDdx+v//zsrKyZtnX0ONwcAnWUygUQhtMSE"+"LeGK2HCgoKqKSkhNDZ5fj+/fvPNTU1teDvBQW/IuMWEx29g6rkYSv5zlfu8Xgae3p6fGKaD1z4N0i/xtqPALR/WgssAuawK1XNto7eaZSVVhVPl6ruM9Baiuvr"+"6+fBzRUul2sWxPKQWA5Yqg0NDekIwfXe3t4h3EfZ10PAVWXRIMBj16VlRvFLj7smTiB1qArPxPnKcrdqpE5VG0lVEC6EYdUIgsp9ITXGc0mzaU26CGeQampTp7"+"I4W8GlXK/R2MUxoTaOZMAk0jNv4VNe9RXpRGK7IrIrD2QS6mrzpCKfSDRK8q8AAwCF/L1ktjcKFAAAAABJRU5ErkJggg%3D%3D",updates_png:""+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAARCAIAAACNaGH2AAAABnRSTlMA/wD/AP83WBt9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABg0"+"lEQVR42n2SPW4UQRCFX417MXh3JbJ1hIwRxyBCGImjICQHIALOYF+Bi8AduIYdIeT9m5mq9xHMYhLMUwUt9Wu9r6orvv64/Nn/2o61NvvyOnNbtRkzbZepciZVT"+"p90j7vduIEgQoGxAgAhIYENAoHX47ob7JQSyjJyTa4ACRQRIaGITkTb2X15MGknpFxQWEIStpBCANA2maM9mgH6cqLRhGQDYGFTxgjaNisVCUN5lIeskcMdJiSQN"+"FGpbbKIGOzR9NCDEDaG8p9eNYG1TVnBYKcZjKdQeRrEAYPCKKLtsko2SiOMLXAac18ThqDtXUyIAYXLwgJXyWDbU45ALfd9N2sytiVxSOAAXBaOCEC4HWe3G3fRd"+"YojYaZ/G0ZXSaKmd4E9ny3jZn1zu7mV9On7RxBOzNvzi4uX7yYAxTQPnS5P22q+Ws1XklyF3bX24unZ51df9C+1+xNZR0+Oz5fPr95c6wH9dc8WJ2eLZ1evrxePF"+"g+5D+sCvP/24a6/47/6DW1k0UQglGH2AAAAAElFTkSuQmCC",news_png:""+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1"+"4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2"+"07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"};break};return false}
-function getSCRIPT(){return(''+'function showRecaptcha(element){'+'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'+'{theme:"red",lang:"en"'+',custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'+'}'+');'+'};'+'function clickedelm(val){ document.getElementById("clicker").value=val; };'+'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'+'this.open_smilie_window=function(width,height){'+'smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'+'};'+'};'+'')}
+function getSetOf(type){
+  if(isUndefined(type)) return false;
+  switch(type){
+    case "color":
+     return {
+     "#000000": "Black",
+     "#A0522D": "Sienna",
+     "#556B2F": "DarkOliveGreen",
+     "#006400": "DarkGreen",
+     "#483D8B": "DarkSlateBlue",
+     "#000080": "Navy",
+     "#4B0082": "Indigo",
+     "#2F4F4F": "DarkSlateGray",
+     "#8B0000": "DarkRed",
+     "#FF8C00": "DarkOrange",
+     "#808000": "Olive",
+     "#008000": "Green",
+     "#008080": "Teal",
+     "#0000FF": "Blue",
+     "#708090": "SlateGray",
+     "#696969": "DimGray",
+     "#FF0000": "Red",
+     "#F4A460": "SandyBrown",
+     "#9ACD32": "YellowGreen",
+     "#2E8B57": "SeaGreen",
+     "#48D1CC": "MediumTurquoise",
+     "#4169E1": "RoyalBlue",
+     "#800080": "Purple",
+     "#808080": "Gray",
+     "#FF00FF": "Magenta",
+     "#FFA500": "Orange",
+     "#FFFF00": "Yellow",
+     "#00FF00": "Lime",
+     "#00FFFF": "Cyan",
+     "#00BFFF": "DeepSkyBlue",
+     "#9932CC": "DarkOrchid",
+     "#C0C0C0": "Silver",
+     "#FFC0CB": "Pink",
+     "#F5DEB3": "Wheat",
+     "#FFFACD": "LemonChiffon",
+     "#98FB98": "PaleGreen",
+     "#AFEEEE": "PaleTurquoise",
+     "#ADD8E6": "LightBlue",
+     "#DDA0DD": "Plum",
+     "#FFFFFF": "White"
+     };
+    break;
+    case "font":
+     return ["Arial","Arial Black","Arial Narrow","Book Antiqua","Century Gothic","Comic Sans MS","Courier New","Fixedsys","Franklin Gothic Medium","Garamond","Georgia","Impact","Lucida Console","Lucida Sans Unicode","Microsoft Sans Serif","Palatino Linotype","System","Tahoma","Times New Roman","Trebuchet MS","Verdana"];
+    break;
+    case "size":
+     return ["1","2","3","4","5","6","7"];
+
+    break;
+    case "button":
+     return {
+       smile_gif : ""
+        +"data:image/gif;base64,R0lGODlhEwATAOYAAAAAAP///z5ivnKY26bP+f3tTPzlTPznTPviWfveTPvbXfvVTPvXTPnOTPvde5x7IfvUX829kP3qt6GZgaig"
+        +"iPnGTPnITPrNXfvWe/zhm6+nksO7p8ajV/ven7Wmha+hg6+ihq+jiLyxl/3uzdDIt/i+TPi/TfjFXPrSf/3nu8m7n8O2ncq9pP3u0XpQB/vcpfznv9DCqP7u0u"
+        +"TYwve6Vfi8V/jAYd28huPFlePLov7kuP7t0f7v1v3u1evgzvi9aPrPkePPsP3mxf7w2/7x3v7y4P7y4fi5Yfe6ZP3myP7v2/7x3/Lm1v7y4v7z5P705v726/i9"
+        +"c/e8dsSWX/rFh/nKkvznzP7u2v716v7w4P7y5fnHksWWbsWfgMWfg8Whh0gRBP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        +"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAGEALAAAAAATABMAAAfZgGGCg4SFhoeEPiohIB8eiIMzExQsQTk"
+        +"4N5BhKxpMS0RFRjs6kCIkTk9QT0ZDPDKCLi6EMRtKTVhaWVc9LSNhsbGwsUlgxVZCMCkSvyVbsrE0LmBeX11gLx0ZYMzOvzTRXFtVQFMoGA4c3M80zlRSPzYn"
+        +"FxAKCOq/W85RSDUmFg0MEhxQFyufiyM0SlRosCCBgQK/XLBzYdDFg4sYMcJiV/HBgAABCIAUGSCixIouCAgIORIksG/5nMVSKaCmTYnQKjp7wLKnxGjAKMq82D"
+        +"LAT6AxZYaJkPFBIAA7"
+      ,spoiler_png : ""
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAABnRSTlMA4QDhAOKdNtA9AAAACXBIWXMAAAsTAAALEwEAmpwYAAABg"
+        +"0lEQVR42tVUPUsDQRB9M7dBQi4iypWJhgQsU1lIUtklIgg2tmJhK3b+gLT+AtHaP2AqtUmwslGMTSJcUgaSKEc+bu/DYmGJMR+glVs8HrO8fTOzs0u23cRvF+MP"
+        +"609iodn1Y70SbC8UhL3O1a6vOOmaj6tWds32Xc9gigpDMEUYBvNyVESYIwZiERHaK6+1h8+P2unJ4WTaw6Hs9+WgL0cD6Q6lO/S8kRe4PqRP0mcvMNd7uf0tAC9"
+        +"v79/SBpDaWIUfEkMwM0AEMC0JJqKAMDBYMrHB3U53smYA7tMNMRNzIASBiJmIXabFDQNwfnRWbTm5hFlutAtpS3GNABR5vitNEVdbTj5pAgAsAID5A1FpwpVyyj"
+        +"3nEmal6YQhFN7W2xorTUcFZw5JudHOJ00iACBCMWMBKGYsFdFb08WFtKWPV24AdGSec7Z+r7pChHF/xVUvZjp77iiXMLXnuL/OYl7NynkWahKPxyZnG0Dp4tJx+"
+        +"vMfRjwe28ykDvZ2JsX/5zP4AtVMzoKTk38hAAAAAElFTkSuQmCC"
+      ,transp_gif : ""
+        +"data:image/gif;base64,R0lGODlhFAAUAPcAAAAAAIAAAACAAICAAAAAgIAAgACAgMDAwMDcwKbK8EAgAGAgAIAgAKAgAMAgAOAgAABAACBAAEBAAGBAAIBAA"
+        +"KBAAMBAAOBAAABgACBgAEBgAGBgAIBgAKBgAMBgAOBgAACAACCAAECAAGCAAICAAKCAAMCAAOCAAACgACCgAECgAGCgAICgAKCgAMCgAOCgAADAACDAAEDAAGDA"
+        +"AIDAAKDAAMDAAODAAADgACDgAEDgAGDgAIDgAKDgAMDgAODgAAAAQCAAQEAAQGAAQIAAQKAAQMAAQOAAQAAgQCAgQEAgQGAgQIAgQKAgQMAgQOAgQABAQCBAQEB"
+        +"AQGBAQIBAQKBAQMBAQOBAQABgQCBgQEBgQGBgQIBgQKBgQMBgQOBgQACAQCCAQECAQGCAQICAQKCAQMCAQOCAQACgQCCgQECgQGCgQICgQKCgQMCgQOCgQADAQC"
+        +"DAQEDAQGDAQIDAQKDAQMDAQODAQADgQCDgQEDgQGDgQIDgQKDgQMDgQODgQAAAgCAAgEAAgGAAgIAAgKAAgMAAgOAAgAAggCAggEAggGAggIAggKAggMAggOAgg"
+        +"ABAgCBAgEBAgGBAgIBAgKBAgMBAgOBAgABggCBggEBggGBggIBggKBggMBggOBggACAgCCAgECAgGCAgICAgKCAgMCAgOCAgACggCCggECggGCggICggKCggMCg"
+        +"gOCggADAgCDAgEDAgGDAgIDAgKDAgMDAgODAgADggCDggEDggGDggIDggKDggMDggODggAAAwCAAwEAAwGAAwIAAwKAAwMAAwOAAwAAgwCAgwEAgwGAgwIAgwKA"
+        +"gwMAgwOAgwABAwCBAwEBAwGBAwIBAwKBAwMBAwOBAwABgwCBgwEBgwGBgwIBgwKBgwMBgwOBgwACAwCCAwECAwGCAwICAwKCAwMCAwOCAwACgwCCgwECgwGCgwI"
+        +"CgwKCgwMCgwOCgwADAwCDAwEDAwGDAwIDAwKDAwP/78KCgpICAgP8AAAD/AP//AAAA//8A/wD//////yH5BAEAAP8ALAAAAAAUABQABwhMAP8JHEiwoMGDCBMqR"
+        +"Eiq4b+GpB5GhGgw4kKLBDEm1FjQ4cSHGxeC7Djw48eRIkVaNHmSI8qQCj2+JHmxosqKHnNKdJmyp8+fQAUGBAA7"
+      ,noparse_gif : ""
+        +"data:image/gif;base64,R0lGODlhFAAUAPcBAAAAAAEBAQICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsLCwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUF"
+        +"BUVFRYWFhcXFxgYGBkZGRoaGhsbGxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisrKywsLC0tLS4uLi8vLzAwMDExMTIyMjMz"
+        +"MzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktLS0xMTE1NTU5OTk9PT1BQUFFRUVJ"
+        +"SUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltbW1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtra2xsbG1tbW5ubm9vb3Bwc"
+        +"HFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+P"
+        +"j5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6"
+        +"urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM"
+        +"3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6"
+        +"+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///yH5BAHoAwEALAAAAAAUABQAAAhNAAMIHEiwoMGDCBMq"
+        +"XMiwoUIAEBlCBCAwYkOLFiVSDBBxYsaJFTdipNiRpMmQKEtyPLky5UmVLVuqhFnSpE2UMTWG3Pgwo8OfQIMCDQgAOw=="
+      ,youtube_gif : ""
+        +"data:image/gif;base64,R0lGODlhFAAUAPcAAAQCBLySRGSKzKTG5PTmrHxKDPzOzPzy7PyytERmrNz6/OweBPyanPxWTPza3Oyq/Pz+/NSubJza7JxyFPzS1"
+        +"Py6vNz+/PwiFKBsyBQM6XeLEgMBADioAOboABISAAAAABZqYND/AEUjAHUCAAAANwAAFh8A7QAA/wBF/wAA/wAA/wAA/6goHxStiHciNgMAdVAAybYAiHMfNgMA"
+        +"dQDgpACv6wAiEgAAAACwAQDoAAASAAAAAABFAAAAAAAAAAAAAAAoAACtAAAiAAAAAAAA5AAA5wAAEgAAAAASAgAAAB8AAAAAAFAc/Lbo6XMSEgMAAABF4wAAYgA"
+        +"AOwAAdXwAiOYAihIfwQAAFggo/gCt/28i/wAA/wccjQDoiAASNgAAdeouMcdndkVpNnVmdZMARYE0OuPrXGN2AOAhcwKtZVFFcgB1czgAU7YB33MARQMAdQEAbw"
+        +"AAjwAA4wAAY0iMALbnAHMSAAMAAHQnAOY7ABLrAAB2AK8saB87gOvrInZ2AFATALYsgHMcIgNzADEAVB8A6OsAEnYAAAAAEQABAQAAAAAAAEghsLat6HNFEgN1"
+        +"AIBkmufnkxISTAAAdbwRt8IBuEUAtHUAFgBv/gCA/x/j/wBj/wC0UwDn3wASRQAAdVCRSbas2HNFRQN1dQAAaAAAgAAAIgAAAAAAPgEA0gAARgAAdcvYL8K1j0X"
+        +"n43V2Y8xfAOcsABIcAABzAFB5ALbpAHMSAAMAAAwMAJ6hADtPAHUAAAFkSAAA6QAAEgAAAAIAAX8AAAAAAAAAAGeUkGnn6DUSEjEAAFwMEXShAXJPAGkAAGtgYG"
+        +"/7+20SEnMAAGVNmmzXk1/nTHZ2dTJHp1zBtXPlt3QFFmH+/nT//2n//2P//1zYPmm10m3nRmF2dWdbiGV/gXNIQlx1AADcaPPogBISIgAAACBrAAB/AABIAAB1A"
+        +"ACNeQCt6QBFEgB1ANABMfYArYsARQEAdQ4xMwEAjwAw4wAAY0XJMTqIrQA2RQF1dQUuagBncQBpSABmACH5BAEAABIALAAAAAAUABQABwipACUIHEiwoMGDCA1"
+        +"CiFAAQoIBECJKnEgwIoAHACZqjFhxIQCIAQAIgJAxI8eBEQkAUKCSpIKSEjuqtNASgIUJL2OihKBSAYSQIyMASKBT4MajRSU4uMC0qVOnDghekOgUwlOmUqc+tX"
+        +"o1K4QGVr9GrHChwgEDF7yCnboWAoOIFNIOZCqWbdi3TQkuYFshYgMDEBBceItW6oLDiBMrJgjgquMLABJKnkw5IAA7"
+      ,closepreview_png : ""
+        +"data:image/png;base64,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%3D%3D"
+      ,updates_png : ""
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAARCAIAAACNaGH2AAAABnRSTlMA/wD/AP83WBt9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABg0"
+        +"lEQVR42n2SPW4UQRCFX417MXh3JbJ1hIwRxyBCGImjICQHIALOYF+Bi8AduIYdIeT9m5mq9xHMYhLMUwUt9Wu9r6orvv64/Nn/2o61NvvyOnNbtRkzbZepciZVT"
+        +"p90j7vduIEgQoGxAgAhIYENAoHX47ob7JQSyjJyTa4ACRQRIaGITkTb2X15MGknpFxQWEIStpBCANA2maM9mgH6cqLRhGQDYGFTxgjaNisVCUN5lIeskcMdJiSQN"
+        +"FGpbbKIGOzR9NCDEDaG8p9eNYG1TVnBYKcZjKdQeRrEAYPCKKLtsko2SiOMLXAac18ThqDtXUyIAYXLwgJXyWDbU45ALfd9N2sytiVxSOAAXBaOCEC4HWe3G3fRd"
+        +"YojYaZ/G0ZXSaKmd4E9ny3jZn1zu7mV9On7RxBOzNvzi4uX7yYAxTQPnS5P22q+Ws1XklyF3bX24unZ51df9C+1+xNZR0+Oz5fPr95c6wH9dc8WJ2eLZ1evrxePF"
+        +"g+5D+sCvP/24a6/47/6DW1k0UQglGH2AAAAAElFTkSuQmCC"
+      ,news_png : ""
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1"
+		+"4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2"
+		+"07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
+     };
+    break;
+  };
+  return false;
+}
+function getSCRIPT() {
+  return (''
+    +'function showRecaptcha(element){'
+    +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
+    +    '{theme:"red",lang:"en"'
+    +     ',custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
+    +    '}'
+    +  ');'
+    +'};'
+    
+    +'function clickedelm(val){ document.getElementById("clicker").value=val; };'
+    +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
+    + 'this.open_smilie_window=function(width,height){'
+    +  'smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'
+    + '};'
+    +'};'
+    +''
+  );
+  
+}
 // Global CSS
-function getCSS_fixup(){var lite_fixup=''+'div.page > div { padding-left: 20px !important; padding-right: 20px !important; }'+'#Textatas, #Middlehome021, #exp, #MiddleBanner, #Middle_blue, #MiddleBanner03, #MidGaris,'+'#advertisement, #MidGaris03, #RightNya, #MiddleBanner1, #JB_Middlehome021, #JB_Middlenahome1, #MidGaris1'+'#TextInfo > div > div.TextInterest'+'{ display: none !important; }'+'table[id^="post"] td.alt2 { max-width: 175px !important; min-width: 175px !important; overflow: hidden !important; }'+'td.alt2 div.smallfont+div.smallfont div { overflow: hidden !important; }'+'form > table.tborder > tbody > tr > td.panelsurround > div.panel > div { width: auto !important; margin: auto !important; }'+'td[id^="td_post"] { width: auto !important; }'+'#Middlenahome, #InfoFoLeft, #InfoFoMid, #InfoFoRight, #Middlenahome1, .MenuBawahna, .LingBottom, #LingBawah, #navbawah ul li'+'{ width: auto !important; }'+'#Middlenahome { height: 210px !important; }'+'#dfFooter { padding-left: 0px !important; }'+'div#LingBawah > table { width: 100% !important; }'+'';return lite_fixup}
-function getCSS(){var css=''+'.qr_container'+'{max-width:100%;width:auto !important;margin:5px;text-align:left;}'+'.normal_notice'+'{background:transparent !important;color:#949494;}'+'.alt1'+'{border-bottom:1px solid transparent;}'+'.quoteselected'+'{background:#DFC;border-bottom:1px solid #CDA;}'+'.g_notice'+'{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'+'.g_notice-error'+'{background:#FFD7FF !important;}'+'.avafetch'+'{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'+'#vbform .tborder'+'{width:100%;}'+'#atoggle'+'{float:right;}'+'.panelsurrounds .panel, .imagebutton'+'{background:#DFDFE0;}'+'.controlbar'+'{text-align:left;}'+'.popup_pickbutton'+'{border-color:#C1D2EE;width:10px;}'+'.ofont:hover, .ocolor:hover, .osize:hover, .cdefault:hover, .popup_pickbutton:hover'+'{cursor:default !important;}'+'.imagebutton:hover, .imagebutton_color:hover'+'{cursor:pointer;}'+'.imagebutton_color table'+'{border:1px solid #fff;background-color:#DFDFE0;}'+'.imagebutton_color:hover table, .ofont:hover, .osize:hover'+'{border:1px solid #2085C1;background-color:#B0DAF2;}'+'.imagebutton_color:hover .popup_feedback'+'{border-right:1px solid #316AC5;}'+'#vB_Editor_001_font_out, #vB_Editor_001_size_out'+'{font-size:8pt;padding:2px;}'+'.MYvBulletin_editor table, #vbform .tborder'+'{min-width:100%;}'+'.MYvBulletin_editor table td'+'{vertical-align:top;}'+'#qravatar_cont, #capcay_container, .qrsmallfont, .qrsmallfont div, #capcay_header span'+'{font-size:11px;}'+'#capcay_container'+'{min-width:131px;width:305px;}'+'#qravatar_cont'+'{text-align:center;padding-right:5px;min-width:100px;max-width:120px;}'+'.txta_cont'+'{min-width:100%;width:100%;padding-right:5px;}'+'#'+gvar.id_textarea+'{min-width:100%;}'+'.textarea'+'{clear:both;width:100%;height:100px;}'+'#dv_accessible'+'{cursor:default;text-align:center;border:1px solid #949494;position:absolute;padding:10px 50px 10px 10px;background:#FDECC8;width:auto;margin:20px 10px;}'+'.icon-accessible'+'{cursor:pointer;position:absolute;margin:-3px 0 0 5px;}'+'.txa_enable, .txa_readonly'+'{border:1px solid #949494;}'+'.txa_enable'+'{background-color:#FFF;color:#000;}'+'.txa_readonly'+'{background-color:#E8E8E8;color:#4F4F4F;}'+'.g_notice a, .qrsmallfont a, #capcay_header a'+'{font-size:11px;text-decoration:none;}'+'#home_link'+'{text-decoration:underline;}'+'.cleanlink'+'{text-decoration:none;}'+'.qravatar_refetch_hover_0'+'{margin-top:0;}'+'.qravatar_refetch_hover'+'{margin-top:-15px;}'+'#qravatar_refetch'+'{background:#DFC;border:1px solid #CDA;}'+'.warn'+'{color:#FF0000;font-size:9px;}'+'.idleinput, .activeField'+'{font-size:22px;border:1px solid #B1B1B1;text-align:center;padding:2px;}'+'.idleinput'+'{color:blue;background:#FEEB9E;}'+'.activeField'+'{background:#FFF;}'+'.input_title, .textarea'+'{border:1px solid #B1B1B1;}'+'.input_title:focus, .textarea:focus, .activeField:focus'+'{border:1px solid #275C7C;}'+'#capcay_header'+'{padding:0 2px;vertical-align:bottom;}'+'.fieldset'+'{margin:0;padding:0;}'+'#fieldset_capcay .bginput, #nfolink'+'{margin:0;padding:0;float:right;}'+'#fieldset_capcay .bginput'+'{margin:1px 2px 1px 0;}'+'.reado'+'{color:#808080;background:#E5E5E5;border:1px solid #8A8A8A;}'+'.sub-bottom'+'{min-width:200px;font-size:10px;color:#40404;}'+'.sayapkiri'+'{float:left;text-align:left;}'+'.sayapkanan'+'{float:right;text-align:right;}'+'.sayapkanan a'+'{text-decoration:none;float:right;margin-top:3px;}'+'.popup_feedback{background-color:#fff;border-right:1px solid #fff;}'+'.vbmenu_popup {position:absolute;padding:3px;}'+'.vbmenu_popup table td {line-height:10px;width:10px;border:1px solid transparent;}'+'.vbmenu_popup table td:hover {cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'+'.ocolor {color:#000;background:#FFF;padding:2px;}'+'.customed_addcontroller {background:transparent;width:100%;white-space: nowrap;}'+'.ofont{text-align:left;}'+'.customed_addcontroller img, .imagebutton img, .ofont, .osize'+'{color:#000;border:1px solid transparent;background-color:transparent;}'+'.customed_addcontroller img:hover, .imagebutton img:hover '+'{color:#000;border:1px solid #2085C1;background-color:#B0DAF2;}'+'.spacer'+'{clear:both;height:2px;}'+'#skecil_container, #sbesar_container, #scustom_container'+'{border: 1px solid #BBC7CE;padding:2px;}'+'#scustom_container'+'{padding-top:10px !important;}'+'#skecil_container img, #sbesar_container img, #scustom_container img'+'{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'+'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'+'{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'+'#content_scustom_container .ofont'+'{text-decoration:none;cursor:pointer;}'+'#content_scustom_container .nothumb'+'{padding:1px 3px;}'+'#content_scustom_container .scustom-thumb'+'{margin-left:2px;}'+'.ul_tabsmile'+'{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'+'.ul_tabsmile li'+'{display:inline;margin-left:3px;}'+'li.tab_close'+'{float:right !important;}'+'.ul_tabsmile a'+'{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;}'+'.ul_tabsmile a:hover'+'{background-color:#B0DAF2;}'+'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover'+'{background-color:#DDDDDD;}'+'.qbutton'+'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;border-radius:3px;-moz-border-radius:3px;-khtml-border-radius:3px;-webkit-border-radius:3px;}'+'#tb_setting td{padding:1px 5px;}'+'#tb_setting textarea{width:98%;font-family:"Courier New";font-size:9pt;}'+'.cancel_layout {float:right;margin:6px 3px 0 0;}'+'.cancel_layout-invi {display:none;}'+'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'+'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'+'.qrdialog-child'+'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'+'#hideshow, #hideshow_recaptcha {'+'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'+'}'+'.trfade, .fade {'+'position: fixed; width: 100%; height: 100%; left: 0;'+'}'+'.trfade {'+'background: #000; z-index: 99998;'+'filter:alpha(opacity=25); opacity: .25;'+'-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'+'}'+'.fade {'+'background: #000; z-index: 99990;'+'filter:alpha(opacity=60); opacity: .60;'+'-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'+'}'+'#popup_container, #popup_container_precap  {'+'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'+'float: left; position: absolute; top: 10px;'+'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'+'}'+'#popup_container {'+'width: 88%; left: 5%;'+'}'+'#popup_container_precap  {'+'width: 340px; left: 50%;'+'}'+'.popup_block .popup {'+'float: left; width: 100%; background: #D1D4E0; margin: 0;'+'padding: 0; border: 1px solid #bbb;'+'}'+'.popup img.cntrl {'+'position: absolute; right: -20px; top: -20px; border: 0px;'+'}'+'#button_preview {'+'padding:3px;text-align:center;'+'}'+'*html .fade {'+'position: absolute;'+'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'+'}'+'*html #popup_container, *html #popup_container_precap {'+'position: absolute;'+'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'+'+((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop'+'+((document.body.clientHeight-this.clientHeight)/2));'+'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'+'+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'+'}'+'';return css}
+function getCSS_fixup() {
+/* | ------------------------------------------------ | */
+/* |          (Lite) Kaskus Fix-ups by chaox          | */
+/* | ------------------------------------------------ | */
+  var lite_fixup = ''  
+  +'div.page > div { padding-left: 20px !important; padding-right: 20px !important; }' // main snippet for wide-thread  
+  +'#Textatas, #Middlehome021, #exp, #MiddleBanner, #Middle_blue, #MiddleBanner03, #MidGaris,'
+  +'#advertisement, #MidGaris03, #RightNya, #MiddleBanner1, #JB_Middlehome021, #JB_Middlenahome1, #MidGaris1'
+  +'#TextInfo > div > div.TextInterest'
+   +'{ display: none !important; }'
+  +'table[id^="post"] td.alt2 { max-width: 175px !important; min-width: 175px !important; overflow: hidden !important; }'
+  +'td.alt2 div.smallfont+div.smallfont div { overflow: hidden !important; }' 
+  +'form > table.tborder > tbody > tr > td.panelsurround > div.panel > div { width: auto !important; margin: auto !important; }'
+  +'td[id^="td_post"] { width: auto !important; }'   
+  +'#Middlenahome, #InfoFoLeft, #InfoFoMid, #InfoFoRight, #Middlenahome1, .MenuBawahna, .LingBottom, #LingBawah, #navbawah ul li'
+   +'{ width: auto !important; }'
+  +'#Middlenahome { height: 210px !important; }'  
+  +'#dfFooter { padding-left: 0px !important; }' 
+  +'div#LingBawah > table { width: 100% !important; }'
+  +'' 
+  ;
+  return lite_fixup;
+}
+function getCSS() {  
+  // CSS for Quick Reply
+  var css = ''
+  +'.qr_container'
+   +'{max-width:100%;width:auto !important;margin:5px;text-align:left;}'
+  +'.normal_notice'
+   +'{background:transparent !important;color:#949494;}'
+  +'.alt1'
+   +'{border-bottom:1px solid transparent;}'
+  +'.quoteselected'
+   +'{background:#DFC;border-bottom:1px solid #CDA;}'
+  +'.g_notice'
+   +'{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
+  +'.g_notice-error'
+   +'{background:#FFD7FF !important;}'
+  +'.avafetch'
+   +'{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'
+  +'#vbform .tborder'
+   +'{width:100%;}'
+  +'#atoggle'
+   +'{float:right;}'
+   
+  +'.panelsurrounds .panel, .imagebutton'
+   +'{background:#DFDFE0;}'
+  +'.controlbar'
+   +'{text-align:left;}'
+  +'.popup_pickbutton'
+   +'{border-color:#C1D2EE;width:10px;}'
+  +'.ofont:hover, .ocolor:hover, .osize:hover, .cdefault:hover, .popup_pickbutton:hover'
+   +'{cursor:default !important;}'
+  +'.imagebutton:hover, .imagebutton_color:hover'
+   +'{cursor:pointer;}'
+  +'.imagebutton_color table'
+   +'{border:1px solid #fff;background-color:#DFDFE0;}'
+  +'.imagebutton_color:hover table, .ofont:hover, .osize:hover'
+   +'{border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'.imagebutton_color:hover .popup_feedback'
+   +'{border-right:1px solid #316AC5;}'  
+  +'#vB_Editor_001_font_out, #vB_Editor_001_size_out'
+   +'{font-size:8pt;padding:2px;}'
+   
+  +'.MYvBulletin_editor table, #vbform .tborder'
+   +'{min-width:100%;}'
+  +'.MYvBulletin_editor table td'
+   +'{vertical-align:top;}'
+  +'#qravatar_cont, #capcay_container, .qrsmallfont, .qrsmallfont div, #capcay_header span'
+   +'{font-size:11px;}'
+  +'#capcay_container'
+   +'{min-width:131px;width:305px;}'
+  +'#qravatar_cont'
+   +'{text-align:center;padding-right:5px;min-width:100px;max-width:120px;}'
+  +'.txta_cont'
+   +'{min-width:100%;width:100%;padding-right:5px;}'
+  +'#'+gvar.id_textarea
+   +'{min-width:100%;}'
+  +'.textarea'
+   +'{clear:both;width:100%;height:100px;}'
+  +'#dv_accessible'
+   +'{cursor:default;text-align:center;border:1px solid #949494;position:absolute;padding:10px 50px 10px 10px;background:#FDECC8;width:auto;margin:20px 10px;}'
+  +'.icon-accessible'
+   +'{cursor:pointer;position:absolute;margin:-3px 0 0 5px;}'
+  +'.txa_enable, .txa_readonly'
+   +'{border:1px solid #949494;}'
+  +'.txa_enable'
+   +'{background-color:#FFF;color:#000;}'
+  +'.txa_readonly'
+   +'{background-color:#E8E8E8;color:#4F4F4F;}'   
+   
+  +'.g_notice a, .qrsmallfont a, #capcay_header a'
+   +'{font-size:11px;text-decoration:none;}'
+  +'#home_link'
+   +'{text-decoration:underline;}'
+  +'.cleanlink'
+   +'{text-decoration:none;}'
+  +'.qravatar_refetch_hover_0'
+   +'{margin-top:0;}'
+  +'.qravatar_refetch_hover'
+   +'{margin-top:-15px;}'
+  +'#qravatar_refetch'
+   +'{background:#DFC;border:1px solid #CDA;}'
+  +'.warn'
+   +'{color:#FF0000;font-size:9px;}'
+  +'.idleinput, .activeField'
+   +'{font-size:22px;border:1px solid #B1B1B1;text-align:center;padding:2px;}'
+  +'.idleinput'
+   +'{color:blue;background:#FEEB9E;}'
+  +'.activeField'
+   +'{background:#FFF;}'
+  +'.input_title, .textarea'
+   +'{border:1px solid #B1B1B1;}'
+  +'.input_title:focus, .textarea:focus, .activeField:focus'
+   +'{border:1px solid #275C7C;}'
+  +'#capcay_header'
+   +'{padding:0 2px;vertical-align:bottom;}'
+  +'.fieldset'
+   +'{margin:0;padding:0;}'
+  +'#fieldset_capcay .bginput, #nfolink'
+   +'{margin:0;padding:0;float:right;}'
+  +'#fieldset_capcay .bginput'
+   +'{margin:1px 2px 1px 0;}'
+  +'.reado'
+   +'{color:#808080;background:#E5E5E5;border:1px solid #8A8A8A;}'
+  +'.sub-bottom'
+   +'{min-width:200px;font-size:10px;color:#40404;}'
+  +'.sayapkiri'
+   +'{float:left;text-align:left;}'
+  +'.sayapkanan'
+   +'{float:right;text-align:right;}'
+  +'.sayapkanan a'
+   +'{text-decoration:none;float:right;margin-top:3px;}'
+   
+  +'.popup_feedback{background-color:#fff;border-right:1px solid #fff;}'
+  +'.vbmenu_popup {position:absolute;padding:3px;}'
+  +'.vbmenu_popup table td {line-height:10px;width:10px;border:1px solid transparent;}'
+  +'.vbmenu_popup table td:hover {cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'.ocolor {color:#000;background:#FFF;padding:2px;}'
+  +'.customed_addcontroller {background:transparent;width:100%;white-space: nowrap;}'
+  +'.ofont{text-align:left;}'
+  +'.customed_addcontroller img, .imagebutton img, .ofont, .osize'
+   +'{color:#000;border:1px solid transparent;background-color:transparent;}'
+  +'.customed_addcontroller img:hover, .imagebutton img:hover '
+   +'{color:#000;border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'.spacer'
+   +'{clear:both;height:2px;}'
+  +'#skecil_container, #sbesar_container, #scustom_container'
+   +'{border: 1px solid #BBC7CE;padding:2px;}'
+  +'#scustom_container'
+   +'{padding-top:10px !important;}'
+  +'#skecil_container img, #sbesar_container img, #scustom_container img'
+   +'{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'
+  +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'
+   +'{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'#content_scustom_container .ofont'
+   +'{text-decoration:none;cursor:pointer;}'
+  +'#content_scustom_container .nothumb'
+   +'{padding:1px 3px;}'
+  +'#content_scustom_container .scustom-thumb'
+   +'{margin-left:2px;}'
+  +'.ul_tabsmile'
+   +'{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'
+  +'.ul_tabsmile li'
+   +'{display:inline;margin-left:3px;}'
+  +'li.tab_close'
+   +'{float:right !important;}'
+  +'.ul_tabsmile a'
+   +'{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;}'
+  +'.ul_tabsmile a:hover'
+   +'{background-color:#B0DAF2;}'
+  +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover'
+   +'{background-color:#DDDDDD;}'
+  +'.qbutton'
+   +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;border-radius:3px;-moz-border-radius:3px;-khtml-border-radius:3px;-webkit-border-radius:3px;}'
+  +'#tb_setting td{padding:1px 5px;}'
+  +'#tb_setting textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
+  +'.cancel_layout {float:right;margin:6px 3px 0 0;}'
+  +'.cancel_layout-invi {display:none;}'
+  /* for updates */
+  +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
+  +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
+  +'.qrdialog-child'
+   +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'
+  
+  /* for preview popup */ 
+  	+'#hideshow, #hideshow_recaptcha {'
+    +  'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'
+
+    +'}'
+    +'.trfade, .fade {'
+    +  'position: fixed; width: 100%; height: 100%; left: 0;'
+
+    +'}'
+    +'.trfade {'
+    +  'background: #000; z-index: 99998;'
+    +  'filter:alpha(opacity=25); opacity: .25;'
+    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
+
+
+    +'}'
+    +'.fade {'
+    +  'background: #000; z-index: 99990;'
+    +  'filter:alpha(opacity=60); opacity: .60;'
+    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
+
+    +'}'
+    +'#popup_container, #popup_container_precap  {'
+    +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
+    +  'float: left; position: absolute; top: 10px;'
+    +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
+
+    +'}'
+    +'#popup_container {'
+    +  'width: 88%; left: 5%;'
+
+    +'}'
+    +'#popup_container_precap  {'
+    +  'width: 340px; left: 50%;'
+
+    +'}'
+    +'.popup_block .popup {'
+    +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
+    +  'padding: 0; border: 1px solid #bbb;'
+
+    +'}'
+    +'.popup img.cntrl {'
+    +  'position: absolute; right: -20px; top: -20px; border: 0px;'
+
+    +'}'
+    +'#button_preview {'
+    +  'padding:3px;text-align:center;'
+
+    +'}'
+    +'*html .fade {'
+    +  'position: absolute;'
+    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'
+
+    +'}'
+    +'*html #popup_container, *html #popup_container_precap {'
+    +  'position: absolute;'
+    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'
+    +  '+((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop'
+    +  '+((document.body.clientHeight-this.clientHeight)/2));'
+    +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
+    +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
+
+    +'}'
+  +'';
+  return css;
+}
+
 
 // static routine
-function isDefined(x){return!(x==null&&x!==null)}
-function isUndefined(x){return x==null&&x!==null}
-function isString(x){return(typeof(x)!='object'&&typeof(x)!='function')}
-function trimStr(x){return x.replace(/^\s+|\s+$/g,"")};
-function isLink(x){return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/)}
-function basename(path,suffix){var b=path.replace(/^.*[\/\\]/g,'');if(typeof(suffix)=='string'&&b.substr(b.length-suffix.length)==suffix)b=b.substr(0,b.length-suffix.length);return b};
-function toCharRef(text){var charRefs=[],codePoint,i;for(i=0;i<text.length;++i){codePoint=text.charCodeAt(i);if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){if(0xD800<=codePoint&&codePoint<=0xDBFF){i++;codePoint=0x2400+((codePoint-0xD800)<<10)+text.charCodeAt(i)}charRefs.push('&#'+codePoint+';')}else charRefs.push(text[i])}return charRefs.join('')};
-function do_an_e(A){A.stopPropagation();A.preventDefault();return A};
-function GetHeight(){var y=0;if(self.innerHeight){y=self.innerHeight}else if(document.documentElement&&document.documentElement.clientHeight){y=document.documentElement.clientHeight}else if(document.body){y=document.body.clientHeight}return y};
-function count_Char(chr,dstr){var tFind=new RegExp(chr,"g");var ret=(dstr.length-parseInt(dstr.replace(tFind,'').length));return ret};
-function gen_Char(chr,len,pngotor){var ret='';if(isUndefined(pngotor))pngotor='';if(len<=0)return chr;for(var i=0;i<len;i++)ret+=pngotor+chr;return ret};
-function addClass(cName,Obj){if(cName=="")return;var neocls=(Obj.className?Obj.className:'');if(neocls.indexOf(cName)!=-1)return;neocls+=(neocls!=''?' ':'')+cName;Obj.setAttribute('class',neocls)}
-function removeClass(cName,Obj){if(cName=="")return;var neocls=(Obj.className?Obj.className:'');neocls=trimStr(neocls.replace(cName,""));Obj.setAttribute('class',neocls)}
-function getValue(key){var data=OPTIONS_BOX[key];return(!data?'':GM_getValue(key,data[0]))}
-function setValue(key,value){var data=OPTIONS_BOX[key];return(!data?'':GM_setValue(key,value))}
-function showhide(obj,show){if(isUndefined(obj))return;if(isUndefined(show))show=(obj.style.display=='none');obj.setAttribute('style','display:'+(show?'':'none'))}
-function page_is_notloaded(t){var tg=getTag('title');return(tg&&isDefined(tg[0])&&tg[0].innerHTML.indexOf(typeof(t)=='string'?t:'Page is temporary not available')!=-1)}
-function getTag(name,parent){var ret=(typeof(parent)!='object'?document.getElementsByTagName(name):parent.getElementsByTagName(name));return(isDefined(ret[0])?ret:false)}
-function getByXPath_containing(xp,par,contain){if(!par)par=document;if(typeof(contain)!='string')return;var rets=[];var ev=document.evaluate(xp,par,null,XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,null);if(ev.snapshotLength)for(var i=0;i<ev.snapshotLength;i++)if(ev.snapshotItem(i).innerHTML.indexOf(contain)!=-1)rets.push(ev.snapshotItem(i));return rets}
-function SimulateMouse(elem,event,preventDef){if(typeof(elem)!='object')return;var evObj=document.createEvent('MouseEvents');preventDef=(isDefined(preventDef)&&preventDef?true:false);evObj.initEvent(event,preventDef,true);try{elem.dispatchEvent(evObj)}catch(e){}}
-function createEl(type,attrArray,html){var node=document.createElement(type);for(var attr in attrArray)if(attrArray.hasOwnProperty(attr))node.setAttribute(attr,attrArray[attr]);if(html)node.innerHTML=html;return node}
-function createTextEl(txt){return document.createTextNode(txt)}
-function HtmlUnicodeDecode(a){var b="";if(a==null){return(b)}var l=a.length;for(var i=0;i<l;i++){var c=a.charAt(i);if(c=='&'){var d=a.indexOf(';',i+1);if(d>0){var e=a.substring(i+1,d);if(e.length>1&&e.charAt(0)=='#'){e=e.substring(1);if(e.charAt(0).toLowerCase()=='x'){c=String.fromCharCode(parseInt('0'+e))}else{c=String.fromCharCode(parseInt(e))}}else{switch(e){case"nbsp":c=String.fromCharCode(160)}}i=d}}b+=c}return b};
-function togelshow(obj,show){if(typeof(obj)!='object')return;if(isUndefined(show))show=(obj.style.display!='none');if(isDefined(show))obj.setAttribute('style','display:'+(show?'block':'none')+';')}//=== BROWSER DETECTION / ADVANCED SETTING
+function isDefined(x)   { return !(x == null && x !== null); }
+function isUndefined(x) { return x == null && x !== null; }
+function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
+function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
+function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
+function basename(path, suffix) {
+  // Returns the filename component of the path  
+  // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+  // *     example 1: basename('/www/site/home.htm', '.htm');    // *     returns 1: 'home'
+  // *     example 2: basename('ecra.php?p=1');
+  var b = path.replace(/^.*[\/\\]/g, '');
+  if(typeof(suffix) == 'string' && b.substr(b.length-suffix.length) == suffix)
+    b = b.substr(0, b.length-suffix.length);
+  return b;
+};
+function toCharRef(text){
+    var charRefs = [], codePoint, i;
+    for(i = 0; i < text.length; ++i) {
+        codePoint = text.charCodeAt(i);
+        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
+         if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
+            i++;
+            codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
+         }
+         charRefs.push('&#' + codePoint + ';');
+        }else
+          charRefs.push(text[i]);
+    }
+    return charRefs.join('');
+};
+function do_an_e(A) {
+  A.stopPropagation();
+  A.preventDefault();
+  return A;
+};
+function GetHeight(){
+  var y = 0;
+  if (self.innerHeight){ // FF; Opera; Chrome
+     y = self.innerHeight;
+  } else if (document.documentElement && document.documentElement.clientHeight){ 
+     y = document.documentElement.clientHeight;
+  } else if (document.body){
+     y = document.body.clientHeight;
+  }
+  return y;
+};
+function count_Char(chr, dstr) {
+ var tFind = new RegExp(chr,"g");
+ var ret = (dstr.length - parseInt(dstr.replace(tFind,'').length) );
+ return ret;
+};
+function gen_Char(chr, len, pngotor) {
+ var ret = '';
+ if(isUndefined(pngotor)) pngotor = '';
+ if(len<=0) return chr;
+ for(var i=0; i<len; i++) ret+=pngotor+chr;
+ return ret;
+};
+function addClass(cName, Obj){
+  if(cName=="") return;
+  var neocls = (Obj.className ? Obj.className : '');
+  if(neocls.indexOf(cName)!=-1) return;
+  neocls+=(neocls!=''?' ':'')+cName;
+  Obj.setAttribute('class', neocls);
+}
+function removeClass(cName, Obj){
+  if(cName=="") return;
+  var neocls = (Obj.className ? Obj.className : '');
+  neocls = trimStr ( neocls.replace(cName,"") ); // replace and trim
+  Obj.setAttribute('class', neocls);
+}
+function getValue(key) {
+  var data=OPTIONS_BOX[key];
+  return (!data ? '': GM_getValue(key,data[0]));
+}
+function setValue(key, value) {
+  var data=OPTIONS_BOX[key];
+  return (!data ? '': GM_setValue(key,value));
+}
+function showhide(obj, show){
+  if(isUndefined(obj)) return;
+  if(isUndefined(show)) show = (obj.style.display=='none'); // toggle mode
+  obj.setAttribute('style','display:'+ (show ? '':'none') );
+}
+function page_is_notloaded(t){
+   var tg = getTag('title');
+   return (tg && isDefined(tg[0]) && tg[0].innerHTML.indexOf(typeof(t)=='string' ? t : 'Page is temporary not available')!=-1);
+}
+function getTag(name, parent){
+  var ret = (typeof(parent)!='object' ? document.getElementsByTagName(name) : parent.getElementsByTagName(name) );
+  return (isDefined(ret[0]) ? ret : false);
+}
+function getByXPath_containing(xp, par, contain){
+  if(!par) par = document;
+  if(typeof(contain)!='string') return;
+  var rets=[];
+  var ev = document.evaluate(xp, par, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+  if(ev.snapshotLength)
+     for(var i=0;i<ev.snapshotLength;i++)
+       if(ev.snapshotItem(i).innerHTML.indexOf(contain)!=-1) 
+          rets.push(ev.snapshotItem(i));
+  return rets;  
+}
+function SimulateMouse(elem,event,preventDef) {
+  if(typeof(elem)!='object') return;
+  var evObj = document.createEvent('MouseEvents');
+  preventDef=(isDefined(preventDef) && preventDef ? true : false);
+  evObj.initEvent(event, preventDef, true);
+  try{elem.dispatchEvent(evObj);}
+   catch(e){
+         //clog('Error. elem.dispatchEvent is not function.')
+   }
+}
+function createEl(type, attrArray, html){
+ var node = document.createElement(type);
+ for (var attr in attrArray) 
+   if (attrArray.hasOwnProperty(attr))
+    node.setAttribute(attr, attrArray[attr]);
+ if(html) node.innerHTML = html;
+   return node;
+}
+function createTextEl(txt){
+  return document.createTextNode(txt);
+}
+function HtmlUnicodeDecode(a){
+ var b="";if(a==null){return(b)}
+ var l=a.length;
+ for(var i=0;i<l;i++){
+  var c=a.charAt(i);
+  if(c=='&'){
+    var d=a.indexOf(';',i+1);
+    if(d>0){
+      var e=a.substring(i+1,d);
+      if(e.length>1&&e.charAt(0)=='#'){
+        e=e.substring(1);
+        if(e.charAt(0).toLowerCase()=='x'){c=String.fromCharCode(parseInt('0'+e))}else{c=String.fromCharCode(parseInt(e))}
+      }else{
+        switch(e){case"nbsp":c=String.fromCharCode(160)}
+      }i=d;
+    }
+  }b+=c;
+ }return b;
+};
+function togelshow(obj, show){
+  if(typeof(obj)!='object') return;
+  if(isUndefined(show)) show = (obj.style.display!='none');
+  if(isDefined(show))
+    obj.setAttribute('style', 'display:'+(show?'block':'none')+';' );
+}
+//=== BROWSER DETECTION / ADVANCED SETTING
 //=============snipet-authored-by:GI-Joe==//
 function ApiBrowserCheck() {
   //delete GM_log; delete GM_getValue; delete GM_setValue; delete GM_deleteValue; delete GM_xmlhttpRequest; delete GM_openInTab; delete GM_registerMenuCommand;
