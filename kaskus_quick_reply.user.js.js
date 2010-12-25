@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 // v3.0.7 - 2010-12-25
+//   Add Last used Spoiler-Title
 //   Fix (Opera) onclose preview keep last char as "\n\n" 
 //   Add 5 new Emotes
 //   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
@@ -34,6 +35,12 @@
 // v3.0.5 - 2010-11-26
 //   Fix failed shortcut Ctrl+[B-I-U]
 //   Improve Updater nfo last-log-update
+//   
+// v3.0.4 - 2010-11-25
+//   Add shortcut: Ctrl+Enter=Post;
+//   Add shortcut(global): Esc=Close-Popup;
+//   Fix failed disable textareaExpander
+//   Fix minor meta format (version;contributor)
 //
 // -more: http://userscripts.org/topics/56051
 // 
@@ -71,6 +78,7 @@ OPTIONS_BOX = {
  ,KEY_SAVE_LAST_FONT:     [''] // last used font
  ,KEY_SAVE_LAST_COLOR:    ['Black'] // last used color
  ,KEY_SAVE_LAST_SIZE:     [''] // last used size
+ ,KEY_SAVE_LAST_SPTITLE:  ['title'] // last used spoiler-title
  
  ,KEY_SAVE_UPDATES:          ['1'] // settings check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // settings update interval, default: 1 day
@@ -128,7 +136,7 @@ function init(){
   gvar.offsetTop= -35; // buat scroll offset
   gvar.idx_mq=0; // counter buat deselect multiquote
   
-  gvar.silahken= 'Silahken post reply';
+  gvar.silahken= 'Silahkan post reply';
   gvar.tooshort= 'The message is too short. Your message should be at least 5 characters.';
   gvar.qr_diakses= 'Quick Reply bisa diakses langsung atau dengan mengklik setiap button ';
   
@@ -167,7 +175,7 @@ function init(){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.updates_interval
+  eg. gvar.settings.lastused.sptitle
   */
   var KS = 'KEY_SAVE_';
   var hVal,hdc;
@@ -176,6 +184,7 @@ function getSettings(){
        font: getValue(KS+'LAST_FONT'),
        color:getValue(KS+'LAST_COLOR'),
        size: getValue(KS+'LAST_SIZE'),
+       sptitle: getValue(KS+'LAST_SPTITLE'),
     },
     userLayout: {
        config: [],
@@ -2252,16 +2261,20 @@ function do_btncustom(e){
     ,'link' :'URL',  'image':'IMG'
     ,'spoiler' :'SPOILER','transparent':'COLOR','noparse' :'NOPARSE','youtube' :'YOUTUBE'
   };
-  if(isUndefined(pTag[tag])) return;
+  var endFocus=function(){ vB_textarea.focus(); return false; };
+  if(isUndefined(pTag[tag])) return endFocus();;
   vB_textarea.init();
   
   if(tag=='quote' || tag=='code'){  
     vB_textarea.wrapValue( tag );  
   }else if(tag=='spoiler'){
   
-    var title = prompt('Please enter the TITLE of your Spoiler:', 'title');
-    if(!title) return;
-    vB_textarea.wrapValue( 'spoiler', (title ? title : 'title') );
+    var title = prompt('Please enter the TITLE of your Spoiler:', gvar.settings.lastused.sptitle );
+	if(title==null) return endFocus();
+	title = (title ? title : ' ');
+	gvar.settings.lastused.sptitle = trimStr(title);
+	setValue('KEY_SAVE_LAST_SPTITLE', title);
+    vB_textarea.wrapValue( 'spoiler', title );
 
   }else{
     var text, selected = vB_textarea.getSelectedText();
@@ -2294,24 +2307,26 @@ function do_btncustom(e){
           text = prompt('Please enter the Youtube URL or just the ID, \nhttp:/'+'/www.youtube.com/watch?v=########', '');
         break;
       }
+	  if(text==null) return endFocus();
       if(tag=='youtube')
         text = is_youtube_link(text);
       if(tag=='link' || tag=='image')
-        text = (isLink(text) ? text : false);
+        text = (isLink(text) ? text : null);
       if(!text) 
-        return false;
+        return endFocus();
       else{
         var prehead = [('['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']').length, 0];
         prehead[1] = (prehead[0]+text.length);        
         vB_textarea.setValue( '['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']'+text+'[/'+pTag[tag]+']', prehead );
       }
-      return;
+      return endFocus();
     } // end selected==''
     
     tagprop = (tag=='transparent' ? 'transparent' : '');
     if(tag=='link'||tag=='image'||tag=='youtube'){
        var ptitle=(tag=='youtube' ? ['Please enter the Youtube URL or just the ID, \nhttp:/'+'/www.youtube.com/watch?v=########',''] : ['Please enter the URL of your '+tag+':','http://']);
        text = prompt(ptitle[0], ptitle[1]);
+	   if(text==null) return endFocus();
        switch(tag){
          case 'link':
           tagprop = text;
@@ -2319,13 +2334,13 @@ function do_btncustom(e){
          break;
          case 'youtube':
            text = is_youtube_link(text);
-           if(!text) return;
+           if(!text) return endFocus();
          break;
        }       
        var prehead = [('['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']').length, 0];
        prehead[1] = (prehead[0]+text.length);
        vB_textarea.replaceSelected( '['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']'+text+'[/'+pTag[tag]+']', prehead );
-       return;
+       return endFocus();
     }
     vB_textarea.wrapValue( pTag[tag], (tagprop!='' ? tagprop:'') );
   }
