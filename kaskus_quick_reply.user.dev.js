@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.7
-// @dtversion     101225307
-// @timestamp     1293235093132
+// @version       3.0.8
+// @dtversion     101227308
+// @timestamp     1293386612530
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,6 +13,14 @@
 //
 // -!--latestupdate
 //
+// v3.0.8 - 2010-12-27
+//   Fix GM_addGlobalStyle & GM_addGlobalScript
+//   Fix notify failed fetch from another thread.
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//   
 // v3.0.7 - 2010-12-25
 //   Add Last used Spoiler-Title
 //   Fix (Opera) onclose preview keep last char as "\n\n" 
@@ -21,10 +29,6 @@
 //   Fix deprecate trick on keydown keyCode=13
 //   Improve onclose preview keep last char as "\n\n" 
 //   
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//   
 // v3.0.6 - 2010-12-04
 //   Fix global $ collision with jQuery's (or is it just only a weirdness on Opera?)
 //   Improve botgreet; add RTFM link
@@ -32,9 +36,6 @@
 //   Fix failed load custom-smiley content on bad link last-img
 //   Improve string optimized on scustom content
 //   
-// v3.0.5 - 2010-11-26
-//   Fix failed shortcut Ctrl+[B-I-U]
-//   Improve Updater nfo last-log-update
 //
 // -more: http://userscripts.org/topics/56051
 // 
@@ -51,9 +52,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.7';
+gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293235093132 // version.timestamp
+  timestamp: 1293386612530 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -2269,6 +2270,7 @@ function do_btncustom(e){
 	gvar.settings.lastused.sptitle = trimStr(title);
 	setValue('KEY_SAVE_LAST_SPTITLE', title);
     vB_textarea.wrapValue( 'spoiler', title );
+
   }else{
     var text, selected = vB_textarea.getSelectedText();
     var is_youtube_link = function(text){
@@ -2555,15 +2557,17 @@ function quote_parser(page){
    //match = /<textarea\sname=\"message\"(?:[^>]+.)([^<]+)*</i.exec(page); 
    
    // back to stone-age method :hammer:
+   if(page.indexOf(gvar.id_textarea)==-1)
+     return null;
    var pos = [ page.indexOf(gvar.id_textarea), page.lastIndexOf('</textarea') ];
    parts = page.substring(pos[0], pos[1]);
    pos[0] = parts.indexOf('>');
    parts = parts.substring( (pos[0]+1), parts.length);
-   return (parts ? unescapeHtml(parts) : null);
+   return (parts ? unescapeHtml(parts) : '');
 }
 function ajax_chk_newval(reply_html){
   // initialize 
-  reply_html=(isDefined(reply_html) && reply_html ? reply_html : null);
+  reply_html=(isDefined(reply_html) && reply_html ? reply_html : null);  
   if(!reply_html){
     if($D('#imgcapcay') && capcay_notloaded())
        $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
@@ -2586,30 +2590,45 @@ function ajax_chk_newval(reply_html){
     
 	vB_textarea.init();
 	var notice = $D('#quoted_notice');
+	var re_event_btn = false;
 	if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
-	if(rets==null){
+	if(rets===null){
 	   addClass('g_notice-error', notice);
 	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Try again</a>'
-        + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
-       Dom.Ev($D('#quote_now'), 'click', function(){         
+       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+	   re_event_btn = true;
+       
+	}else{
+       vB_textarea.add(rets);     
+	   if(rets===''){
+	     addClass('g_notice-error', notice);
+	     notice.innerHTML = 'Nothing to fetch, quote post from another thread is not possible.'
+         + (' <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+		 re_event_btn = true;
+	   }else{
+		 re_event_btn = false;
+         notice.innerHTML='';
+         showhide(notice, false); // hide notice
+         deselect_it(); // clear selected quotes
+		 vB_textarea.lastfocus();
+		 if(gvar.settings.textareaExpander[0])
+           vB_textarea.adjustGrow(); // retrigger autogrow now
+	   }
+	}
+	if(re_event_btn){
+	   if($D('#quote_now'))
+	    Dom.Ev($D('#quote_now'), 'click', function(){         
          vB_textarea.readonly();
 		 removeClass('g_notice-error', notice);
          notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
          ajax_chk_newval();
-       });
-	   Dom.Ev($D('#deselect_them'), 'click', function(){
-	    removeClass('g_notice-error', notice);
-		deselect_it();
-	   });
-	}else{
-       vB_textarea.add(rets);     
-       notice.innerHTML='';
-       showhide(notice, false); // hide notice
-       deselect_it(); // clear selected quotes	   
-       if(gvar.settings.textareaExpander[0]) 
-         vB_textarea.adjustGrow(); // retrigger autogrow now
-	}
-	vB_textarea.lastfocus();
+        });
+	   if($D('#deselect_them'))
+	    Dom.Ev($D('#deselect_them'), 'click', function(){
+	     removeClass('g_notice-error', notice);
+		 deselect_it();
+	    });
+	}	
   }
 }
 
@@ -2617,6 +2636,7 @@ function ajax_chk_newval(reply_html){
 function chk_newval(val){
   var tgt, notice = $D('#quoted_notice');
   if(val.length>1){
+    removeClass('g_notice-error', notice);
     notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Quote these posts now</a>'
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
@@ -2782,6 +2802,7 @@ function getUserId(type){
 }
 
 // set of tpl
+
 function getTPL_main(){
   var tpl = ''
     +'<table cellpadding="0" cellspacing="0"><tr>'
@@ -2817,6 +2838,7 @@ function getTPL_main(){
 }
 function getTPL(){
 
+
   var tpl = 
      '\n<br/>'
     //+'<div id="quickreply">\n'
@@ -2842,6 +2864,7 @@ function getTPL(){
     +'<td>'
     +'<div id="qr_maincontainer"></div>' 
     +'</td>'
+
 
      // Image Verification container
     +( false && !gvar.user.isDonatur  ? ''
@@ -2885,9 +2908,11 @@ function getTPL(){
      +'<div id="rate_thread" style="display:none;"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/></div>'
     +'&nbsp;</div>\n'
 
+
     +'<div class="sub-bottom sayapkanan">'
     +'<input id="chk_fixups" tabindex="7" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread with Kaskus Fixups" for="chk_fixups">Expand</label></a>'
     +'</div>'
+
 
 	// center container for buttons & folks
     +'<div style="text-align:center;width:100%;">'	
@@ -2942,6 +2967,7 @@ function getTPL_vbEditor(){
      +' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
      +konst.__sep__
     :'')
+
 
     +(gvar.settings.hidecontroll[1] != '1' ? ''
      +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'
@@ -3041,6 +3067,7 @@ function getTPL_vbEditor(){
     
     // setting toggle link
     +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
+
 
     +'    </td>'
     +'</tr>'
@@ -3220,6 +3247,8 @@ function getTPL_Preview(){
   return divInner;  
 }
 // end tpl
+
+
 
 function getSmileySet(custom){
 
@@ -3421,6 +3450,8 @@ Format will be valid like this:
 
 };
 // end getSmileySet
+
+
 function getSetOf(type){
   if(isUndefined(type)) return false;
   switch(type){
@@ -3584,6 +3615,8 @@ function getSCRIPT() {
   
 }
 // Global CSS
+
+
 function getCSS_fixup() {
 /* | ------------------------------------------------ | */
 /* |          (Lite) Kaskus Fix-ups by chaox          | */
@@ -3843,6 +3876,10 @@ function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
 function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
+
+
+
+
 function basename(path, suffix) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -3887,6 +3924,9 @@ function GetHeight(){
 function count_Char(chr, dstr) {
  var tFind = new RegExp(chr,"g");
  var ret = (dstr.length - parseInt(dstr.replace(tFind,'').length) );
+
+
+
  return ret;
 };
 function gen_Char(chr, len, pngotor) {
@@ -3916,6 +3956,7 @@ function getValue(key) {
 function setValue(key, value) {
   var data=OPTIONS_BOX[key];
   return (!data ? '': GM_setValue(key,value));
+
 }
 function showhide(obj, show){
   if(isUndefined(obj)) return;
@@ -3928,6 +3969,9 @@ function page_is_notloaded(t){
 }
 function getTag(name, parent){
   var ret = (typeof(parent)!='object' ? document.getElementsByTagName(name) : parent.getElementsByTagName(name) );
+
+
+
   return (isDefined(ret[0]) ? ret : false);
 }
 function getByXPath_containing(xp, par, contain){
@@ -3961,6 +4005,8 @@ function createEl(type, attrArray, html){
 }
 function createTextEl(txt){
   return document.createTextNode(txt);
+
+
 }
 function HtmlUnicodeDecode(a){
  var b="";if(a==null){return(b)}
@@ -4056,7 +4102,7 @@ GM_addGlobalScript=function(script, id) { // Redefine GM_addGlobalScript with a 
   else
     sel.appendChild(createTextEl(script));    
   var hds = getTag('head');
-  if(hds)
+  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
    window.setTimeout(function() { hds[0].appendChild(sel);}, 100);
   else
    document.body.insertBefore(sel, document.body.firstChild);
@@ -4067,7 +4113,7 @@ GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a bette
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   sel.appendChild(createTextEl(css));    
   var hds = getTag('head');
-  if(hds && hds.nodeName=='HEAD')
+  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
    window.setTimeout(function() { hds[0].appendChild(sel); }, 100);
   else
    document.body.insertBefore(sel,document.body.firstChild);    

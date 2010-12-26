@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.7
-// @dtversion     101225307
-// @timestamp     1293235093132
+// @version       3.0.8
+// @dtversion     101227308
+// @timestamp     1293386612530
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,6 +13,14 @@
 //
 // -!--latestupdate
 //
+// v3.0.8 - 2010-12-27
+//   Fix GM_addGlobalStyle & GM_addGlobalScript
+//   Fix notify failed fetch from another thread.
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//   
 // v3.0.7 - 2010-12-25
 //   Add Last used Spoiler-Title
 //   Fix (Opera) onclose preview keep last char as "\n\n" 
@@ -21,10 +29,6 @@
 //   Fix deprecate trick on keydown keyCode=13
 //   Improve onclose preview keep last char as "\n\n" 
 //   
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//   
 // v3.0.6 - 2010-12-04
 //   Fix global $ collision with jQuery's (or is it just only a weirdness on Opera?)
 //   Improve botgreet; add RTFM link
@@ -32,15 +36,6 @@
 //   Fix failed load custom-smiley content on bad link last-img
 //   Improve string optimized on scustom content
 //   
-// v3.0.5 - 2010-11-26
-//   Fix failed shortcut Ctrl+[B-I-U]
-//   Improve Updater nfo last-log-update
-//   
-// v3.0.4 - 2010-11-25
-//   Add shortcut: Ctrl+Enter=Post;
-//   Add shortcut(global): Esc=Close-Popup;
-//   Fix failed disable textareaExpander
-//   Fix minor meta format (version;contributor)
 //
 // -more: http://userscripts.org/topics/56051
 // 
@@ -175,7 +170,7 @@ function init(){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.lastused.sptitle
+  eg. gvar.settings.updates_interval
   */
   var KS = 'KEY_SAVE_';
   var hVal,hdc;
@@ -2562,15 +2557,17 @@ function quote_parser(page){
    //match = /<textarea\sname=\"message\"(?:[^>]+.)([^<]+)*</i.exec(page); 
    
    // back to stone-age method :hammer:
+   if(page.indexOf(gvar.id_textarea)==-1)
+     return null;
    var pos = [ page.indexOf(gvar.id_textarea), page.lastIndexOf('</textarea') ];
    parts = page.substring(pos[0], pos[1]);
    pos[0] = parts.indexOf('>');
    parts = parts.substring( (pos[0]+1), parts.length);
-   return (parts ? unescapeHtml(parts) : null);
+   return (parts ? unescapeHtml(parts) : '');
 }
 function ajax_chk_newval(reply_html){
   // initialize 
-  reply_html=(isDefined(reply_html) && reply_html ? reply_html : null);
+  reply_html=(isDefined(reply_html) && reply_html ? reply_html : null);  
   if(!reply_html){
     if($D('#imgcapcay') && capcay_notloaded())
        $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
@@ -2593,30 +2590,45 @@ function ajax_chk_newval(reply_html){
     
 	vB_textarea.init();
 	var notice = $D('#quoted_notice');
+	var re_event_btn = false;
 	if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
-	if(rets==null){
+	if(rets===null){
 	   addClass('g_notice-error', notice);
 	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Try again</a>'
-        + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
-       Dom.Ev($D('#quote_now'), 'click', function(){         
+       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+	   re_event_btn = true;
+       
+	}else{
+       vB_textarea.add(rets);     
+	   if(rets===''){
+	     addClass('g_notice-error', notice);
+	     notice.innerHTML = 'Nothing to fetch, quote post from another thread is not possible.'
+         + (' <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+		 re_event_btn = true;
+	   }else{
+		 re_event_btn = false;
+         notice.innerHTML='';
+         showhide(notice, false); // hide notice
+         deselect_it(); // clear selected quotes
+		 vB_textarea.lastfocus();
+		 if(gvar.settings.textareaExpander[0])
+           vB_textarea.adjustGrow(); // retrigger autogrow now
+	   }
+	}
+	if(re_event_btn){
+	   if($D('#quote_now'))
+	    Dom.Ev($D('#quote_now'), 'click', function(){         
          vB_textarea.readonly();
 		 removeClass('g_notice-error', notice);
          notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
          ajax_chk_newval();
-       });
-	   Dom.Ev($D('#deselect_them'), 'click', function(){
-	    removeClass('g_notice-error', notice);
-		deselect_it();
-	   });
-	}else{
-       vB_textarea.add(rets);     
-       notice.innerHTML='';
-       showhide(notice, false); // hide notice
-       deselect_it(); // clear selected quotes	   
-       if(gvar.settings.textareaExpander[0]) 
-         vB_textarea.adjustGrow(); // retrigger autogrow now
-	}
-	vB_textarea.lastfocus();
+        });
+	   if($D('#deselect_them'))
+	    Dom.Ev($D('#deselect_them'), 'click', function(){
+	     removeClass('g_notice-error', notice);
+		 deselect_it();
+	    });
+	}	
   }
 }
 
@@ -2624,6 +2636,7 @@ function ajax_chk_newval(reply_html){
 function chk_newval(val){
   var tgt, notice = $D('#quoted_notice');
   if(val.length>1){
+    removeClass('g_notice-error', notice);
     notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Quote these posts now</a>'
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
@@ -2906,7 +2919,7 @@ GM_addGlobalScript=function(script, id) { // Redefine GM_addGlobalScript with a 
   else
     sel.appendChild(createTextEl(script));    
   var hds = getTag('head');
-  if(hds)
+  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
    window.setTimeout(function() { hds[0].appendChild(sel);}, 100);
   else
    document.body.insertBefore(sel, document.body.firstChild);
@@ -2917,7 +2930,7 @@ GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a bette
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   sel.appendChild(createTextEl(css));    
   var hds = getTag('head');
-  if(hds && hds.nodeName=='HEAD')
+  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
    window.setTimeout(function() { hds[0].appendChild(sel); }, 100);
   else
    document.body.insertBefore(sel,document.body.firstChild);    
