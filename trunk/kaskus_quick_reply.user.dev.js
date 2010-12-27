@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.8
 // @dtversion     101227308
-// @timestamp     1293439306225
+// @timestamp     1293450930585
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,7 +14,7 @@
 // -!--latestupdate
 //
 // v3.0.8 - 2010-12-27
-//   Fix minor tpl; CSS; title on some buttons;
+//   Fix minor tpl; CSS; title on some buttons; controler_resizer;
 //   Improve delayed QR visibility wait until QR DOM created & complete
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
@@ -57,7 +57,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293439306225 // version.timestamp
+  timestamp: 1293450930585 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -354,7 +354,9 @@ function start_Main(){
        
 	window.setTimeout(function() {
 	   if($D('#quickreply')) $D('#quickreply').style.visibility = 'visible';
+	   controler_resizer();
     }, 850);
+	
     if(gvar.__DEBUG__){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
@@ -807,7 +809,7 @@ function initEventTpl(){
     
     var dvacs = $D('#dv_accessible');
     if(dvacs){
-      dvacs.style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+      controler_resizer();
       dvacs.style.display='';
       Dom.Ev(dvacs, 'click', function(){
         var etxta = Dom.g(gvar.id_textarea);
@@ -2518,11 +2520,10 @@ function appendAvatar(){
            cls = 'qravatar_refetch_hover' + (Dom.g(avId).clientHeight==0 ? '_0':'').toString();
            removeClass(cls, $D('#qravatar_refetch'));
          });
-         if($D('#dv_accessible')) // resize accesible width
-           $D('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+		 controler_resizer();
         } );
       else
-       if($D('#dv_accessible')) $D('#dv_accessible').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
+	   controler_resizer();
        Dom.Ev($D('#refetch'), 'click', function(){
          if($D('#fetching_avatar')) return;
          refetch_avatar();
@@ -3411,6 +3412,7 @@ Format will be valid like this:
 ,'524': [H+'selamat.gif', ':selamat', 'Selamat']
 ,'525': [H+'dp.gif', ':dp', 'DP']
 ,'526': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+
 ,'527': [H+'request.gif', ':request', 'Request']
 ,'528': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
 ,'529': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
