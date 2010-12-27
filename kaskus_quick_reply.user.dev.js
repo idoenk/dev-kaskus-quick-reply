@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.8
 // @dtversion     101227308
-// @timestamp     1293386612530
+// @timestamp     1293439306225
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,8 @@
 // -!--latestupdate
 //
 // v3.0.8 - 2010-12-27
+//   Fix minor tpl; CSS; title on some buttons;
+//   Improve delayed QR visibility wait until QR DOM created & complete
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
 //   Fix notify failed fetch from another thread.
@@ -55,7 +57,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293386612530 // version.timestamp
+  timestamp: 1293439306225 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -132,7 +134,7 @@ function init(){
   gvar.offsetTop= -35; // buat scroll offset
   gvar.idx_mq=0; // counter buat deselect multiquote
   
-  gvar.silahken= 'Silahken post reply';
+  gvar.silahken= 'Silahkan post reply';
   gvar.tooshort= 'The message is too short. Your message should be at least 5 characters.';
   gvar.qr_diakses= 'Quick Reply bisa diakses langsung atau dengan mengklik setiap button ';
   
@@ -143,7 +145,7 @@ function init(){
   
   // place global style
   GM_addGlobalStyle( getCSS() );
-  GM_addGlobalStyle('','css_fixups', 1); // blank style tag for kaskus fixups
+  GM_addGlobalStyle('','css_fixups', true); // blank style tag for kaskus fixups, should be on body instead of head
   
   //GM_addGlobalScript(gvar.domain + 'clientscript/vbulletin_ajax_imagereg.js?v=380');
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
@@ -269,7 +271,7 @@ function start_Main(){
     var Attr,child,el,nodes,par,hr,bufftxt = '';
     
     if( !$D('#quickreply') ){
-       el = createEl('div',{id:'quickreply'},getTPL() );
+       el = createEl('div',{id:'quickreply',style:'visibility:hidden;'},getTPL() );
        nodes = getByXPath_containing('//script', false, 'mqlimit')[0];
        nodes.parentNode.insertBefore(el, nodes.nextSibling);       
        // build tpl capcay 
@@ -350,6 +352,9 @@ function start_Main(){
 
     }, 50);
        
+	window.setTimeout(function() {
+	   if($D('#quickreply')) $D('#quickreply').style.visibility = 'visible';
+    }, 850);
     if(gvar.__DEBUG__){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
@@ -1992,7 +1997,8 @@ function create_popup_color(){
     if (i % 8 == 0) 
       var tr = table.insertRow(-1);    
     i++;
-    var div = createEl('div',{style:'border:1px solid #CDA;background-color:'+gvar.coloroptions[hex]},'&nbsp;');
+	var kolor=gvar.coloroptions[hex];
+    var div = createEl('div',{style:'border:1px solid #CDA;background-color:'+kolor},'&nbsp;');
     var td = tr.insertCell(-1);   
     td.style.textAlign = "center";
     td.className = "ocolor";
@@ -2000,7 +2006,7 @@ function create_popup_color(){
     //td.cmd = obj.cmd;
     td.editorid = this.editorid;
     //td.controlkey = obj.id;
-    td.colorname = gvar.coloroptions[hex];    
+    td.title = td.colorname = kolor;
     td.id = "pick_color_"+td.colorname;
     
     Dom.Ev(td, 'click', function(e){
@@ -2492,7 +2498,7 @@ function appendAvatar(){
           dvCon.style.height='25px';
           dvCon.innerHTML='<small>No Avatar</small>';
        }
-       dv=createEl('div',{id:'qravatar_refetch',style:'display:none;position:absolute;'},'<a id="refetch" class="cleanlink" href="javascript:;"><small>refetch</small></a>');
+       dv=createEl('div',{id:'qravatar_refetch',style:'display:none;position:absolute;'},'&nbsp;<a class="cleanlink" href="./profile.php?do=editavatar" target="_blank">edit</a>&nbsp;-&nbsp;<a id="refetch" class="cleanlink" href="javascript:;">refetch</a>&nbsp;');
        Dom.add(dv,dvCon);
        Dom.add(dvCon,$D('#qravatar_cont'));
        
@@ -2820,15 +2826,11 @@ function getTPL_main(){
     +'<td class="txta_cont panelsurrounds">'    
     +'<div id="controller_wraper" style="border:1px solid transparent;background-color:transparent;position:absolute;margin-top:-20px;line-height:80px;">&nbsp;</div>'
     
-    +(!gvar.user.isDonatur ? ''
-       +'<div class="panel"><div>'
-    :'')
+    +(!gvar.user.isDonatur ? '<div class="panel"><div>':'')
     
     +getTPL_vbEditor()
     
-    +(!gvar.user.isDonatur ? ''
-       +'</div></div>'
-    :'')
+    +(!gvar.user.isDonatur ? '</div></div>':'')
     
     // Setting container will be containing from getTPL_Settings()    
     +'<div id="settings_cont"></div>'    
@@ -2865,7 +2867,6 @@ function getTPL(){
     +'<td>'
     +'<div id="qr_maincontainer"></div>' 
     +'</td>'
-
 
      // Image Verification container
     +( false && !gvar.user.isDonatur  ? ''
@@ -2909,11 +2910,9 @@ function getTPL(){
      +'<div id="rate_thread" style="display:none;"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/></div>'
     +'&nbsp;</div>\n'
 
-
     +'<div class="sub-bottom sayapkanan">'
     +'<input id="chk_fixups" tabindex="7" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread with Kaskus Fixups" for="chk_fixups">Expand</label></a>'
     +'</div>'
-
 
 	// center container for buttons & folks
     +'<div style="text-align:center;width:100%;">'	
@@ -2969,7 +2968,6 @@ function getTPL_vbEditor(){
      +konst.__sep__
     :'')
 
-
     +(gvar.settings.hidecontroll[1] != '1' ? ''
      +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'
      +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifycenter"><img src="'+gvar.domainstatic+'images/editor/justifycenter.gif" alt="Align Center" /></div></td>'
@@ -3020,16 +3018,16 @@ function getTPL_vbEditor(){
      +konst.__sep__
     :'')    
     
-    +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" /></div></td>'
+    +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" title="Insert Link" /></div></td>'
     :'')
-    +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" /></div></td>'
+    +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" title="Insert Image" /></div></td>'
     :'')
     +(gvar.settings.hidecontroll[7] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>'
     :'')
     +(gvar.settings.hidecontroll[5] == '1' && gvar.settings.hidecontroll[6] == '1' && gvar.settings.hidecontroll[7] == '1' ? '':konst.__sep__)
     
     +(gvar.settings.hidecontroll[8] != '1' ? ''
-     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Insert Smile" /></div></td>'
+     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>'
      +konst.__sep__
     :'')    
     
@@ -3060,17 +3058,15 @@ function getTPL_vbEditor(){
     :'')
     +'</div>'
     +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-    +'            </td>'
-    +'        </tr>'
-    +'        </table>'
-    
+    +            '</td>'
+    +        '</tr>'
+    +        '</table>'    
     +'<div id="smile_cont" style="display:none;"></div>'
     
     // setting toggle link
     +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
 
-
-    +'    </td>'
+    +    '</td>'
     +'</tr>'
     +'</table>'
     +'';
@@ -3101,7 +3097,6 @@ function getTPL_Settings(){
    +'</td><td id="td_setting_misc">'
    +(!gvar.noCrossDomain ? '<label for="misc_updates" title="Check Userscripts.org for QR latest update"><input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="qbutton" href="javascript:;" title="Check Update Now">check now</a></small><br />':'')
    +(!gvar.noCrossDomain ? '<small style="margin-left:10px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval:&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small><br />':'')
-   
    
    +'<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/> Hide Avatar<br />'
    +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/> Dynamic QR'
@@ -3200,12 +3195,10 @@ function getTPL_prompt_reCAPTCHA(){
  +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
  +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
  +  '</span>'
-
  +   '</div>'
  +   '<div class="spacer"></div>'
  +   '<div id="recaptcha_container" style="text-align:center;">'
  +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
-
  +   '</div>'
  +  '</td></tr>'
  +  '<tbody></table>'
@@ -3213,8 +3206,6 @@ function getTPL_prompt_reCAPTCHA(){
  +    '<span id="remote_capcay"></span>'
  +    '<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
  +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
-
-
  +   '</div>'
  + '</div>'
  +'</div>';
@@ -3239,12 +3230,9 @@ function getTPL_Preview(){
  +   '<div id="button_preview" >'
  +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
  +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
-
-
  +   '</div>'
  + '</div>'
  +'</div>';
-
   return divInner;  
 }
 // end tpl
@@ -3354,7 +3342,6 @@ Format will be valid like this:
 ,'59': [H+s+'hi.gif', ':hi:', 'Hi']
 ,'60': [H+s+'6.gif', ':p', 'Stick Out Tongue']
 ,'61': [H+s+'13.gif', ';)', 'Wink']
-
 
 ,'64': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
 ,'65': [H+s+'18.gif', ':doctor:', 'doctor']
@@ -3603,8 +3590,7 @@ function getSCRIPT() {
     +     ',custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
     +    '}'
     +  ');'
-    +'};'
-    
+    +'};'    
     +'function clickedelm(val){ document.getElementById("clicker").value=val; };'
     +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
     + 'this.open_smilie_window=function(width,height){'
@@ -3612,8 +3598,7 @@ function getSCRIPT() {
     + '};'
     +'};'
     +''
-  );
-  
+  );  
 }
 // Global CSS
 
@@ -3720,7 +3705,7 @@ function getCSS() {
   +'.qravatar_refetch_hover'
    +'{margin-top:-15px;}'
   +'#qravatar_refetch'
-   +'{background:#DFC;border:1px solid #CDA;}'
+   +'{background:#DFC;border:1px solid #CDA;font-size:9px;}'
   +'.warn'
    +'{color:#FF0000;font-size:9px;}'
   +'.idleinput, .activeField'
@@ -3806,56 +3791,44 @@ function getCSS() {
   /* for preview popup */ 
   	+'#hideshow, #hideshow_recaptcha {'
     +  'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'
-
     +'}'
     +'.trfade, .fade {'
     +  'position: fixed; width: 100%; height: 100%; left: 0;'
-
     +'}'
     +'.trfade {'
     +  'background: #000; z-index: 99998;'
     +  'filter:alpha(opacity=25); opacity: .25;'
     +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
-
-
     +'}'
     +'.fade {'
     +  'background: #000; z-index: 99990;'
     +  'filter:alpha(opacity=60); opacity: .60;'
     +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
-
     +'}'
     +'#popup_container, #popup_container_precap  {'
     +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
     +  'float: left; position: absolute; top: 10px;'
     +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
-
     +'}'
     +'#popup_container {'
     +  'width: 88%; left: 5%;'
-
     +'}'
     +'#popup_container_precap  {'
     +  'width: 340px; left: 50%;'
-
     +'}'
     +'.popup_block .popup {'
     +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
     +  'padding: 0; border: 1px solid #bbb;'
-
     +'}'
     +'.popup img.cntrl {'
     +  'position: absolute; right: -20px; top: -20px; border: 0px;'
-
     +'}'
     +'#button_preview {'
     +  'padding:3px;text-align:center;'
-
     +'}'
     +'*html .fade {'
     +  'position: absolute;'
     +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'
-
     +'}'
     +'*html #popup_container, *html #popup_container_precap {'
     +  'position: absolute;'
@@ -3864,9 +3837,8 @@ function getCSS() {
     +  '+((document.body.clientHeight-this.clientHeight)/2));'
     +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
     +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
-
     +'}'
-  +'';
+    +'';
   return css;
 }
 
@@ -3877,9 +3849,6 @@ function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
 function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
-
-
-
 
 function basename(path, suffix) {
   // Returns the filename component of the path  
@@ -3925,9 +3894,6 @@ function GetHeight(){
 function count_Char(chr, dstr) {
  var tFind = new RegExp(chr,"g");
  var ret = (dstr.length - parseInt(dstr.replace(tFind,'').length) );
-
-
-
  return ret;
 };
 function gen_Char(chr, len, pngotor) {
@@ -3970,9 +3936,6 @@ function page_is_notloaded(t){
 }
 function getTag(name, parent){
   var ret = (typeof(parent)!='object' ? document.getElementsByTagName(name) : parent.getElementsByTagName(name) );
-
-
-
   return (isDefined(ret[0]) ? ret : false);
 }
 function getByXPath_containing(xp, par, contain){
@@ -4006,8 +3969,6 @@ function createEl(type, attrArray, html){
 }
 function createTextEl(txt){
   return document.createTextNode(txt);
-
-
 }
 function HtmlUnicodeDecode(a){
  var b="";if(a==null){return(b)}
@@ -4091,9 +4052,9 @@ function clog(msg) {
   if(!gvar.__DEBUG__) return;
   show_alert(msg);
 }
-
 // -end static
 // -----------
+
 //========= Global Var Init ====
 GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
   var sel=createEl('script',{type:'text/javascript'});
