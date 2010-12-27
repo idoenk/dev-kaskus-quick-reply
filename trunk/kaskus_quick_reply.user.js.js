@@ -143,7 +143,7 @@ function init(){
   
   // place global style
   GM_addGlobalStyle( getCSS() );
-  GM_addGlobalStyle('','css_fixups'); // blank style tag for kaskus fixups
+  GM_addGlobalStyle('','css_fixups', 1); // blank style tag for kaskus fixups
   
   //GM_addGlobalScript(gvar.domain + 'clientscript/vbulletin_ajax_imagereg.js?v=380');
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
