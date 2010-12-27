@@ -14,7 +14,8 @@
 // -!--latestupdate
 //
 // v3.0.8 - 2010-12-27
-//   Fix GM_addGlobalStyle & GM_addGlobalScript
+//   Fix failed expand with css_fixups
+//   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
 //   Fix notify failed fetch from another thread.
 //   
 // -/!latestupdate---
@@ -4094,29 +4095,37 @@ function clog(msg) {
 // -end static
 // -----------
 //========= Global Var Init ====
-GM_addGlobalScript=function(script, id) { // Redefine GM_addGlobalScript with a better routine
+GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
   var sel=createEl('script',{type:'text/javascript'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   if(script.match(/^https?:\/\/.+/))
     sel.setAttribute('src', script);
   else
-    sel.appendChild(createTextEl(script));    
-  var hds = getTag('head');
-  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
-   window.setTimeout(function() { hds[0].appendChild(sel);}, 100);
-  else
-   document.body.insertBefore(sel, document.body.firstChild);
+    sel.appendChild(createTextEl(script));
+  if(isDefined(tobody) && tobody){
+    document.body.insertBefore(sel,document.body.firstChild);
+  }else{
+    var hds = getTag('head');
+    if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
+     window.setTimeout(function() { hds[0].appendChild(sel);}, 100);
+    else
+     document.body.insertBefore(sel, document.body.firstChild);
+  }
   return sel;
 };
-GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a better routine 
+GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with a better routine 
   var sel=createEl('style',{type:'text/css'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
-  sel.appendChild(createTextEl(css));    
-  var hds = getTag('head');
-  if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
-   window.setTimeout(function() { hds[0].appendChild(sel); }, 100);
-  else
-   document.body.insertBefore(sel,document.body.firstChild);    
+  sel.appendChild(createTextEl(css));
+  if(isDefined(tobody) && tobody){
+    document.body.insertBefore(sel,document.body.firstChild);
+  }else{
+    var hds = getTag('head');
+    if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
+     window.setTimeout(function() { hds[0].appendChild(sel); }, 100);
+    else
+     document.body.insertBefore(sel,document.body.firstChild);
+  }
   return sel;
 };
 Avatar = {
