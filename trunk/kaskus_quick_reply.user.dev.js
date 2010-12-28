@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.8
-// @dtversion     101227308
-// @timestamp     1293450930585
+// @dtversion     101228308
+// @timestamp     1293526898615
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,12 +13,14 @@
 //
 // -!--latestupdate
 //
-// v3.0.8 - 2010-12-27
-//   Fix minor tpl; CSS; title on some buttons; controler_resizer;
-//   Improve delayed QR visibility wait until QR DOM created & complete
+// v3.0.8 - 2010-12-28
+//   Add shortcut (only locally onfocus "recaptcha_response_field") reload-recapcay=[Alt+R; Pg-Up; Pg-Down]
+//   Fix minor tpl; CSS; title attr some buttons; controler_resizer lil improved;
+//   Improve notify failed onpreview, Upss.
+//   Improve delayed QR visibility
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
-//   Fix notify failed fetch from another thread.
+//   Fix notify fetch failed from another thread.
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -57,7 +59,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293450930585 // version.timestamp
+  timestamp: 1293526898615 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -485,7 +487,7 @@ function create_tplcapcay(){
     +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'
     +'<div id="imgcapcay"><div class="g_notice normal_notice" style="display:block;font-size:9px;text-align:center;">[capcay-space]</div></div>\n'    
     +'<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="showRecaptcha(\'recaptcha_container\');" />' // fake button create
-    //+'<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:" onclick="Recaptcha.reload();" />' // fake button reload
+    +'<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:" onclick="Recaptcha.reload();" />' // fake button reload
     +'<input id="docapcayfocus" value="" type="hidden"  />' // flag for callback caller click capcay
     +'</fieldset>'
     ;
@@ -541,6 +543,7 @@ function ajax_additional_opt(reply_html){
 }
 
 function parse_preview(text){
+  if(text.indexOf('vbform')==-1) return null;
   var ret = text.split('vbform');
   ret = ret[0];
   var wraper = ['<td class="alt1">', '{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}' ];
@@ -574,7 +577,18 @@ function qr_preview(reply_html){
     if( !reply_html || !$D('#preview_content') ) return;
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
-    if($D('#preview_content')) $D('#preview_content').innerHTML = rets;
+	if(rets===null){
+	  $D('#preview_content').innerHTML = '<div class="p_notice g_notice-error" style="display:block;">Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.</div>';
+	   Dom.Ev( $D('#upss_preview'), 'click', function(e){
+	    if($D('#preview_content'))
+		  $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>';
+		 qr_preview();
+	   });
+	   Dom.Ev( $D('#upss_abort_preview'), 'click', function(e){ SimulateMouse($D('#imghideshow'), 'click', true); });
+	   return;
+	}else{
+      $D('#preview_content').innerHTML = rets;
+	}
     if(gvar.__DEBUG__) {
         clog('previewResponse elapsed='+DOMTimer.get());
 	}
@@ -673,10 +687,14 @@ function loadLayer_reCaptcha(){
 	    clearInterval(gvar.sITryFocusOnLoad);
 		Dom.Ev( $D('#recaptcha_response_field'), 'keydown', function(e){
             var C = (!e ? window.event : e );
-            if(C.keyCode==13){ // mijit enter
+			var A = C.keyCode ? C.keyCode : C.charCode;
+            if( A==13 ){ // mijit enter
                 C = do_an_e(C);
                 SimulateMouse($D('#recaptcha_submit'), 'click', true);
-            }
+            }else if( (C.altKey && A==82) || (A==33||A==34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
+			    C = do_an_e(C);
+                SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+			}
         });
         // order tabindex
 		var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
@@ -1055,7 +1073,7 @@ function is_keydown_pressed_ondocument(e){
   }
 }
 
-// Ketika keydown tab dari textarea
+// Ketika keydown tab dari textarea 
 function is_keydown_pressed(e){
   var C = (!e ? window.event : e);
   if(C) {
@@ -1086,7 +1104,7 @@ function is_keydown_pressed(e){
    }else
    if(C.altKey){ // mijit + Alt
 	var B='', A = C.keyCode ? C.keyCode : C.charCode;
-	  //clog('Alt+'+A);
+	  //clog('Alt+'+A);	
     switch(A){
       case 83: // [S] Submit post
         B = 'qr_prepost_submit';
@@ -3589,7 +3607,7 @@ function getSCRIPT() {
     +'function showRecaptcha(element){'
     +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
     +    '{theme:"red",lang:"en"'
-    +     ',custom_translations:{refresh_btn:"reload reCAPCAY..",instructions_visual:"Masukkan reCapcay:"}'
+    +     ',custom_translations:{refresh_btn:"Reload reCapcay :: [Alt+R]",instructions_visual:"Masukkan reCapcay:"}'
     +    '}'
     +  ');'
     +'};'    
@@ -3639,7 +3657,7 @@ function getCSS() {
    +'{border-bottom:1px solid transparent;}'
   +'.quoteselected'
    +'{background:#DFC;border-bottom:1px solid #CDA;}'
-  +'.g_notice'
+  +'.p_notice,.g_notice'
    +'{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
   +'.g_notice-error'
    +'{background:#FFD7FF !important;}'
