@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.8
-// @dtversion     101228308
-// @timestamp     1293526898615
+// @dtversion     101230308
+// @timestamp     1293658504932
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,8 +13,10 @@
 //
 // -!--latestupdate
 //
-// v3.0.8 - 2010-12-28
-//   Add shortcut (only locally onfocus "recaptcha_response_field") reload-recapcay=[Alt+R; Pg-Up; Pg-Down]
+// v3.0.8 - 2010-12-30
+//   Fix (Opera)-subrev-1 onclose recaptcha keep last char as "\n\n"
+//   Fix Change shortcut deselect-quote [Ctrl+Shift+Q]
+//   Add shortcut (locally onfocus "recaptcha_response_field") reload-recapcay=[Alt+R;] (FF/Chrome), [Ctrl+Alt+R] (Opera)
 //   Fix minor tpl; CSS; title attr some buttons; controler_resizer lil improved;
 //   Improve notify failed onpreview, Upss.
 //   Improve delayed QR visibility
@@ -28,7 +30,7 @@
 //   
 // v3.0.7 - 2010-12-25
 //   Add Last used Spoiler-Title
-//   Fix (Opera) onclose preview keep last char as "\n\n" 
+//   Fix (Opera) onclose preview keep last char as "\n\n"
 //   Add 5 new Emotes
 //   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
 //   Fix deprecate trick on keydown keyCode=13
@@ -59,7 +61,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293526898615 // version.timestamp
+  timestamp: 1293658504932 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -282,7 +284,7 @@ function start_Main(){
           init_buildcapcay();
        }
     }
-    $D('#qr_maincontainer').innerHTML = getTPL_main();    
+    $D('#qr_maincontainer').innerHTML = getTPL_main();
     
     // cuma untuk fresh load
     if(!gvar.restart) {
@@ -353,12 +355,12 @@ function start_Main(){
        SimulateMouse( $D('#remote_scustom_container'), 'click', true);
 
     }, 50);
-	
+
+
 	window.setTimeout(function() {
 	   if($D('#quickreply')) $D('#quickreply').style.visibility = 'visible';
 	   controler_resizer();
     }, 850);
-       
     if(gvar.__DEBUG__){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
@@ -661,7 +663,8 @@ function closeLayerBox(tgt){
     var doLastFocus = false;
     if(tgt=='hideshow' && $D('#hideshow')) {
 	 var curv = Dom.g(gvar.id_textarea).value;
-	 if(curv.substring(curv.length-2, curv.length)!='\n\n'){
+	 var last2 = curv.substring(curv.length-2, curv.length);
+	 if( last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13 ){
 	    vB_textarea.init();
 	    vB_textarea.add('\n\n');
 		doLastFocus = true;
@@ -688,11 +691,11 @@ function loadLayer_reCaptcha(){
 		Dom.Ev( $D('#recaptcha_response_field'), 'keydown', function(e){
             var C = (!e ? window.event : e );
 			var A = C.keyCode ? C.keyCode : C.charCode;
-            if( A==13 ){ // mijit enter
+            if( A===13 ){ // mijit enter
                 C = do_an_e(C);
                 SimulateMouse($D('#recaptcha_submit'), 'click', true);
-            }else if( (C.altKey && A==82) || (A==33||A==34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
-			    C = do_an_e(C);
+            }else if( (C.altKey && A===82) || (A===33||A===34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
+				C = do_an_e(C);
                 SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
 			}
         });
@@ -958,7 +961,7 @@ function initEventTpl(){
       // detect window resize to resize textbox and controler wraper
       Dom.Ev(window, 'resize', function() { controler_resizer(); });
       // activate hotkey?
-      if(!gvar.isOpera && gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0')
+      if( gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' )
         Dom.Ev(window.document, 'keydown', function(e) { return is_keydown_pressed_ondocument(e); });
       
       // new version multi-quote (cookie based)
@@ -1041,12 +1044,14 @@ function is_keydown_pressed_ondocument(e){
   
   var CSA_tasks = {
      quickreply: gvar.settings.hotkeykey.toString() // default: Ctrl+Q
-    ,fetchpost: '0,0,1' // Alt+Q
-    ,deselectquote: '1,0,1' // Ctrl+Alt+Q    
+    //,fetchpost: '0,0,1' // Alt+Q [FF|Chrome]
+    ,fetchpost: (!gvar.isOpera ? '0,0,1' : '1,0,1' ) // Alt+Q [FF|Chrome] --OR-- Ctrl+Alt+Q [Opera]
+    //,deselectquote: '1,0,1' // Ctrl+Alt+Q
+    ,deselectquote: '1,1,0' // Ctrl+Shift+Q, due to Ctrl+Alt will be used above
   };
   
     //clog('pressedCSA='+pressedCSA)  
-  switch(pressedCSA){ // key match in [Ctrl-Shift-Alt]
+  switch(pressedCSA){ // key match in [Ctrl-Shift-Alt Combination]
     case CSA_tasks.quickreply:
       var cCode = gvar.settings.hotkeychar.charCodeAt();
       if(A==cCode) {
@@ -1124,10 +1129,11 @@ function is_keydown_pressed(e){
    }else
    if(C.keyCode==9){ // mijit tab
      C = do_an_e(C);
-     if($D('#recaptcha_response_field'))
+     if($D('#recaptcha_response_field')){
        window.setTimeout(function() { try{$D('#recaptcha_response_field').focus()}catch(e){}; }, 150);
-     else
-       $D('#qr_prepost_submit').focus();   
+     }else{
+       if(!gvar.isOpera) $D('#qr_prepost_submit').focus();
+	 }
    }
    // end keyCode==9 
    
@@ -1367,7 +1373,7 @@ function save_setting(e){
     
     if(!gvar.isOpera){ // saving hotkey
       misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
-      var reserved_CSA = ['0,0,1', '1,0,1']; /* Alt+Q || Ctrl+Alt+Q */
+      var reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
       var Chr='';
       value = [];
       for(var id in misc){
@@ -1379,7 +1385,7 @@ function save_setting(e){
       par = $D('#misc_hotkey_char');
       if(par) Chr=par.value.toUpperCase();
       if( Chr=='Q' && (reserved_CSA[0]==value || reserved_CSA[1]==value) ){ // bentrok
-        var koreksi = confirm('Hotkey is already reserved:\n [Alt + Q] : Fetch Quoted Post\n [Ctrl + Alt + Q] : Deselect Quote\n\nDo you want to make a correction?');
+        var koreksi = confirm('Hotkey is already reserved:\n ['+(!gvar.isOpera ? 'Alt + Q':'Ctrl + Alt +Q')+'] : Fetch Quoted Post\n [Ctrl + Shift + Q] : Deselect Quote\n\nDo you want to make a correction?');
         if(koreksi) return;
       }
       if(isUndefined(koreksi) ) {// save only when ga bentrok reserved
@@ -2620,8 +2626,8 @@ function ajax_chk_newval(reply_html){
 	if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
 	if(rets===null){
 	   addClass('g_notice-error', notice);
-	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Try again</a>'
-       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+	   notice.innerHTML = 'Fetch failed, server might be busy. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Try again</a>'
+       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
 	   re_event_btn = true;
        
 	}else{
@@ -2629,7 +2635,7 @@ function ajax_chk_newval(reply_html){
 	   if(rets===''){
 	     addClass('g_notice-error', notice);
 	     notice.innerHTML = 'Nothing to fetch, quote post from another thread is not possible.'
-         + (' <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+         + (' <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
 		 re_event_btn = true;
 	   }else{
 		 re_event_btn = false;
@@ -2663,8 +2669,8 @@ function chk_newval(val){
   var tgt, notice = $D('#quoted_notice');
   if(val.length>1){
     removeClass('g_notice-error', notice);
-    notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post [Alt+Q]">Quote these posts now</a>'
-      + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Alt+Q]">deselect them</a>.');
+    notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>'
+      + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
     Dom.Ev($D('#quote_now'), 'click', function(){
       vB_textarea.init();
