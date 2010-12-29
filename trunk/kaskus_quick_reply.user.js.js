@@ -15,10 +15,10 @@
 //
 // v3.0.8 - 2010-12-30
 //   Fix QR-Hotkey (Opera)
-//   Fix EYD "Silahken" :: "Silahkan", Critical Fix contributor miss spelled. :hammer:
-//   Fix (Opera)-subrev-1 onclose recaptcha keep last char as "\n\n"
+//   Fix (Opera)-subrev-2 onclose recaptcha keep last char as "\n\n"
 //   Fix Change shortcut deselect-quote [Ctrl+Shift+Q]
 //   Add shortcut (locally onfocus "recaptcha_response_field") reload-recapcay=[Alt+R;] (FF/Chrome), [Ctrl+Alt+R] (Opera)
+//   Fix minor EYD "Silahken" :: "Silahkan", Critical Fix contributor miss spelled. :hammer:
 //   Fix minor tpl; CSS; title attr some buttons; controler_resizer lil improved;
 //   Improve notify failed onpreview, Upss.
 //   Improve delayed QR visibility
@@ -666,7 +666,7 @@ function closeLayerBox(tgt){
     if(tgt=='hideshow' && $D('#hideshow')) {
 	 var curv = Dom.g(gvar.id_textarea).value;
 	 var last2 = curv.substring(curv.length-2, curv.length);
-	 if( last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13 ){
+	 if( last2!="\n\n" && (last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13) ){
 	    vB_textarea.init();
 	    vB_textarea.add('\n\n');
 		doLastFocus = true;
