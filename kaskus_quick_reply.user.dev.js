@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.8
 // @dtversion     101230308
-// @timestamp     1293658504932
+// @timestamp     1293660376751
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 // v3.0.8 - 2010-12-30
+//   Fix QR-Hotkey (Opera)
 //   Fix EYD "Silahken" :: "Silahkan", Critical Fix contributor miss spelled. :hammer:
 //   Fix (Opera)-subrev-1 onclose recaptcha keep last char as "\n\n"
 //   Fix Change shortcut deselect-quote [Ctrl+Shift+Q]
@@ -62,7 +63,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.8';
 gvar.scriptMeta = {
-  timestamp: 1293658504932 // version.timestamp
+  timestamp: 1293660376751 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1370,31 +1371,31 @@ function save_setting(e){
     var KS = 'KEY_SAVE_';
     gvar.restart=true;
     
-    if(!gvar.isOpera){ // saving hotkey
-      misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
-      var reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
-      var Chr='';
-      value = [];
-      for(var id in misc){
-        if(!isString(misc[id])) continue;
-        par = Dom.g(misc[id]);
-        if(par) value.push( par.checked ? '1' : '0' );  
-      }
-      value = value.toString();
-      par = $D('#misc_hotkey_char');
-      if(par) Chr=par.value.toUpperCase();
-      if( Chr=='Q' && (reserved_CSA[0]==value || reserved_CSA[1]==value) ){ // bentrok
-        var koreksi = confirm('Hotkey is already reserved:\n ['+(!gvar.isOpera ? 'Alt + Q':'Ctrl + Alt +Q')+'] : Fetch Quoted Post\n [Ctrl + Shift + Q] : Deselect Quote\n\nDo you want to make a correction?');
-        if(koreksi) return;
-      }
-      if(isUndefined(koreksi) ) {// save only when ga bentrok reserved
-        setValue(KS+'QR_HOTKEY_KEY',value);      
-        if( Chr=='' || Chr.match(/[A-Z0-9]{1}/) ){
-          gvar.settings.hotkeychar=Chr;
-          setValue(KS+'QR_HOTKEY_CHAR',Chr.toString());
-        }
+
+    misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
+    var reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
+    var Chr='';
+    value = [];
+    for(var id in misc){
+      if(!isString(misc[id])) continue;
+      par = Dom.g(misc[id]);
+      if(par) value.push( par.checked ? '1' : '0' );  
+    }
+    value = value.toString();
+    par = $D('#misc_hotkey_char');
+    if(par) Chr=par.value.toUpperCase();
+    if( Chr=='Q' && (reserved_CSA[0]==value || reserved_CSA[1]==value) ){ // bentrok
+      var koreksi = confirm('Hotkey is already reserved:\n ['+(!gvar.isOpera ? 'Alt + Q':'Ctrl + Alt +Q')+'] : Fetch Quoted Post\n [Ctrl + Shift + Q] : Deselect Quote\n\nDo you want to make a correction?');
+      if(koreksi) return;
+    }
+    if(isUndefined(koreksi) ) {// save only when ga bentrok reserved
+      setValue(KS+'QR_HOTKEY_KEY',value);      
+      if( Chr=='' || Chr.match(/[A-Z0-9]{1}/) ){
+        gvar.settings.hotkeychar=Chr;
+        setValue(KS+'QR_HOTKEY_CHAR',Chr.toString());
       }
     }
+
     // saving serial controller
     par = getTag('input',$D('#td_setting_control'));
     if(par){
@@ -1504,11 +1505,11 @@ function toggle_setting(){
       Dom.Ev( $D('#save_settings'), 'click', function(e){ e=e.target||e; save_setting(e)} );
       Dom.Ev( $D('#cancel_settings'), 'click', function(){ toggle_setting()} );
       Dom.Ev( $D('#reset_default'), 'click', function(){ reset_setting() });
-      if(!gvar.isOpera){
-        Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
-        Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
-        Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
-      }
+
+      Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
+      Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
+      Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
+		
       Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
       Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
       if(!gvar.noCrossDomain) // unavailable on Chrome|Opera T_T
@@ -3075,7 +3076,7 @@ function getTPL_vbEditor(){
     +            '<td class="controlbar">'    
     +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
     +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
-    +(!gvar.isOpera && gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
+    +(gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
       +'<br />QR-Hotkey: <b>'
       +(gvar.settings.hotkeykey[0]=='1'?'Ctrl+':'')+(gvar.settings.hotkeykey[1]=='1'?'Shift+':'')+(gvar.settings.hotkeykey[2]=='1'?'Alt+':'')
       +''+gvar.settings.hotkeychar+'</b>'
