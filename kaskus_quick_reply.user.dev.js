@@ -9,11 +9,12 @@
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
-// @contributor   Sanji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., Sanjito, bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, & all-kaskuser@t=3170414
+// @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
 //
 // v3.0.8 - 2010-12-30
+//   Fix EYD "Silahken" :: "Silahkan", Critical Fix contributor miss spelled. :hammer:
 //   Fix (Opera)-subrev-1 onclose recaptcha keep last char as "\n\n"
 //   Fix Change shortcut deselect-quote [Ctrl+Shift+Q]
 //   Add shortcut (locally onfocus "recaptcha_response_field") reload-recapcay=[Alt+R;] (FF/Chrome), [Ctrl+Alt+R] (Opera)
