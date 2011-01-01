@@ -9,7 +9,7 @@
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
-// @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, & all-kaskuser@t=3170414
+// @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
 //
