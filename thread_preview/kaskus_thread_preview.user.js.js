@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 //  v1.1 - 2010-01-02
+//    fix re-syncroning from storage avoid changed value when qr-click
 //    fix avoid saving state fixed pos on qr-click
 //    add ajax post-method
 //
@@ -152,7 +153,12 @@ function start_Main(){
 		  ,cRow: find_parentRow(e)
 		  ,TS: find_TS(e)
 		};
+		// re-syncroning from storage avoid changed value when qr-click
+		gvar.setting.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
+		Dom.g('css_position').innerHTML = getCSS_fixed(gvar.setting.fixed_preview);
+		  
 		var tid = getThreadId(gvar.curThread.href);
+		// pre-check kfti position
 		chk_kfti_pos();
 		gvar.curThread.action = 'newreply.php?do=postreply&amp;t='+tid;
 		loadLayer(tid);
@@ -536,7 +542,7 @@ function toggle_sticky(flag, caller){
   if($D("#imgsticky"))
     $D("#imgsticky").src = (flag ? gvar.B.sticky1_png : gvar.B.sticky2_png );
 
-  if(isUndefined(quickreply)){  // dont save the state when its caller is define | asumed from quickreply
+  if( isUndefined(caller) ){  // dont save the state when its caller is define | asumed from quickreply
     setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
   }
   gvar.setting.fixed_preview = (flag);
