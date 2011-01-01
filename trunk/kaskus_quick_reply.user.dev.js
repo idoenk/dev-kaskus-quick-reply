@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.8
-// @dtversion     101230308
-// @timestamp     1293660376751
+// @version       3.0.9
+// @dtversion     110101309
+// @timestamp     1293857337553
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -12,6 +12,14 @@
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
+//
+// v3.0.9 - 2011-01-01
+//   Fix failed show settings when all controllers hide
+//
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.0.8 - 2010-12-30
 //   Fix QR-Hotkey (Opera)
@@ -24,11 +32,7 @@
 //   Improve delayed QR visibility
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
-//   Fix notify fetch failed from another thread.
-//   
-// -/!latestupdate---
-// ==/UserScript==
-/*
+//   Fix notify fetch failed from another thread.   
 //   
 // v3.0.7 - 2010-12-25
 //   Add Last used Spoiler-Title
@@ -61,9 +65,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.8';
+gvar.sversion = 'v' + '3.0.9';
 gvar.scriptMeta = {
-  timestamp: 1293660376751 // version.timestamp
+  timestamp: 1293857337553 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -777,9 +781,7 @@ function loadLayer(){
     $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
     	  
     // cancel preview
-    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
-
-
+    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); });
     //submit from preview
     if($D('#preview_presubmit'))
       Dom.Ev($D('#preview_presubmit'), 'click', function(e){
@@ -1049,7 +1051,7 @@ function is_keydown_pressed_ondocument(e){
     ,fetchpost: (!gvar.isOpera ? '0,0,1' : '1,0,1' ) // Alt+Q [FF|Chrome] --OR-- Ctrl+Alt+Q [Opera]
     //,deselectquote: '1,0,1' // Ctrl+Alt+Q
     ,deselectquote: '1,1,0' // Ctrl+Shift+Q, due to Ctrl+Alt will be used above
-  };  
+  };
     //clog('pressedCSA='+pressedCSA)  
   switch(pressedCSA){ // key match in [Ctrl-Shift-Alt Combination]
     case CSA_tasks.quickreply:
@@ -1370,7 +1372,6 @@ function save_setting(e){
     var par, value, misc;
     var KS = 'KEY_SAVE_';
     gvar.restart=true;
-    
 
     misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
     var reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
@@ -1395,7 +1396,6 @@ function save_setting(e){
         setValue(KS+'QR_HOTKEY_CHAR',Chr.toString());
       }
     }
-
     // saving serial controller
     par = getTag('input',$D('#td_setting_control'));
     if(par){
@@ -1509,7 +1509,7 @@ function toggle_setting(){
       Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
       Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
       Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
-		
+
       Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
       Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
       if(!gvar.noCrossDomain) // unavailable on Chrome|Opera T_T
@@ -1679,13 +1679,16 @@ function create_smile_tab(caller){
   Dom.add(el2,el); Dom.add(el,cont);
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
-  Dom.Ev(el2, 'click', function(){ 
+  Dom.Ev(el2, 'click', function(){
     $D('#smile_cont').style.display='none';
+	showhide($D('#settings_btn'), true);
+	force_focus(10); 
     var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
-    obj.style.backgroundColor='transparent';
-    obj.style.border='1px solid transparent';
-    showhide($D('#settings_btn'), true);
-    force_focus(10); return; 
+	if(obj){
+      obj.style.backgroundColor='transparent';
+      obj.style.border='1px solid transparent';
+	}
+    return; 
   });
   el = createEl('li',{'class':'li_tabsmile tab_close'});
   Dom.add(el2,el); Dom.add(el,cont);
@@ -3073,7 +3076,7 @@ function getTPL_vbEditor(){
     
     +        '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
     +        '<tr valign="top">'
-    +            '<td class="controlbar">'    
+    +            '<td class="controlbar">'
     +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
     +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
     +(gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
@@ -3085,7 +3088,7 @@ function getTPL_vbEditor(){
     +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
     +            '</td>'
     +        '</tr>'
-    +        '</table>'    
+    +        '</table>'
     +'<div id="smile_cont" style="display:none;"></div>'
     
     // setting toggle link
@@ -4144,7 +4147,7 @@ vB_textarea = {
   },
   rearmPos: function(){ return [this.getCaretPos(), this.Obj.selectionEnd]; },
   adjustGrow: function(){ autoGrow(this.Obj, [gvar.settings.textareaExpander[1],gvar.settings.textareaExpander[2]]); },
-  clear: function (id){ 
+  clear: function (id){
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.set('');
     this.enabled();
