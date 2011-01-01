@@ -231,9 +231,17 @@ function event_TPL(){
 	//#head_layer
     if($D('#head_layer')){
       Dom.Ev($D('#head_layer'),'dblclick',function(){
-		 var tgt = $D('#row_content');
-		 var show = (tgt.style.display!='none');
-		 tgt.style.display = (show ? 'none' : '');    	
+		 var el, show, tohide = ['qr_container_table','tr_qr_button','thread_tools'];
+		 show = ($D('#row_content').style.display!='none');
+		 $D('#row_content').style.display = (show ? 'none' : '');
+		 for(var i=0; i<tohide.length; i++){
+		    if(!isString(tohide[i])) continue;
+			el = Dom.g( tohide[i] );
+			if(el){
+			   //show = (el.style.display!='none');
+			   el.style.display = (show ? 'none' : '');
+			}
+		 }
       });
     }
 }
@@ -810,7 +818,7 @@ function getTPL_Preview(){
  +  '<tbody></table>'
  //
  +  '<div class="spacer"></div>'
- +  '<div id="thread_tools" style="width:98%;">'
+ +  '<div id="thread_tools" style="width:98%;display:;">'
  +    '<input type="button" id="open_spoilers" class="twbtn twbtn-m" value="Show Spoilers" style="margin-right:10px;" />' 
  +    '<input type="button" id="show_emotes" class="twbtn twbtn-m" value="Show Emotes" style="" />'
  +    '<input type="button" id="show_images" class="twbtn twbtn-m" value="Show All Images" style="" />'
@@ -818,11 +826,11 @@ function getTPL_Preview(){
  +  '<div class="spacer"></div>'
  
  // quick-reply | 
- +'<form action="'+gvar.curThread.action+'" method="post" name="vbform" id="vbform">'
+ +'<form action="'+gvar.curThread.action+'" method="post" name="vbform" id="vbform" style="display:;">'
  +   '<div style="display:none;">'
  +    '<input type="submit" name="real_submit" value="Submit Post"/>'
  +   '</div>'
- +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+ +  '<table id="qr_container_table" class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
  +   '<td class="tcat">Quick Reply<span id="loggedin_as"></span></td>'
  +  '</tr></thead>'
