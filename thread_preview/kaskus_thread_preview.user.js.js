@@ -2,15 +2,21 @@
 // @name          Kaskus vBulletin Thread Preview - Recoded
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
-// @dtversion     101230308
-// @timestamp     1293660376751
+// @dtversion     110102101
+// @timestamp     1293916844999
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya
 // @moded         idx (http://userscripts.org/users/idx)
-// @include       */forumdisplay.php*
+// @include       */forumdisplay.php?*
+// @include       */usercp.php?*
+// @include       */subscription.php?*
 //
 // -!--latestupdate
-//  v1.0b - 2010-12-30
+//
+//  v1.1 - 2010-01-02
+//    add ajax post-method
+//
+//  v1.0 - 2011-01-01
 //    init recoded
 //
 // -/!latestupdate---
@@ -23,7 +29,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1293660376751 // version.timestamp
+  timestamp: 1293916844999 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -36,6 +42,16 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
+OPTIONS_BOX = {
+  KEY_KTP_IMGLOAD:       ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
+ ,KEY_KTP_FIXED_PREVIEW: ['1'] // fixed position or absolute
+ ,KEY_KTP_SCROLL_THREAD: ['1'] // scroll to last opened-thread
+ ,KEY_KTP_THEN_GOTHREAD: ['0'] // goto-thread after submit post
+};
+GMSTORAGE_PATH      = 'GM_';
+KEY_KTP = 'KEY_KTP_';
+
+// initilaize primary const
 gvar.domainstatic= 'http://'+'static.kaskus.us/';
 const _LOADING = '<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>';
 
@@ -56,21 +72,19 @@ function init(){
   gvar.offsetTop= -35; // buat scroll offset
   
   gvar.meta_refresh = null;
+  gvar.fixed_ktfi = false;
   gvar.curThread={};
   
-  //gvar.setting.fixed_preview
-  gvar.setting = {
-     imgload:'0' // 0:no-load, 1:load-smilies-only, 2:load-all
-    ,fixed_preview:'0'
-    ,thread_lastscroll:'1' // scroll to last opened-thread
-  };
+  gvar.setting = {};
+  getSettings();
+  gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
   
   gvar.B= getSetOf('button');
   gvar.user= getUserId(); //will be [gvar.user.id, gvar.user.name]
 
   GM_addGlobalStyle( '', 'css_position', 1 ); // to body for css-fixed
-  GM_addGlobalStyle( getCSS() );
-  GM_addGlobalStyle( getCSS_fixed(gvar.setting.fixed_preview=='1') );
+  GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.setting.fixed_preview) );
+  
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
   GM_addGlobalScript( getSCRIPT() );  
 
@@ -79,6 +93,23 @@ function init(){
   //----------------------
   
 } // end-init
+
+// populate setting value
+function getSettings(){
+  /** 
+  eg. gvar.setting.fixed_preview
+  */  
+//  var hVal,hdc;
+  gvar.setting = {
+     imgload: ( getValue(KEY_KTP + 'IMGLOAD') ) // [0,1,2]
+    ,fixed_preview:    (getValue(KEY_KTP+'FIXED_PREVIEW')=='1') // boolean
+    ,thread_lastscroll:(getValue(KEY_KTP+'SCROLL_THREAD')=='1') // boolean
+    ,then_goto_thread: (getValue(KEY_KTP+'THEN_GOTHREAD')=='1') // boolean
+  };
+  chk_kfti_pos();  
+  
+}
+// end getSettings
 
 function start_Main(){
 
@@ -112,14 +143,18 @@ function start_Main(){
 		  href = e.getAttribute('rel') || false;
 		if(!href) return;
 		
-		e.innerHTML = '<img id="prev_loader" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" style="margin:0 4px 0 3px;" border="0"/>';	
+		e.innerHTML = '<img id="prev_loader" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" style="margin:0 4px 0 3px;" border="0"/>';
 		
 		// load layer preview
 		gvar.curThread = {
 		   href: href
 		  ,cRow: find_parentRow(e)
+		  ,TS: find_TS(e)
 		};
-		loadLayer( getThreadId(gvar.curThread.href) );		
+		var tid = getThreadId(gvar.curThread.href);
+		chk_kfti_pos();
+		gvar.curThread.action = 'newreply.php?do=postreply&amp;t='+tid;
+		loadLayer(tid);
 		
 		// fetching thread		
 		ajax_thfetch();	    
@@ -138,11 +173,23 @@ function start_Main(){
   
   // window event
   Dom.Ev(window, 'resize', function() {
-   //controler_resizer();
-   $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 160)+'px;', 'important');
+   //controler_resizer(); //165 
+   $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 130 - gvar.offsetLayer )+'px;', 'important');
   });
   //
 } // end start_Main
+
+function chk_kfti_pos(){
+  // try check KTFI, if it's fixed
+  try{
+   if($D('#TextInfo')){
+     var tbL = getTag('table', $D('#TextInfo'));
+	 if(tbL.length > 0) tbL = tbL[0];
+	 gvar.fixed_ktfi = ( tbL.style.getPropertyValue('position') == 'fixed' );	
+   }
+  }catch(e){gvar.fixed_ktfi=false;}
+  gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
+}
 
 // load after loadLayer
 function event_TPL(){
@@ -173,7 +220,15 @@ function event_TPL(){
 	  if($D('#tr_qr_button')) Dom.remove('tr_qr_button');
 	  $D('#qr_container').innerHTML = '<div id="preview_loading">'+_LOADING+'</div>';
 	  preload_quick_reply();
-	});	
+	});
+	//#head_layer
+    if($D('#head_layer')){
+      Dom.Ev($D('#head_layer'),'dblclick',function(){
+		 var tgt = $D('#row_content');
+		 var show = (tgt.style.display!='none');
+		 tgt.style.display = (show ? 'none' : '');    	
+      });
+    }
 }
 function event_TPL_vB(){
 	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
@@ -222,9 +277,160 @@ function ajax_fetch_newreply(reply_html){
       vB_textarea.init();
       vB_textarea.clear();
 	};
-	ss.STEPS = 10; // scroll speed; smaller is faster          
+	ss.STEPS = 10; // scroll speed; smaller is faster
     ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ snapTo() } );
   }
+}
+function lock_input(flaglock){
+  var el;
+  if(isUndefined(flaglock)) flaglock = true; // do lock is default
+  if(flaglock){
+    vB_textarea.readonly();
+    el = $D('#recaptcha_response_field');
+	if(el) {
+	  el.setAttribute('readonly',true);
+	  addClass('txa_readonly', el);
+	}
+	el = $D('#preview_submit');
+	if(el) {
+	  el.setAttribute('disabled','disabled');
+	  addClass('twbtn-disabled', el);
+	  el.value='Posting...';
+	}
+	el = $D('#then_gotothread');
+	if(el) {
+	  el.setAttribute('disabled','disabled');
+	  //addClass('twbtn-disabled', el);
+	}
+  }else{
+    vB_textarea.enabled();
+	el = $D('#recaptcha_response_field');
+	if(el) {
+	  el.removeAttribute('readonly');
+	  removeClass('txa_readonly', el);
+	}
+	el = $D('#preview_submit');
+	if(el) {
+	  el.removeAttribute('disabled');
+	  removeClass('twbtn-disabled', el);
+	  el.value=' Post ';
+	}
+	el = $D('#then_gotothread');
+	if(el) {
+	  el.removeAttribute('disabled');
+	  //addClass('twbtn-disabled', el);
+	}
+  }
+  //txa_readonly
+}
+function buildQuery(){
+  var hidden = getTag( 'input', $D('#vbform') );
+  var el, q='';
+  for(var h in hidden)
+    if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
+      q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
+  q+= '&sbutton=Reply+Post';
+
+  el = $D('#recaptcha_response_field');
+  if(el) q+= '&recaptcha_response_field='+$D('#recaptcha_response_field').value;
+  
+  var adtnl = [gvar.id_textarea, 'input_title']; // ids of textarea message and title and recaptcha
+  el = Dom.g(adtnl[0]);
+  if( el && el.value!='' && el.value!=gvar.silahken ){
+    var msg = trimStr(el.value);
+    //msg = template_wrapper(); // template ntar ajah...
+    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent( toCharRef(msg) )  + q;
+  }
+  el = Dom.g(adtnl[1]);
+  if( el && el.value!='' )
+    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent(el.value) + q;
+  return q;
+}
+function ajax_post_QR(reply_html){
+  // initialize
+  if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
+    var spost = buildQuery();
+	if(spost===false) {
+      //SimulateMouse($D('#imghideshow'), 'click', true);
+      return false;
+    }	
+	GM_XHR.uri = gvar.curThread.action;
+    GM_XHR.cached = true;
+    GM_XHR.request(spost.toString(),'post', ajax_post_QR);
+  } else {
+    if( !reply_html ) return;
+	reply_html = reply_html.responseText;
+    if(gvar.__DEBUG__) show_alert(reply_html);
+	
+	var retpost = callback_post(reply_html);	
+    if(gvar.__DEBUG__) show_alert('error='+retpost.error+ '; msg='+retpost.msg);
+	
+	var notice = $D('#quoted_notice');
+	if(retpost.error!=0){
+	   addClass('g_notice-error', notice);
+	   notice.innerHTML = retpost.msg;
+	   notice.setAttribute('style','display:block;');
+	   lock_input(false); // reopen the hive :D
+	   // reload capcay
+	   SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+       return;
+    }else{
+	   var msg = 'Thank you for posting!';	   
+	   Dom.remove( $D('#preview_submit') );
+	   if(gvar.setting.then_goto_thread && isDefined(retpost.redirect) ){
+	     msg+= ' Redirecting...';
+		 exec_afterpost('redirect', function(){ location.href=retpost.redirect; });
+	   }else{
+	     msg+= ' Closing...';
+		 exec_afterpost('close', function(){ closeLayerBox('hideshow'); });
+	   }
+	   $D('#qr_container').innerHTML = '<div id="quoted_notice" class="g_notice" style="display:block;">'+msg+'</div>';	   
+	}
+  }
+}
+// mode might be: redirect | close
+function exec_afterpost(mode, fn){
+  if(isUndefined(mode)) mode = 'close';
+  gvar.blinkRow=20;
+  var myvar = "";
+  var mcallback = (typeof(fn)=='function' ? fn : null);
+  gvar.sITryDonePost = window.setInterval(function() {
+    window.status = (mode=='close' ? "Closing..." : "Redirecting...") + myvar;
+    myvar+= " .";
+    if(gvar.blinkRow > 0){
+       gvar.blinkRow -= 1;
+    }else{
+	   clearInterval(gvar.sITryDonePost);
+       if(mcallback) mcallback();
+    }
+  }, 100);  
+}
+
+
+function callback_post(text){
+   var cucok, ret={error:0,msg:''};
+   if(text.indexOf('POSTERROR')!=-1){
+    // there's some error
+	cucok = text.match(/<ol><li>([^\<]+)<\/li><\/ol>/i);
+	if(cucok) ret = {error: 1, msg:cucok[1] };
+   }else if( cucok = text.match(/<meta\s*http\-equiv=[\"\']Refresh[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i) ){
+     // success
+	 ret = {error: 0, redirect:cucok[1] };
+   }
+   return ret;
+  // if(text.indexOf('>Redirecting...<')!=-1)
+}
+
+//POSTERROR
+function prepost_QR(){
+   var ret, rrf = $D('#recaptcha_response_field');
+   if(!rrf) return;
+   ret = (!rrf || (rrf && rrf.value.trim()=='') ? false : true );
+   if( !ret ){
+     alert('Belum Mengisi capcay...');
+	 window.setTimeout(function() { $D('#recaptcha_response_field').focus();}, 200)	 
+   }
+   return ret;
 }
 function preload_quick_reply(){
    
@@ -235,44 +441,44 @@ function preload_quick_reply(){
             var C = (!e ? window.event : e );
 			var A = C.keyCode ? C.keyCode : C.charCode;
             if( A===13 ){ // mijit enter
-                C = do_an_e(C);
+			    show_alert(A);
                 SimulateMouse($D('#preview_submit'), 'click', true);
-            }else if( A===9 ){ // mijit tab
                 C = do_an_e(C);
+            }else if( A===9 ){ // mijit tab
 				$D('#preview_submit').focus();
+                C = do_an_e(C);
             }else if( (C.altKey && A===82) || (A===33||A===34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
-				C = do_an_e(C);
                 SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+				C = do_an_e(C);
 			}
         });
         // reorder tabindex //'recaptcha_response_field',
-		Dom.g('recaptcha_response_field').setAttribute('tabindex', '202')
+		Dom.g('recaptcha_response_field').setAttribute('tabindex', '202');
 		var reCp_field=['recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
 		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '21'+(i+1) + '');
 		
-		Dom.g(gvar.id_textarea).removeAttribute('disabled');
+		
+		//#preview_submit
         if($D('#preview_submit'))
-          Dom.Ev($D('#preview_submit'), 'click', function(e){
-		    e=e.target||e;
-            e.value='Posting...';
-			e.setAttribute('disabled','disabled');
-			
-			addClass('twbtn-disabled', e);
-            if( !gvar.user.isDonatur ){
-			/* 
-	    	   //if($D('#preview_loading')) return;
-               //loadLayer_reCaptcha();
-               //toogleLayerDiv('hideshow');
-               //toogleLayerDiv('hideshow_recaptcha');
-            */
-			}else{
-               /* 
-               //window.setTimeout(function() {
-               //  SimulateMouse($D('#qr_submit'), 'click', true); 
-               //}, 200); */
-            }
+          Dom.Ev($D('#preview_submit'), 'click', function(){
+            var validate= ( !gvar.user.isDonatur  ? prepost_QR() : true );
+			if(validate){
+			   lock_input(true);
+			   ajax_post_QR();
+			}
           });
+		//#then_gotothread
+		if($D('#then_gotothread'))
+		  Dom.Ev($D('#then_gotothread'),'click',function(e){
+		    e = e.target||e;
+			setValue(KEY_KTP+'THEN_GOTHREAD', (e.checked ? '1':'0'));
+			gvar.setting.then_goto_thread = ( e.checked );
+		  });		
+		Dom.Ev($D('#vbform'),'submit',function(e){ 
+		  var C = (!e ? window.event : e ); C = do_an_e(C);
+		});
+		Dom.g(gvar.id_textarea).removeAttribute('disabled');
       } // end #recaptcha_response_field
     }, 200); // end sITryFocusOnLoad
     
@@ -282,7 +488,7 @@ function closeLayerBox(tgt){
     
 	if(gvar.curThread.cRow){
 	  var lastRow = gvar.curThread.cRow;
-	  if(gvar.setting.thread_lastscroll=='1' && gvar.setting.fixed_preview=='1'){
+	  if(gvar.setting.thread_lastscroll && gvar.setting.fixed_preview){
 	    ss.STEPS = 21;
 	    ss.smoothScroll( lastRow, null );
 	  }
@@ -295,10 +501,14 @@ function closeLayerBox(tgt){
 	  	  return;
 	    }
 	    gvar.blinkRow++;
-	    if(lastRow.getAttribute('class').indexOf('selected_row')!=-1)
-	      removeClass('selected_row', lastRow);
-	    else
-	      addClass('selected_row', lastRow);
+		if(typeof(lastRow.getAttribute('class'))=='string' && lastRow.getAttribute('class').trim()!=""){
+	      if(lastRow.getAttribute('class').indexOf('selected_row')!=-1)
+	        removeClass('selected_row', lastRow);
+	      else
+			addClass('selected_row', lastRow);		  
+		}else{
+		  lastRow.setAttribute('class', 'selected_row');
+		}
       }, 250);
 	}
 	
@@ -309,7 +519,6 @@ function closeLayerBox(tgt){
 function loadLayer(tid){
     var Attr,el;
     Attr = {id:'hideshow',style:'display:none;',tid:tid};
-    //Attr = {id:'hideshow',tid:tid};
     el = createEl('div', Attr, getTPL_Preview() );
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
     
@@ -319,18 +528,19 @@ function toggle_sticky(flag){
   var obj= $D('#popup_container');
   // flag ? doFixed :doAbs
   if(isUndefined(flag))
-    flag = (gvar.setting.fixed_preview=='0');
+    flag = (gvar.setting.fixed_preview === false);
   Dom.g('css_position').innerHTML = getCSS_fixed(flag);
   var yNow = ss.getCurrentYPos();
-  obj.style.setProperty('top',( flag ? '38': ($D('#qr_container_head').style.display!='none' ? yNow : yNow+38) )+'px','');
+  obj.style.setProperty('top',( flag ? gvar.offsetLayer: ($D('#qr_container_head').style.display!='none' ? yNow : yNow+gvar.offsetLayer) )+'px','');
   if($D("#imgsticky"))
     $D("#imgsticky").src = (flag ? gvar.B.sticky1_png : gvar.B.sticky2_png );
-  gvar.setting.fixed_preview = (flag ? '1' : '0');
-  
+
+  setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
+  gvar.setting.fixed_preview = (flag);
 }
 
 function getCSS_fixed(fixed){
-  return '#popup_container{' + (fixed ? 'position:fixed;top:38px;':'position:absolute;top:15px;') + '}';
+  return '#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}';
 }
 
 function parse_newreply(text){
@@ -362,15 +572,16 @@ function parse_preview(text){
    var cucok, wraper, poss;
    var _ret, _tit, _nr;
    /*content*/
-   _ret = text.split('td_post_');
-   _ret = _ret[1];
-   wraper = ['>', '<!-- / message -->' ];
-   poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];
-   _ret = _ret.substring(poss[0]+wraper[0].length, poss[1]);
-   // a lil hack to strip this.innerText = '', which error on GC.
-   _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
-   if(gvar.__DEBUG__) show_alert(_ret);
-   _ret = parse_image(_ret);
+    _ret = text.split('td_post_');
+    _ret = _ret[1];
+    wraper = ['>', '<!-- / message -->' ];
+    poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];
+    _ret = _ret.substring(poss[0]+wraper[0].length, poss[1]);
+    // a lil hack to strip this.innerText = '', which error on GC.
+    _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
+    if(gvar.__DEBUG__) show_alert(_ret);
+    _ret = parse_image(_ret);
+   
    /*title*/
    cucok = text.match(/<title>(.+)<\/title>/);
    if(cucok) _tit = cucok[1].replace(/\s*\-\s*Kaskus\s*\-\s*The Largest Indonesian Community/,"").trim();
@@ -434,7 +645,7 @@ function ajax_thfetch(reply_html){
 	if(rets===null){
 	  var retmsg = 'Thread Not Loaded, might be "kepenuhan".';
 	  if(caller) {
-	    caller.innerHTML = '<blink title="">[!]</blink>';
+	    caller.innerHTML = '<blink title="">[X]</blink>';
 	    window.setTimeout(function() { caller.innerHTML='[+]';}, 3500);
 	  }
 	  show_alert(retmsg,0); // end of story	  
@@ -446,11 +657,10 @@ function ajax_thfetch(reply_html){
 	  if($D('#hideshow')){
 		$D('#hideshow').style.display = '';
 	    $D('#preview_content').innerHTML = rets.content;
-	    $D('#prev_title').innerHTML = '<a href="'+gvar.curThread.href+'" target="_blank">'+rets.title+'</a>';
+	    $D('#prev_title').innerHTML = '<a href="'+gvar.curThread.href+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
 		
 		// recalibrate top position only if not in fixed_preview
-		if(gvar.setting.fixed_preview!='1')
-          $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() ) + 38) + 'px';
+        $D('#popup_container').style.setProperty('top', (gvar.setting.fixed_preview ? gvar.offsetLayer : ss.getCurrentYPos()+gvar.offsetLayer ) +'px','');
 
 		// addition events
 	    // #show_images #show_emotes #open_spoilers
@@ -499,8 +709,6 @@ function ajax_thfetch(reply_html){
 			    gvar.curThread.content= inode.innerHTML;
 			  else
 			    gvar.curThread.content= $D('#preview_content').innerHTML;
-			  show_alert(gvar.curThread.content);
-			  show_alert(inode);
 			});
 		   }
 		   $D('#open_spoilers').style.setProperty('display','inline','important');
@@ -513,19 +721,29 @@ function ajax_thfetch(reply_html){
 	    addClass('thread_preview-readed', caller);
 	  }
 	  if(gvar.curThread.cRow) addClass('selected_row', gvar.curThread.cRow);
-	  showhide(Dom.g('hideshow'), 1);
+	  showhide(Dom.g('hideshow'), true);
 	}
   }
   //
 } // end ajax_thfetch
 
 
+function find_TS(e){
+  var par = e.parentNode.parentNode;
+  var ret = {id:'',name:''};
+  if(par.nodeName=='TD'){	
+    var inner = par.innerHTML;
+    var cucok = inner.match(/member\.php\?u=(\d+)[^\>]+.(.+)<\/span>/im);
+	ret = (cucok ? {id:cucok[1], name:cucok[2]} : null);
+  }
+  return ret;
+}
 function find_parentRow(e){
   var par = e.parentNode, maxjump = 10, i=0;
   var gotit = false;
   while( !gotit && i < maxjump ){
     par = par.parentNode;
-	gotit = (par.nodeName=='TR' && isDefined(par.getAttribute('class')) && par.getAttribute('class').indexOf('IsForum')!=-1);
+	gotit = (par.nodeName=='TR');
 	i++;
   }
   return (gotit ? par : false);
@@ -547,6 +765,8 @@ function getUserId(type){
   }
   return ret;
 }
+
+
 // statics
 function getSCRIPT() {
  return (''
@@ -566,14 +786,15 @@ function getTPL_Preview(){
  +'<div id="popup_container" class="popup_block"> '
  + '<div class="popup" id="popup_child">'
  +  '<a tabindex="209" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
- +  '<a tabindex="210" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview=='1' ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
+ +  '<a tabindex="210" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<tbody><tr>'
  +   '<td class="tcat">'
- +     '<span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')+'&nbsp;'+ gvar.codename
- +     '<span id="ktp_version" style="float:right; margin-right:10px;">'+gvar.sversion+'</span>'
+ //gvar.curThread.TS.id | name
+ +     '<div id="head_layer" class="hd_layer" style="cursor:s-resize; selection" ><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')+ (gvar.curThread.TS.id ? '[<small>Thread Starter</small> <a title="Thread starter" class="cyellow" href="member.php?u='+gvar.curThread.TS.id+'"><b>'+gvar.curThread.TS.name+'</b></a>]' : '')
+ +     '<span id="ktp_version" style="float:right; margin-right:5px;">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+gvar.sversion+'</span></div>'
  +   '</td>'
- +  '</tr><tr>'
+ +  '</tr><tr id="row_content">'
  +  '<td class="alt1">' 
  +   '<div id="preview_content"></div>' 
  +  '</td></tr>'
@@ -588,7 +809,10 @@ function getTPL_Preview(){
  +  '<div class="spacer"></div>'
  
  // quick-reply | 
- +'<form action="newreply.php?do=postreply&amp;t='+getThreadId(gvar.curThread.href)+'" method="post" name="vbform" id="vbform">'
+ +'<form action="'+gvar.curThread.action+'" method="post" name="vbform" id="vbform">'
+ +   '<div style="display:none;">'
+ +    '<input type="submit" name="real_submit" value="Submit Post"/>'
+ +   '</div>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
  +   '<td class="tcat">Quick Reply<span id="loggedin_as"></span></td>'
@@ -605,7 +829,7 @@ function getTPL_Preview(){
  +  '<tfoot id="tr_qr_button">'
  +  '<tr><td class="tcat">'
  
- +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow qrsmallfont" style="float:left; margin-left:5px;"><b>Cancel</b></a>'
+ +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow qrsmallfont" style=""><b>Cancel</b></a>'
  
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
@@ -627,8 +851,8 @@ function getTPL_Preview(){
  +'<input type="hidden" name="parseurl" value="1" />'
  +'<input type="hidden" name="wysiwyg" value="0" />'
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
- +    '<span><input tabindex="205" id="preview_submit" type="submit" class="twbtn twbtn-m button" value=" Post " />&nbsp;'
- +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"/><small>Then Goto Thread</small></label></span>'
+ +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m button" value=" Post " />&nbsp;'
+ +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;">Then Goto Thread</small></label></span>'
  +''
  +   '</div>'
  +'</form>'
@@ -638,9 +862,9 @@ function getTPL_Preview(){
  +'</div>' // #popup_container
  );
 }
-
 function getTPL_QuickReply(){
  return (''
+    +'<div id="quoted_notice" class="g_notice"></div>' // Quoted notice
     +'<table cellpadding="0" cellspacing="0"><tr>'
     +'<td><div class="qrsmallfont">'
     +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
@@ -651,14 +875,16 @@ function getTPL_QuickReply(){
     
     // vB_Editor_QR_textarea
     +'<td class="txta_cont panelsurrounds">'
-    + '<div class="panel"><div>'
 
+    +'<div class="panel"><div>'
     +getTPL_vbEditor()
+    +'</div></div>'
     
-    + '</div></div>'
     // Setting container will be containing from getTPL_Settings()
     //+'<div id="settings_cont"></div>' 
+	
     +'</td>'
+	
 	+'<td id="recaptcha_cont">'
     +  '<div id="recaptcha_container" style="text-align:center;">'
     +    '<div>'+_LOADING+'</div>'
@@ -693,7 +919,6 @@ function getTPL_vbEditor(){
   );
 }
 // end tpl
-
 function getCSS() {
   return (''
     +'span.thread_preview,span.thread_preview-readed{cursor:pointer;font:bold 13px/16px "Comic Sans MS";margin-right:1px;}'
@@ -714,16 +939,23 @@ function getCSS() {
     +'.spacer{height:5px;}'
     +'a.cyellow{color:#F0F000!important;}'
     +'.cred{color:#FF0000!important;}'
-    +'.qrsmallfont, .qrsmallfont div{font-size:11px;}'
-    +'.selected_row {background-color:#D5FFD5;}'
+    +'.qrsmallfont, .qrsmallfont div, .g_notice{font-size:11px;}'
+    +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
     +'#preview_content div table{width:auto;}'
+    +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
+    +'.g_notice-error{background:#FFD7FF!important;}'
+    +'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
+	+'.qr_button_cont{width:100%; text-align:center;}'
+	+'#qr_button{margin-left:-40px;}'
+	+'#preview_cancel{float:left;margin:2px 0 0 5px;font-size:13px;}'
+	
 
 	
 /* ==preview popup== */ 
   	+'#hideshow {position:absolute;min-width:100%;top:0;left:0;}'
 	//white-space:sWrap
-  	+'#preview_content {overflow:auto;height:auto;max-height:'+(parseInt(getScreenHeight()) - 160)+'px; }'
+  	+'#preview_content {overflow:auto;height:auto;max-height:'+(parseInt(getScreenHeight()) - 130 - gvar.offsetLayer)+'px; }'
     +'#popup_container {'
     +  'z-index:'+gvar.zIndex+';'
     +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
@@ -747,8 +979,8 @@ function getCSS() {
     +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
     +'}'
 	/* twitter's button */
-    +'.qr_button_cont{width:100%; text-align:center;}'
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #fff;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;}'
+    
+    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #fff;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
 	/* thumb image */
 	+'.imgthumb:hover {background-color:#80FF80 !important;}'
 	+'.imgthumb {line-height:20px;font-size:11px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVaNQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENGX5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOudiXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXzRSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAUBEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVkHAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
@@ -827,7 +1059,21 @@ function basename(path, suffix) {
     b = b.substr(0, b.length-suffix.length);
   return b;
 };
-
+function toCharRef(text){
+    var charRefs = [], codePoint, i;
+    for(i = 0; i < text.length; ++i) {
+        codePoint = text.charCodeAt(i);
+        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
+         if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
+            i++;
+            codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
+         }
+         charRefs.push('&#' + codePoint + ';');
+        }else
+          charRefs.push(text[i]);
+    }
+    return charRefs.join('');
+};
 function do_an_e(A) {
   A.stopPropagation();
   A.preventDefault();
@@ -866,6 +1112,14 @@ function createEl(type, attrArray, html){
 }
 function createTextEl(txt){
   return document.createTextNode(txt);
+}
+function getValue(key) {
+  var data=OPTIONS_BOX[key];
+  return (!data ? '': GM_getValue(key,data[0]));
+}
+function setValue(key, value) {
+  var data=OPTIONS_BOX[key];
+  return (!data ? '': GM_setValue(key,value));
 }
 function showhide(obj, show){
   if(isUndefined(obj)) return;
@@ -1154,6 +1408,13 @@ vB_textarea = {
     this.enabled();
     //if(gvar.settings.textareaExpander[0]) this.adjustGrow();
     this.focus();
+  },
+  readonly: function(id){
+     //clog('txta readonly');
+    this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
+    removeClass('txa_enable', this.Obj);
+    addClass('txa_readonly', this.Obj);
+    this.Obj.setAttribute('readonly',true);
   },
   enabled: function(id){
     //clog('txta enabled');
