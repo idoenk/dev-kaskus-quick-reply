@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 //  v1.1 - 2010-01-02
+//    fix avoid saving state fixed pos on qr-click
 //    add ajax post-method
 //
 //  v1.0 - 2011-01-01
@@ -208,7 +209,7 @@ function event_TPL(){
 	  $D('#collapseobj_quickreply').style.display='';
 	  
 	  // change from fixed to absolute is a must..!!
-	  toggle_sticky(false);
+	  toggle_sticky(false, 'quickreply');
 	  Dom.remove($D("#imgsticky"));
 	  
 	  // removing preview_cancel button_preview
@@ -524,7 +525,7 @@ function loadLayer(tid){
     
 	event_TPL();
 }
-function toggle_sticky(flag){
+function toggle_sticky(flag, caller){
   var obj= $D('#popup_container');
   // flag ? doFixed :doAbs
   if(isUndefined(flag))
@@ -535,7 +536,9 @@ function toggle_sticky(flag){
   if($D("#imgsticky"))
     $D("#imgsticky").src = (flag ? gvar.B.sticky1_png : gvar.B.sticky2_png );
 
-  setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
+  if(isUndefined(quickreply)){  // dont save the state when its caller is define | asumed from quickreply
+    setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
+  }
   gvar.setting.fixed_preview = (flag);
 }
 
