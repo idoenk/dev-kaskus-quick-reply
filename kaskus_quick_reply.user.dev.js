@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.0.9
 // @dtversion     110101309
-// @timestamp     1293857337553
+// @timestamp     1293893364654
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,7 +14,8 @@
 // -!--latestupdate
 //
 // v3.0.9 - 2011-01-01
-//   Fix failed show settings when all controllers hide
+//   Fix (Opera) missing hotkey checkbox element on Settings
+//   Fix failed show Settings when all controllers hide
 //
 //   
 // -/!latestupdate---
@@ -32,7 +33,7 @@
 //   Improve delayed QR visibility
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
-//   Fix notify fetch failed from another thread.   
+//   Fix notify fetch failed from another thread.
 //   
 // v3.0.7 - 2010-12-25
 //   Add Last used Spoiler-Title
@@ -41,13 +42,6 @@
 //   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
 //   Fix deprecate trick on keydown keyCode=13
 //   Improve onclose preview keep last char as "\n\n" 
-//   
-// v3.0.6 - 2010-12-04
-//   Fix global $ collision with jQuery's (or is it just only a weirdness on Opera?)
-//   Improve botgreet; add RTFM link
-//   Add :( emote
-//   Fix failed load custom-smiley content on bad link last-img
-//   Improve string optimized on scustom content
 //   
 //
 // -more: http://userscripts.org/topics/56051
@@ -67,7 +61,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.0.9';
 gvar.scriptMeta = {
-  timestamp: 1293857337553 // version.timestamp
+  timestamp: 1293893364654 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -3150,6 +3144,7 @@ function getTPL_Settings(){
    +'<small><a id="edit_tpl" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
    +'<div id="edit_tpl_Editor" style="display:none;"></div>'
    +spacer
+
    
    + (!gvar.isOpera ? ''
    +'<input id="misc_hotkey" type="checkbox" disabled="disabled" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/> QR-Hotkey<br />'
@@ -3160,6 +3155,7 @@ function getTPL_Settings(){
    +'<br/>&nbsp;'
    +'&nbsp;<input id="misc_hotkey_char" type="text" title="alphnumeric [A-Z0-9]" value="'+(gvar.settings.hotkeychar)+'" style="width:20px;padding:0" maxlength="1" />&nbsp;blank=disable'
    +'<br/></small>'
+
     : '')
    +'<div style="height:5px;">&nbsp;</div>'
     
@@ -3616,7 +3612,7 @@ function getSCRIPT() {
     +'function showRecaptcha(element){'
     +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
     +    '{theme:"red",lang:"en"'
-    +     ',custom_translations:{refresh_btn:"Reload reCapcay :: [Alt+R]",instructions_visual:"Masukkan reCapcay:"}'
+    +     ',custom_translations:{refresh_btn:"Reload reCapcay :: ['+(gvar.isOpera ? 'Ctrl+Alt+R':'Alt+R')+']",instructions_visual:"Masukkan reCapcay:"}'
     +    '}'
     +  ');'
     +'};'    
