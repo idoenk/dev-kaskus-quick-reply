@@ -13,7 +13,8 @@
 //
 // -!--latestupdate
 //
-//  v1.1 - 2010-01-03
+//  v1.1 - 2010-01-02
+//    fix positioning lv.2
 //    add userlink badge - KTP ngaskus.us
 //    fix re-syncroning from storage avoid changed value when qr-click
 //    fix avoid saving state fixed pos on qr-click
@@ -575,12 +576,15 @@ function toggle_sticky(flag, caller){
   if(isUndefined(flag))
     flag = (gvar.setting.fixed_preview === false);
   Dom.g('css_position').innerHTML = getCSS_fixed(flag);
-  var yNow = ss.getCurrentYPos();
-  obj.style.setProperty('top',( flag ? gvar.offsetLayer: ($D('#qr_container_head').style.display!='none' ? yNow : yNow+gvar.offsetLayer) )+'px','');
+  var yNow = parseInt(ss.getCurrentYPos());
+  
+  var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-130-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
+  var vnewtop = (flag ? gvar.offsetLayer : newOfset);
+  obj.style.setProperty('top', vnewtop+'px', '');
   if($D("#imgsticky"))
     $D("#imgsticky").src = (flag ? gvar.B.sticky1_png : gvar.B.sticky2_png );
 
-  if( isUndefined(caller) ){  // dont save the state when its caller is define | asumed from quickreply
+  if( isUndefined(caller) ){  // dont save the state when caller is define | asumed from quickreply
     setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
   }
   gvar.setting.fixed_preview = (flag);
@@ -922,7 +926,15 @@ function getThreadId(href){
   return (match ? match[1] : '');
 }
 function getScreenHeight(){
-   return window.innerHeight;
+  var y = 0;
+  if (self.innerHeight){ // FF; Opera; Chrome
+     y = self.innerHeight;
+  } else if (document.documentElement && document.documentElement.clientHeight){ 
+     y = document.documentElement.clientHeight;
+  } else if (document.body){
+     y = document.body.clientHeight;
+  }
+  return y;
 }
 // if type is not defined, return [id,username]
 function getUserId(type){
@@ -967,7 +979,6 @@ function getTPL_Preview(){
  // 
  + (gvar.curThread.is_singlepost ? ' - [<small><a href="'+get_hashlink(gvar.curThread.href)+'" target="_blank" title="View Single Post">Single Post</a> :: </small>'
    +'<span id="poster_userlink" class="cyellow"><b>'+gvar.curThread.POSTER.name+'</b></span>'
-   //'<a id="poster_userlink" title="Singlepost By '+gvar.curThread.POSTER.name+'" onclick="return false" href="member.php?u='+gvar.curThread.POSTER.id+'" class="ktp-user_link cyellow"><b>'+gvar.curThread.POSTER.name+'</b></a>'
    +']'
  : '')
  
@@ -1115,6 +1126,7 @@ function getTPL_vbEditor(){
 // end tpl
 function getCSS_fixed(fixed){
   return (''
+   //+'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
    +'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
    +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - 130 - gvar.offsetLayer)+'px; }'
   );
