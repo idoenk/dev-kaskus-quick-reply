@@ -2,18 +2,19 @@
 // @name          Kaskus vBulletin Thread Preview - Recoded
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
-// @dtversion     110102101
-// @timestamp     1293916844999
+// @dtversion     110103101
+// @timestamp     1293994502691
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya
 // @moded         idx (http://userscripts.org/users/idx)
 // @include       */forumdisplay.php?*
-// @include       */usercp.php?*
+// @include       */usercp.php*
 // @include       */subscription.php?*
 //
 // -!--latestupdate
 //
-//  v1.1 - 2010-01-02
+//  v1.1 - 2010-01-03
+//    add userlink badge - KTP ngaskus.us
 //    fix re-syncroning from storage avoid changed value when qr-click
 //    fix avoid saving state fixed pos on qr-click
 //    add ajax post-method
@@ -31,7 +32,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1293916844999 // version.timestamp
+  timestamp: 1293994502691 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -84,8 +85,9 @@ function init(){
   gvar.B= getSetOf('button');
   gvar.user= getUserId(); //will be [gvar.user.id, gvar.user.name]
 
-  GM_addGlobalStyle( '', 'css_position', 1 ); // to body for css-fixed
-  GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.setting.fixed_preview) );
+  //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.setting.fixed_preview) );
+  GM_addGlobalStyle( getCSS() );
+  GM_addGlobalStyle( getCSS_fixed(gvar.setting.fixed_preview), 'css_position', 1 ); // to body for css-fixed
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
   GM_addGlobalScript( getSCRIPT() );  
@@ -115,76 +117,97 @@ function getSettings(){
 
 function start_Main(){
 
-  // append icon [+] on all thread link
-  var nodes = $D("//a[starts-with(@id,'thread_title')]");
-  var href, par, Attr, el;
-  if(nodes.snapshotLength > 0){
-	for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
-	  var node = nodes.snapshotItem(i);
-	  par = node.parentNode;
-	  Attr = {'class':'thread_preview',style:'',rel:node.href};
-	  el = createEl('span',Attr,'[+]');
-	  par.insertBefore(el, par.firstChild);
-	}
-  }
-  nodes = $D("//span[@class='thread_preview']");
-  if(nodes.snapshotLength > 0){
-    for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
-	  var node = nodes.snapshotItem(i);
-	  Dom.Ev(node, 'click', function(e){
-	    e = e.target||e;
-		if(Dom.g('hideshow')) {
-		  closeLayerBox('hideshow');
-		  if(Dom.g('prev_loader')){
-		    var par = Dom.g('prev_loader').parentNode;
-			par.innerHTML = '[+]';
-		  }
-		}
-		var href=false;
-		if(isDefined(e.getAttribute('rel')))
-		  href = e.getAttribute('rel') || false;
-		if(!href) return;
-		
-		e.innerHTML = '<img id="prev_loader" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" style="margin:0 4px 0 3px;" border="0"/>';
-		
-		// load layer preview
-		gvar.curThread = {
-		   href: href
-		  ,cRow: find_parentRow(e)
-		  ,TS: find_TS(e)
-		};
-		// re-syncroning from storage avoid changed value when qr-click
-		gvar.setting.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
-		Dom.g('css_position').innerHTML = getCSS_fixed(gvar.setting.fixed_preview);
-		  
-		var tid = getThreadId(gvar.curThread.href);
-		// pre-check kfti position
-		chk_kfti_pos();
-		gvar.curThread.action = 'newreply.php?do=postreply&amp;t='+tid;
-		loadLayer(tid);
-		
-		// fetching thread		
-		ajax_thfetch();	    
-	  }); // end click event	
-	} // end for
-  }
-  
-  //<meta http-equiv="refresh" content="600">
+  // prep recreate clone meta-refresh | it will be killed/re-add when popup showed up
   var head = getTag('head');
   if( isDefined(head[0]) ) {
     nodes = $D("//meta[@http-equiv='refresh']", null, true);
 	if(nodes) Dom.remove(nodes);
-    gvar.meta_refresh = createEl('meta', {id:'meta_refresh','http-equiv':'refresh',content:'600'});
-	Dom.add(gvar.meta_refresh, head[0]);	
+    gvar.meta_refresh = createEl('meta', {id:'meta_refresh',content:'600','http-equiv':'refresh'});
+	Dom.add(gvar.meta_refresh, head[0]);
+  }
+  
+  // append icon [+] on all thread & lastpost link
+  var nodes = $D("//a[starts-with(@id,'thread_title')]");
+  var node, href, par, Attr, el, el_last;
+  if(nodes.snapshotLength > 0){
+	for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+	  node = nodes.snapshotItem(i);
+	  par = node.parentNode; // parent of cont (DIV)
+	  Attr = {'class':'thread_preview',style:'',rel:node.href};
+	  el = createEl('span',Attr,'[+]');
+	  par.insertBefore(el, par.firstChild);
+	  // attach event-click
+	  Dom.Ev(el, 'click', function(e){ click_preview(e); }); // end click event
+	  
+	  // lastpost nodes
+	  var lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);	  
+	  if(lnodes){
+	    var pid = getPostId(lnodes.href);
+		Attr = {id:'preview_post_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+		el_last = createEl('span',Attr,'[+]');
+		Dom.add(el_last, lnodes.parentNode);
+	  }
+	  // attach event-click
+	  Dom.Ev(el_last, 'click', function(e){ click_preview(e); }); // end click event	  
+	} // end for each el
   }
   
   // window event
   Dom.Ev(window, 'resize', function() {
-   //controler_resizer(); //165 
-   $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 130 - gvar.offsetLayer )+'px;', 'important');
+    $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 130 - gvar.offsetLayer )+'px;', 'important');
   });
   //
 } // end start_Main
+
+
+function click_preview(e){
+    e = e.target||e;
+	if(Dom.g('hideshow')) {
+	  closeLayerBox('hideshow');
+	  if(Dom.g('prev_loader')){
+	    var par = Dom.g('prev_loader').parentNode;
+		par.innerHTML = '[+]';
+	  }
+	}
+	//
+	var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost':'firstpost');
+	var href=false;
+	if(isDefined(e.getAttribute('rel')))
+	  href = e.getAttribute('rel') || false;
+	if(!href) return;
+	
+	e.innerHTML = '<img id="prev_loader" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" style="margin:0 4px 0 3px;" border="0"/>';
+	
+	// kill the meta
+	if($D('#meta_refresh')) Dom.remove($D('#meta_refresh'));
+	
+	// current thread properties| gvar.curThread.href
+	gvar.curThread = {
+	   href: href
+	  ,POSTER: {}
+	  ,tid: null
+	  ,is_singlepost: null
+	  ,cRow: find_parentRow(e)
+	  ,TS: find_TS(e)
+	};
+	gvar.curThread.is_singlepost = ( gvar.curThread.href.indexOf('showpost.php') != -1 );
+	
+	gvar.curThread.tid = find_threadId(e);	// .POSTER will be defined here ...
+	if(!gvar.curThread.is_singlepost) gvar.curThread.POSTER.id = null;	
+	
+	// re-syncroning from storage avoid changed value when qr-click
+	gvar.setting.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
+	Dom.g('css_position').innerHTML = getCSS_fixed(gvar.setting.fixed_preview);
+
+	// pre-check kfti position
+	chk_kfti_pos();
+	gvar.curThread.action = 'newreply.php?do=postreply&amp;t='+gvar.curThread.tid;
+	loadLayer(gvar.curThread.tid);
+	
+	// fetching thread
+	ajax_thfetch();
+
+}
 
 function chk_kfti_pos(){
   // try check KTFI, if it's fixed
@@ -207,7 +230,7 @@ function event_TPL(){
     Dom.Ev($D("#imgsticky"), 'click', function(){ toggle_sticky(); });
 	
     // cancel preview
-    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );	
+    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
 	
 	// qr_button
     Dom.Ev($D('#qr_button'), 'click', function(){
@@ -228,22 +251,26 @@ function event_TPL(){
 	  $D('#qr_container').innerHTML = '<div id="preview_loading">'+_LOADING+'</div>';
 	  preload_quick_reply();
 	});
-	//#head_layer
-    if($D('#head_layer')){
-      Dom.Ev($D('#head_layer'),'dblclick',function(){
-		 var el, show, tohide = ['qr_container_table','tr_qr_button','thread_tools'];
-		 show = ($D('#row_content').style.display!='none');
-		 $D('#row_content').style.display = (show ? 'none' : '');
-		 for(var i=0; i<tohide.length; i++){
-		    if(!isString(tohide[i])) continue;
-			el = Dom.g( tohide[i] );
-			if(el){
-			   //show = (el.style.display!='none');
-			   el.style.display = (show ? 'none' : '');
-			}
-		 }
-      });
-    }
+	// #head_layer; #atoggle
+    if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ toggleCollapse(); });
+    if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(e){ toggleCollapse(e); });
+    
+}
+function toggleCollapse(e){
+     var el, show, tohide = ['qr_container_table','thread_tools','threadpost_navi'];
+     show = ($D('#row_content').style.display!='none');
+     $D('#row_content').style.display = (show ? 'none' : '');
+     for(var i=0; i<tohide.length; i++){
+        if(!isString(tohide[i])) continue;
+    	el = Dom.g( tohide[i] );
+    	if(el) el.style.display = (show ? 'none' : '');
+     }
+     if($D('#qr_container_head').style.display!='none') Dom.g('button_preview').style.display = (show ? 'none' : '');
+	 var img = $D('#collapseimg_quickreply');
+	 if(img){
+	   var src = img.getAttribute('src');
+	   img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
+	 }
 }
 function event_TPL_vB(){
 	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
@@ -433,7 +460,6 @@ function callback_post(text){
 	 ret = {error: 0, redirect:cucok[1] };
    }
    return ret;
-  // if(text.indexOf('>Redirecting...<')!=-1)
 }
 
 //POSTERROR
@@ -472,7 +498,6 @@ function preload_quick_reply(){
 		var reCp_field=['recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
 		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '21'+(i+1) + '');
-		
 		
 		//#preview_submit
         if($D('#preview_submit'))
@@ -526,6 +551,11 @@ function closeLayerBox(tgt){
 		}
       }, 250);
 	}
+	//restore the meta refresh
+	var head = getTag('head');
+	if( isDefined(head[0]) && gvar.meta_refresh ){
+	  Dom.add(gvar.meta_refresh, head[0]);
+	}	   
 	
 	Dom.remove( Dom.g(tgt) );
 }
@@ -556,9 +586,6 @@ function toggle_sticky(flag, caller){
   gvar.setting.fixed_preview = (flag);
 }
 
-function getCSS_fixed(fixed){
-  return '#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}';
-}
 
 function parse_newreply(text){
    if(text.indexOf('vbform')==-1) return null;
@@ -601,7 +628,18 @@ function parse_preview(text){
    
    /*title*/
    cucok = text.match(/<title>(.+)<\/title>/);
-   if(cucok) _tit = cucok[1].replace(/\s*\-\s*Kaskus\s*\-\s*The Largest Indonesian Community/,"").trim();
+   if(cucok) {
+     _tit = cucok[1].replace(/\s*\-\s*Kaskus\s*\-\s*The Largest Indonesian Community/,"").trim();
+     // step-two if it's single post
+	 if(_tit.indexOf('- View Single Post -')!=-1){
+	    _tit = _tit.replace(/^[^(?:P)]+.ost\s*\-\s*/,"").trim();	    
+		// get real POSTER Detail
+		cucok = text.match(/name[\'\"]\s*href=[\'\"][^\?]+.u=(\d+)[^\>]+.([^\<]+).\/a>/im);
+		gvar.curThread.POSTER = (cucok ? {id:cucok[1], name:cucok[2]} : {id:null,name:null} );
+		gvar.curThread.is_singlepost = 1;
+	 }
+   }
+   
    /*newreply*/
    cucok = text.match(/newreply\.php(?:[^\"]+)/);
    if(cucok) _nr = cucok[0].replace(/\&amp;/gi,"&");
@@ -617,12 +655,12 @@ function parse_image(text, flag, mode){
      if(mode=='0'){
        // no-load all 
 	   text = text.replace(/<img\s*src=[\"\']([^\"|\']+).(?:\sborder=.0.)*(?:\salt=..)*\s*title=[\"\']([^\"|\']+)[^>]+./gim, function(str, $1, $2) { return('<a class="imgthumb" href="'+$1+'" title="'+$2+'">'+basename($1)+'</a> '); });
-	   gvar.curThread.adaEMOTE = (ori!=text ? '1' : '0');
+	   gvar.curThread.adaEMOTE = (ori!=text);
      }
      if(mode != '2'){
 	  ori = text
       text = text.replace(/<img\s*src=[\"\']([^\"|\']+).(?:\s*border=.0.)(?:\s*alt=..)(?:[\s*\/]+)>/gim, function(str, $1) { return('<a class="imgthumb" href="'+$1+'">'+$1+'</a> '); });
-	  gvar.curThread.adaIMG = (ori!=text ? '1' : '0');
+	  gvar.curThread.adaIMG = (ori!=text);
      }
    }
    else if(flag=='img'){
@@ -653,7 +691,7 @@ function ajax_thfetch(reply_html){
 	
 	if($D('#hideshow')){
 	  var tid = $D('#hideshow').getAttribute('tid');
-	  if(tid != getThreadId(gvar.curThread.href) ) return;
+	  if(tid != gvar.curThread.tid ) return;
 	}
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
@@ -674,14 +712,14 @@ function ajax_thfetch(reply_html){
 	  if($D('#hideshow')){
 		$D('#hideshow').style.display = '';
 	    $D('#preview_content').innerHTML = rets.content;
-	    $D('#prev_title').innerHTML = '<a href="'+gvar.curThread.href+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
+	    $D('#prev_title').innerHTML = '<a href="showthread.php?t='+gvar.curThread.tid+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
 		
 		// recalibrate top position only if not in fixed_preview
         $D('#popup_container').style.setProperty('top', (gvar.setting.fixed_preview ? gvar.offsetLayer : ss.getCurrentYPos()+gvar.offsetLayer ) +'px','');
 
-		// addition events
+		// additional events 
 	    // #show_images #show_emotes #open_spoilers
-	    if(gvar.curThread.adaEMOTE=='1' && $D('#show_emotes')){
+	    if(gvar.curThread.adaEMOTE && $D('#show_emotes')){
 		  Dom.Ev($D('#show_emotes'), 'click', function(e){
 		    e=e.target||e;
 			var _ret = parse_image(gvar.curThread.content, 'img', 1);
@@ -690,7 +728,7 @@ function ajax_thfetch(reply_html){
 		  });
 		  $D('#show_emotes').style.setProperty('display','inline','important');
 		}
-	    if(gvar.curThread.adaIMG=='1' && $D('#show_images')){
+	    if(gvar.curThread.adaIMG && $D('#show_images')){
          Dom.Ev($D('#show_images'), 'click', function(e){
 		    e=e.target||e;
 	        var _ret = parse_image(gvar.curThread.content, 'img', 2);
@@ -699,9 +737,10 @@ function ajax_thfetch(reply_html){
 	     });
 	     $D('#show_images').style.setProperty('display','inline','important');
 	    }
-		// re-evaluate for spoiler button		
+		// re-evaluate for spoiler button 
 		var nodes = $D('//input[@type="button" and @value and @onclick]', $D('#preview_content'));
-		if(nodes.snapshotLength > 0){
+		gvar.curThread.adaSPL = (nodes.snapshotLength > 0);
+		if( gvar.curThread.adaSPL ){
 		   if($D('#open_spoilers')){
 		    Dom.Ev($D('#open_spoilers'), 'click', function(e){
 			  e = e.target||e;
@@ -709,15 +748,13 @@ function ajax_thfetch(reply_html){
 			  inode = getTag('input');
 			  if(inode.length > 0)
 			    for(var i=0; i<inode.length; i++){
-			      if(show){
-				    if(inode[i].value=="Show") {
-					  inode[i].click(); inode[i].value = "Hide";
-					}
-				  }else{
-				    if(inode[i].value=="Hide") {
-					  inode[i].click(); inode[i].value = "Show";
-					}
-				  }
+			      if(show && inode[i].value=="Show") {
+					  inode[i].click();
+					  inode[i].value = "Hide";					
+				  }else if(inode[i].value=="Hide") {
+					  inode[i].click();
+					  inode[i].value = "Show";
+				  }				  
 			    }
 			  e.blur();
 			  e.value = (show ? 'Hide':'Show')+' Spoilers';
@@ -729,8 +766,25 @@ function ajax_thfetch(reply_html){
 			});
 		   }
 		   $D('#open_spoilers').style.setProperty('display','inline','important');
-		}		
-		// end addition events		
+		}
+		// end addition events
+
+		if( $D('#last_post') && Dom.g(gvar.curThread.POSTER.pid) )
+		 Dom.Ev($D('#last_post'), 'click', function(){
+			SimulateMouse(Dom.g(gvar.curThread.POSTER.pid), 'click', true);
+		 });
+		
+		if( !gvar.curThread.is_singlepost || gvar.curThread.adaEMOTE || gvar.curThread.adaIMG || gvar.curThread.adaSPL )
+		  $D('#thread_separator').style.setProperty('display','block','important');
+
+		//gvar.curThread.POSTER.id poster_userlink
+		if($D('#poster_userlink')) {
+		  $D('#poster_userlink').innerHTML = '<a onclick="return false" href="member.php?u='+gvar.curThread.POSTER.id+'" class="ktp-user_link cyellow"><b>'+gvar.curThread.POSTER.name+'</b></a>';
+		}
+		
+		//ts_userlink poster_userlink
+		event_userlink();
+		
 	  }
 	  // done let's restore loader
 	  if(caller) {
@@ -744,26 +798,124 @@ function ajax_thfetch(reply_html){
   //
 } // end ajax_thfetch
 
+// Kaskus Badge - KTP
+function event_userlink(){
+  var nodes = $D('//a[contains(@class,"ktp-user_link")]');
+  if(nodes.snapshotLength > 0){
+    for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+	    node = nodes.snapshotItem(i);
+	    Dom.Ev(node, 'click', function(e){
+		  var cucok, uid, prev;
+		  
+		  var par, el_img, el, Attr, sp_1, sp_par, dumy_el_img;
+	      e=e.target||e;
+		  if(e.nodeName!='A') e = e.parentNode;
+		  if(e.href){
+		    cucok = e.href.match(/\?u=(\d+)/);
+			uid = (cucok ? cucok[1]:false);
+			if($D('#img_ngaskuser')){
+		      prev = $D('#img_ngaskuser').getAttribute('rel');
+		 	  if(prev == uid) {
+			    if($D('#post_detail')){
+			     $D('#post_detail').innerHTML = '';
+				 $D('#post_detail').style.setProperty('display','none','');
+				 return;
+				}
+			  }
+		    }
+			var loaduser = function(uid){
+			   gvar.ngaskus = 'http://www.ngaskus.us/'
+			   par = createEl('div', {});
+			   Attr = {id:'dumy_img_ngaskuser',border:'0',src:gvar.ngaskus+'kaskus.php?u='+uid,style:"display:none;"};
+			   dumy_el_img = createEl('img', Attr);			   
+			   
+			   Attr = {id:'img_ngaskuser',border:'0', style:"display:none;",rel:uid};
+			   el_img = createEl('div', Attr);
+			   sp_par = createEl('span', {id:'powby','class':'powby',style:'visibility:hidden;'}, '&copy;&#183;');
+			   sp_1 = createEl('span', {'class':'b'}, 'ngas'); Dom.add(sp_1, sp_par);
+			   sp_1 = createEl('span', {'class':'or'}, 'kus'); Dom.add(sp_1, sp_par);
+			   sp_1 = createTextEl('.us'); Dom.add(sp_1, sp_par);
+			   Dom.add(sp_par, el_img);
+			   Dom.add(el_img, par);			   
+			   
+			   if($D('#post_detail')){
+			     $D('#post_detail').innerHTML = '';
+				 Dom.add(par, $D('#post_detail'));
+				 $D('#post_detail').innerHTML+=''
+				  +"\n\n"+'<style type="text/css">'
+				  +'#img_ngaskuser{background:transparent url("'+gvar.ngaskus+'kaskus.php?u='+uid+'") no-repeat 0 0;}'
+				  +'</style>';
+			   }
+			};
+		    loaduser(uid);
+			if($D('#post_detail')) {
+			  $D('#post_detail').style.setProperty('display','block','');
+			  $D('#post_detail').innerHTML+= '<span id="wait_userlink">'+_LOADING+'</span>';
+			}
+	        gvar.sITryLoadCard = window.setInterval(function() {
+              var img = dumy_el_img;
+		      if(img && img.height || img.width){
+	            clearInterval(gvar.sITryLoadCard);
+		        if($D('#img_ngaskuser')) $D('#img_ngaskuser').style.display = 'block';
+		        if($D('#powby')) $D('#powby').style.visibility = 'visible';
+				if($D('#wait_userlink')) Dom.remove($D('#wait_userlink'));
+				dumy_el_img = null;
+	        	return;
+	          }
+            }, 150);
+			
+		  }
+	    });
+	}
+  }
+}
 
 function find_TS(e){
+  var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost':'firstpost');
   var par = e.parentNode.parentNode;
-  var ret = {id:'',name:''};
-  if(par.nodeName=='TD'){	
-    var inner = par.innerHTML;
-    var cucok = inner.match(/member\.php\?u=(\d+)[^\>]+.(.+)<\/span>/im);
-	ret = (cucok ? {id:cucok[1], name:cucok[2]} : null);
+  var inner = (task=='lastpost'? par.parentNode : par).innerHTML;
+  var cucok = inner.match(/member\.php\?u=(\d+)[^\>]+.([^<]+).\/span>/im);
+  return (cucok ? {id:cucok[1], name:cucok[2]} : {id:'',name:''} );
+}
+// mode is, whether to make it single-post link or showthread link|transpost_link
+function getPostId(href, mode){
+  //showthread.php?p=340941629#post340941629   >>=become=>>   showpost.php?p=340941629
+  var cucok = href.match(/\.php\?p=(\d+)/i);
+  return (cucok ? cucok[1] : false);
+}
+function find_threadId(e){  
+  var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost':'firstpost');
+  var trinner, inner, ret, cucok; 
+  trinner = e.parentNode.parentNode.parentNode.innerHTML;
+  if(task=='lastpost'){ // find its parent (TR)    
+	cucok = trinner.match(/\.php\?t\=(\d+)/i);
+	ret = (cucok ? cucok[1] : false);	
+	inner = e.parentNode.innerHTML;	
+  }else{
+    ret = getThreadId(gvar.curThread.href);
+	inner = trinner;
   }
+  // skalian nyari POSTER detail dsni..(lastpost-er) ama get pid juga
+  cucok = inner.match(/member\.php\?[^\;]+.t=(\d+)[^>]+.([^<]+).\/a>/im);
+  //gvar.curThread.POSTER = (cucok ? {id:cucok[1], name:cucok[2]} : {id:null,name:null} );
+  gvar.curThread.POSTER = (cucok ? {id:'later-find-me', name:cucok[2]} : {id:null,name:null} ); // diasble dulu|
+  cucok = inner.match(/id=[\'\"](preview_post_\d+)/m);
+  gvar.curThread.POSTER.pid = (cucok ? cucok[1] : null);
   return ret;
 }
-function find_parentRow(e){
+function find_parentRow(e){  
   var par = e.parentNode, maxjump = 10, i=0;
   var gotit = false;
   while( !gotit && i < maxjump ){
     par = par.parentNode;
 	gotit = (par.nodeName=='TR');
 	i++;
-  }
+  }  
   return (gotit ? par : false);
+}
+function get_hashlink(href){
+  var match = href.match(/\?p=(\d+)/);
+  return (match ? 'showthread.php?p='+match[1]+'#post'+match[1] : '');
 }
 function getThreadId(href){
   var match = href.match(/\?t=(\d+)/);
@@ -797,6 +949,7 @@ function getSCRIPT() {
  );  
 }
 function getTPL_Preview(){
+ 
   return (''
  //+'<div class="trfade"></div> '
  //+'<div class="fade"></div> '
@@ -806,25 +959,45 @@ function getTPL_Preview(){
  +  '<a tabindex="210" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<tbody><tr>'
- +   '<td class="tcat">'
- //gvar.curThread.TS.id | name
- +     '<div id="head_layer" class="hd_layer" style="cursor:s-resize; selection" ><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')+ (gvar.curThread.TS.id ? '[<small>Thread Starter</small> <a title="Thread starter" class="cyellow" href="member.php?u='+gvar.curThread.TS.id+'"><b>'+gvar.curThread.TS.name+'</b></a>]' : '')
- +     '<span id="ktp_version" style="float:right; margin-right:5px;">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+gvar.sversion+'</span></div>'
+ +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
+ 
+ +     '<div class="hd_layer"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;') 
+ + (gvar.curThread.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.curThread.TS.id+'" title="Thread starter by '+gvar.curThread.TS.name+'" class="ktp-user_link cyellow" ><b>'+gvar.curThread.TS.name+'</b></a>]' : '')
+ 
+ // 
+ + (gvar.curThread.is_singlepost ? ' - [<small><a href="'+get_hashlink(gvar.curThread.href)+'" target="_blank" title="View Single Post">Single Post</a> :: </small>'
+   +'<span id="poster_userlink" class="cyellow"><b>'+gvar.curThread.POSTER.name+'</b></span>'
+   //'<a id="poster_userlink" title="Singlepost By '+gvar.curThread.POSTER.name+'" onclick="return false" href="member.php?u='+gvar.curThread.POSTER.id+'" class="ktp-user_link cyellow"><b>'+gvar.curThread.POSTER.name+'</b></a>'
+   +']'
+ : '')
+ 
+ +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
+ +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.sversion+'</span>'
+ +    '</div>' // #head_layer 
+
  +   '</td>'
  +  '</tr><tr id="row_content">'
- +  '<td class="alt1">' 
- +   '<div id="preview_content"></div>' 
+ +  '<td class="alt1">'
+ +   '<div id="post_detail"></div>'
+ +   '<div id="preview_content"></div>'
  +  '</td></tr>'
  +  '<tbody></table>'
  //
  +  '<div class="spacer"></div>'
- +  '<div id="thread_tools" style="width:98%;display:;">'
+
+ +( !gvar.curThread.is_singlepost ? ''
+ +  '<div id="threadpost_navi" style="float:right;">'
+ +    '<input type="button" id="last_post" class="twbtn twbtn-m" value="Show Last Post" style="margin-right:5px;" />' 
+ +  '</div>' 
+ : '')
+ +  '<div id="thread_tools" style="float:left;">'
  +    '<input type="button" id="open_spoilers" class="twbtn twbtn-m" value="Show Spoilers" style="margin-right:10px;" />' 
  +    '<input type="button" id="show_emotes" class="twbtn twbtn-m" value="Show Emotes" style="" />'
  +    '<input type="button" id="show_images" class="twbtn twbtn-m" value="Show All Images" style="" />'
  +  '</div>'
- +  '<div class="spacer"></div>'
- 
+
+ +  '<div id="thread_separator" style="height:25px; display:none;"></div>'
+
  // quick-reply | 
  +'<form action="'+gvar.curThread.action+'" method="post" name="vbform" id="vbform" style="display:;">'
  +   '<div style="display:none;">'
@@ -832,7 +1005,10 @@ function getTPL_Preview(){
  +   '</div>'
  +  '<table id="qr_container_table" class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
- +   '<td class="tcat">Quick Reply<span id="loggedin_as"></span></td>'
+ +   '<td class="tcat">'
+ +    'Quick Reply<span id="loggedin_as"></span>'
+ +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+'</span>'
+ +   '</td>'
  +  '</tr></thead>'
  +  '<tbody id="collapseobj_quickreply" style="display:none;">'
  +   '<tr><td class="panelsurround">'
@@ -843,16 +1019,17 @@ function getTPL_Preview(){
  +    '</div>' // .panel
  +  '</td></tr><tbody>'
  
- +  '<tfoot id="tr_qr_button">'
- +  '<tr><td class="tcat">'
- 
- +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow qrsmallfont" style=""><b>Cancel</b></a>'
- 
+ +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed
+ +  '<tr><td class="tcat">' 
+ +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow qrsmallfont" style=""><b>Cancel</b></a>' 
+ +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+'</span>'
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
  +    '</div>'
  +  '</td></tr>'
- +  '</tfoot></table>'
+ +  '</tfoot>'
+ 
+ +'</table>'
  +  ''
  //
  +   '<div id="button_preview" style="display:none;">'
@@ -868,7 +1045,7 @@ function getTPL_Preview(){
  +'<input type="hidden" name="parseurl" value="1" />'
  +'<input type="hidden" name="wysiwyg" value="0" />'
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
- +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m button" value=" Post " />&nbsp;'
+ +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
  +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;">Then Goto Thread</small></label></span>'
  +''
  +   '</div>'
@@ -936,6 +1113,12 @@ function getTPL_vbEditor(){
   );
 }
 // end tpl
+function getCSS_fixed(fixed){
+  return (''
+   +'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
+   +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - 130 - gvar.offsetLayer)+'px; }'
+  );
+}
 function getCSS() {
   return (''
     +'span.thread_preview,span.thread_preview-readed{cursor:pointer;font:bold 13px/16px "Comic Sans MS";margin-right:1px;}'
@@ -960,19 +1143,24 @@ function getCSS() {
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
     +'#preview_content div table{width:auto;}'
+    +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;display:none;padding-bottom:5px;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
     +'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
+    +'.hd_layer-right{float:right; margin-right:5px;}'
 	+'.qr_button_cont{width:100%; text-align:center;}'
-	+'#qr_button{margin-left:-40px;}'
+	+'#qr_button{margin-right:-40px;}'
 	+'#preview_cancel{float:left;margin:2px 0 0 5px;font-size:13px;}'
-	
 
-	
+/* ==ktp popup== */ 
+    +'#img_ngaskuser{height:120px;}'
+    +'#post_detail .powby{color:#363636;position:absolute;cursor:default;margin:88px 0 0 353px;font-size:10px;-moz-user-select:none;-webkit-user-select:none;}'
+    +'#post_detail .powby .b,#post_detail .powby .or{font-weight:bold;}'
+    +'#post_detail .powby .b{color:#0000CE;}#post_detail .powby .or{color:#DD6F00;}'
+
 /* ==preview popup== */ 
   	+'#hideshow {position:absolute;min-width:100%;top:0;left:0;}'
-	//white-space:sWrap
-  	+'#preview_content {overflow:auto;height:auto;max-height:'+(parseInt(getScreenHeight()) - 130 - gvar.offsetLayer)+'px; }'
+  	+'#preview_content {overflow:auto;height:auto;padding-right:5px;}'
     +'#popup_container {'
     +  'z-index:'+gvar.zIndex+';'
     +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
@@ -986,6 +1174,8 @@ function getCSS() {
     +'.popup img.cntrl, .popup img.sticky {position:absolute;border:0px;}'
     +'.popup img.cntrl {right:-20px;top:-20px;}'
     +'.popup img.sticky {left:0;top:-3px;}'
+    +'#collapseimg_quickreply{border:0px;}'
+    +'#atoggle{outline:none;}'
     +'#button_preview {padding:3px;text-align:center;}'
     +'*html #popup_container{'
     +  'position: absolute;'
@@ -997,7 +1187,7 @@ function getCSS() {
     +'}'
 	/* twitter's button */
     
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #fff;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #fff;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;}.twbtn-primary{border-color:#298cba;font-weight:bold;color:transparent;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
 	/* thumb image */
 	+'.imgthumb:hover {background-color:#80FF80 !important;}'
 	+'.imgthumb {line-height:20px;font-size:11px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVaNQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENGX5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOudiXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXzRSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAUBEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVkHAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
