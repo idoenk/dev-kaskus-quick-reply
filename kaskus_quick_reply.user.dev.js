@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.0
 // @dtversion     110103310
-// @timestamp     1294052267924
+// @timestamp     1294064363758
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 // v3.1.0 - 2011-01-03
+//   Fix prefer to define 'var' on global namespace (major issue Opera-11)
 //   Fix typo in getTPL mismatch syntax
 //   Fix check exist element before giving Event on toggle_setting
 //   Fix (Opera), deprecate isOpera, due-to missing hotkey checkbox element on TPL_Settings.
@@ -57,7 +58,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.0';
 gvar.scriptMeta = {
-  timestamp: 1294052267924 // version.timestamp
+  timestamp: 1294064363758 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -71,7 +72,7 @@ gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
-OPTIONS_BOX = {
+const OPTIONS_BOX = {
   KEY_SAVE_SAVED_AVATAR:  ['']
  ,KEY_SAVE_LAST_FONT:     [''] // last used font
  ,KEY_SAVE_LAST_COLOR:    ['Black'] // last used color
@@ -100,7 +101,7 @@ OPTIONS_BOX = {
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
 };
-GMSTORAGE_PATH      = 'GM_';
+const GMSTORAGE_PATH      = 'GM_';
 
 // initialize assign global var
 function init(){
@@ -4066,7 +4067,7 @@ function clog(msg) {
 // -----------
 
 //========= Global Var Init ====
-GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
+var GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
   var sel=createEl('script',{type:'text/javascript'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   if(script.match(/^https?:\/\/.+/))
@@ -4084,7 +4085,7 @@ GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript
   }
   return sel;
 };
-GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with a better routine 
+var GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with a better routine 
   var sel=createEl('style',{type:'text/css'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   sel.appendChild(createTextEl(css));
@@ -4099,7 +4100,7 @@ GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with
   }
   return sel;
 };
-Avatar = {
+var Avatar = {
   uri:null,
   cached:null,
   result:null,
@@ -4119,7 +4120,7 @@ Avatar = {
     } );
   }
 };
-vB_textarea = {
+var vB_textarea = {
   init: function(id) {
     this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.content = (this.Obj ? this.Obj.value : "");
@@ -4250,7 +4251,7 @@ vB_textarea = {
   }  
 };
 // Get Elements
-$D=function (q, root, single) {
+var $D=function (q, root, single) {
   if (root && typeof root == 'string') {
       root = $D(root, null, true);
       if (!root) { return null; }
@@ -4267,7 +4268,7 @@ $D=function (q, root, single) {
   return root.getElementsByTagName(q);
 };
 // utk add - remove element
-Dom = {
+var Dom = {
   g: function(el) {
    if(!el) return false;
    return ( isString(el) ? document.getElementById(el) : el );
@@ -4296,7 +4297,7 @@ Dom = {
     }
   }()
 };
-GM_XHR = {
+var GM_XHR = {
   uri:null,
   returned:null,
   cached:false,
@@ -4328,7 +4329,7 @@ GM_XHR = {
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
-Updater = {
+var Updater = {
   caller:''
  ,check: function(forced){
     var intval = (1000*60*60*gvar.settings.updates_interval);
@@ -4434,7 +4435,7 @@ Updater = {
    Todd Anglin  14 October 2006, sil, http://www.kryogenix.org/
    v1.1 2005-06-16 wrap it up in an object
 */
-ss = {
+var ss = {
   smoothScroll: function(anchor, cb) {
     var destinationLink = anchor;
 
@@ -4499,7 +4500,7 @@ ss = {
   }
 };
 // utk manipulate kueh
-cK={
+var cK={
   g:function(n){
     var D=document.cookie; var A=n+"=";
     var p=[D.indexOf("; "+A),0];
@@ -4525,7 +4526,7 @@ cK={
        +(isDefined(C)?"; host="+C:"");
   }
 };
-DOMTimer={
+var DOMTimer={
  start:function(){var dT=new Date();this.dtStart=dT.getTime()},
  get:function(){var nT=new Date();return(nT.getTime()-this.dtStart)}
 };
