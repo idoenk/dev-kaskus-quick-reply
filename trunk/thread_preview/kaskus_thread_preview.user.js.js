@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
 // @dtversion     110103101
-// @timestamp     1293994502691
+// @timestamp     1294080423720
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 //  v1.1 - 2010-01-02
+//    Prep Setting Tpl - Quote Controller
 //    fix positioning lv.2
 //    add userlink badge - KTP ngaskus.us
 //    fix re-syncroning from storage avoid changed value when qr-click
@@ -33,7 +34,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1293994502691 // version.timestamp
+  timestamp: 1294080423720 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -155,7 +156,7 @@ function start_Main(){
   
   // window event
   Dom.Ev(window, 'resize', function() {
-    $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 130 - gvar.offsetLayer )+'px;', 'important');
+    $D('#preview_content').style.setProperty('max-height', (parseInt(getScreenHeight()) - 160 - gvar.offsetLayer )+'px;', 'important');
   });
   //
 } // end start_Main
@@ -222,7 +223,7 @@ function chk_kfti_pos(){
   gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
 }
 
-// load after loadLayer
+// load after loadLayer  tbl_separator vbform
 function event_TPL(){
     // event close button
     Dom.Ev($D("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
@@ -242,10 +243,10 @@ function event_TPL(){
 	  toggle_sticky(false, 'quickreply');
 	  Dom.remove($D("#imgsticky"));
 	  
-	  // removing preview_cancel button_preview
-	  if($D('#preview_cancel') && $D('#button_preview')){
-	    Dom.add($D('#preview_cancel'), $D('#button_preview'));
-		removeClass('cyellow', $D('#preview_cancel'));
+	  // removing links to button_preview
+	  if($D('#button_preview')){
+	    if($D('#preview_cancel')){ Dom.add($D('#preview_cancel'), $D('#button_preview')); removeClass('cyellow', $D('#preview_cancel')); }
+	    if($D('#preview_setting')){ Dom.add($D('#preview_setting'), $D('#button_preview')); removeClass('cyellow', $D('#preview_setting')); }
 	  }
 	  
 	  if($D('#tr_qr_button')) Dom.remove('tr_qr_button');
@@ -254,24 +255,47 @@ function event_TPL(){
 	});
 	// #head_layer; #atoggle
     if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ toggleCollapse(); });
-    if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(e){ toggleCollapse(e); });
+    if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(){ toggleCollapse(); });
     
-}
-function toggleCollapse(e){
-     var el, show, tohide = ['qr_container_table','thread_tools','threadpost_navi'];
-     show = ($D('#row_content').style.display!='none');
-     $D('#row_content').style.display = (show ? 'none' : '');
-     for(var i=0; i<tohide.length; i++){
-        if(!isString(tohide[i])) continue;
-    	el = Dom.g( tohide[i] );
-    	if(el) el.style.display = (show ? 'none' : '');
-     }
-     if($D('#qr_container_head').style.display!='none') Dom.g('button_preview').style.display = (show ? 'none' : '');
-	 var img = $D('#collapseimg_quickreply');
-	 if(img){
-	   var src = img.getAttribute('src');
-	   img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
-	 }
+	// #preview_setting
+    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(){
+        if($D('#setting_container')) {
+         $D('#setting_container').innerHTML = getTPL_Settings();
+    	 toggleCollapse();
+         $D('#setting_container').style.display='';
+		 
+		 // #save_settings #cancel_settings
+	     if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ toggleCollapse(); });
+        }       
+    });
+	
+	
+
+    
+} // end event_TPL
+function toggleCollapse(){
+    var el, show, tohide = ['vbform','thread_tools','threadpost_navi','thread_separator','tbl_separator'];
+    show = ($D('#row_content').style.display!='none');
+    $D('#row_content').style.display = (show ? 'none' : '');
+    for(var i=0; i<tohide.length; i++){
+       if(!isString(tohide[i])) continue;
+       el = Dom.g( tohide[i] );
+       if(el) el.style.display = (show ? 'none' : '');
+    }
+
+	if( gvar.curThread.is_singlepost && !gvar.curThread.adaEMOTE && !gvar.curThread.adaIMG && !gvar.curThread.adaSPL )
+	  if($D('#thread_separator')) $D('#thread_separator').style.display='none';
+
+    if($D('#qr_container_head').style.display!='none') Dom.g('button_preview').style.display = (show ? 'none' : '');
+	var img = $D('#collapseimg_quickreply');
+	if(img){
+	  var src = img.getAttribute('src');
+	  img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
+	}
+	if(!show && $D('#setting_container') && $D('#setting_container').style.display!='none'){
+	  $D('#setting_container').innerHTML = '';
+	  $D('#setting_container').style.display='none';
+	}
 }
 function event_TPL_vB(){
 	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
@@ -578,7 +602,7 @@ function toggle_sticky(flag, caller){
   Dom.g('css_position').innerHTML = getCSS_fixed(flag);
   var yNow = parseInt(ss.getCurrentYPos());
   
-  var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-130-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
+  var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-160-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
   var vnewtop = (flag ? gvar.offsetLayer : newOfset);
   obj.style.setProperty('top', vnewtop+'px', '');
   if($D("#imgsticky"))
@@ -641,6 +665,12 @@ function parse_preview(text){
 		cucok = text.match(/name[\'\"]\s*href=[\'\"][^\?]+.u=(\d+)[^\>]+.([^\<]+).\/a>/im);
 		gvar.curThread.POSTER = (cucok ? {id:cucok[1], name:cucok[2]} : {id:null,name:null} );
 		gvar.curThread.is_singlepost = 1;
+	 }else{
+	    // store pid of TS
+		//
+		cucok = text.match(/newreply\.php\?do=newreply([^\"\']+)/im);
+		if(cucok) cucok = cucok[1].replace(/\&amp;/gi,'&').replace(/\&noquote=1/gi,'').replace(/\&/,'?');		
+		gvar.curThread.TS.pid = (cucok ? cucok : false);
 	 }
    }
    
@@ -688,7 +718,9 @@ function ajax_thfetch(reply_html){
     GM_XHR.uri = gvar.curThread.href;
     GM_XHR.cached = true;    
     GM_XHR.request(null,'GET',ajax_thfetch);
+  
   }else{
+  
     // yg bikin failed
 	var caller = (Dom.g('prev_loader') ? Dom.g('prev_loader').parentNode : null);
 	if( !reply_html || !$D('#hideshow') || !caller ) return;
@@ -716,6 +748,12 @@ function ajax_thfetch(reply_html){
 	  if($D('#hideshow')){
 		$D('#hideshow').style.display = '';
 	    $D('#preview_content').innerHTML = rets.content;
+		if($D('#preview_reply_qr')){
+		  $D('#preview_reply_qr').setAttribute('href', 'newreply.php?do=newreply&p='+get_pid_link(gvar.curThread.href, 1) );
+		  Dom.Ev($D('#preview_reply_qr'), 'click', function(e){ alert(0); });
+		}
+		if($D('#preview_reply_quote')) $D('#preview_reply_quote').setAttribute('href', 'newreply.php?do=newreply&p='+ get_pid_link(gvar.curThread.href, 1) );
+		
 	    $D('#prev_title').innerHTML = '<a href="showthread.php?t='+gvar.curThread.tid+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
 		
 		// recalibrate top position only if not in fixed_preview
@@ -779,7 +817,7 @@ function ajax_thfetch(reply_html){
 		 });
 		
 		if( !gvar.curThread.is_singlepost || gvar.curThread.adaEMOTE || gvar.curThread.adaIMG || gvar.curThread.adaSPL )
-		  $D('#thread_separator').style.setProperty('display','block','important');
+		  $D('#thread_separator').style.setProperty('display','','');
 
 		//gvar.curThread.POSTER.id poster_userlink
 		if($D('#poster_userlink')) {
@@ -789,6 +827,7 @@ function ajax_thfetch(reply_html){
 		//ts_userlink poster_userlink
 		event_userlink();
 		
+		
 	  }
 	  // done let's restore loader
 	  if(caller) {
@@ -797,7 +836,7 @@ function ajax_thfetch(reply_html){
 	  }
 	  if(gvar.curThread.cRow) addClass('selected_row', gvar.curThread.cRow);
 	  showhide(Dom.g('hideshow'), true);
-	}
+	} // end rets is not null
   }
   //
 } // end ajax_thfetch
@@ -917,9 +956,12 @@ function find_parentRow(e){
   }  
   return (gotit ? par : false);
 }
-function get_hashlink(href){
+function get_pid_link(href, single){
+  if(!gvar.curThread.is_singlepost)
+    href = gvar.curThread.TS.pid;
+
   var match = href.match(/\?p=(\d+)/);
-  return (match ? 'showthread.php?p='+match[1]+'#post'+match[1] : '');
+  return (match ? (isDefined(single) && single  ? match[1] : 'showthread.php?p='+match[1]+'#post'+match[1]) : '');
 }
 function getThreadId(href){
   var match = href.match(/\?t=(\d+)/);
@@ -968,7 +1010,7 @@ function getTPL_Preview(){
  +'<div id="popup_container" class="popup_block"> '
  + '<div class="popup" id="popup_child">'
  +  '<a tabindex="209" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
- +  '<a tabindex="210" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
+ +  '<a tabindex="208" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<tbody><tr>'
  +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
@@ -977,24 +1019,30 @@ function getTPL_Preview(){
  + (gvar.curThread.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.curThread.TS.id+'" title="Thread starter by '+gvar.curThread.TS.name+'" class="ktp-user_link cyellow" ><b>'+gvar.curThread.TS.name+'</b></a>]' : '')
  
  // 
- + (gvar.curThread.is_singlepost ? ' - [<small><a href="'+get_hashlink(gvar.curThread.href)+'" target="_blank" title="View Single Post">Single Post</a> :: </small>'
+ + (gvar.curThread.is_singlepost ? ' - [<small><a href="'+get_pid_link(gvar.curThread.href)+'" target="_blank" title="View Single Post">Single Post</a> :: </small>'
    +'<span id="poster_userlink" class="cyellow"><b>'+gvar.curThread.POSTER.name+'</b></span>'
    +']'
  : '')
  
  +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
- +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.sversion+'</span>'
+ +     '<span id="ktp_version" class="hd_layer-right" style=""><a href="javascript:;" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +    '</div>' // #head_layer 
 
  +   '</td>'
  +  '</tr><tr id="row_content">'
  +  '<td class="alt1">'
- +   '<div id="post_detail"></div>'
- +   '<div id="preview_content"></div>'
+ +   '<div id="post_detail"></div>' // kaskus badge | user detail
+ +   '<div id="preview_content"></div>' // main post-content
+ +   '<div id="preview_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
+ +    '<a id="preview_reply_qr" onclick="return false" href="javascript:;" target="_blank" style="margin-right:5px;">'
+ +     '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick-Reply" title="Quick Reply this message" border="0"/></a>'
+ +    '<a id="preview_reply_quote" href="javascript:;" target="_blank">'
+ +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border="0"/></a>'
+ +   '</div>' // #preview_reply
  +  '</td></tr>'
  +  '<tbody></table>'
- //
- +  '<div class="spacer"></div>'
+
+ +  '<div id="tbl_separator" class="spacer"></div>'
 
  +( !gvar.curThread.is_singlepost ? ''
  +  '<div id="threadpost_navi" style="float:right;">'
@@ -1006,10 +1054,9 @@ function getTPL_Preview(){
  +    '<input type="button" id="show_emotes" class="twbtn twbtn-m" value="Show Emotes" style="" />'
  +    '<input type="button" id="show_images" class="twbtn twbtn-m" value="Show All Images" style="" />'
  +  '</div>'
-
  +  '<div id="thread_separator" style="height:25px; display:none;"></div>'
 
- // quick-reply | 
+ // quick-reply form
  +'<form action="'+gvar.curThread.action+'" method="post" name="vbform" id="vbform" style="display:;">'
  +   '<div style="display:none;">'
  +    '<input type="submit" name="real_submit" value="Submit Post"/>'
@@ -1025,24 +1072,24 @@ function getTPL_Preview(){
  +   '<tr><td class="panelsurround">'
  +    '<div class="panel">'
  +    '<div id="qr_container">'
- +      '<div>'+_LOADING+'</div>'
+
+ +      '<div>'+_LOADING+'</div>' // this will be injected w/ getTPL_QuickReply()
+
  +    '</div>' // #qr_container 
- +    '</div>' // .panel
+ +    '</div>' // .panel 
  +  '</td></tr><tbody>'
  
- +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed
+ +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed 
  +  '<tr><td class="tcat">' 
- +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow qrsmallfont" style=""><b>Cancel</b></a>' 
- +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+'</span>'
+ +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>' 
+ +    '<a tabindex="207" id="preview_setting" href="javascript:;" class="cyellow hd_layer-right" style=""><b>Setting</b></a>' 
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
  +    '</div>'
  +  '</td></tr>'
- +  '</tfoot>'
- 
+ +  '</tfoot>' 
  +'</table>'
- +  ''
- //
+
  +   '<div id="button_preview" style="display:none;">'
  +'<input type="hidden" name="humanverify[hash]" value="" id="qr_hash" />'
  +'<input type="hidden" name="s" value="" />'
@@ -1058,13 +1105,76 @@ function getTPL_Preview(){
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
  +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
  +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;">Then Goto Thread</small></label></span>'
- +''
- +   '</div>'
+ +   '</div>' // #button_preview
  +'</form>'
  
+ + '<div id="setting_container" style="position:absolute;right:1%;min-width:450px;border:2px outset;background:#F5F5FF;margin-top:1px;display:none;">'
+ //+ getTPL_Settings()
+ + '</div>' // #setting_container 
  
  + '</div>' // #popup_child
  +'</div>' // #popup_container
+ );
+}
+function getTPL_Settings(){
+  var spacer = '<div class="spc1" style=""></div>';
+  return (''
+ // setings 
+
+ + '<table id="tbl_setting" cellpadding="0" cellspacing="0" border="0" style="">'
+ + '<tr><td colspan="2" align="center">'
+ +  '<div class="g_notice" style="display:inline-block;padding-top:5px;height:20px;width:450px;">'
+ +   '<div style="float:left;margin-left:20px;"><strong>Thread Preview Settings</strong></div>'
+ +   '<div style="float:right;margin-right:10px;">'
+ +     '<a id="save_settings" href="javascript:;" class="twbtn twbtn-m twbtn-primary lilbutton" style="">save</a>&nbsp;&nbsp;'
+ +     '<a id="cancel_settings" href="javascript:;">cancel</a></div>'
+ +  '</div>'
+ + '</td></tr><tr>'
+ + '<td id="td_setting_control" valign="top" style="padding-left:5px;">'
+ +  '<div style="padding:1px 0 3px 25px;"><b>::QR::</b></div>'
+ +  '<input id="misc_autolayout_sigi" type="checkbox" /> AutoSignature&nbsp;'
+ +  '<small><a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
+ +  '<div id="edit_sigi_Editor" style="display:none;"></div>'
+ +spacer
+ +  '<input id="misc_autolayout_tpl" type="checkbox" /> AutoLayout&nbsp;'
+ +  '<small><a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
+ +  '<div id="edit_tpl_Editor" style="display:none;"></div>'
+ +spacer
+ +  '<input id="misc_autoshow_smile" type="checkbox" /> AutoLoad Smiley<br />'
+ +  '<small style="margin-left:20px;">'
+ +   '<label for="misc_autoshow_smile_kecil"><input id="misc_autoshow_smile_kecil" type="radio" value="kecil" />kecil</label>&nbsp;'
+ +   '<label for="misc_autoshow_smile_besar"><input id="misc_autoshow_smile_besar" type="radio" value="besar" />besar</label>&nbsp;'
+ +   '<label for="misc_autoshow_smile_custom"><input id="misc_autoshow_smile_custom" type="radio" value="custom" />[+]</label>'
+ +  '</small>'
+ +spacer
+   
+ + '</td>'
+ 
+ + '<td width="220" style="border-left:1px solid #000; padding-left:5px;" valign="top">'
+ +  '<div style="padding:1px 0 3px 25px;"><b>::General::</b></div>'
+ //gvar.noCrossDomain
+ +  '<label for="misc_updates" title="Check Userscripts.org for QR latest update"><input id="misc_updates" type="checkbox" /> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a></small>'
+ +spacer
+ +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval:&nbsp;<input id="misc_updates_interval" type="text" value="1" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
+ +spacer
+ 
+ +  '<input id="misc_autoload_qr" type="checkbox" /> AutoLoad QR<br />'
+ +  '<input id="misc_autoshow_spoiler" type="checkbox" /> AutoShow Spoiler<br />'
+ +  '<input id="misc_showimages" type="checkbox" /> Show Images<br />'
+ +  '<small style="margin-left:20px;">'
+ +   '<label for="misc_showimages_external"><input id="misc_showimages_external" type="checkbox" /> External</label>' + '&nbsp;&nbsp;'
+ +   '<label for="misc_showimages_emotes"><input id="misc_showimages_emotes" type="checkbox" /> Emotes-Only</label>'
+ +  '</small>'
+ +spacer
+ +  '<input id="misc_scrollto_lastrow" type="checkbox" /> Scroll to Last Opened Row<br />'
+ +  '<input id="misc_reload_afterpost" type="checkbox" /> Reload after Posting<br />'
+ +spacer
+ + ''
+
+ 
+ + '</td></tr>'
+ + '</table>'
+ + '<div class="spacer"></div>'
  );
 }
 function getTPL_QuickReply(){
@@ -1128,7 +1238,9 @@ function getCSS_fixed(fixed){
   return (''
    //+'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
    +'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
-   +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - 130 - gvar.offsetLayer)+'px; }'
+   +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - 160 - gvar.offsetLayer)+'px; }'
+   //+'#preview_content div table{width:auto;}'
+   +'#preview_content div table{max-width:95%;overflow:auto;}'
   );
 }
 function getCSS() {
@@ -1147,22 +1259,32 @@ function getCSS() {
     +'.txa_enable, .txa_readonly{border:1px solid #949494;}'
     +'.txa_enable{background-color:#FFF;color:#000;}'
     +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'
-    +'#button_preview{margin:2px 0;}'
+    +'#button_preview{margin:2px 0;padding:3px 8px 3px 3px;text-align:center;}'
     +'.spacer{height:5px;}'
+    +'.spc1{height:1px;}'
     +'a.cyellow{color:#F0F000!important;}'
     +'.cred{color:#FF0000!important;}'
     +'.qrsmallfont, .qrsmallfont div, .g_notice{font-size:11px;}'
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
-    +'#preview_content div table{width:auto;}'
-    +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;display:none;padding-bottom:5px;}'
+    //+'#preview_content div table{width:auto;}'
+    +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
     +'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
     +'.hd_layer-right{float:right; margin-right:5px;}'
+    +'.hd_layer-left{float:left; margin-left:5px;}'
 	+'.qr_button_cont{width:100%; text-align:center;}'
 	+'#qr_button{margin-right:-40px;}'
-	+'#preview_cancel{float:left;margin:2px 0 0 5px;font-size:13px;}'
+	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;}'
+    +'#collapseimg_quickreply{border:0;}'
+    +'#atoggle{outline:none;}'
+
+/* ==settings== */ 
+    +'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;}'
+    +'a.lilbutton.twbtn-primary{color:#F0F000;}a.lilbutton.twbtn-primary:hover{color:#fff;}'
+	
+
 
 /* ==ktp popup== */ 
     +'#img_ngaskuser{height:120px;}'
@@ -1186,9 +1308,6 @@ function getCSS() {
     +'.popup img.cntrl, .popup img.sticky {position:absolute;border:0px;}'
     +'.popup img.cntrl {right:-20px;top:-20px;}'
     +'.popup img.sticky {left:0;top:-3px;}'
-    +'#collapseimg_quickreply{border:0px;}'
-    +'#atoggle{outline:none;}'
-    +'#button_preview {padding:3px;text-align:center;}'
     +'*html #popup_container{'
     +  'position: absolute;'
     +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'
@@ -1199,7 +1318,7 @@ function getCSS() {
     +'}'
 	/* twitter's button */
     
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #fff;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;}.twbtn-primary{border-color:#298cba;font-weight:bold;color:transparent;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #B1B1B1;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn-primary{border-color:#3B3B3B;font-weight:bold;color:#F0F000;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
 	/* thumb image */
 	+'.imgthumb:hover {background-color:#80FF80 !important;}'
 	+'.imgthumb {line-height:20px;font-size:11px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVaNQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENGX5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOudiXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXzRSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAUBEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVkHAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
