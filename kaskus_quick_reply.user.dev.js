@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.0
 // @dtversion     110103310
-// @timestamp     1294064363758
+// @timestamp     1294071297798
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 // v3.1.0 - 2011-01-03
+//   Fix (Opera) disabled checkbox QR-Hotkey on Settings not well-defined as 'checked'
 //   Fix prefer to define 'var' on global namespace (major issue Opera-11)
 //   Fix typo in getTPL mismatch syntax
 //   Fix check exist element before giving Event on toggle_setting
@@ -58,7 +59,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.0';
 gvar.scriptMeta = {
-  timestamp: 1294064363758 // version.timestamp
+  timestamp: 1294071297798 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1498,6 +1499,14 @@ function toggle_setting(){
       if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
       if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
 
+      if($D('#misc_hotkey')) Dom.Ev( $D('#misc_hotkey'), 'click', function(e){
+        e=e.target||e;
+		if(e && !e.checked){
+		 var childs = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'];
+		 for(var i in childs) if( Dom.g(childs[i]) ) Dom.g(childs[i]).checked=false;
+		 if( Dom.g(childs[childs.length-1]) ) Dom.g(childs[childs.length-1]).disabled='disabled';
+		}
+	  });
       if($D('#misc_hotkey_ctrl')) Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
       if($D('#misc_hotkey_alt')) Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
       if($D('#misc_hotkey_char')) Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
@@ -3138,11 +3147,11 @@ function getTPL_Settings(){
    +'<div id="edit_tpl_Editor" style="display:none;"></div>'
    +spacer
    
-   +'<input id="misc_hotkey" type="checkbox" disabled="disabled" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/> QR-Hotkey<br />'
+   +'<input id="misc_hotkey" type="checkbox" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/> QR-Hotkey<br />'
    +'<small>'
    +'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1' ? 'checked':'')+'/>ctrl&nbsp;'
    +'<input id="misc_hotkey_alt" type="checkbox" '+(gvar.settings.hotkeykey[2]=='1' ? 'checked':'')+'/>alt&nbsp;'
-   +'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1' ? 'checked':'')+'/>shift&nbsp;'
+   +'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1' ? 'checked':'')+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? ' disabled="disabled"':'')+'/>shift&nbsp;'
    +'<br/>&nbsp;'
    +'&nbsp;<input id="misc_hotkey_char" type="text" title="alphnumeric [A-Z0-9]" value="'+(gvar.settings.hotkeychar)+'" style="width:20px;padding:0" maxlength="1" />&nbsp;blank=disable'
    +'<br/></small>'
