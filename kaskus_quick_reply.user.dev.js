@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.0.9
-// @dtversion     110101309
-// @timestamp     1293893364654
+// @version       3.1.0
+// @dtversion     110103310
+// @timestamp     1294052267924
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,14 +13,18 @@
 //
 // -!--latestupdate
 //
-// v3.0.9 - 2011-01-01
-//   Fix (Opera) missing hotkey checkbox element on Settings
-//   Fix failed show Settings when all controllers hide
-//
+// v3.1.0 - 2011-01-03
+//   Fix typo in getTPL mismatch syntax
+//   Fix check exist element before giving Event on toggle_setting
+//   Fix (Opera), deprecate isOpera, due-to missing hotkey checkbox element on TPL_Settings.
 //   
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.0.9 - 2011-01-01
+//   Fix (Opera) missing hotkey checkbox element on Settings
+//   Fix failed show Settings when all controllers hide
 //
 // v3.0.8 - 2010-12-30
 //   Fix QR-Hotkey (Opera)
@@ -34,14 +38,6 @@
 //   Fix failed expand with css_fixups
 //   Fix + Improve GM_addGlobalStyle & GM_addGlobalScript
 //   Fix notify fetch failed from another thread.
-//   
-// v3.0.7 - 2010-12-25
-//   Add Last used Spoiler-Title
-//   Fix (Opera) onclose preview keep last char as "\n\n"
-//   Add 5 new Emotes
-//   Fix autoGrow, keep currentYPos after overflow auto on keydown (backspace; delete)
-//   Fix deprecate trick on keydown keyCode=13
-//   Improve onclose preview keep last char as "\n\n" 
 //   
 //
 // -more: http://userscripts.org/topics/56051
@@ -59,9 +55,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.0.9';
+gvar.sversion = 'v' + '3.1.0';
 gvar.scriptMeta = {
-  timestamp: 1293893364654 // version.timestamp
+  timestamp: 1294052267924 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1041,9 +1037,7 @@ function is_keydown_pressed_ondocument(e){
   
   var CSA_tasks = {
      quickreply: gvar.settings.hotkeykey.toString() // default: Ctrl+Q
-    //,fetchpost: '0,0,1' // Alt+Q [FF|Chrome]
     ,fetchpost: (!gvar.isOpera ? '0,0,1' : '1,0,1' ) // Alt+Q [FF|Chrome] --OR-- Ctrl+Alt+Q [Opera]
-    //,deselectquote: '1,0,1' // Ctrl+Alt+Q
     ,deselectquote: '1,1,0' // Ctrl+Shift+Q, due to Ctrl+Alt will be used above
   };
     //clog('pressedCSA='+pressedCSA)  
@@ -1362,7 +1356,7 @@ function reset_setting(){
       window.setTimeout(function() { location.reload(false); }, 300);
     }
 }
-function save_setting(e){
+function save_setting(){
     var par, value, misc;
     var KS = 'KEY_SAVE_';
     gvar.restart=true;
@@ -1496,23 +1490,26 @@ function toggle_setting(){
     }else{
       cont.innerHTML=getTPL_Settings();
       disp=true;
-      Dom.Ev( $D('#save_settings'), 'click', function(e){ e=e.target||e; save_setting(e)} );
-      Dom.Ev( $D('#cancel_settings'), 'click', function(){ toggle_setting()} );
-      Dom.Ev( $D('#reset_default'), 'click', function(){ reset_setting() });
+      if($D('#save_settings')) Dom.Ev( $D('#save_settings'), 'click', function(){ save_setting()} );
+      if($D('#cancel_settings')) Dom.Ev( $D('#cancel_settings'), 'click', function(){ toggle_setting()} );
+      if($D('#reset_default')) Dom.Ev( $D('#reset_default'), 'click', function(){ reset_setting() });
 
-      Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
-      Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
-      Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
+      if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
+      if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
 
-      Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; toggle_editLayout(e); });
-      Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; toggle_editLayout(e); });
-      if(!gvar.noCrossDomain) // unavailable on Chrome|Opera T_T
-       Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
-        if($D('#fetch_update')) return; // there is a fetch update in progress		
-		if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
-        Updater.notify_progres('chk_upd_now');
-        Updater.check(true);
-       });
+      if($D('#misc_hotkey_ctrl')) Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; precheck_shift(e); });
+      if($D('#misc_hotkey_alt')) Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; precheck_shift(e); });
+      if($D('#misc_hotkey_char')) Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; precheck_shift(e); });
+	  // better do this instead of check noCrossDomain and/or isOpera
+      try {
+       if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera T_T
+        Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
+          if($D('#fetch_update')) return; // there is a fetch update in progress        
+          if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
+          Updater.notify_progres('chk_upd_now');
+          Updater.check(true);
+        });
+      }catch(e){ show_alert(e);};
 
       // prevent Enter onsubmiting in settings_cont Nodes
       var alNod = getTag('input', cont);      
@@ -1529,7 +1526,7 @@ function toggle_setting(){
           }
         });
       }
-    }  
+    }
     if(disp){ // show setting
         vB_textarea.readonly();
     }else{
@@ -2862,12 +2859,9 @@ function getTPL_main(){
     return tpl;
 }
 function getTPL(){
-
-
-  var tpl = 
-     '\n<br/>'
-    //+'<div id="quickreply">\n'
-    // '<!-- start form quick reply -->\n\n'
+  return ('' 
+    +'\n<br/>'
+    /* '!-- start form quick reply' */
     +'<form action="newreply.php?do=postreply&amp;t='+gvar.threadid+'" method="post" name="vbform" id="vbform">'
     
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
@@ -2894,7 +2888,7 @@ function getTPL(){
     +( false && !gvar.user.isDonatur  ? ''
     +'<td width="300"><table cellpadding="0" cellspacing="0">'
      +'<tr><td id="capcay_header" style="width:150px !important;"></td></tr>'
-     +'<tr><td><div id="capcay_container">'+
+     +'<tr><td><div id="capcay_container">'
      +'</div></td></tr>'
     +'</table></td>'
     :'')
@@ -2954,10 +2948,8 @@ function getTPL(){
     +'</div>\n' // end #submit_container
     
     +'</td></tr></tbody></table></form>\n'
-    //+'<!-- / end form quick reply -->\n\n'
-    //+'\n</div>'
-    ;
-    return tpl;
+    /*'!-- / end form quick reply --'*/
+    );
 }
 function getTPL_vbEditor(){
   var konst = { 
@@ -3144,9 +3136,7 @@ function getTPL_Settings(){
    +'<small><a id="edit_tpl" class="qbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
    +'<div id="edit_tpl_Editor" style="display:none;"></div>'
    +spacer
-
    
-   + (!gvar.isOpera ? ''
    +'<input id="misc_hotkey" type="checkbox" disabled="disabled" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/> QR-Hotkey<br />'
    +'<small>'
    +'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1' ? 'checked':'')+'/>ctrl&nbsp;'
@@ -3156,7 +3146,6 @@ function getTPL_Settings(){
    +'&nbsp;<input id="misc_hotkey_char" type="text" title="alphnumeric [A-Z0-9]" value="'+(gvar.settings.hotkeychar)+'" style="width:20px;padding:0" maxlength="1" />&nbsp;blank=disable'
    +'<br/></small>'
 
-    : '')
    +'<div style="height:5px;">&nbsp;</div>'
     
    +'<a id="reset_default" href="javascript:;"><small>reset default</small></a>'
@@ -3170,10 +3159,7 @@ function getTPL_Settings(){
 
 
 function getTPL_layer_Only(){
-  return ('\
-   <div class="trfade"></div> \
-   <div class="fade"></div>\
-  ');
+  return ('<div class="trfade"></div><div class="fade"></div>');
 }
 
 function getTPL_prompt_reCAPTCHA(){
@@ -3260,7 +3246,6 @@ function getTPL_Preview(){
   return divInner;  
 }
 // end tpl
-
 
 
 function getSmileySet(custom){
@@ -3607,7 +3592,7 @@ function getSetOf(type){
   };
   return false;
 }
-function getSCRIPT() {
+function getSCRIPT(){
   return (''
     +'function showRecaptcha(element){'
     +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
@@ -3628,7 +3613,7 @@ function getSCRIPT() {
 // Global CSS
 
 
-function getCSS_fixup() {
+function getCSS_fixup(){
 /* | ------------------------------------------------ | */
 /* |          (Lite) Kaskus Fix-ups by chaox          | */
 /* | ------------------------------------------------ | */
@@ -3651,7 +3636,7 @@ function getCSS_fixup() {
   ;
   return lite_fixup;
 }
-function getCSS() {  
+function getCSS(){
   // CSS for Quick Reply
   var css = ''
   +'.qr_container'
