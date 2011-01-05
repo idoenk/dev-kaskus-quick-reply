@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
 // @dtversion     110103101
-// @timestamp     1294206678821
+// @timestamp     1294243176560
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,6 +15,7 @@
 //
 //
 //  v1.0 - 2011-01-05
+//    fill setting with event
 //    init recoded
 //
 // -/!latestupdate---
@@ -26,7 +27,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1294206678821 // version.timestamp
+  timestamp: 1294243176560 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -34,16 +35,23 @@ gvar.scriptMeta = {
 javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
-//=-=-=-=--=
+//=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
+//
 OPTIONS_BOX = {
-  KEY_KTP_IMGLOAD:       ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
- ,KEY_KTP_FIXED_PREVIEW: ['1'] // fixed position or absolute
+  // free set
+  KEY_KTP_FIXED_PREVIEW: ['1'] // fixed position or absolute
+ ,KEY_KTP_THEN_GOTHREAD:   ['0'] // goto-thread after submit post
+ 
+ ,KEY_KTP_UPDATES:         ['1'] // settings check update
+ ,KEY_KTP_UPDATES_INTERVAL:['1'] // settings update interval, default: 1 day
+ 
  ,KEY_KTP_SCROLL_THREAD: ['1'] // scroll to last opened-thread
- ,KEY_KTP_THEN_GOTHREAD: ['0'] // goto-thread after submit post
+ ,KEY_KTP_IMGLOAD:         ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
+ ,KEY_KTP_RELOAD_AFTERSENT:['0'] // fresh reload after send reply
 };
 GMSTORAGE_PATH      = 'GM_';
 KEY_KTP = 'KEY_KTP_';
@@ -67,11 +75,9 @@ function init(){
   
   gvar.zIndex = 99997; // one level above KFTI
   gvar.offsetTop= -35; // buat scroll offset
-  gvar.offsetMaxHeight= 130; // buat maxHeight adjust
+  gvar.offsetMaxHeight= 160; // buat maxHeight adjust
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
-  
-  //gvar.curThread={};
   
   gvar.setting = {};
   getSettings();
@@ -102,11 +108,23 @@ function getSettings(){
   */  
 //  var hVal,hdc;
   gvar.setting = {
-     imgload: ( getValue(KEY_KTP + 'IMGLOAD') ) // [0,1,2]
-    ,fixed_preview:    (getValue(KEY_KTP+'FIXED_PREVIEW')=='1') // boolean
-    ,thread_lastscroll:(getValue(KEY_KTP+'SCROLL_THREAD')=='1') // boolean
+     fixed_preview:    (getValue(KEY_KTP+'FIXED_PREVIEW')=='1') // boolean
     ,then_goto_thread: (getValue(KEY_KTP+'THEN_GOTHREAD')=='1') // boolean
+	
+	//UPDATES UPDATES_INTERVAL
+    ,updates: (getValue(KEY_KTP+'UPDATES')=='1') // boolean
+    ,updates_interval: (getValue(KEY_KTP+'UPDATES_INTERVAL')) // int
+    ,imgload: ( getValue(KEY_KTP + 'IMGLOAD') ) // [0,1,2]
+    ,thread_lastscroll:(getValue(KEY_KTP+'SCROLL_THREAD')=='1') // boolean
+    ,reload_aftersent: ( getValue(KEY_KTP + 'RELOAD_AFTERSENT')=='1' ) // boolean
   };
+//UPDATES UPDATES_INTERVAL IMGLOAD THEN_GOTHREAD RELOAD_AFTERSENT
+//  gvar.setting.autoshow_spoiler = true;
+// 	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
+	// ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
+	// ,'stg_updates': 'UPDATES'
+// 
+	
   chk_kfti_pos();  
   
 }
@@ -226,8 +244,6 @@ var tTRIT = {
 	// pre-check kfti position, walau udah di setting, this one is per-click.
 	// user might resize / change the state of kfti
 	chk_kfti_pos();
-	
-	//loadLayer(gvar.curThread.tid);
 	
 	// fetching thread
 	tTRIT.fetch();
@@ -384,12 +400,11 @@ var tPOP = {
  }
  ,fillLayer: function(rets){
     $D('#preview_content').innerHTML = rets.content;
-	if($D('#btn_reply_qr')){
-	  $D('#btn_reply_qr').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
-	  Dom.Ev($D('#btn_reply_qr'), 'click', function(){
+	if($D('#btn_quote_reply')){
+	  $D('#btn_quote_reply').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
+	  Dom.Ev($D('#btn_quote_reply'), 'click', function(){
 		tPOP.toggleQuoting(true);
 		var uri = gvar.current.newreply;
-		//if( tQR.isLoaded() ){
 		if( gvar.current.QR_isLoaded ){
 		  tQR.fetch(uri);
 		}else{
@@ -398,7 +413,7 @@ var tPOP = {
 		}
 	  });
 	}
-	if($D('#btn_reply_quote')) $D('#btn_reply_quote').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
+	//if($D('#btn_reply_quote')) $D('#btn_reply_quote').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
 	$D('#prev_title').innerHTML = '<a href="showthread.php?t='+gvar.TS.tid+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
 	
 	// recalibrate top position only if not in fixed_preview
@@ -415,6 +430,76 @@ var tPOP = {
 	tPOP.event_Additional();
 	
 	
+ }
+ ,settings: {
+    init: function(){
+	  if($D('#setting_container')) {
+       $D('#setting_container').innerHTML = rSRC.getTPL_setting();
+       tPOP.toggleCollapse();
+       $D('#setting_container').style.display='';
+      }
+	  tPOP.settings.event_set();
+   }
+   ,event_set: function(){
+    // #save_settings #cancel_settings
+	if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ tPOP.toggleCollapse(); });
+	if($D('#save_settings')) Dom.Ev($D('#save_settings'), 'click', function(){ tPOP.settings.save(); });
+	if($D('#reset_default')) Dom.Ev($D('#reset_default'), 'click', function(){ tPOP.settings.reset(); });
+   }
+   ,save: function(){
+    //UPDATES UPDATES_INTERVAL IMGLOAD THEN_GOTHREAD RELOAD_AFTERSENT
+    // single chkbox 
+	var value, sets;
+	sets ={
+	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
+	 ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
+	 ,'stg_updates': 'UPDATES'
+	};
+	for(var field in sets){
+	  if( isString(sets[field]) && $D('#'+field) ){
+	    setValue(KEY_KTP+sets[field], ($D('#'+field).checked ? '1':'0') );
+	  }
+	}
+	// saving update interval
+    if( $D('#stg_updates_interval') ){
+      value = Math.abs($D('#stg_updates_interval').value);
+      value = (isNaN(value)||value <= 0 ? 1 : (value > 99 ? 99 : value) );
+      setValue(KEY_KTP+'UPDATES_INTERVAL', value.toString());
+    }		
+	
+    // images policy
+    sets = ['stg_showimages_none', 'stg_showimages_emot', 'stg_showimages_alll'];
+	for(var i in sets){
+	  if(isString(sets[i])){
+	    value = 0;
+	    if($D('#'+sets[i]) && $D('#'+sets[i]).checked) value=$D('#'+sets[i]).value;
+	  }
+	}
+	setValue(KEY_KTP+'IMGLOAD', value.toString());
+	
+	// reload settings for gvar
+	getSettings();
+    // done save then close layer
+	tPOP.closeLayerBox('hideshow');
+   }
+   
+   ,reset: function(){
+    var home=['http:/'+'/www.kaskus.us/showthread.php?t=3170414','http:/'+'/userscripts.org/topics/???'];
+	var space='';for(var i=0;i<20;i++)space+=' ';
+	var msg = ''
+     +'This will delete/reset all saved data.\nThings that might be conflict with your Kaskus Thread Preview.'     
+     +'\nPlease report any bug or some bad side effects here:'+space+'\n'+home[1]+'\nor\n'+home[0]+
+     '\n\n'+HtmlUnicodeDecode('&#187;')+' Continue with Reset?';
+
+    if( confirm(msg) ) {
+	    var keys = ['IMGLOAD','FIXED_PREVIEW','SCROLL_THREAD','THEN_GOTHREAD'
+	              ,'UPDATES','UPDATES_INTERVAL','RELOAD_AFTERSENT'
+				  ];
+        for(var i in keys)
+          try{ if(isString(keys[i])) GM_deleteValue(KEY_KTP + keys[i]); }catch(e){};		
+        window.setTimeout(function() { location.reload(false); }, 300);
+	}
+   }
  }
  ,event_Static: function(){
 
@@ -443,17 +528,7 @@ var tPOP = {
 	 });
     
 	// #preview_setting
-    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(){
-        if($D('#setting_container')) {
-         $D('#setting_container').innerHTML = rSRC.getTPL_setting();
-    	 tPOP.toggleCollapse();
-         $D('#setting_container').style.display='';
-		 
-		 // #save_settings #cancel_settings
-	     if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ tPOP.toggleCollapse(); });
-        }       
-    });
-
+    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(){ tPOP.settings.init(); });
   }
  ,event_Userlink: function(){
     var nodes = $D('//a[contains(@class,"ktp-user_link")]');
@@ -531,7 +606,7 @@ var tPOP = {
     if(gvar.current.cEMOTE && $D('#show_emotes')){
       Dom.Ev($D('#show_emotes'), 'click', function(e){
         e=e.target||e;
-    	var _ret = parse_image(gvar.current.content, 'img', 1);
+    	var _ret = tTRIT.parse_image(gvar.current.content, 'img', 1);
     	$D('#preview_content').innerHTML = gvar.current.content = _ret;
     	Dom.remove(e);
       });
@@ -540,7 +615,7 @@ var tPOP = {
     if(gvar.current.cIMG && $D('#show_images')){
         Dom.Ev($D('#show_images'), 'click', function(e){
            e=e.target||e;
-           var _ret = parse_image(gvar.current.content, 'img', 2);
+           var _ret = tTRIT.parse_image(gvar.current.content, 'img', 2);
            $D('#preview_content').innerHTML = gvar.current.content = _ret;
     	   Dom.remove(e);
         });
@@ -589,7 +664,7 @@ var tPOP = {
  
   } // end addition events
  
- ,openQR: function(isFetching){
+ ,openQR: function(){
     $D('#qr_container_head').style.display='';
 	$D('#collapseobj_quickreply').style.display='';
 	
@@ -610,7 +685,7 @@ var tPOP = {
  ,toggleQuoting: function(isFetching){
     if(isUndefined(isFetching)) isFetching = false;
      if($D('#quote_loading')) $D('#quote_loading').style.display=(isFetching ? '' : 'none');
-	 if($D('#btn_reply_qr')) $D('#btn_reply_qr').style.display=(isFetching ? 'none' : '');
+	 if($D('#btn_quote_reply')) $D('#btn_quote_reply').style.display=(isFetching ? 'none' : '');
 
  }
  ,toggleSticky: function(flag, caller){
@@ -702,7 +777,6 @@ var tQR = {
             var C = (!e ? window.event : e );
 			var A = C.keyCode ? C.keyCode : C.charCode;
             if( A===13 ){ // mijit enter
-			    show_alert(A);
                 SimulateMouse($D('#preview_submit'), 'click', true);
                 C = do_an_e(C);
             }else if( A===9 ){ // mijit tab
@@ -750,6 +824,7 @@ var tQR = {
   }
  ,event_TPL_vB: function(){
 	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });	
+	// #atitle
 	if($D('#atitle'))
 	 Dom.Ev($D('#atitle'), 'click', function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
@@ -761,52 +836,87 @@ var tQR = {
       else
         window.setTimeout(function() { try{Dom.g(gvar.id_textarea).focus();}catch(e){}; $D('#input_title').value=''; }, 100);
      }); // #atitle
+	// textarea keyevent
+	if(Dom.g(gvar.id_textarea))
+	 Dom.Ev( Dom.g(gvar.id_textarea), 'keydown', function(e){
+	    var C = (!e ? window.event : e );
+		var CSA = (C.ctrlKey ? '1':'0')+','+(C.shiftKey ? '1':'0')+','+(C.altKey ? '1':'0');
+		var A = C.keyCode ? C.keyCode : C.charCode;
+		if( A===9 ){ // mijit tab
+			if($D('#recaptcha_response_field')) $D('#recaptcha_response_field').focus();
+            C = do_an_e(C);
+        }else if(CSA=='1,0,0' && A===13){ // Ctrl + Enter
+		    SimulateMouse($D('#preview_submit'), 'click', true);		
+            C = do_an_e(C);
+		}
+	 });
   }
  ,fetch: function(pid){
     // colecting necessary hidden value
-    getFetch(gvar.domain+'newreply.php?do=newreply&p='+pid, tQR.fetch_cb, true);
+	tQR.uri_lastFetch = gvar.domain+'newreply.php?do=newreply&p='+pid;
+    getFetch(tQR.uri_lastFetch, tQR.fetch_cb, true);
   }
  ,fetch_cb: function(reply_html){
 	if( !reply_html ) return;
 	reply_html = reply_html.responseText;
 	tPOP.toggleQuoting(false);
-	
-	if( !gvar.current.QR_isLoaded ){
-	  $D('#qr_container').innerHTML = rSRC.getTPL_qr();	
-	  tQR.event_TPL_vB();
-	  $D('#loggedin_as').innerHTML = '&nbsp;'
-	   +HtmlUnicodeDecode('&#8592;')+'&nbsp;[<small>Logged in as</small>&nbsp;<a class="cyellow" href="./member.php?u='+gvar.user.id+'">'
-	   +gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b class="cred">$</b>':'')+']';
-	  $D('#button_preview').style.display = '';
-	  gvar.current.QR_isLoaded = 1;
-	}
-	if(gvar.user.isDonatur){
-	    // kill capcay container
-	    Dom.remove('recapctha_header');
-	    Dom.remove('recaptcha_cont');
-	}else{
-	    // click to build recapctha & keep click to reload
-        SimulateMouse($D('#hidrecap_btn'), 'click', true);
-	}
 	// parse response then fill hidden values
 	gvar.current.qr_fetch = tQR.parse_fetch(reply_html);
-	vB_textarea.init();
-	vB_textarea.add(gvar.current.qr_fetch);
-	var snapTo = function(){
-      //vB_textarea.init();
-	  if(gvar.current.qr_fetch === null){
-	    var notice = $D('#quoted_notice');
-		addClass('g_notice-error', notice);
-	    notice.innerHTML = 'Fetch failed, server might be busy.'; // <a href="javascript:;" id="quote_now">Try again</a>
-	    notice.setAttribute('style','display:block;');
+	
+
+	if(gvar.current.qr_fetch === null){
+	   tQR.fetch_error();
+	}else{
+	   var snapTo = function(){
+	    if(gvar.current.qr_fetch === null)
+		  tQR.fetch_error(true);
+	    vB_textarea.focus();
+	  };
+	
+	  if( !gvar.current.QR_isLoaded ){
+	    $D('#qr_container').innerHTML = rSRC.getTPL_qr();	
+	    tQR.event_TPL_vB();
+	    $D('#loggedin_as').innerHTML = '&nbsp;'
+	     +HtmlUnicodeDecode('&#8592;')+'[<small>Logged in as</small>&nbsp;<a class="cyellow" href="./member.php?u='+gvar.user.id+'">'
+	     +gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b class="cred">$</b>':'')+']';
+	    $D('#button_preview').style.display = '';
+	    gvar.current.QR_isLoaded = 1;
+	  }
+	  if(gvar.user.isDonatur){
+	      // kill capcay container
+	      Dom.remove('recapctha_header');
+	      Dom.remove('recaptcha_cont');
 	  }else{
-	    //vB_textarea.add(gvar.current.qr_fetch);
-	  }	  
-	};
-	ss.STEPS = 10; // scroll speed; smaller is faster
-    ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ snapTo() } );
+	      // click to build recapctha & keep click to reload
+          //SimulateMouse($D('#hidrecap_btn'), 'click', true);
+	  }
+	  if(gvar.current.qr_fetch!=vB_textarea.content){
+	    vB_textarea.init();
+	    vB_textarea.add(gvar.current.qr_fetch);
+		// click to build recapctha & keep click to reload
+        SimulateMouse($D('#hidrecap_btn'), 'click', true);
+	  }
+	  ss.STEPS = 10; // scroll speed; smaller is faster
+      ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ snapTo() } );
+	}
   }
   
+ ,fetch_error: function(isQuote){
+    var notice, msg = 'Fetch failed, server might be busy. <a href="javascript:;" id="try_again_now">Try again</a>';
+	isQuote = (isUndefined(isQuote) ? false : isQuote);
+	if( !isQuote ){
+      notice = $D('#qr_container');	
+	  notice.innerHTML = '<div class="g_notice-error g_notice">'+msg+'</div>';
+	}else{
+      notice = $D('#quoted_notice');
+	  addClass('g_notice-error', notice);
+	  notice.innerHTML = msg;	
+	}
+	Dom.Ev($D('#try_again_now'), 'click', function(){
+	  if(notice) notice.innerHTML = '<div>'+_LOADING+'</div>';
+	  tQR.fetch(tQR.uri_lastFetch);
+	});
+  }
  ,unescapeHtml: function(text){
     // clean-up fetched post
     if(!text) return '';
@@ -857,7 +967,7 @@ var tQR = {
     if(!rrf) return;
     ret = (!rrf || (rrf && rrf.value.trim()=='') ? false : true );
     if( !ret ){
-      alert('Belum Mengisi capcay...');
+      alert('Belum mengisi reCapcay, coy!');
       window.setTimeout(function() { $D('#recaptcha_response_field').focus();}, 200)	 
     }
     return ret;
@@ -931,17 +1041,17 @@ var tQR = {
 	if(spost===false) {
       //SimulateMouse($D('#imghideshow'), 'click', true);
       return false;
-    }	
-	GM_XHR.uri = gvar.curThread.action;
+    }
+	GM_XHR.uri = gvar.current.action;
     GM_XHR.cached = true;
-    GM_XHR.request(spost.toString(),'post', post_cb);
+    GM_XHR.request(spost.toString(), 'POST', tQR.post_cb);
  }
  ,post_cb: function(reply_html){
     if( !reply_html ) return;
 	reply_html = reply_html.responseText;
 	
  clog(reply_html);
-	var retpost = callback_post(reply_html);
+	var retpost = tQR.parse_post(reply_html);
  clog('error='+retpost.error+ '; msg='+retpost.msg);
 	
 	var notice = $D('#quoted_notice');
@@ -949,6 +1059,8 @@ var tQR = {
 	   addClass('g_notice-error', notice);
 	   notice.innerHTML = retpost.msg;
 	   notice.setAttribute('style','display:block;');
+	   
+	   tQR.parse_fetch(reply_html); // updating hidden value
 	   tQR.lockInput(false); // reopen the hive :D
 	   // reload capcay
 	   SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
@@ -961,7 +1073,10 @@ var tQR = {
 		 tQR.after_post('redirect', function(){ location.href=retpost.redirect; });
 	   }else{
 	     msg+= ' Closing...';
-		 tQR.after_post('close', function(){ tPOP.closeLayerBox('hideshow'); });
+		 tQR.after_post('close', function(){ 
+		   tPOP.closeLayerBox('hideshow');
+		   if(gvar.setting.reload_aftersent) window.setTimeout(function() { location.href = (location.href.replace(/\&page=\d+/,'')); }, 50);
+		 });
 	   }
 	   $D('#qr_container').innerHTML = '<div id="quoted_notice" class="g_notice" style="display:block;">'+msg+'</div>';
 	}
@@ -979,29 +1094,28 @@ var tQR = {
    }
    return ret;
   }
- ,after_post: function(){
+ ,after_post: function(mode, fn){
     if(isUndefined(mode)) mode = 'close';
-    gvar.blinkRow=20;
+    gvar.blinkRow=10;
     var myvar = "";
     var mcallback = (typeof(fn)=='function' ? fn : null);
+	window.status = (mode=='close' ? "Closing..." : "Redirecting...");
     gvar.sITryDonePost = window.setInterval(function() {
-      window.status = (mode=='close' ? "Closing..." : "Redirecting...") + myvar;
       myvar+= " .";
+      window.status+= myvar;
       if(gvar.blinkRow > 0){
         gvar.blinkRow -= 1;
       }else{
    	    clearInterval(gvar.sITryDonePost);
         if(mcallback) mcallback();
       }
-    }, 100); 
+    }, 150); 
   }
 
 }; // end tQR
 
-
 // ========
 // common function
-
 function getFetch(u, cb, cache){
   if(isUndefined(u)) return;
   cache = (isUndefined(cache) ? true : cache);
@@ -1020,8 +1134,6 @@ function chk_kfti_pos(){
   }catch(e){gvar.fixed_ktfi=false;}
   gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
 }
-
-
 // end-common function
 
 // static routine
@@ -1530,11 +1642,12 @@ var rSRC = {
     +'.spacer{height:5px;}'
     +'.spc1{height:1px;}'
     +'a.cyellow{color:#F0F000!important;}'
+    +'.cblue{color:#000080!important;}'
     +'.cred{color:#FF0000!important;}'
     +'.qrsmallfont, .qrsmallfont div, .g_notice{font-size:11px;}'
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
-    //+'#preview_content div table{width:auto;}'
+    +'.nodeco{text-decoration:none;}'
     +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
@@ -1638,11 +1751,11 @@ var rSRC = {
  +   '<div id="preview_content"></div>' // main post-content
  + (gvar.user.id ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
- +    '<a id="btn_reply_qr" onclick="return false" href="javascript:;" target="_blank" style="margin-right:5px;">'
- +     '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick-Reply" title="Quick Reply this message" border="0"/></a>'
- +    '<span id="quote_loading" style="margin-right:5px;display:none;">'+_LOADING+'</span>'
- +    '<a id="btn_reply_quote" href="javascript:;" target="_blank">'
- +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border="0"/></a>'
+ //+    '<a id="btn_reply_qr" onclick="return false" href="javascript:;" target="_blank" style="margin-right:5px;">'
+ //+     '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick-Reply" title="Quick Reply this message" border="0"/></a>'
+ +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
+ +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Quote & Quick Reply this Message" border="0"/></a>'
+ +     '<div id="quote_loading" style="margin-right:5px;padding:3px;display:none;">'+_LOADING+'</div>'
  +   '</div>' : '') // #container_reply
 
  +  '</td></tr>'
@@ -1711,7 +1824,7 @@ var rSRC = {
  +'<input type="hidden" name="wysiwyg" value="0" />'
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
  +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
- +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;">Then Goto Thread</small></label></span>'
+ +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label></span>'
  +   '</div>' // #button_preview
  +(gvar.user.id ? '</form>' : '')
  
@@ -1737,19 +1850,19 @@ var rSRC = {
  + '</td></tr><tr>'
  + '<td id="td_setting_control" valign="top" style="padding-left:5px;">'
  +  '<div style="padding:1px 0 3px 25px;"><b>::QR::</b></div>'
- +  '<input id="misc_autolayout_sigi" type="checkbox" /> AutoSignature&nbsp;'
+ +  '<input id="stg_autolayout_sigi" type="checkbox" /> AutoSignature&nbsp;'
  +  '<small><a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
  +  '<div id="edit_sigi_Editor" style="display:none;"></div>'
  +spacer
- +  '<input id="misc_autolayout_tpl" type="checkbox" /> AutoLayout&nbsp;'
+ +  '<input id="stg_autolayout_tpl" type="checkbox" /> AutoLayout&nbsp;'
  +  '<small><a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
  +  '<div id="edit_tpl_Editor" style="display:none;"></div>'
  +spacer
  +  '<input id="misc_autoshow_smile" type="checkbox" /> AutoLoad Smiley<br />'
  +  '<small style="margin-left:20px;">'
- +   '<label for="misc_autoshow_smile_kecil"><input id="misc_autoshow_smile_kecil" type="radio" value="kecil" />kecil</label>&nbsp;'
- +   '<label for="misc_autoshow_smile_besar"><input id="misc_autoshow_smile_besar" type="radio" value="besar" />besar</label>&nbsp;'
- +   '<label for="misc_autoshow_smile_custom"><input id="misc_autoshow_smile_custom" type="radio" value="custom" />[+]</label>'
+ +   '<label for="stg_autoshow_smile_kecil"><input name="rd_sml" id="stg_autoshow_smile_kecil" type="radio" value="kecil" />kecil</label>&nbsp;'
+ +   '<label for="stg_autoshow_smile_besar"><input name="rd_sml" id="stg_autoshow_smile_besar" type="radio" value="besar" />besar</label>&nbsp;'
+ +   '<label for="stg_autoshow_smile_custm"><input name="rd_sml" id="stg_autoshow_smile_custm" type="radio" value="custom" />[+]</label>'
  +  '</small>'
  +spacer
    
@@ -1757,22 +1870,29 @@ var rSRC = {
  
  + '<td width="220" style="border-left:1px solid #000; padding-left:5px;" valign="top">'
  +  '<div style="padding:1px 0 3px 25px;"><b>::General::</b></div>'
- //gvar.noCrossDomain
- +  '<label for="misc_updates" title="Check Userscripts.org for QR latest update"><input id="misc_updates" type="checkbox" /> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a></small>'
- +spacer
- +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval:&nbsp;<input id="misc_updates_interval" type="text" value="1" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
- +spacer
  
- +  '<input id="misc_autoload_qr" type="checkbox" /> AutoLoad QR<br />'
- +  '<input id="misc_autoshow_spoiler" type="checkbox" /> AutoShow Spoiler<br />'
- +  '<input id="misc_showimages" type="checkbox" /> Show Images<br />'
- +  '<small style="margin-left:20px;">'
- +   '<label for="misc_showimages_external"><input id="misc_showimages_external" type="checkbox" /> External</label>' + '&nbsp;&nbsp;'
- +   '<label for="misc_showimages_emotes"><input id="misc_showimages_emotes" type="checkbox" /> Emotes-Only</label>'
- +  '</small>'
+ +(!gvar.noCrossDomain ? ''
+ +  '<label for="stg_updates" title="Check Userscripts.org for QR latest update"><input id="stg_updates" type="checkbox" '+(gvar.setting.updates==1 ? 'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a></small>'
  +spacer
- +  '<input id="misc_scrollto_lastrow" type="checkbox" /> Scroll to Last Opened Row<br />'
- +  '<input id="misc_reload_afterpost" type="checkbox" /> Reload after Posting<br />'
+ +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval&nbsp;<input id="stg_updates_interval" type="text" value="'+gvar.setting.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
+ +spacer : '') 
+ 
+ //+  '<input id="stg_autoload_qr" type="checkbox" /> AutoLoad QR<br />'
+ //+  '<input id="stg_autoshow_spoiler" type="checkbox" /> AutoShow Spoiler<br />'
+ // 
+ +'&nbsp;*<span style="margin-left:8px;">Images Policy</span><br />'
+ +'<div id="image_policy" style="margin-left:20px;font-size:10px;">'
+ +   '<label for="stg_showimages_none"><input name="rd_img" id="stg_showimages_none" type="radio" value="0" '+(gvar.setting.imgload==0?'checked':'')+'/>No-Image</label>' + '<br/>'
+ +   '<label for="stg_showimages_emot"><input name="rd_img" id="stg_showimages_emot" type="radio" value="1" '+(gvar.setting.imgload==1?'checked':'')+'/>Emotes-Only</label>' + '&nbsp;'
+ +   '<label for="stg_showimages_alll"><input name="rd_img" id="stg_showimages_alll" type="radio" value="2" '+(gvar.setting.imgload==2?'checked':'')+'/>Show All</label>'
+ +'</div>'
+ +spacer
+ +  '<input id="stg_scrollto_lastrow" type="checkbox" '+(gvar.setting.thread_lastscroll==1 ? 'checked':'')+'> Scroll to Last Position<br />'
+ +  '<input id="stg_reload_afterpost" type="checkbox" '+(gvar.setting.reload_aftersent==1 ? 'checked':'')+'/> Reload after Posting<br />'
+ 
+ +'<div style="height:6px;"></div>'
+ +'<a id="reset_default" class="nodeco" href="javascript:;"><small>reset default</small></a>'
+ +'<div style="height:6px;"></div>'
  +spacer
  + ''
 
@@ -1840,62 +1960,6 @@ var rSRC = {
 }
 
 }; // end rSRC
-function getSetOf(type){
-  if(isUndefined(type)) return false;
-  switch(type){
-    case "button":
-     return {
-      closepreview_png : ""
-        +"data:image/png;base64,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%3D%3D"
-      ,twbutton_gif : ""
-        +"data:image/gif;base64,R0lGODlhCgBYAsQfAPPz8+vr6/7+/uHh4fn5+eXl5d7e3vv7++jn6Ofo5/j4+Ojo6d/g4Ofn59/g3+Pk5OPj4/f29vv7+vz7/ODf3/"
-		+"Dw8Pb29vv8+/z8/ODf4O/v7+fn5unp6N/f3+Dg4P///yH5BAEAAB8ALAAAAAAKAFgCAAX/oCCOZGmeIqau7OG6UiwdRG3fSqTs/G79wCDAMiwSiYCkUllpOp+aqHQ"
-		+"a0FSvVmtgy+VyvoEvZxFeIBKLRQK93rg3hbf7UaAX6vQHZM/vD/6AgR6DhIUdBgaHHYuLiI6PkJEfk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2"
-		+"t7i5uru8vb6/wMHCw8TFxsfIycrLwijOz9DRLNMYEy8u1jAy2zM33gQ94TkR5OQW5UHpQElH7Evv8O9P8xVT9VL3U/pXW1ld/wABihko5kyDBAgaIFCTYEMDOQ7d3"
-		+"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
-		+"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
-		+"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
-      ,sticky1_png : ""
-        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAIAAADgN5EjAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABS0l"
-		+"EQVR42mNgoD9gROPPmDoHU5HEx90MDAy6vA+Uc09i1zlj6pz0rOSZ0+Ym232EC97dPIWVV4xXXPbzy8e/P79i5RWD6GdB08bAwPCHEWHcowOrhFSMBWS0GRgYBGS0P"
-		+"zy5+u7OWYgUE5o2NPDhyXWINgiAsO9ONkexc+a0uci2QQA3vzCaCCuvGISB0InsNzj4+vHtz4+v2Pmhqn9+fPXhyXXjzk8I12IF53577P9t+/T8jg9PrjIwMHx4cvXV"
-		+"nXMCMprodmJqm7lkKQODvqGSHevLdY/P7mJgYBCQ0YRHDAsebSJCQrXGdzlkhBkYwuQYGOYe4s/IToGrYcGlzdvJxU/+PAODCi5HsWBqW7tte3pMtBHrDvypjwVN2+k"
-		+"TJ2qN73IQ0oai88eTO0/+vky3/YDHhdh1csio+DGcJyevYM0lyAA5YIccAAA3ZH1T/MtQvwAAAABJRU5ErkJggg=="
-      ,sticky2_png : ""
-        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUBAMAAACdextHAAAAMFBMVEUEAgSkoqT8+vx8fnzEwsT8/vy6APHcAHYAADoAADUAAPEAAHZ"
-		+"AgtgMAAROAAABAAD3wbpfAAAAEHRSTlMA////////////////////wFCLQwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAGtJREFUeNqNzssNgDAMA9B2A1LIAqW5g9IFg"
-		+"ExQyfuvQj9wRMKnp8iy4txHPBHp1smMNXd7cNnNGkNltmWuJOKymDWyAHkUGEhqx8NLVfuWJAWmxhCv8yGnjJeHyFsIMaIMSoGMa3uMyP3IDRceE8PdUxi6AAAAAEl"
-		+"FTkSuQmCC"
-      ,updates_png : ""
-        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAARCAIAAACNaGH2AAAABnRSTlMA/wD/AP83WBt9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABg0"
-        +"lEQVR42n2SPW4UQRCFX417MXh3JbJ1hIwRxyBCGImjICQHIALOYF+Bi8AduIYdIeT9m5mq9xHMYhLMUwUt9Wu9r6orvv64/Nn/2o61NvvyOnNbtRkzbZepciZVT"
-        +"p90j7vduIEgQoGxAgAhIYENAoHX47ob7JQSyjJyTa4ACRQRIaGITkTb2X15MGknpFxQWEIStpBCANA2maM9mgH6cqLRhGQDYGFTxgjaNisVCUN5lIeskcMdJiSQN"
-        +"FGpbbKIGOzR9NCDEDaG8p9eNYG1TVnBYKcZjKdQeRrEAYPCKKLtsko2SiOMLXAac18ThqDtXUyIAYXLwgJXyWDbU45ALfd9N2sytiVxSOAAXBaOCEC4HWe3G3fRd"
-        +"YojYaZ/G0ZXSaKmd4E9ny3jZn1zu7mV9On7RxBOzNvzi4uX7yYAxTQPnS5P22q+Ws1XklyF3bX24unZ51df9C+1+xNZR0+Oz5fPr95c6wH9dc8WJ2eLZ1evrxePF"
-        +"g+5D+sCvP/24a6/47/6DW1k0UQglGH2AAAAAElFTkSuQmCC"
-     };
-    break;
-  };
-  return false;
-}
 
 // end- main Object
 // ------
