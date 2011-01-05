@@ -3,9 +3,9 @@
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
 // @dtversion     110103101
-// @timestamp     1294080423720
+// @timestamp     1294206450140
 // @description	  Preview vbuletin thread, without having to open the thread.
-// @author        Indra Prasetya
+// @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
 // @include       */forumdisplay.php?*
 // @include       */usercp.php*
@@ -14,7 +14,7 @@
 // -!--latestupdate
 //
 //
-//  v1.0 - 2011-01-04
+//  v1.0 - 2011-01-05
 //    init recoded
 //
 // -/!latestupdate---
@@ -26,7 +26,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1294080423720 // version.timestamp
+  timestamp: 1294206450140 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -36,7 +36,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 OPTIONS_BOX = {
@@ -67,6 +67,7 @@ function init(){
   
   gvar.zIndex = 99997; // one level above KFTI
   gvar.offsetTop= -35; // buat scroll offset
+  gvar.offsetMaxHeight= 130; // buat maxHeight adjust
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
   
@@ -78,11 +79,9 @@ function init(){
   
   gvar.B= rSRC.getSetOf('button');
   gvar.TS= {}; // all about TS: {id:'',name:'',tid:'',pid:'',urifetch:''}
-  gvar.LPOST= {}; // all about LASTPOST: {id:'',name:'',pid:'',urifetch:''}
-  gvar.current= {} // {cImg:'',cEmote:'',cSPL:'',content:''}
-  gvar.current.isLastPost = false; // whether is TS or Last Post
-  gvar.user= tTRIT.getUserId(); // all about LASTPOST: {id:'',name:'',isDonat:[1,0]}
-
+  gvar.LPOST= {}; // all about LASTPOST: {id:'',name:'',pid:'',urifetch:''}  
+  gvar.user= {}; // all about logged is user: {id:'',name:'',isDonat:[1,0]}
+  gvar.current= {}; // {cImg:'',cEmote:'',cSPL:'',content:'',isLastPost:'',QR_isLoaded:''}
 
   //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.setting.fixed_preview) );
   GM_addGlobalStyle( rSRC.getCSS() );
@@ -128,6 +127,7 @@ function start_Main(){
 
 } // end start_Main
 
+
 var LINK = {
   getTID: function(link){
     var cucok = link.match(/\.php\?t=(\d+)/im);
@@ -140,6 +140,7 @@ var LINK = {
   }
 };
 
+
 var tTRIT = {
   init: function(){
     // append icon [+] on all thread & lastpost link
@@ -149,7 +150,7 @@ var tTRIT = {
      for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
       node = nodes.snapshotItem(i);
 	  tid = LINK.getTID(node.href);
-	  Attr = {id:'remoteID_'+tid,'class':'thread_preview',style:'',rel:node.href};
+	  Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
 	  el = createEl('span',Attr,'[+]');
 	  par = node.parentNode; // parent of cont (DIV)
 	  par.insertBefore(el, par.firstChild);
@@ -160,7 +161,7 @@ var tTRIT = {
 	  lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
 	  if(lnodes){
 	    pid = LINK.getPID(lnodes.href);
-		Attr = {id:'remoteID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+		Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
 		el = createEl('span',Attr,'[+]');
 		Dom.add(el, lnodes.parentNode);
 	  }
@@ -168,6 +169,7 @@ var tTRIT = {
 	  Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
 	 }
 	}
+	gvar.user= tTRIT.getUserId();
   }
  ,collectRowInfo: function(e){
     var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost' : 'firstpost');
@@ -195,7 +197,7 @@ var tTRIT = {
 	// nyari LPOST, actualy needed only on lastpost
 	cucok = inner.match(/by\s*<[^>]+.([^<]+).\/a>/im);
 	gvar.LPOST = (cucok ? {id:'#', name:cucok[1]} : {id:null,name:null} ); // # dulu id-nya
-	cucok = inner.match(/id=[\'\"]remoteID_(\d+)/m);
+	cucok = inner.match(/id=[\'\"]remotePID_(\d+)/m);
 	gvar.LPOST.pid = (cucok ? cucok[1] : null);
 	
 	clog('TS.id:'+gvar.TS.id+'; TS.name:'+gvar.TS.name+'; TS.tid:'+gvar.TS.tid+'; TS.pid:'+gvar.TS.pid+'; ');
@@ -204,6 +206,8 @@ var tTRIT = {
  }
  ,clickNode: function(e){
     e = e.target||e;
+	// reset this gvar.
+	gvar.current= {};
 	if($D('#hideshow')) {
 	  tPOP.closeLayerBox('hideshow');
 	  if($D('#prev_loader')) $D('#prev_loader').parentNode.innerHTML = '[+]';
@@ -233,7 +237,7 @@ var tTRIT = {
     getFetch(gvar.current.tofetch, tTRIT.fetch_cb);
   }  
  ,is_fetch_expire: function(){
-	var caller_id = 'remoteID_' + (gvar.current.isLastPost ? gvar.LPOST.pid : gvar.TS.tid);
+	var caller_id = (gvar.current.isLastPost ? 'remotePID_'+gvar.LPOST.pid : 'remoteTID_'+gvar.TS.tid);
     return ( !$D('#' + caller_id) );
   }
  ,fetch_cb: function(reply_html){
@@ -353,7 +357,6 @@ var tTRIT = {
    }
    return text;
   }
-  
  ,getUserId: function(){
     var logusers = $D("//a[contains(@href, 'member.php')]", null, true);
     if(logusers){
@@ -362,7 +365,9 @@ var tTRIT = {
     }
     return (logusers && ret ? ret : false);
   }
+
 }; // end tTRIT
+
 
 var tPOP = {
   init: function(rets){
@@ -384,7 +389,8 @@ var tPOP = {
 	  Dom.Ev($D('#btn_reply_qr'), 'click', function(){
 		tPOP.toggleQuoting(true);
 		var uri = gvar.current.newreply;
-		if( tQR.isLoaded() ){
+		//if( tQR.isLoaded() ){
+		if( gvar.current.QR_isLoaded ){
 		  tQR.fetch(uri);
 		}else{
 		  tPOP.openQR();
@@ -424,12 +430,17 @@ var tPOP = {
     if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ tPOP.toggleCollapse(); });
     if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(){ tPOP.toggleCollapse(); });
 
+	// detect window resize to resize textbox and controler wraper
+    Dom.Ev(window, 'resize', function() { 
+      Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.setting.fixed_preview );
+	});	
 	
 	// qr_button
-    Dom.Ev($D('#qr_button'), 'click', function(){
+	if(gvar.user.id && $D('#qr_button'))
+     Dom.Ev($D('#qr_button'), 'click', function(){
       tPOP.openQR();	  
 	  tQR.init(gvar.current.newreply+'&noquote=1');
-	});
+	 });
     
 	// #preview_setting
     if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(){
@@ -570,13 +581,11 @@ var tPOP = {
 	  if( gvar.current.cEMOTE || gvar.current.cIMG || gvar.current.cSPL )
         $D('#thread_separator').style.setProperty('display','','');
 	  
-	  //if( $D('#last_post') && Dom.g(gvar.LPOST.pid) )
-	  if( $D('#last_post') && $D('#remoteID_'+gvar.LPOST.pid) )
-        Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse($D('#remoteID_'+gvar.LPOST.pid), 'click', true); });
-        //Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse(Dom.g(gvar.LPOST.pid), 'click', true); });
+	  clog(gvar.LPOST.pid)
+	  clog($D('#remotePID_'+gvar.LPOST.pid).getAttribute('rel'));
+	  if( $D('#last_post') && $D('#remotePID_'+gvar.LPOST.pid) )
+        Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse($D('#remotePID_'+gvar.LPOST.pid), 'click', true); });		
 	}
-		  
-    
  
   } // end addition events
  
@@ -612,7 +621,7 @@ var tPOP = {
     Dom.g('css_position').innerHTML = rSRC.getCSS_fixed(flag);
     var yNow = parseInt(ss.getCurrentYPos());
     
-    var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-160-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
+    var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-gvar.offsetMaxHeight-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
     var vnewtop = (flag ? gvar.offsetLayer : newOfset);
     obj.style.setProperty('top', vnewtop+'px', '');
     if($D("#imgsticky"))
@@ -755,21 +764,21 @@ var tQR = {
   }
  ,fetch: function(pid){
     // colecting necessary hidden value
-    getFetch('newreply.php?do=newreply&p='+pid, tQR.fetch_cb, true);
+    getFetch(gvar.domain+'newreply.php?do=newreply&p='+pid, tQR.fetch_cb, true);
   }
  ,fetch_cb: function(reply_html){
 	if( !reply_html ) return;
 	reply_html = reply_html.responseText;
 	tPOP.toggleQuoting(false);
 	
-	//tPOP.toggleQuoting(true);
-	if( !tQR.isLoaded ){
+	if( !gvar.current.QR_isLoaded ){
 	  $D('#qr_container').innerHTML = rSRC.getTPL_qr();	
 	  tQR.event_TPL_vB();
 	  $D('#loggedin_as').innerHTML = '&nbsp;'
 	   +HtmlUnicodeDecode('&#8592;')+'&nbsp;[<small>Logged in as</small>&nbsp;<a class="cyellow" href="./member.php?u='+gvar.user.id+'">'
 	   +gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b class="cred">$</b>':'')+']';
-	  $D('#button_preview').style.display = '';	  
+	  $D('#button_preview').style.display = '';
+	  gvar.current.QR_isLoaded = 1;
 	}
 	if(gvar.user.isDonatur){
 	    // kill capcay container
@@ -780,20 +789,19 @@ var tQR = {
         SimulateMouse($D('#hidrecap_btn'), 'click', true);
 	}
 	// parse response then fill hidden values
-	//var content = tQR.parse_fetch(reply_html);
 	gvar.current.qr_fetch = tQR.parse_fetch(reply_html);
-	var snapTo = function(){	  
-      vB_textarea.init();
-      //vB_textarea.clear();
+	vB_textarea.init();
+	vB_textarea.add(gvar.current.qr_fetch);
+	var snapTo = function(){
+      //vB_textarea.init();
 	  if(gvar.current.qr_fetch === null){
 	    var notice = $D('#quoted_notice');
 		addClass('g_notice-error', notice);
 	    notice.innerHTML = 'Fetch failed, server might be busy.'; // <a href="javascript:;" id="quote_now">Try again</a>
 	    notice.setAttribute('style','display:block;');
 	  }else{
-	    vB_textarea.add(gvar.current.qr_fetch);
-	  }
-	  
+	    //vB_textarea.add(gvar.current.qr_fetch);
+	  }	  
 	};
 	ss.STEPS = 10; // scroll speed; smaller is faster
     ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ snapTo() } );
@@ -987,11 +995,8 @@ var tQR = {
       }
     }, 100); 
   }
-//,init: function(){}
 
-
-//,init: function(){}
-};
+}; // end tQR
 
 
 // ========
@@ -1589,7 +1594,7 @@ var rSRC = {
 ,getCSS_fixed: function(fixed){
   return (''
    +'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
-   +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - 160 - gvar.offsetLayer)+'px; }'
+   +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - gvar.offsetMaxHeight - gvar.offsetLayer)+'px; }'
    +'#preview_content div table{max-width:95%;overflow:auto;}'
   );
  }
@@ -1628,15 +1633,18 @@ var rSRC = {
  +   '</td>'
  +  '</tr><tr id="row_content">'
  +  '<td class="alt1">'
+
  +   '<div id="post_detail"></div>' // kaskus badge | user detail
  +   '<div id="preview_content"></div>' // main post-content
+ + (gvar.user.id ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
  +    '<a id="btn_reply_qr" onclick="return false" href="javascript:;" target="_blank" style="margin-right:5px;">'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick-Reply" title="Quick Reply this message" border="0"/></a>'
  +    '<span id="quote_loading" style="margin-right:5px;display:none;">'+_LOADING+'</span>'
  +    '<a id="btn_reply_quote" href="javascript:;" target="_blank">'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border="0"/></a>'
- +   '</div>' // #preview_reply
+ +   '</div>' : '') // #container_reply
+
  +  '</td></tr>'
  +  '<tbody></table>'
 
@@ -1652,10 +1660,10 @@ var rSRC = {
  +    '<input type="button" id="show_emotes" class="twbtn twbtn-m" value="Show Emotes" style="" />'
  +    '<input type="button" id="show_images" class="twbtn twbtn-m" value="Show All Images" style="" />'
  +  '</div>'
- +  '<div id="thread_separator" style="height:25px; display:none;"></div>'
+ +  '<div id="thread_separator" style="height:25px; display:'+(gvar.current.isLastPost?'none':'')+';"></div>'
 
  // quick-reply form
- +'<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">'
+ +(gvar.user.id ? '<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">' : '')
  +   '<div style="display:none;">'
  +    '<input type="submit" name="real_submit" value="Submit Post"/>'
  +   '</div>'
@@ -1679,11 +1687,12 @@ var rSRC = {
  
  +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed 
  +  '<tr><td class="tcat">' 
- +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>' 
- +    '<a tabindex="207" id="preview_setting" href="javascript:;" class="cyellow hd_layer-right" style=""><b>Setting</b></a>' 
+ +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>'
+ + (gvar.user.id ? ''
+ +    '<a tabindex="207" id="preview_setting" href="javascript:;" class="cyellow hd_layer-right" style=""><b>Setting</b></a>'
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
- +    '</div>'
+ +    '</div>' : '')
  +  '</td></tr>'
  +  '</tfoot>' 
  +'</table>'
@@ -1704,7 +1713,7 @@ var rSRC = {
  +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
  +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;">Then Goto Thread</small></label></span>'
  +   '</div>' // #button_preview
- +'</form>'
+ +(gvar.user.id ? '</form>' : '')
  
  + '<div id="setting_container" style="position:absolute;right:1%;min-width:450px;border:2px outset;background:#F5F5FF;margin-top:1px;display:none;">'
  //+ rSRC.getTPL_setting()
