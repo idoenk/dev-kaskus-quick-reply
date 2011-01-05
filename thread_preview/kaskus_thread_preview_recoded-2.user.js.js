@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/
 // @version       1.0
 // @dtversion     110103101
-// @timestamp     1294206450140
+// @timestamp     1294206678821
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -26,7 +26,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1294206450140 // version.timestamp
+  timestamp: 1294206678821 // version.timestamp
 
  ,scriptID: 0 // script-Id
 };
@@ -361,7 +361,7 @@ var tTRIT = {
     var logusers = $D("//a[contains(@href, 'member.php')]", null, true);
     if(logusers){
       var uid = logusers.href.match(/member\.php\?u=(\d+$)/);
-      ret = {id:uid[1], name:logusers.innerHTML };
+      ret = {id:(uid ? uid[1] : null), name:(logusers ? logusers.innerHTML : null) };
     }
     return (logusers && ret ? ret : false);
   }
