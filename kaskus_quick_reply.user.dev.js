@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.1.0
-// @dtversion     110103310
-// @timestamp     1294071297798
+// @version       3.1.1
+// @dtversion     110107311
+// @timestamp     1294339106097
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,16 +13,19 @@
 //
 // -!--latestupdate
 //
+// v3.1.1 - 2011-01-07
+//   Improve reorder smiley(besar), Add missing emote :bingung
+//   
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 // v3.1.0 - 2011-01-03
 //   Fix (Opera) disabled checkbox QR-Hotkey on Settings not well-defined as 'checked'
 //   Fix prefer to define 'var' on global namespace (major issue Opera-11)
 //   Fix typo in getTPL mismatch syntax
 //   Fix check exist element before giving Event on toggle_setting
 //   Fix (Opera), deprecate isOpera, due-to missing hotkey checkbox element on TPL_Settings.
-//   
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.0.9 - 2011-01-01
 //   Fix (Opera) missing hotkey checkbox element on Settings
@@ -57,9 +60,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.0';
+gvar.sversion = 'v' + '3.1.1';
 gvar.scriptMeta = {
-  timestamp: 1294071297798 // version.timestamp
+  timestamp: 1294339106097 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -2976,8 +2979,8 @@ function getTPL_vbEditor(){
      lC[1] = (lC[0] ? lC[0].toLowerCase() : '');
     lS = (lUse.size ? lUse.size:'Size');
   }
-  var vbe =
-    '<table cellpadding="0" cellspacing="0" border="0">'
+  var vbe = ''
+    + '<table cellpadding="0" cellspacing="0" border="0">'
     +'<tr>'
     +'    <td id="vB_Editor_001" class="vBulletin_editor">'
     +'        <div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
@@ -3403,47 +3406,56 @@ Format will be valid like this:
 
 /* New Big Smilies */
 ,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
-,'501': [H+'ngakak.gif', ':ngakak', 'Ngakak']
-,'502': [H+'najis.gif', ':najis', 'Najis']
-,'503': [H+'s_sm_maho.gif', ':maho', 'Maho']
-,'504': [H+'hoax.gif', ':hoax', 'Hoax']
-,'505': [H+'marah.gif', ':marah', 'Marah']
-,'506': [H+'nosara.gif', ':nosara', 'No Sara Please']
-,'507': [H+'berduka.gif', ':berduka', 'Turut Berduka']
-,'508': [H+'sorry.gif', ':sorry', 'Sorry']
-,'509': [H+'sundul.gif', ':sup2:', 'Sundul']
-,'510': [H+'capede.gif', ':cd', 'Cape d...']
-,'511': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
-,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
-,'513': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
-,'514': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
-,'515': [H+'toastcendol.gif', ':toast', 'Toast']
 
-,'516': [H+'recseller.gif', ':recsel', 'Recommended Seller']
-,'517': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
-,'518': [H+'jempol1.gif', ':thumbup', 'Jempol']
-,'519': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
-,'520': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
-,'521': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
-,'522': [H+'takut.gif', ':takut', 'Takut']
-,'523': [H+'mewek.gif', ':mewek', 'Mewek']
-,'524': [H+'selamat.gif', ':selamat', 'Selamat']
-,'525': [H+'dp.gif', ':dp', 'DP']
-,'526': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'501': [H+'najis.gif', ':najis', 'Najis']
+,'502': [H+'s_sm_maho.gif', ':maho', 'Maho']
+,'503': [H+'hoax.gif', ':hoax', 'Hoax']
+,'504': [H+'marah.gif', ':marah', 'Marah']
+,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
+,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
+,'507': [H+'sorry.gif', ':sorry', 'Sorry']
 
-,'527': [H+'request.gif', ':request', 'Request']
-,'528': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
-,'529': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
-,'530': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
-,'531': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'532': [H+'traveller.gif', ':travel', 'Traveller']
-,'533': [H+'nohope.gif', ':nohope', 'No Hope']
-/* new-emote Dec-2010 */
-,'534': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-,'535': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
-,'536': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
-,'537': [H+'ultah.gif', ':ultah', 'Ultah']
-,'538': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'508': [H+'capede.gif', ':cd', 'Cape d...']
+,'509': [H+'nohope.gif', ':nohope', 'No Hope']
+,'510': [H+'bingung.gif', ':bingung', 'Bingung']
+
+,'511': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'512': [H+'dp.gif', ':dp', 'DP']
+,'513': [H+'takut.gif', ':takut', 'Takut']
+,'514': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+
+,'515': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'516': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'517': [H+'toastcendol.gif', ':toast', 'Toast']
+,'518': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
+,'519': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+
+,'520': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+
+,'521': [H+'mewek.gif', ':mewek', 'Mewek']
+,'522': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'523': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+
+,'524': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'525': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'526': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'527': [H+'selamat.gif', ':selamat', 'Selamat']
+
+,'528': [H+'ultah.gif', ':ultah', 'Ultah']
+,'529': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'530': [H+'request.gif', ':request', 'Request']
+,'531': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+
+,'532': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'533': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'534': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'535': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'536': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'538': [H+'traveller.gif', ':travel', 'Traveller']
+
+/* Dec-2010, :kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
+,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
