@@ -1,20 +1,24 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded-2
-// @namespace     http://userscripts.org/scripts/show/
+// @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0
-// @dtversion     110103101
-// @timestamp     1294243176560
+// @dtversion     110108100
+// @timestamp     1294425859937
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
 // @include       */forumdisplay.php?*
 // @include       */usercp.php*
 // @include       */subscription.php?*
+// @include       */member.php?*
+// @include       */search.php?do=finduser&u=*&starteronly=1
+// @include       http://www.kaskus.us/
 //
 // -!--latestupdate
 //
 //
-//  v1.0 - 2011-01-05
+//  v1.0 - 2011-01-08
+//    support wide-range location
 //    fill setting with event
 //    init recoded
 //
@@ -27,9 +31,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1294243176560 // version.timestamp
+  timestamp: 1294425859937 // version.timestamp
 
- ,scriptID: 0 // script-Id
+ ,scriptID: 94448 // script-Id
 };
 /*
 javascript:window.alert(new Date().getTime());
@@ -37,21 +41,32 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug| 
+gvar.__DEBUG__ = false; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
 OPTIONS_BOX = {
   // free set
-  KEY_KTP_FIXED_PREVIEW: ['1'] // fixed position or absolute
+  KEY_KTP_FIXED_PREVIEW:   ['1'] // fixed position or absolute
  ,KEY_KTP_THEN_GOTHREAD:   ['0'] // goto-thread after submit post
  
  ,KEY_KTP_UPDATES:         ['1'] // settings check update
  ,KEY_KTP_UPDATES_INTERVAL:['1'] // settings update interval, default: 1 day
  
- ,KEY_KTP_SCROLL_THREAD: ['1'] // scroll to last opened-thread
+ ,KEY_KTP_SCROLL_THREAD:   ['0'] // scroll to last opened-thread
  ,KEY_KTP_IMGLOAD:         ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
- ,KEY_KTP_RELOAD_AFTERSENT:['0'] // fresh reload after send reply
+ ,KEY_KTP_RELOAD_AFTERSENT:['1'] // fresh reload after send reply
+ 
+ ,KEY_KTP_SHOW_SMILE:      ['0,kecil']   // [flag,type] of autoshow_smiley
+ ,KEY_KTP_LAYOUT_CONFIG:   ['']  // flag of [signature_on, template_on], 
+ ,KEY_KTP_LAYOUT_SIGI:     [''] // signature layout, eg. [RIGHT]&#8212;[SIZE=1][b]QR[/b][/SIZE]&#8482;[/RIGHT]
+ ,KEY_KTP_LAYOUT_TPL:      [''] // template layout, must contain: "{message}". eg. [B]{message}[/B]
+
+ ,KEY_KTP_SCUSTOM_ALT:     ['0'] // use alt instead of thumbnail
+ ,KEY_KTP_SCUSTOM_NOPARSE: ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
+ ,KEY_KTP_CUSTOM_SMILEY:   [''] // custom smiley, value might be very large; limit is still unknown 
+
+ ,KEY_KTP_LAST_UPDATE:     ['0'] // last update timestamp
 };
 GMSTORAGE_PATH      = 'GM_';
 KEY_KTP = 'KEY_KTP_';
@@ -76,22 +91,26 @@ function init(){
   gvar.zIndex = 99997; // one level above KFTI
   gvar.offsetTop= -35; // buat scroll offset
   gvar.offsetMaxHeight= 160; // buat maxHeight adjust
+   // min-height postbit assumed with OR w/o quote per singleline, [{adaQuote}, {ga_adaQuote}]
+  gvar.offSet_SiGi= [5, 8];
+  
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
   
-  gvar.setting = {};
+  gvar.user= tTRIT.getUserId(); // all about logged is user: {id:'',name:'',isDonat:[1,0]}
+  gvar.settings = {};
   getSettings();
   gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
   
   gvar.B= rSRC.getSetOf('button');
   gvar.TS= {}; // all about TS: {id:'',name:'',tid:'',pid:'',urifetch:''}
   gvar.LPOST= {}; // all about LASTPOST: {id:'',name:'',pid:'',urifetch:''}  
-  gvar.user= {}; // all about logged is user: {id:'',name:'',isDonat:[1,0]}
   gvar.current= {}; // {cImg:'',cEmote:'',cSPL:'',content:'',isLastPost:'',QR_isLoaded:''}
+  gvar.loc= location.href;
 
-  //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.setting.fixed_preview) );
+  //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.settings.fixed_preview) );
   GM_addGlobalStyle( rSRC.getCSS() );
-  GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.setting.fixed_preview), 'css_position', 1 ); // to body for css-fixed
+  GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 ); // to body for css-fixed
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
   GM_addGlobalScript( rSRC.getSCRIPT() );  
@@ -99,15 +118,17 @@ function init(){
   //-----Let's Roll-------
     start_Main();
   //----------------------
+  if(!gvar.noCrossDomain && gvar.settings.updates)
+    window.setTimeout(function(){ Updater.check(); }, 5000);
   
 } // end-init
-// populate setting value
+// populate settings value
 function getSettings(){
   /** 
-  eg. gvar.setting.fixed_preview
+  eg. gvar.settings.fixed_preview
   */  
 //  var hVal,hdc;
-  gvar.setting = {
+  gvar.settings = {
      fixed_preview:    (getValue(KEY_KTP+'FIXED_PREVIEW')=='1') // boolean
     ,then_goto_thread: (getValue(KEY_KTP+'THEN_GOTHREAD')=='1') // boolean
 	
@@ -117,16 +138,42 @@ function getSettings(){
     ,imgload: ( getValue(KEY_KTP + 'IMGLOAD') ) // [0,1,2]
     ,thread_lastscroll:(getValue(KEY_KTP+'SCROLL_THREAD')=='1') // boolean
     ,reload_aftersent: ( getValue(KEY_KTP + 'RELOAD_AFTERSENT')=='1' ) // boolean
-  };
-//UPDATES UPDATES_INTERVAL IMGLOAD THEN_GOTHREAD RELOAD_AFTERSENT
-//  gvar.setting.autoshow_spoiler = true;
-// 	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
-	// ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
-	// ,'stg_updates': 'UPDATES'
-// 
 	
-  chk_kfti_pos();  
+	// QR
+    ,scustom_alt: ( getValue(KEY_KTP + 'SCUSTOM_ALT')=='1' ) // boolean
+    ,scustom_noparse: ( getValue(KEY_KTP + 'SCUSTOM_NOPARSE')=='1' ) // boolean
+	,userLayout: {
+       config: [], //[[1,0], [1,0]] [signature_on, template_on]
+       signature:getValue(KEY_KTP+'LAYOUT_SIGI'),
+       template: getValue(KEY_KTP+'LAYOUT_TPL'),
+    },
+  };
   
+  //get layout config
+  hVal=tSTORAGE.getValueForId(gvar.user.id, 'LAYOUT_CONFIG');
+  if(!hVal) hVal = ['', '0,0'];
+  gvar.settings.userLayout.config = hVal[1].split(',');
+  
+  hVal=tSTORAGE.getValueForId(gvar.user.id, 'LAYOUT_SIGI', ['<!>','::']);
+  if(!hVal) hVal = ['', '[RIGHT]&#8212;[SIZE=1][b]QR[/b][/SIZE]&#8482;[/RIGHT]'];
+  gvar.settings.userLayout.signature = decodeURIComponent(hVal[1]).replace(/\\([\!\:])/g, "$1");
+  
+  hVal=tSTORAGE.getValueForId(gvar.user.id, 'LAYOUT_TPL', ['<!>','::']);
+  if(!hVal) hVal = ['', '[B]{message}[/B]'];  
+  gvar.settings.userLayout.template = decodeURIComponent(hVal[1]).replace(/\\([\!\:])/g, "$1");
+
+  // recheck updates interval
+  hVal=gvar.settings.updates_interval;
+  hVal=(isNaN(hVal)||hVal <= 0 ? 1 : (hVal > 99 ? 99 : hVal) );
+
+  //SHOW_SMILE, autoload_smiley
+  hVal=getValue(KEY_KTP+'SHOW_SMILE');
+  gvar.settings.autoload_smiley=(!hVal.match(/^([01]{1}),(kecil|besar|custom)+/) ? ['0','kecil'] : hVal.split(',') );  
+
+  //  gvar.settings.autoshow_spoiler = true;
+  
+  // check if kfti do sumthin like fixed itself	
+  chk_kfti_pos();
 }
 // end getSettings
 
@@ -146,6 +193,8 @@ function start_Main(){
 } // end start_Main
 
 
+// main Object
+
 var LINK = {
   getTID: function(link){
     var cucok = link.match(/\.php\?t=(\d+)/im);
@@ -158,36 +207,126 @@ var LINK = {
   }
 };
 
-
 var tTRIT = {
   init: function(){
-    // append icon [+] on all thread & lastpost link
-    var nodes = $D("//a[starts-with(@id,'thread_title')]");
-    var lnodes, node, href, tid, pid, par, Attr, el;
-    if(nodes.snapshotLength > 0){
-     for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
-      node = nodes.snapshotItem(i);
-	  tid = LINK.getTID(node.href);
-	  Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
-	  el = createEl('span',Attr,'[+]');
-	  par = node.parentNode; // parent of cont (DIV)
-	  par.insertBefore(el, par.firstChild);
-	  // attach event-click
-	  Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	var nodes, lnodes, node, href, tid, pid, par, Attr, el;
+	
+	var styles = ['font-size:10px;vertical-align:top;margin:0 5px 0 -18px;position:relative;', 'font-size:10px;',''];
+	var areas = {
+	     'navforumisi': {style:styles[0],pos:'first',parentLevel:2}
+	    ,'LingBawah': {style:styles[0],pos:'first',parentLevel:1}
+	    ,'Conhomemidd': {style:styles[1],pos:'last',parentLevel:1}
+	    ,'tabcontentcontainer': {style:styles[1],pos:'last',parentLevel:1}
+	    ,'navigation': {style:styles[1],pos:'last',parentLevel:1}
+		
+	    ,'tblForumBits': {style:styles[2],pos:2,parentLevel:1} // @ forumdisplay
+	};	  
+	var even_node = function(area){
+	    par = $D('#'+area);
+		if(!par) return;
+		
+	    nodes = $D(".//a[contains(@href,'showthread.php?')]", par);
+	    if(par && nodes.snapshotLength > 0){
+	     for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+	      node = nodes.snapshotItem(i);
+		  tid = LINK.getTID(node.href);
+	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[area].style, rel:node.href};
+	      el = createEl('span',Attr,'[+]');		  
+	      par = node.parentNode; // parenting level
+		  if(areas[area].parentLevel==2)
+		    par = par.parentNode
+		  par.style.setProperty('list-style-type','none','');
+		  
+		  if(areas[area].pos=='first')
+		    par.insertBefore(el, par.firstChild);
+		  else if(!isNaN(areas[area].pos) ){
+		    clog(area)
+		    clog(areas[area].pos)
+		    par.insertBefore(el, par.childNodes[areas[area].pos] );
+		  }else
+		    Dom.add(el, par);
+		  
+		  // attach event-click
+	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	     }
+	    }
+	}; // end even_node
+
+
+	if(gvar.loc!=gvar.domain && gvar.loc.indexOf('/member.php?')==-1){
+      // append icon [+] on all thread & lastpost link
+      nodes = $D("//a[starts-with(@id,'thread_title')]");
+      if(nodes.snapshotLength > 0){
+       for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+        node = nodes.snapshotItem(i);
+	    tid = LINK.getTID(node.href);
+	    Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
+	    el = createEl('span',Attr,'[+]');
+	    par = node.parentNode; // parent of cont (DIV)
+	    par.insertBefore(el, par.firstChild);
+	    // attach event-click
+	    Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	    
+	    // lastpost nodes (single node)
+	    lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
+	    if(lnodes){
+	      pid = LINK.getPID(lnodes.href);
+	  	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+	  	  el = createEl('span',Attr,'[+]');
+	  	  Dom.add(el, lnodes.parentNode);
+	      // attach event-click
+	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	    }
+	   } // end-for
+	  } // end-if
+	  even_node('LingBawah');
+	  even_node('tblForumBits');
 	  
-	  // lastpost nodes (single node)
-	  lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
+	}else if(gvar.loc.indexOf('/member.php?')!=-1){
+
+	  par = $D('#collapseobj_stats');
+	  lnodes = $D(".//a[contains(@href,'showthread.php?')]", par, 1);
 	  if(lnodes){
 	    pid = LINK.getPID(lnodes.href);
 		Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
-		el = createEl('span',Attr,'[+]');
-		Dom.add(el, lnodes.parentNode);
-	  }
-	  // attach event-click
-	  Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	  	el = createEl('span',Attr,'[+]');
+	  	Dom.add(el, lnodes.parentNode);
+		// attach event-click
+	    Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	  }	  
+	
+	}else{
+	
+	  // Kaskus Home --
+	 for(var field in areas){
+	    even_node(field);
 	 }
-	}
-	gvar.user= tTRIT.getUserId();
+	 
+	 // menubwhjb
+	 par = $D('#menubwhjb');
+	 nodes = $D(".//div[contains(@onclick,'getJBData')]", par);
+	 clog(nodes.snapshotLength );
+	 if(par && nodes.snapshotLength > 0){
+	   for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+	    node = nodes.snapshotItem(i);		
+		// attach event-click
+	    Dom.Ev(node, 'click', function(e){ 
+		  gvar.sTryWaitLoader = window.setInterval(function() {
+		    var loader = $D('#loaderani');
+			if(loader && loader.style.display=='none'){
+			  clearInterval(gvar.sTryWaitLoader);
+			  even_node('tabcontentcontainer');
+			}
+		  }, 100);
+		}); // end click event
+	   }
+	 }
+	  
+	} // end kaskus home
+	
+	
+	// event buat window
+	Dom.Ev(window.document, 'keydown', function(e) { return tTRIT.is_keydown_ondocument(e); });
   }
  ,collectRowInfo: function(e){
     var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost' : 'firstpost');
@@ -222,14 +361,38 @@ var tTRIT = {
 	clog('LPOST.id:'+gvar.LPOST.id+'; LPOST.name:'+gvar.LPOST.name+'; LPOST.pid:'+gvar.LPOST.pid+'; ');
 	
  }
+ ,is_keydown_ondocument: function(e){
+    var C = (!e ? window.event : e);
+    var pressedCSA = (C.ctrlKey ? '1':'0')+','+(C.shiftKey ? '1':'0')+','+(C.altKey ? '1':'0');
+    var A = C.keyCode ? C.keyCode : C.charCode;
+    
+    // without pressedCSA or just Shift | there's no hideshow layer ? forget it
+    if( (pressedCSA=='0,0,0' || pressedCSA=='0,1,0') && !$D('#hideshow') )
+      return;
+    
+    if(A===27){
+	  if( !tQR.isLoaded() || (Dom.g(gvar.id_textarea) && Dom.g(gvar.id_textarea).value == '') ){
+        tPOP.closeLayerBox('hideshow');
+	  }else{
+	    var yakin = confirm('Discard content text on Quick-Reply?');
+		if(yakin)
+		  tPOP.closeLayerBox('hideshow');
+	  }	  
+	  alert(9);
+	  return;
+    }
+  }
  ,clickNode: function(e){
-    e = e.target||e;
-	// reset this gvar.
-	gvar.current= {};
+    e = e.target||e;	
 	if($D('#hideshow')) {
+	  if(gvar.current.cRow) removeClass('selected_row', gvar.current.cRow);
+	  gvar.current = {};
 	  tPOP.closeLayerBox('hideshow');
 	  if($D('#prev_loader')) $D('#prev_loader').parentNode.innerHTML = '[+]';
 	}
+	// reset this gvar.
+	gvar.current= {};
+	
 	if( isUndefined(e.getAttribute('rel')) ) return;
 	// kill the meta
 	if($D('#meta_refresh')) Dom.remove($D('#meta_refresh'));
@@ -238,8 +401,8 @@ var tTRIT = {
 	tTRIT.collectRowInfo(e);
 	
 	// re-syncroning from storage avoid changed value when qr-click
-	gvar.setting.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
-	Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.setting.fixed_preview );
+	gvar.settings.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
+	Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
 	
 	// pre-check kfti position, walau udah di setting, this one is per-click.
 	// user might resize / change the state of kfti
@@ -335,20 +498,24 @@ var tTRIT = {
 		if(cucok) cucok = cucok[1].replace(/\&amp;/gi,'&').replace(/\&noquote=1/gi,'').replace(/\&/,'.php?');		
 		clog(cucok);
 		gvar.TS.pid = (cucok ? LINK.getPID( cucok ) : false);
+		// updating user.is & user.name
+		cucok = text.match(/ass=[\"\']bigusername[\'\"]\s*[^\?]+.u=(\d+).>(.+)<\/a>/i);
+		if(cucok){
+		   gvar.TS.id = cucok[1];
+		   gvar.TS.name = cucok[2];
+		}
 	 }
 	 clog('after');
 	 clog('TS.id:'+gvar.TS.id+'; TS.name:'+gvar.TS.name+'; TS.tid:'+gvar.TS.tid+'; TS.pid:'+gvar.TS.pid+'; ');
 	 clog('LPOST.id:'+gvar.LPOST.id+'; LPOST.name:'+gvar.LPOST.name+'; LPOST.pid:'+gvar.LPOST.pid+'; ');
    }
    /*newreply*/
-   //cucok = text.match(/newreply\.php(?:[^\"]+)/);
-   //if(cucok) _nr = cucok[0].replace(/\&amp;/gi,"&");
    return {content:_ret, title:_tit, newreply:(gvar.current.isLastPost ? gvar.LPOST.pid : gvar.TS.pid) };
   }
   // param can be manualy supplied. mode=[0:hideall,1:emote,2:showall]; flag:[link, img];
  ,parse_image: function(text, flag, mode){
    if(isUndefined(flag)) flag = 'link';
-   if(isUndefined(mode)) mode= gvar.setting.imgload;
+   if(isUndefined(mode)) mode= gvar.settings.imgload;
    if(flag=='link'){
      var ori = text;
      if(mode=='0'){
@@ -384,7 +551,6 @@ var tTRIT = {
 
 }; // end tTRIT
 
-
 var tPOP = {
   init: function(rets){
     tPOP.loadLayer();
@@ -413,11 +579,10 @@ var tPOP = {
 		}
 	  });
 	}
-	//if($D('#btn_reply_quote')) $D('#btn_reply_quote').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
 	$D('#prev_title').innerHTML = '<a href="showthread.php?t='+gvar.TS.tid+'" target="_blank" title="Goto Thread - '+(rets.title)+'">'+rets.title+'</a>';
 	
 	// recalibrate top position only if not in fixed_preview
-    $D('#popup_container').style.setProperty('top', (gvar.setting.fixed_preview ? gvar.offsetLayer : ss.getCurrentYPos()+gvar.offsetLayer ) +'px','');
+    $D('#popup_container').style.setProperty('top', (gvar.settings.fixed_preview ? gvar.offsetLayer : ss.getCurrentYPos()+gvar.offsetLayer ) +'px','');
 	
 	//gvar.LPOST.id poster_userlink
 	if($D('#poster_userlink')) {
@@ -435,31 +600,148 @@ var tPOP = {
     init: function(){
 	  if($D('#setting_container')) {
        $D('#setting_container').innerHTML = rSRC.getTPL_setting();
-       tPOP.toggleCollapse();
        $D('#setting_container').style.display='';
       }
 	  tPOP.settings.event_set();
    }
+   ,toggle_partial: function(){
+	  show = ($D('#row_content').style.display!='none');	  
+	  var el = $D('#setting_container');
+	  if(isUndefined(el)) return;
+	  if(el.style.display!='none'){
+		if(gvar.current.row_content_last_isShow)
+		  tPOP.toggleCollapse();
+		else
+		  tPOP.toggleCollapse(true); // partial collapse
+	  }else{
+	    tPOP.settings.init();
+		gvar.current.row_content_last_isShow = show;
+	    if(show) tPOP.toggleCollapse();
+	  }
+   }
    ,event_set: function(){
     // #save_settings #cancel_settings
-	if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ tPOP.toggleCollapse(); });
+	if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ tPOP.settings.toggle_partial(); });
 	if($D('#save_settings')) Dom.Ev($D('#save_settings'), 'click', function(){ tPOP.settings.save(); });
 	if($D('#reset_default')) Dom.Ev($D('#reset_default'), 'click', function(){ tPOP.settings.reset(); });
+      
+	if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ tPOP.settings.toggle_editLayout(e); });
+    if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ tPOP.settings.toggle_editLayout(e); });
+	
+    // better do this instead of check noCrossDomain and/or isOpera
+      try {
+       if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera T_T
+        Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
+          if($D('#fetch_update')) return; // there is a fetch update in progress        
+          if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
+          Updater.notify_progres('chk_upd_now');
+          Updater.check(true);
+        });
+      }catch(e){ show_alert(e);};
+   }
+   ,layout_Edit: function(e, task){
+      if(isUndefined(e) || isUndefined(task)) return;
+	  var el_cancel = Dom.g(task+'_cancel');
+      var genTxta = function(_task, value){
+        var tgt = Dom.g(_task+'_Editor'); tgt.innerHTML='';
+        var el = createEl('textarea',{id:_task+'_txta'}, value);
+        Dom.add(el, tgt); tgt.style.display='';
+        window.setTimeout(function(e) { try{Dom.g(_task+'_txta').focus();}catch(e){} }, 100);
+      };
+      var uLayout = gvar.settings.userLayout;
+      switch(task){
+      case "edit_sigi":
+        genTxta(task, uLayout.signature);
+      break;
+      case "edit_tpl":
+        genTxta(task, uLayout.template);
+      break;
+      };
+      removeClass('cancel_layout-invi', el_cancel );
+   }
+   ,layout_Set: function(e, task){
+      if(isUndefined(e) || isUndefined(task)) return;
+      value = Dom.g(task+'_txta').value;
+      if(task=='edit_tpl'){
+        if(!value.match(/\{message\}/i)) {
+          alert('Invalid Layout format.\nCan\'t find "{message}" in template.\n\neg. [B]{message}[/B]');
+          return false;
+        }else{
+          value = value.replace(/\{message\}/i, '{MESSAGE}');
+          Dom.g(task+'_txta').value = value;
+        }
+      }
+      value = value.replace(/([\!\:])/g, "\\$1");
+      var keyName=(task=='edit_sigi' ? 'LAYOUT_SIGI' :'LAYOUT_TPL');
+      
+      tSTORAGE.setValueForId (gvar.user.id, encodeURIComponent(value), keyName, ['<!>','::']); //save layout
+      window.setTimeout(function() { SimulateMouse(Dom.g(task+'_cancel'), 'click', true); }, 50);
+      if(task=='edit_sigi')
+        gvar.settings.userLayout.signature=value.replace(/\\([\!\:])/g, "$1");
+      else
+        gvar.settings.userLayout.template=value.replace(/\\([\!\:])/g, "$1");
+   }
+   ,toggle_editLayout: function(e){
+    e=e.target||e;
+    if(typeof(e)!='object') return;
+    var todo=e.innerHTML; // edit | set
+    var value, task=e.id; // sigi | tpl
+    var el_cancel = Dom.g(task+'_cancel');
+    if(todo=='edit'){
+      tPOP.settings.layout_Edit(e, task);
+    }else{ // set
+      tPOP.settings.layout_Set(e, task);
+    }    
+    e.innerHTML = (todo=='edit' ? 'set' : 'edit');
+    // using onclick attribute identify that cancel event has been attached
+    if(!el_cancel.getAttribute('onclick')){
+      el_cancel.setAttribute('onclick','return false;');
+      Dom.Ev(el_cancel, 'click', function(ec){ 
+       ec=ec.target||ec; var tgt = ec.id.replace('_cancel','')+'_Editor';
+       Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', ec );
+       e.innerHTML='edit';
+      });
+    }
    }
    ,save: function(){
     //UPDATES UPDATES_INTERVAL IMGLOAD THEN_GOTHREAD RELOAD_AFTERSENT
     // single chkbox 
+	// , 'stg_autolayout_sigi', 'stg_autolayout_tpl', 'stg_autoshow_smile'
 	var value, sets;
 	sets ={
 	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
 	 ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
-	 ,'stg_updates': 'UPDATES'
+	 ,'stg_updates': 'UPDATES'	 
 	};
 	for(var field in sets){
 	  if( isString(sets[field]) && $D('#'+field) ){
 	    setValue(KEY_KTP+sets[field], ($D('#'+field).checked ? '1':'0') );
 	  }
 	}
+	// saving autoshow_smiley
+    value = [];
+    misc = ['kecil','besar','custom'];
+    par = $D('#stg_autoshow_smile');
+    if(par) value.push(par.checked ? '1':'0');
+    for(var id in misc){
+      if(!isString(misc[id])) continue;
+      par = $D('#stg_autoshow_smile'+'_'+misc[id]);
+      if(par && par.checked){
+        value.push(misc[id]);
+        break;
+      }
+    }
+    setValue(KEY_KTP+'SHOW_SMILE', value.toString());
+	
+	// saving autolayout
+    misc = ['stg_autolayout_sigi','stg_autolayout_tpl'];
+    value = [];
+    for(var i in misc){
+      if(!isString(misc[i])) continue;
+      value.push(Dom.g(misc[i]).checked ? '1' : '0');
+    }
+    tSTORAGE.setValueForId(gvar.user.id, value.toString(), 'LAYOUT_CONFIG'); //save layout
+	
 	// saving update interval
     if( $D('#stg_updates_interval') ){
       value = Math.abs($D('#stg_updates_interval').value);
@@ -467,12 +749,13 @@ var tPOP = {
       setValue(KEY_KTP+'UPDATES_INTERVAL', value.toString());
     }		
 	
-    // images policy
+    // images policy 
     sets = ['stg_showimages_none', 'stg_showimages_emot', 'stg_showimages_alll'];
+	value = 0;
 	for(var i in sets){
-	  if(isString(sets[i])){
-	    value = 0;
-	    if($D('#'+sets[i]) && $D('#'+sets[i]).checked) value=$D('#'+sets[i]).value;
+	  if( isString(sets[i]) && $D('#'+sets[i]) && $D('#'+sets[i]).checked ){	    
+		  value=$D('#'+sets[i]).value;
+		  break;		
 	  }
 	}
 	setValue(KEY_KTP+'IMGLOAD', value.toString());
@@ -512,12 +795,12 @@ var tPOP = {
     Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
 	
 	// #head_layer; #atoggle
-    if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ tPOP.toggleCollapse(); });
+    if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ tPOP.toggleCollapse(); $D('#atoggle').focus(); });
     if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(){ tPOP.toggleCollapse(); });
 
 	// detect window resize to resize textbox and controler wraper
     Dom.Ev(window, 'resize', function() { 
-      Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.setting.fixed_preview );
+      Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
 	});	
 	
 	// qr_button
@@ -528,7 +811,9 @@ var tPOP = {
 	 });
     
 	// #preview_setting
-    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(){ tPOP.settings.init(); });
+    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(e){ 
+       tPOP.settings.toggle_partial();	   
+	});
   }
  ,event_Userlink: function(){
     var nodes = $D('//a[contains(@class,"ktp-user_link")]');
@@ -656,8 +941,6 @@ var tPOP = {
 	  if( gvar.current.cEMOTE || gvar.current.cIMG || gvar.current.cSPL )
         $D('#thread_separator').style.setProperty('display','','');
 	  
-	  clog(gvar.LPOST.pid)
-	  clog($D('#remotePID_'+gvar.LPOST.pid).getAttribute('rel'));
 	  if( $D('#last_post') && $D('#remotePID_'+gvar.LPOST.pid) )
         Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse($D('#remotePID_'+gvar.LPOST.pid), 'click', true); });		
 	}
@@ -675,7 +958,6 @@ var tPOP = {
 	// moving link to #button_preview
 	if($D('#button_preview')){
 	  if($D('#preview_cancel')){ Dom.add($D('#preview_cancel'), $D('#button_preview')); removeClass('cyellow', $D('#preview_cancel')); }
-	  if($D('#preview_setting')){ Dom.add($D('#preview_setting'), $D('#button_preview')); removeClass('cyellow', $D('#preview_setting')); }
 	}
 	
 	if($D('#tr_qr_button')) Dom.remove('tr_qr_button');
@@ -692,7 +974,7 @@ var tPOP = {
     var obj= $D('#popup_container');
     // flag ? doFixed :doAbs
     if(isUndefined(flag))
-      flag = (gvar.setting.fixed_preview === false);
+      flag = (gvar.settings.fixed_preview === false);
     Dom.g('css_position').innerHTML = rSRC.getCSS_fixed(flag);
     var yNow = parseInt(ss.getCurrentYPos());
     
@@ -705,26 +987,26 @@ var tPOP = {
     if( isUndefined(caller) ){  // dont save the state when caller is define | asumed from quickreply
       setValue(KEY_KTP+'FIXED_PREVIEW', (flag ? '1' : '0') );
     }
-    gvar.setting.fixed_preview = (flag);
+    gvar.settings.fixed_preview = (flag);
   }
- ,toggleCollapse: function(){
+ ,toggleCollapse: function(partial){
     var el, show, tohide = ['vbform','thread_tools','threadpost_navi','thread_separator','tbl_separator'];
     show = ($D('#row_content').style.display!='none');
-    $D('#row_content').style.display = (show ? 'none' : '');
-    for(var i=0; i<tohide.length; i++){
-       if(!isString(tohide[i])) continue;
-       el = Dom.g( tohide[i] );
-       if(el) el.style.display = (show ? 'none' : '');
-    }
-
-	if( gvar.current.isLastPost && !gvar.current.cEMOTE && !gvar.current.cIMG && !gvar.current.cSPL )
-	  if($D('#thread_separator')) $D('#thread_separator').style.display='none';
-
-    if($D('#qr_container_head').style.display!='none') Dom.g('button_preview').style.display = (show ? 'none' : '');
-	var img = $D('#collapseimg_quickreply');
-	if(img){
-	  var src = img.getAttribute('src');
-	  img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
+	if(isUndefined(partial)){
+	    $D('#row_content').style.display = (show ? 'none' : '');
+        for(var i=0; i<tohide.length; i++){
+           if(!isString(tohide[i])) continue;
+           el = Dom.g( tohide[i] );
+           if(el) el.style.display = (show ? 'none' : '');
+        }
+	    if( gvar.current.isLastPost && !gvar.current.cEMOTE && !gvar.current.cIMG && !gvar.current.cSPL )
+	      if($D('#thread_separator')) $D('#thread_separator').style.display='none';
+        if($D('#qr_container_head').style.display!='none') Dom.g('button_preview').style.display = (show ? 'none' : '');
+	    var img = $D('#collapseimg_quickreply');
+	    if(img){
+	      var src = img.getAttribute('src');
+	      img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
+	    }
 	}
 	if(!show && $D('#setting_container') && $D('#setting_container').style.display!='none'){
 	  $D('#setting_container').innerHTML = '';
@@ -732,29 +1014,30 @@ var tPOP = {
 	}
   }
 
- ,closeLayerBox: function(tgt){
+ ,closeLayerBox: function(tgt, direct){
 	if(gvar.current.cRow){
 	  var lastRow = gvar.current.cRow;
-	  if(gvar.setting.thread_lastscroll && gvar.setting.fixed_preview){
+	  if(gvar.settings.thread_lastscroll && gvar.settings.fixed_preview){
 	    ss.STEPS = 21;
 	    ss.smoothScroll( lastRow, null );
 	  }
 	  gvar.blinkRow=0;
 	  gvar.sITryBlinkRow = window.setInterval(function() {
+	    var iLastRow = gvar.current.cRow;
         if(gvar.blinkRow >= 7){
 	      clearInterval(gvar.sITryBlinkRow);
-	  	  removeClass('selected_row', lastRow);
+	  	  removeClass('selected_row', iLastRow);
 		  
 	  	  return;
 	    }
 	    gvar.blinkRow++;
-		if(typeof(lastRow.getAttribute('class'))=='string' && lastRow.getAttribute('class').trim()!=""){
-	      if(lastRow.getAttribute('class').indexOf('selected_row')!=-1)
-	        removeClass('selected_row', lastRow);
+		if(typeof(iLastRow.getAttribute('class'))=='string' && iLastRow.getAttribute('class').trim()!=""){
+	      if(iLastRow.getAttribute('class').indexOf('selected_row')!=-1)
+	        removeClass('selected_row', iLastRow);
 	      else
-			addClass('selected_row', lastRow);
+			addClass('selected_row', iLastRow);
 		}else{
-		  lastRow.setAttribute('class', 'selected_row');
+		  iLastRow.setAttribute('class', 'selected_row');
 		}
       }, 250);
 	}
@@ -766,7 +1049,6 @@ var tPOP = {
 	Dom.remove( Dom.g(tgt) );
   }
 }; // end tPOP
-
 
 var tQR = {
   init: function(fetch_uri){
@@ -797,8 +1079,7 @@ var tQR = {
         if($D('#preview_submit'))
           Dom.Ev($D('#preview_submit'), 'click', function(){
             var validate= ( !gvar.user.isDonatur  ? tQR.prepost_QR() : true );
-			if(validate){
-			   tQR.lockInput(true);
+			if(validate){			   
 			   tQR.post();
 			}
           });
@@ -807,7 +1088,7 @@ var tQR = {
 		  Dom.Ev($D('#then_gotothread'),'click',function(e){
 		    e = e.target||e;
 			setValue(KEY_KTP+'THEN_GOTHREAD', (e.checked ? '1':'0'));
-			gvar.setting.then_goto_thread = ( e.checked );
+			gvar.settings.then_goto_thread = ( e.checked );
 		  });		
 		Dom.Ev($D('#vbform'),'submit',function(e){
 		  var C = (!e ? window.event : e ); C = do_an_e(C);
@@ -836,7 +1117,7 @@ var tQR = {
       else
         window.setTimeout(function() { try{Dom.g(gvar.id_textarea).focus();}catch(e){}; $D('#input_title').value=''; }, 100);
      }); // #atitle
-	// textarea keyevent
+	// #gvar.id_textarea textarea
 	if(Dom.g(gvar.id_textarea))
 	 Dom.Ev( Dom.g(gvar.id_textarea), 'keydown', function(e){
 	    var C = (!e ? window.event : e );
@@ -850,6 +1131,33 @@ var tQR = {
             C = do_an_e(C);
 		}
 	 });
+
+	// smile event
+    par = $D('#vB_Editor_001_cmd_insertsmile');   
+    if(par) {
+      Dom.Ev(par, 'click', function(e){ tQR.create_smile_tab(e); });
+      Dom.Ev(par, 'mouseout', function(e){
+        e.target||e;
+        window.setTimeout(function() {
+          obj = $D('#vB_Editor_001_cmd_insertsmile_img');
+          if(obj && $D('#smile_cont').style.display!=''){
+			obj.style.backgroundColor='transparent';
+            obj.style.border='1px solid transparent';
+          }
+        }, 10);
+      });     
+      Dom.Ev(par, 'mouseover', function(e){
+        e.target||e;
+        window.setTimeout(function() {
+          obj = $D('#vB_Editor_001_cmd_insertsmile_img');
+          if(obj && $D('#smile_cont').style.display!=''){
+			obj.style.backgroundColor='#B0DAF2';
+            obj.style.border='1px solid #2085C1';
+          }
+        }, 10);
+      });     
+    } // end #vB_Editor_001_cmd_insertsmile
+
   }
  ,fetch: function(pid){
     // colecting necessary hidden value
@@ -882,17 +1190,17 @@ var tQR = {
 	    $D('#button_preview').style.display = '';
 	    gvar.current.QR_isLoaded = 1;
 	  }
+	  vB_textarea.init();
+	  if( gvar.current.qr_fetch!=vB_textarea.content )
+	    vB_textarea.add(gvar.current.qr_fetch);
+		
 	  if(gvar.user.isDonatur){
 	      // kill capcay container
 	      Dom.remove('recapctha_header');
 	      Dom.remove('recaptcha_cont');
-	  }else{
-	      // click to build recapctha & keep click to reload
-          //SimulateMouse($D('#hidrecap_btn'), 'click', true);
-	  }
-	  if(gvar.current.qr_fetch!=vB_textarea.content){
-	    vB_textarea.init();
-	    vB_textarea.add(gvar.current.qr_fetch);
+		  
+	  }else if( !$D('#recaptcha_response_field') ){
+	  
 		// click to build recapctha & keep click to reload
         SimulateMouse($D('#hidrecap_btn'), 'click', true);
 	  }
@@ -900,7 +1208,7 @@ var tQR = {
       ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ snapTo() } );
 	}
   }
-  
+
  ,fetch_error: function(isQuote){
     var notice, msg = 'Fetch failed, server might be busy. <a href="javascript:;" id="try_again_now">Try again</a>';
 	isQuote = (isUndefined(isQuote) ? false : isQuote);
@@ -961,7 +1269,7 @@ var tQR = {
     parts = parts.substring( (pos[0]+1), parts.length);
     return (parts ? tQR.unescapeHtml(parts) : '');   
   }
-  
+
  ,prepost_QR: function(){
     var ret, rrf = $D('#recaptcha_response_field');
     if(!rrf) return;
@@ -1011,7 +1319,12 @@ var tQR = {
           el.removeAttribute('disabled');
           //addClass('twbtn-disabled', el);
         }
+		if(gvar.current.oriText) {
+		  Dom.g(gvar.id_textarea).value=gvar.current.oriText + "\n\n";
+		  gvar.current.oriText = null;
+		}
     }
+	if($D('#tab_close')) SimulateMouse($D('#tab_close'), 'click', true);
   }
  ,buildQuery: function(){
     var hidden = getTag( 'input', $D('#vbform') );
@@ -1028,7 +1341,8 @@ var tQR = {
     el = Dom.g(adtnl[0]);
     if( el && el.value!='' && el.value!=gvar.silahken ){
       var msg = trimStr(el.value);
-      //msg = template_wrapper(); // template ntar ajah...
+      msg = tQR.sCustom.parser(msg); // smiley parser...
+      msg = tQR.template_wrapper(msg); // template & SiGi ntar ajah...
       q = '&' + el.getAttribute('name') + '=' + encodeURIComponent( toCharRef(msg) )  + q;
     }
     el = Dom.g(adtnl[1]);
@@ -1038,8 +1352,10 @@ var tQR = {
   }
  ,post: function(){
     var spost = tQR.buildQuery();
+	tQR.lockInput(true);
 	if(spost===false) {
       //SimulateMouse($D('#imghideshow'), 'click', true);
+	  show_alert('Upss, halted..::..e.3278', 0);
       return false;
     }
 	GM_XHR.uri = gvar.current.action;
@@ -1050,14 +1366,14 @@ var tQR = {
     if( !reply_html ) return;
 	reply_html = reply_html.responseText;
 	
- clog(reply_html);
+ //clog(reply_html);
 	var retpost = tQR.parse_post(reply_html);
- clog('error='+retpost.error+ '; msg='+retpost.msg);
+ //clog('error='+retpost.error+ '; msg='+retpost.msg);
 	
 	var notice = $D('#quoted_notice');
 	if(retpost.error != 0){
 	   addClass('g_notice-error', notice);
-	   notice.innerHTML = retpost.msg;
+	   notice.innerHTML = retpost.msg.replace(/The\s*string/,'The reCapcay');
 	   notice.setAttribute('style','display:block;');
 	   
 	   tQR.parse_fetch(reply_html); // updating hidden value
@@ -1068,14 +1384,14 @@ var tQR = {
     }else{
 	   var msg = 'Thank you for posting!';
 	   Dom.remove( $D('#preview_submit') );
-	   if(gvar.setting.then_goto_thread && isDefined(retpost.redirect) ){
+	   if(gvar.settings.then_goto_thread && isDefined(retpost.redirect) ){
 	     msg+= ' Redirecting...';
 		 tQR.after_post('redirect', function(){ location.href=retpost.redirect; });
 	   }else{
 	     msg+= ' Closing...';
 		 tQR.after_post('close', function(){ 
 		   tPOP.closeLayerBox('hideshow');
-		   if(gvar.setting.reload_aftersent) window.setTimeout(function() { location.href = (location.href.replace(/\&page=\d+/,'')); }, 50);
+		   if(gvar.settings.reload_aftersent) window.setTimeout(function() { location.href = (location.href.replace(/\&page=\d+/,'')); }, 50);
 		 });
 	   }
 	   $D('#qr_container').innerHTML = '<div id="quoted_notice" class="g_notice" style="display:block;">'+msg+'</div>';
@@ -1112,7 +1428,559 @@ var tQR = {
     }, 150); 
   }
 
+// smilies
+ ,create_smile_tab: function(caller){
+  //clog('in create_smile_tab');
+  var parent = $D('#smile_cont');
+  if(parent.innerHTML!='') {
+    parent.style.display=(parent.style.display=='none' ? '':'none');
+    force_focus(10);
+    return;
+  }
+  var cont,el,el2,Attr,img,imgEl;
+  var scontent = ['skecil_container','sbesar_container','scustom_container'];
+  
+  // create tabsmile
+  cont = createEl('ul',{id:'tab_parent','class':'ul_tabsmile'});  
+  // tab skecil
+  el2 = createEl('a',{href:'javascript:;','class':'current',id:'remote_'+scontent[0]},'kecil');
+  Dom.Ev(el2, 'click', function(e){ 
+    tQR.toggle_tabsmile(e); 
+    var tgt = Dom.g(scontent[0]);
+    if(tgt && tgt.innerHTML=='')
+        tQR.insert_smile_content(scontent[0],gvar.smiliekecil);
+  });
+  el = createEl('li',{'class':'li_tabsmile'});
+  Dom.add(el2,el); Dom.add(el,cont);
+  // tab sbesar
+  el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+scontent[1]},'besar');
+  Dom.Ev(el2, 'click', function(e){
+    tQR.toggle_tabsmile(e);
+    var tgt = Dom.g(scontent[1]);
+    if(tgt && tgt.innerHTML=='')
+        tQR.insert_smile_content(scontent[1],gvar.smiliebesar);
+  });
+  el = createEl('li',{'class':'li_tabsmile'});
+  Dom.add(el2,el); Dom.add(el,cont);
+  // tab custom
+  el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+scontent[2]},'[+] ');
+  Dom.Ev(el2, 'click', function(e){
+    tQR.toggle_tabsmile(e);
+    var tgt = Dom.g(scontent[2]);
+    if(tgt && tgt.innerHTML=='')
+        tQR.insert_smile_content(scontent[2],gvar.smiliecustom);
+  });
+  el = createEl('li',{'class':'li_tabsmile'});
+  Dom.add(el2,el); Dom.add(el,cont);
+  // tab close
+  el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
+  Dom.Ev(el2, 'click', function(){
+    $D('#smile_cont').style.display='none';
+	force_focus(10); 
+    var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
+	if(obj){
+      obj.style.backgroundColor='transparent';
+      obj.style.border='1px solid transparent';
+	}
+    return; 
+  });
+  el = createEl('li',{'class':'li_tabsmile tab_close'});
+  Dom.add(el2,el); Dom.add(el,cont);
+  // tab more
+  el = createEl('li',{'class':'li_tabsmile tab_close'},'<a href="javascript:;" onclick="vB_Editor[\'vB_Editor_001\'].open_smilie_window(440,'+getScreenHeight()+');return false" title="Show all smilie">[ More ]</a>');
+  Dom.add(el,cont);
+  
+  Dom.add(cont,parent);
+  // --- end tab creation ---
+  
+  // populate smiley set | custom smiley will also loaded from here
+  rSRC.getSmileySet();  
+
+  // (blank) container for smiley contents
+  for(var i=0; i<scontent.length; i++){
+    Attr={id:scontent[i], 'class':'smallfont', style:'display:none;' };
+    cont = createEl('div',Attr);
+    Dom.add(cont,parent);
+  }
+  
+  if(gvar.settings.autoload_smiley[0]=='1'){
+    var id= ('s'+gvar.settings.autoload_smiley[1]+'_container');
+    tQR.insert_smile_content(id, eval('gvar.smilie'+gvar.settings.autoload_smiley[1]));
+    window.setTimeout(function() { SimulateMouse($D('#remote_'+id), 'click', true); }, 50);
+  }else{
+    tQR.toggle_tabsmile(Dom.g(scontent[0]));
+    window.setTimeout(function(){
+      SimulateMouse($D('#remote_'+scontent[0]), 'click', true); // trigger click tab for smiley kecil
+      force_focus(10);
+    }, 50);
+  }
+  parent.style.display='';
+  
+ }
+ ,insert_smile_content: function(scontent_Id, smileyset){
+       //clog('in insert_smile_content');
+  var target,dumycont,Attr,img,imgEl2,imgEl=false;
+  var countSmiley=0;
+  if(!scontent_Id || !smileyset) return;
+  target = Dom.g(scontent_Id);
+  target.innerHTML='';
+  
+  dumycont = createEl('div',{id:'loader_'+scontent_Id},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
+  realcont = createEl('div',{id:'content_'+scontent_Id,style:'display:none;'});
+  Dom.add(dumycont,target);
+  Dom.add(realcont,target);
+  if(smileyset){
+    var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb');
+    for (var i in smileyset) {
+     img=smileyset[i];
+     if( !isString(img) ){
+       if(scontent_Id=='scustom_container'){
+             //clog('ekstrakting ['+typeof(img)+']='+img);
+          Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
+		        src:img[0], alt:'_alt_'+img[1],'class':adclass };
+          // gak pake thumbnail ?
+          if(gvar.settings.scustom_alt) {
+            imgEl = createEl('a',Attr,'[['+img[1]+']');
+          }else{
+            imgEl = createEl('a',Attr);
+            Attr = {src:img[0], alt:'_alt_'+img[1]};
+            imgEl2 = createEl('img',Attr);
+            Dom.add(imgEl2,imgEl);
+          }
+       }else{
+          Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
+          imgEl = createEl('img',Attr);
+       }
+       Dom.Ev(imgEl, 'click', function(e){ 
+	      var C = e; e=e.target||e; tQR.do_smile(e); 
+		  // stop default action
+		  try{do_an_e(C);return false;}catch(ev){} 
+	   });
+       Dom.add(imgEl,realcont);
+       countSmiley++;
+     }else { // this is string and do replace to suitable value
+       var sep, retEl= tQR.sCustom.validTag(img, true, 'view');
+       if(!retEl) continue;
+          //clog('sep='+retEl.nodeName);
+       if(retEl.nodeName=='B'){
+         if(realcont.innerHTML!='') {
+          sep = createEl('br', {});
+          Dom.add(sep,realcont);
+         }
+         Dom.add(retEl,realcont);
+         sep = createEl('br', {});
+         Dom.add(sep,realcont);
+       }else{
+         Dom.add(retEl,realcont);
+       }
+     }
+    }
+       //clog('Inner=\n'+realcont.innerHTML)
+	// make a dummy last-img that, avoid bad img on last element
+	if( scontent_Id=='scustom_container' && !gvar.settings.scustom_alt) {
+	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
+        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
+        imgEl2 = createEl('img',Attr);
+        Dom.add(imgEl2,imgEl);
+		Dom.add(imgEl,realcont);
+	}
+  }
+
+  if(countSmiley<=0){
+    var el = $D('#loader_'+scontent_Id);
+    if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
+    realcont.innerHTML = 'No Images found ';
+    realcont.style.display='';
+  } else {
+    if(imgEl){
+     // find last element
+     var showContent = function(){
+        el=$D('#loader_'+scontent_Id);
+        if(el) el.style.display='none';
+        el = $D('#content_'+scontent_Id);
+        if(el) el.style.display='';
+     };
+     if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
+        showContent();
+     }else{
+        // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
+        if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
+        Dom.Ev(imgEl, 'load', function(){
+          //clog('all smiley has been loaded');
+          showContent();
+        });
+        if(imgEl.height) // obj has beed loaded before this line executed
+          showContent();
+     }
+    }
+  }
+   
+  // custom images ?
+  if(scontent_Id=='scustom_container'){
+    var el,cont;
+    cont = createEl('div',{style:'margin-top:10px;padding:8px 0;border-top:1px solid #BBC7CE;'});
+    el = createEl('a',{href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'},'Manage');
+    Dom.add(el,cont);
+    Dom.Ev(el, 'click', function(e){
+      var imgtxta,obj,obj2,task,buff,cont_id = 'scustom_container';
+      var mcPar=$D('#manage_container');
+      e=e.target||e;
+      task = e.innerHTML;	  
+      if(task=='Manage'){
+        if($D('#help_manage')) $D('#help_manage').style.display='';
+        if(mcPar){
+          mcPar.style.display=(mcPar.style.display=='none' ? '':'none');          
+        }else{
+          buff='';
+          if(smileyset){
+            var ret;
+            for (var i in smileyset) {
+             img=smileyset[i]; ret='';
+             if( !isString(img) )
+               buff+=img[1]+'|'+img[0]+'\n';
+             else if(ret= tQR.sCustom.validTag(img, false, 'editor') )
+               buff+=ret;
+            }
+          }
+          mcPar = createEl('div',{id:'manage_container',style:'margin:0 3px 0 1px;'});
+          Attr = {id:'textarea_'+cont_id,'class':'textarea txta_smileyset'};
+          imgtxta = createEl('textarea',Attr,buff);
+          Dom.add(imgtxta,mcPar);
+          
+          Attr = {'for':'scustom_alt',title:'Checked: Use tag instead of thumbnail'};
+          obj = createEl('label',Attr,'Don\'t create thumbnail');
+          Attr = {id:'scustom_alt',type:'checkbox'};
+          if(gvar.settings.scustom_alt) Attr.checked = 'checked';
+          obj2 = createEl('input',Attr);
+          Dom.add(obj2,obj);
+          Dom.add(obj,mcPar);
+          
+          Attr = {'for':'scustom_noparse',title:'Checked: custom smiley tag will not parsed'};
+          obj = createEl('label',Attr,'&nbsp;&nbsp;&nbsp;Don\'t parse custom tag');
+          Attr = {id:'scustom_noparse',type:'checkbox'};
+          if(gvar.settings.scustom_noparse) Attr.checked = 'checked';
+          obj2 = createEl('input',Attr);
+          Dom.add(obj2,obj);
+          Dom.add(obj,mcPar);
+          
+          Dom.add(mcPar, $D('#content_'+cont_id));
+          try{ window.setTimeout(function() {imgtxta.focus(); imgtxta.scrollTop=imgtxta.value.length;}, 100); }catch(e){}
+        }
+      }else{
+        // task save 
+        var buff=false;
+        var lastsave = getValue(KEY_KTP+'CUSTOM_SMILEY');
+        var lastVal = [getValue(KEY_KTP+'SCUSTOM_ALT'), getValue(KEY_KTP+'SCUSTOM_NOPARSE')];
+        imgtxta = $D('#textarea_'+cont_id);
+        if(imgtxta)
+           buff = tQR.sCustom.filter(imgtxta.value).toString();
+        gvar.settings.scustom_alt = ($D('#scustom_alt').checked);
+        gvar.settings.scustom_noparse = ($D('#scustom_noparse').checked);
+           //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
+        if( (buff && lastsave!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse) {
+          setValue(KEY_KTP+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
+          setValue(KEY_KTP+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
+          setValue(KEY_KTP+'CUSTOM_SMILEY', buff); //save custom smiley
+             //clog('sc saved..')
+          rSRC.getSmileySet(true); // load only custom          
+          // re attach
+          window.setTimeout(function() {
+            tQR.insert_smile_content(cont_id, gvar.smiliecustom)
+          }, 200);
+        }
+        //mcPar.style.display='none';
+        Dom.remove(mcPar);
+        if($D('#help_manage')) $D('#help_manage').style.display='none';
+      }
+      e.innerHTML = (task=='Manage' ? 'Save' : 'Manage');	  
+    }); // end event click Manage-Save
+    el = createEl('a',{id:'help_manage',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 10px;margin-left:20px;display:none;',title:'RTFM'},'?');
+    Dom.add(el,cont);
+    Dom.Ev(el, 'click', function(){
+	  alert( ''
+       +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
+       +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
+       +(!gvar.settings.scustom_noparse ? ''
+       +'\n\nUse Custom Smiley BBCODE with this format:'
+       +'\n eg.\n[[yourtag]' :'')
+       +'');
+	   try{
+	    window.setTimeout(function() { $D('#textarea_scustom_container').focus(); }, 100);
+	   }catch(e){}
+    });
+    Dom.add(cont,realcont);
+  } // end when it's scustom_container
+ }
+ ,toggle_tabsmile: function(e){
+   //clog('in toggle_tabsmile');
+   e=e.target||e; 
+   if(!e) return;
+   var elem = getTag('a',$D('#tab_parent'));
+   for(var i in elem){ // hideall tab
+     var id = elem[i].id;
+     if(id && id.indexOf('remote_')!=-1) {
+       showhide(Dom.g(id.replace('remote_','')), false); // hide container
+       removeClass('current', elem[i]); // reset tab class
+     }
+   }
+   var tgt=e.id.replace('remote_',''); 
+   showhide(Dom.g(tgt), true);
+   addClass('current',$D('#remote_'+tgt));
+   force_focus(10);
+ }
+ ,do_smile: function(Obj, nospace){
+  // action to do insert smile
+  if(isUndefined(Obj)) return;
+  var bbcode, link, tag, prehead;
+  //if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none') SimulateMouse($D('#dv_accessible'), 'click', true);
+  vB_textarea.init();
+  if( Obj.getAttribute("alt") ) bbcode = Obj.getAttribute("alt");
+  // custom mode using IMG tag instead
+  if(bbcode.match(/_alt_.+/)) {
+    link=Obj.getAttribute("src");
+    tag = 'IMG';
+    prehead = [('['+tag+']').length, 0];
+    prehead[1] = (prehead[0]+link.length);        
+    vB_textarea.setValue( '['+tag+']'+link+'[/'+tag+']' + (!nospace ? ' ':''));
+  }else{
+    vB_textarea.setValue(bbcode + (!nospace ? ' ':'') );
+  }
+ }
+// smilies-custom
+ ,sCustom:{
+    filter: function(text){
+      var buf=text;
+	  var sml,retbuf='',done = false;
+	  var sepr = ','; // must be used on extracting from storage
+      if(buf!=''){
+        var tosingle = {
+           '\\|{2,}' : '|'
+          ,'(\\r\\n){2,}' : '\r\n{sctag:br}\r\n,'
+          ,'(\\n){2,}' : '\n{sctag:br}\n'
+        };
+        // step -1 to strip
+        buf = buf.replace(/[\[\]\,]/g,"");
+             //clog('step-to single');
+        for(var torep in tosingle){
+          if(!isString(tosingle[torep])) continue;
+          re = new RegExp(torep, "g");
+          buf = buf.replace(re, tosingle[torep])
+        }
+        //clog('before step-validate='+buf);
+        // step -3 to validate per line    
+        buf=(document.all ? buf.split("\r\n") : buf.split("\n")); // IE : FF/Chrome
+        
+        for(var line in buf){
+           if(!isString(buf[line])) continue;
+             buf[line] = trimStr ( buf[line] ); // trim perline
+              //clog('line='+line+'; val='+buf[line]);
+             sml = /([^|]+)\|(http(?:[s|*])*\:\/\/.+$)/.exec( buf[line] );
+           if(sml && isDefined(sml[1]) && isDefined(sml[2]) ){ // smiley thingie ?
+                //clog('sml[0]='+sml[0]+'; sml[1]='+sml[1]+'; sml[2]='+sml[2]);
+             retbuf+=sml[1]+'|'+sml[2]+sepr; // new separator
+           }else if(sml= tQR.sCustom.validTag( buf[line], false, 'saving' ) ){ // valid tag ?
+                //clog(sml);
+             retbuf+=sml+sepr;
+           }
+           done=true;
+        } // end for    
+      }
+      return retbuf;
+	}
+   ,sanitize: function(text){
+      var ret=text;
+      var filter = [
+         "[\\\"\\\'][\\s]*(javascript\\:+(?:[^\\\'\\\"]+))[\\\"\\\']"
+        ,"((?:\\&lt;|<)*script(?:\\&gt;|>)*)"
+        ,"((?:\\&lt;|<)*\\/script(?:\\&gt;|>)*)"
+        ,"</?(?:[a-z][a-z0-9]*\\b).*(on(?:[^=]+)=[\\\"\\\'](?:[^\\\'\\\"]+)[\\\"\\\'])"
+        ,"</?(?:[a-z][a-z0-9]*\\b).+(style=[\\\"\\\'](?:\\w+)\\/\\*[.+]*\\*\\/\\w+\\:[^\\\"]+\\\")"
+        ,"<[\s]*>"
+       ];
+      var re, torep, do_it_again='';
+      // need a loop until it's really clean | no match patern
+      while( do_it_again=='' || do_it_again.indexOf('1')!=-1 ){
+        do_it_again = '';
+        for(var idx in filter){
+         if(!isString(filter[idx])) continue;
+         re = new RegExp(filter[idx], "ig");
+         if(ret.match(re)){
+          do_it_again+='1';
+          torep = re.exec(ret);      
+            //clog('replacing='+filter[idx]+'; torep='+torep[1]);
+          if(torep && isDefined(torep[1]))
+            ret=ret.replace(torep[1], '');
+         }else{
+          do_it_again+='0'; // must diff than (do_it_again=='')
+         }
+        }
+      }      
+      return ret;   
+   }
+   // mode = ['editor', 'saving', 'view']
+   ,validTag: function(txt, doreplace, mode){
+      if(!isString(txt)) return false;
+      ret=txt;
+      var re,cucok = false;  
+      var matches = {
+       "{title:(.+)}" : ['b', '$1'],
+       "{sctag:(br)}" : ['br','']
+      };
+      var val;
+      for(var torep in matches){
+        re = new RegExp(torep, "");
+        if(ret.match(re)){
+          cucok=true;
+            //clog('cur torep='+torep)
+          if(isDefined(doreplace) && doreplace){ // must be from view mode
+            val=ret.replace(re, matches[torep][1]);
+            val = tQR.sCustom.sanitize(val);
+            ret = createEl(matches[torep][0],{},val);
+          } else if(isDefined(mode) && mode=='editor') // editor mode and it's a BR
+            if(torep=='{sctag:(br)}') {
+              ret=txt.replace(re, '\n');
+            }else{
+              // guess it should be a title
+              var title = re.exec(txt);
+                //clog('mode='+mode+'; title; title='+title)
+              if(re && isDefined(title[1])){
+                val = tQR.sCustom.sanitize(title[1]);            
+                ret='{title:'+val+'}\n'; 
+              }else{
+                ret=txt+'\n'; 
+              }
+            }
+          break;
+        }
+      }
+      return (cucok ? ret : false);              
+
+   }
+   ,parser: function(msg){
+     // trim content and/or parse it
+     msg = trimStr(Dom.g(gvar.id_textarea).value);
+     if(!gvar.settings.scustom_noparse){
+       //pmsg = do_parse_scustom(msg);
+	   var pmsg = msg;
+	   if(pmsg.length==0) return '';
+       if(!pmsg.match(/\[\[([^\]]+)/gi)) return pmsg;
+       var re,re_W,tag,done = false;
+       var lastTag='';
+       // prepared paired key and tag of custom image
+       var paired = tQR.sCustom.prep_paired();    
+       while(!done){
+         tag = /\[\[([^\]]+)/.exec(pmsg);      
+         if( tag && isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lastTag ){
+                  //clog('parsing['+tag[1]+']...');
+             re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
+             re = new RegExp( re_W.toString() , "g"); // incase-sensitive and global, save the loop
+             pmsg = pmsg.replace(re, '[IMG]'+paired['tag_'+tag[1]]+'[/IMG]');
+             lastTag = tag[1];
+         }else{
+           done = true;
+         }
+       } // end while	   
+       if(vB_textarea.Obj && pmsg!=msg){
+	      Dom.g(gvar.id_textarea).value=pmsg;
+		  msg=pmsg
+	   }
+     }
+     return msg;
+   }
+   ,prep_paired: function(){
+     var img,paired={};
+     // preload smiliecustom database if needed
+     if(!gvar.smiliecustom) getSmileySet(true); 
+     for(var i in gvar.smiliecustom){
+        img = gvar.smiliecustom[i];
+        /** gvar.smiliecustom[idx.toString()] = [parts[1], parts[0], parts[0]];
+        # where :
+        # idx= integer
+        # gvar.smiliecustom[idx.toString()] = [link, tags, tags];       */
+         //clog(img.toString())
+        paired['tag_'+img[1].toString()] = img[0].toString();
+     }
+     return paired;
+   }
+ }
+// template
+ ,template_wrapper:function(txt){
+   var oriTxt = gvar.current.oriText = (isUndefined(txt) ? trimStr ( Dom.g(gvar.id_textarea).value ) : txt);
+   var tmsg=oriTxt;
+   var tpl = decodeURIComponent(gvar.settings.userLayout.template);
+   if(gvar.settings.userLayout.config[1] == 1 && tpl.match(/\{message\}/i) ) 
+      tmsg = tpl.replace(/\{message\}/i, oriTxt);
+   
+   if(gvar.settings.userLayout.config[0] == 1){
+      var newLines = count_Char('\\n', tmsg);
+        //clog('pre sigi, ENTER=' + newLines+'; ' );
+      var margin_sigi = (tmsg.indexOf('[QUOTE=')!=-1 ? (gvar.offSet_SiGi[0]-newLines) : (gvar.offSet_SiGi[1]-newLines) );      
+      tmsg += gen_Char('\n', margin_sigi, ' ') + gvar.settings.userLayout.signature;
+   }
+   if(Dom.g(gvar.id_textarea) && tmsg!=oriTxt)
+     Dom.g(gvar.id_textarea).value=tmsg;
+   return tmsg; 
+ }
 }; // end tQR
+
+var tSTORAGE = {
+ setValueForId: function (userID, value, gmkey, sp){
+    sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];
+    var i, ks = KEY_KTP+gmkey;
+    var info = getValue(ks);
+    if(!userID) return null;
+    if(!info){
+        setValue(ks, userID+"="+value);
+        return;
+    }
+    info = info.split(sp[0]);
+    for(i=0; i<info.length; i++){
+        if(info[i].split('=')[0]==userID){
+            info.splice(i,1,userID+"="+value);
+            setValue(ks, info.join(sp[0]));
+            return;
+        }
+    }
+    info.splice(i,0,userID+"="+value);
+    setValue(ks, info.join(sp[0]));
+ }
+ 
+ //values stored in format "userID=value;..."
+ // sp = array of records separator
+ ,getValueForId: function (userID, gmkey, sp){
+    sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];    
+    var info = getValue(KEY_KTP+gmkey);
+    if(!info || !userID)
+      return null;
+    info = info.split(sp[0]);
+    for(var i=0; i<info.length; i++){
+        if(!isString(info[i])) continue;
+        var recs = info[i].split('=');
+        if(recs[0]==userID){
+            var rets = [userID];
+            var values = recs[1].split(sp[1]);            
+            for(var idx in values){
+              if(!isString(values[idx])) continue;
+              rets.push(values[idx]);
+            }
+            return rets;
+        }
+    }
+    return null;
+ }
+ ,delValueForId: function (userID, gmkey){
+  var ks = KEY_KTP+gmkey;
+  var info = getValue(ks);
+  info = info.split(';'); var tmp=[];
+  for(var i=0; i<info.length; i++){
+    if(info[i].split('=')[0]!=userID)
+      tmp.push(info[i]);    
+  }
+  setValue(ks, tmp.join(';'));
+ }
+};
+
+
 
 // ========
 // common function
@@ -1133,6 +2001,15 @@ function chk_kfti_pos(){
    }
   }catch(e){gvar.fixed_ktfi=false;}
   gvar.offsetLayer= (gvar.fixed_ktfi ? 38 : 20); // buat margin top Layer
+}
+// delayed focus to textarea
+function force_focus(delay){
+	if(isDefined(vB_textarea)) return;
+    if(isUndefined(delay)) delay=560;
+    if(!vB_textarea.Obj) vB_textarea.init();
+    window.setTimeout(function() {
+      vB_textarea.Obj.focus();
+    }, delay); // rite after dumy created, lost its focus
 }
 // end-common function
 
@@ -1170,6 +2047,18 @@ function do_an_e(A) {
   A.stopPropagation();
   A.preventDefault();
   return A;
+};
+function count_Char(chr, dstr) {
+ var tFind = new RegExp(chr,"g");
+ var ret = (dstr.length - parseInt(dstr.replace(tFind,'').length) );
+ return ret;
+};
+function gen_Char(chr, len, pngotor) {
+ var ret = '';
+ if(isUndefined(pngotor)) pngotor = '';
+ if(len<=0) return chr;
+ for(var i=0; i<len; i++) ret+=pngotor+chr;
+ return ret;
 };
 function addClass(cName, Obj){
   if(cName=="") return;
@@ -1429,6 +2318,112 @@ var GM_XHR = {
     } );
   }
 };
+// utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
+// customized from FFixer & userscript_updater
+var Updater = {
+  caller:''
+ ,check: function(forced){
+    var intval = (1000*60*60*gvar.settings.updates_interval);
+    if((forced)||(parseInt(getValue(KEY_KTP+"LAST_UPDATE", "0")) + parseInt(intval) <= (new Date().getTime()))) {
+     gvar.updateForced = forced;
+	 if(!forced) Updater.caller='';
+     // prep xhr request
+     GM_XHR.uri = 'http://'+'userscripts.org'+'/scripts/source/'
+       + gvar.scriptMeta.scriptID + '.meta.js';
+     GM_XHR.cached = false;
+     GM_XHR.request(null,'GET',Updater.callback);
+    }
+  }
+ ,callback: function(r){
+    if(r===null) return;
+    setValue(KEY_KTP+"LAST_UPDATE", new Date().getTime() + "");
+	if(Dom.g(Updater.caller)) 
+	  Dom.g(Updater.caller).innerHTML = 'check now';
+    if (r&&r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp) { 
+      Updater.initiatePopup(r.responseText); 
+    } else {
+      Updater.notify_done(false);
+      if (gvar.updateForced)
+        alert("No update is available for Thread-Preview.");	  
+    }
+  }
+ ,initiatePopup: function(rt){    
+    Updater.meta=Updater.mparser(rt);
+	Updater.showDialog(
+       '<img id="nfo_version" src="'+gvar.B.news_png+'" class="qbutton" style="float:left; margin:3px 5px 0 2px;padding:3px;"/> '
+	  +'<b>New'+' '+gvar.codename+'</b> (v'+ Updater.meta.cvv[1]+') is available'
+      +'<div style="float:right;margin:9px 0 0 15px;"><a class="qbutton" href="http://'+ 'userscripts.org'
+      +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto '+gvar.codename+' Home">Home</a></div>'
+      +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
+      +'<div style="margin-left:22px;">Wanna make an action?</div>'
+    );
+    Dom.Ev($D('#upd_close'),'click', function(){
+       Dom.remove('upd_cnt');
+    });    
+    Dom.Ev($D('#upd_notify_lnk'),'click', function(){
+       if($D('#upd_cnt'))
+         Dom.remove('upd_cnt');
+       else{         
+         Updater.notify_progres();
+         Updater.check(true);
+       }
+    });    
+    Dom.Ev($D('#do_update'),'click', function(){  
+      GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');      
+      window.setTimeout(function(){ Dom.remove('upd_cnt'); }, 1000);
+    });    
+  }
+ ,showDialog: function(inner){
+    var Attr, el;
+    if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
+    Attr = {id:'upd_cnt','class':'tborder qrdialog',style:'position:fixed;z-index:999999;'};
+    el = createEl('div', Attr);
+    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+    
+    Attr = {'class':'qrdialog-close'};
+    el = createEl('div', Attr, '<a id="upd_close" class="qbutton" javascript:; title="Close"><img src="'+gvar.domainstatic+'images/misc/menu_open.gif" /></a>');
+    Dom.add(el, $D('#upd_cnt'));
+
+    Attr = {id:'upd_child','class':'qrdialog-child'};
+    el = createEl('div', Attr, inner);
+    Dom.add(el, $D('#upd_cnt'));
+	// nfo news
+	if( Updater.meta.news ){
+	  $D('#nfo_version').setAttribute('title', 'What\' New...');
+	  $D('#nfo_version').style.setProperty('cursor', 'pointer', '');
+	  Dom.Ev($D('#nfo_version'), 'click', function(){ alert( gvar.codename+'\n== Last LOG Update ==' + Updater.meta.news );});
+	}
+    
+    Updater.notify_done(true);
+ }
+  
+ ,notify_progres: function(caller){
+    $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+	if(Dom.g(caller)) {
+	  Updater.caller=caller;
+	  Dom.g(caller).innerHTML='checking..'; // OR check now
+	}
+ }
+ ,notify_done: function(anyupd){
+    $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
+    if($D('#upd_notify').innerHTML==''){
+       $D('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
+       window.setTimeout(function(){ $D('#upd_notify').innerHTML=''; }, 4000);
+    }
+ }
+ ,mparser: function(rt){
+	return {
+     tv:rt.match(/@timestamp(?:[^\d]+)([\d]+)/)||[null],
+     cvv:rt.match(/@version(?:[^v\d]+)([\d\.\w]+)/)||[null],
+     news:(function(x){
+	      var wrp=['// -!--latestupdate','// -/!latestupdate---'];
+	      var p=[x.indexOf(wrp[0]), x.indexOf(wrp[1])];
+		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/^\s+|\/+\s*/gm, function($str,$1){return '';}) : '');
+	    })(rt)
+    };	
+  }
+}; // -end Updater
+
 /* Modified Smooth scrolling
    Todd Anglin  14 October 2006, sil, http://www.kryogenix.org/
    v1.1 2005-06-16 wrap it up in an object
@@ -1502,7 +2497,7 @@ var vB_textarea = {
     this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.content = (this.Obj ? this.Obj.value : "");
     this.cursorPos = this.rearmPos(); // [start, end]
-    //this.last_scrollTop = this.Obj.scrollTop; // last scrolltop pos
+    this.last_scrollTop = this.Obj.scrollTop; // last scrolltop pos
   },
   rearmPos: function(){ return [this.getCaretPos(), this.Obj.selectionEnd]; },
   clear: function (id){
@@ -1543,7 +2538,8 @@ var vB_textarea = {
    var lastpos=(this.cursorPos[0] + text.length);
    this.setCaretPos( lastpos, lastpos );
   },
-  getCaretPos : function() {
+  subStr: function(start, end){ return this.content.substring(start, end);},
+  getCaretPos: function() {
     this.enabled(); /* this.focus();*/
     var CaretPos = 0;    
     if(this.Obj) //Mozilla/Firefox/Netscape 7+ support 
@@ -1551,18 +2547,32 @@ var vB_textarea = {
         CaretPos = this.Obj.selectionStart;
     return CaretPos;
   },  
-  setCaretPos : function (pos,end){
+  setCaretPos: function (pos,end){
     if(isUndefined(end)) end = pos;
     if(this.Obj.setSelectionRange)    { // Firefox, Opera and Safari
         this.focus();
         this.Obj.setSelectionRange(pos,end);
     }
   },
+  // ptpos stand to puretext position [start, end]
+  setValue: function(text, ptpos){
+    var start=this.cursorPos[0];
+    var end=this.cursorPos[1];
+    if(isUndefined(ptpos)) ptpos=[text.length,text.length];
+    if(start!=end) {
+      this.replaceSelected(text,ptpos);
+      return;
+    }
+    var bufValue = this.subStr(0, start) + text + this.subStr(start, this.content.length);
+    this.set(bufValue);
+    // fix chrome weird
+    this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
+    this.Obj.scrollTop = (this.last_scrollTop+1);
+    return bufValue; 
+  }
+//
 };
 //== end Global Var ==
-
-// main Object
-
 
 
 var rSRC = {
@@ -1571,7 +2581,33 @@ var rSRC = {
   switch(type){
     case "button":
      return {
-      closepreview_png : ""
+      smile_gif : ""
+        +"data:image/gif;base64,R0lGODlhEwATAOYAAAAAAP///z5ivnKY26bP+f3tTPzlTPznTPviWfveTPvbXfvVTPvXTPnOTPvde5x7IfvUX829kP3qt6GZgaig"
+        +"iPnGTPnITPrNXfvWe/zhm6+nksO7p8ajV/ven7Wmha+hg6+ihq+jiLyxl/3uzdDIt/i+TPi/TfjFXPrSf/3nu8m7n8O2ncq9pP3u0XpQB/vcpfznv9DCqP7u0u"
+        +"TYwve6Vfi8V/jAYd28huPFlePLov7kuP7t0f7v1v3u1evgzvi9aPrPkePPsP3mxf7w2/7x3v7y4P7y4fi5Yfe6ZP3myP7v2/7x3/Lm1v7y4v7z5P705v726/i9"
+        +"c/e8dsSWX/rFh/nKkvznzP7u2v716v7w4P7y5fnHksWWbsWfgMWfg8Whh0gRBP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        +"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAGEALAAAAAATABMAAAfZgGGCg4SFhoeEPiohIB8eiIMzExQsQTk"
+        +"4N5BhKxpMS0RFRjs6kCIkTk9QT0ZDPDKCLi6EMRtKTVhaWVc9LSNhsbGwsUlgxVZCMCkSvyVbsrE0LmBeX11gLx0ZYMzOvzTRXFtVQFMoGA4c3M80zlRSPzYn"
+        +"FxAKCOq/W85RSDUmFg0MEhxQFyufiyM0SlRosCCBgQK/XLBzYdDFg4sYMcJiV/HBgAABCIAUGSCixIouCAgIORIksG/5nMVSKaCmTYnQKjp7wLKnxGjAKMq82D"
+        +"LAT6AxZYaJkPFBIAA7"
+     ,setting_gif : ""
+        +"data:image/gif;base64,R0lGODlhGQAYAPcAABweHISKjMTCxFRWVASi7KSmpNze3HRydDw6PJyanLS2tMzS1Hx+fKyurIySlGRmZExKTCwuLOzu7NTa3MzKz"
+		+"KSmrJyipISGjFxeXOTm5Hx6fERCRLy+vNTW3ISGhJSWnCQmJIyOjNze5HR2fJyepLS2vNTW1Hx+hKyutJSWlGxubFRSVDQ2NMzO1KSqrIyKjMTGxFxaXKSqpHR2d"
+		+"Dw+PJyenNTS1JSSlGxqbExOTDQyNPTy9Nza3MzOzKSipGRiZERGRCwqLOTi5Ly6vISChLSytKyqrAAAAP93CP8AAgAAAAEAAAAAWAAACgAALwAAAJhFCAMA7AAAE"
+		+"gAAAHxQXeYK1wEvJgEAd3QAYuUADxIq4gAABtDwzLgM6y8vEgAAAGAuaPtnABJpagBmAF0ARNcAOiYAXHcAAAIhcw+tZeKHcgZ2c/4AU/8B3/8Ah/8Adt8ArDEAYi"
+		+"oABXcA09iMAC3nACoSAHcAAACXAAA7AAAqAAB3ANCciLg7Yi8qLQB3ANCmALjhYC/aLQBxAKEAVB8A6CoAEncAAAAAEQABAQAAAAAAAMghsLit6C+HEgB2AIBkmuf"
+		+"nkxISjgAAdrwAdMIAVYcAkHYApQCs/gBt/yoF/wDT/wC0UwDn3wAShwAAdtCRSbis2C+HhwB2dgAAiAAAYgAALQAAAAAAPgEA0gAAiAAAdsvo7MK1YocmBXZ308zq"
+		+"AOfhABLaAABxANB5ALjpAC8SAAAAAAwMAJ6hAEFPAHcAAAFBAAAAAAAAAAAAAwIAAX8AAAAAAAAAAC6UkG/n6HISEmcAAFwMzWmhq21PumEA3GdgYGX7+3MSElwAA"
+		+"ABdmubXkxImjgB3drBiZG8NWJLin3YGpQL+/gD//wD//4D//5joPkG10pMmiHZ3dgBbiAB/gQCKQgB2ABnciADoYgISLQAAANhrAOZ/ABKKAAB2AByNeW+t6ZKHEn"
+		+"Z2AEABMc0ArYgAh3YAdgAx8AAAYgAABQAC00RIMTq2rQA5hwAAdlIuamVncXBpSGxmACH5BAEAAAQALAAAAAAZABgARwj/AAkQ8JGiho8CBSoUMJKwgAyFBQymECiQ"
+		+"x4gZKhRQUGDjxQMcM3D8EECEQY8hNXowUKEBxYIVNGJAoLEBwYAYMX780IABJwsELDZgWLFhBIwaDYwkbdBAQREZNoxsNFKE6VIjNUiImDFDw4sICGbceJEiQdkUHh"
+		+"DQYMHCgwqcAVaqmPGhBw8FGlZEiAAiSAQgGhSY6FFDw9wbFkjAoACj8eLHjhszdkxhYscUIW6EoNDAhwQbEkL3yECBSA/MKV6EKGEgxoMhDTi8WDEAw4ABKzz4WBF"
+		+"jBQYFN2q8yJFgAgYaBwbQWHug648cODTMOLDhJ5ADQTUUGSLEQAMiLzYA/xG/gXz1DSE8NMhgQMEMgVwZ8DTiHkSEICAA4FBg5EdXBj7AIJAPUtnQgw0GDoYggj2"
+		+"Y0AKDLRgh0BA+cDDEhRdaOISGG3aYIQc+eNBCWT7UUIMRCXCUwg4NSGCEETaYSIKJPoRQxAQvaOBBAhoYkQEPJhgRAhFEwPAjkBoQ6YF2E4SEAwY9cDCATk/+oEIP"
+		+"D0w5RAs3xIDDAwWIsIIODxhxQA03DAAEET40UEQIEAABBAI/FHADCxA4wMMKOHjwA1ssqPCCBx4MOugDP7GAwQsMPHBCByE9AAQNCGyAw5c5ePCACpeqoMIBl345g"
+		+"gArFAAnBgggAMQKOazwwwCtAlDxEwYb3JDACjMkwF0GPyoQAhAg/AQUCzoA8UIDPGQghBBDeEDADAzI90ARFNQQAxA63IdADAlsBFK0PjBAEQMvIMWBAOgKcC4H62"
+		+"K4kUABAQA7"
+     ,closepreview_png : ""
         +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAfCAYAAAD0ma06AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h"
         +"Z2VSZWFkeXHJZTwAAAY1SURBVHjapFZbbFRVFN0zd6Yz08dMoUNf9EGxUItJK62I4AOJEYiQoqE+0OgHCiqG+PgQozH6ofyIJiYEMRqNJpggHySlrRM+hCAtaj"
         +"AUaGgEi9BBSilMO0PnfWeOa597bjt9AEVvsubOPWefs/br7H0sQgj6P4/FYrk9+WkSuoAHgCrgLvV9DLgMdID02rQZmfAmaAJaxS2edDr9s67rL7EB/9XCUuAL"
@@ -1617,21 +2653,228 @@ var rSRC = {
         +"FGpbbKIGOzR9NCDEDaG8p9eNYG1TVnBYKcZjKdQeRrEAYPCKKLtsko2SiOMLXAac18ThqDtXUyIAYXLwgJXyWDbU45ALfd9N2sytiVxSOAAXBaOCEC4HWe3G3fRd"
         +"YojYaZ/G0ZXSaKmd4E9ny3jZn1zu7mV9On7RxBOzNvzi4uX7yYAxTQPnS5P22q+Ws1XklyF3bX24unZ51df9C+1+xNZR0+Oz5fPr95c6wH9dc8WJ2eLZ1evrxePF"
         +"g+5D+sCvP/24a6/47/6DW1k0UQglGH2AAAAAElFTkSuQmCC"
+      ,news_png : ""
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1"
+		+"4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2"
+		+"07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
      };
     break;
   };
   return false;
  }
+,getSmileySet: function getSmileySet(custom){
+
+  var H = gvar.domainstatic + 'images/smilies/';
+  var s = 'sumbangan/';
+  
+/**
+Format will be valid like this:
+ 'keyname1|link1,keyname2|link2'
+ eg. 
+ ':yoyocici|http://foo'
+*/
+  //var sample = 'lopeh|http://static.kaskus.us/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.us/images/smilies/sumbangan/06.gif';
+  gvar.smiliecustom = {};
+  var buff = getValue(KEY_KTP+'CUSTOM_SMILEY');
+  if(buff!=''){
+    var idx=1;
+    var sepr = ',';
+    var customs={};
+    var smileys = buff.split(sepr);
+    if(isDefined(smileys[0]))
+     for(var i in smileys){
+       if(isString(smileys[i]) && smileys[i]!=''){
+         var parts = smileys[i].split('|');
+         customs[idx.toString()] = (isDefined(parts[1]) ? [parts[1], parts[0], parts[0]] : smileys[i]);
+         idx++;
+       }
+     }
+    gvar.smiliecustom = customs;
+  }
+  if(isDefined(custom) && custom) return;
+
+  
+  gvar.smiliekecil = {
+ '1' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
+,'2' : [H+'mahos.gif', ':mahos', 'Maho (S)']
+,'3' : [H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
+,'4' : [H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
+,'5' : [H+'cendols.gif', ':cendols', 'Cendol (S)']
+,'6' : [H+'takuts.gif', ':takuts', 'Takut (S)']
+
+,'7' : [H+'batas.gif', ':batas', 'Bata (S)']
+,'8' : [H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
+,'9' : [H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
+,'10': [H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
+,'11': [H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
+,'12': [H+'berdukas.gif', ':berdukas', 'Berduka (S)']
+,'13': [H+'capedes.gif', ':capedes', 'Cape d... (S)']
+,'14': [H+'bingungs.gif', ':bingungs', 'Bingung (S)']
+
+,'15': [H+'malus.gif', ':malus', 'Malu (S)']
+,'16': [H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
+,'17': [H+'kisss.gif', ':kisss', 'Kiss (S)']
+,'18': [H+'mads.gif', ':mads', 'Mad (S)']
+,'19': [H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
+,'20': [H+'najiss.gif', ':najiss', 'Najis (S)']
+,'21': [H+'hammers.gif', ':hammers', 'Hammer (S)']
+,'22': [H+'reposts.gif', ':reposts', 'Repost (S)']
+,'23': [H+s+'004.gif', ':matabelo:', 'Belo']
+,'24': [H+s+'q11.gif', ':nohope:', 'Nohope']
+,'25': [H+s+'8.gif', ':hammer:', 'Hammer']
+,'26': [H+s+'24.gif', ':army:', 'army']
+,'27': [H+s+'005.gif', ':Peace:', 'Peace']
+,'28': [H+s+'12.gif', ':mad:', 'Mad']
+
+,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
+,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
+,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+
+,'32': [H+s+'7.gif', ':confused:', 'Confused']
+,'33': [H+s+'34.gif', ':rose:', 'rose']
+,'34': [H+s+'35.gif', ':norose:', 'norose']
+,'35': [H+s+'017.gif', ':angel:', 'angel']
+,'36': [H+s+'3.gif', ':kagets:', 'Kagets']
+,'37': [H+s+'4.gif', ':eek:', 'EEK!']
+,'38': [H+s+'014.gif', ':kissing:', 'kisssing']
+,'39': [H+s+'q03.gif', ':genit:', 'Genit']
+
+,'40': [H+s+'001.gif', ':wowcantik', 'Wowcantik']
+,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
+,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
+,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
+,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
+,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
+,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
+,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
+,'48': [H+s+'48.gif', ':thumbdown', 'thumbdown']
+,'49': [H+s+'47.gif', ':thumbup:', 'thumbsup']
+,'50': [H+s+'020.gif', ':siul:', 'siul']
+,'51': [H+s+'1.gif', ':malu:', 'Malu']
+,'52': [H+s+'14.gif', ':D', 'Big Grin']
+,'91': [H+s+'15.gif', ':)', 'Smilie']
+,'92': [H+s+'06.gif', ':(', 'Frown']
+
+,'53': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
+,'54': [H+s + '26.gif', ':linux2:', 'linux2']
+,'55': [H+'bolakbalik.gif', ':bingung:', 'Bingung']
+,'56': [H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
+
+,'57': [H+s+'q17.gif', ':metal:', 'Metal']
+,'58': [H+s+'05.gif', ':cool:', 'Cool']
+,'59': [H+s+'hi.gif', ':hi:', 'Hi']
+,'60': [H+s+'6.gif', ':p', 'Stick Out Tongue']
+,'61': [H+s+'13.gif', ';)', 'Wink']
+
+,'64': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
+,'65': [H+s+'18.gif', ':doctor:', 'doctor']
+
+,'66': [H+s+'006.gif', ':think:', 'Thinking']
+,'67': [H+s+'07.gif', ':o', 'Embarrassment']
+,'68': [H+s+'36.gif', ':kissmouth', 'kiss']
+,'69': [H+s+'37.gif', ':heart:', 'heart']
+,'70': [H+s+'e03.gif', ':flower:', 'flower']
+,'71': [H+s+'e02.gif', ':rainbow:', 'rainbow']
+,'72': [H+s+'008.gif', ':sun:', 'Matahari']
+,'73': [H+s+'007.gif', ':moon:', 'Moon']
+,'74': [H+s+'40.gif', ':present:', 'present']
+
+,'75': [H+s+'41.gif', ':Phone:', 'phone']
+,'76': [H+s+'42.gif', ':clock:', 'clock']
+,'77': [H+s+'44.gif', ':tv:', 'televisi']
+,'78': [H+s+'39.gif', ':table:', 'table']
+,'79': [H+s+'32.gif', ':ricebowl:', 'ricebowl']
+,'80': [H+s+'rice.gif', ':Onigiri:', 'Onigiri']
+,'81': [H+s+'31.gif', ':coffee:', 'coffee']
+,'82': [H+s+'33.gif', ':medicine:', 'medicine']
+,'83': [H+s+'43.gif', ':email:', 'mail']
+
+,'84': [H+s+'paw.gif', ':Paws:', 'Paw']
+,'85': [H+s+'29.gif', ':anjing:', 'anjing']
+,'86': [H+s+'woof.gif', ':buldog:', 'Buldog']
+,'87': [H+s+'28.gif', ':kucing:', 'kucing']
+,'88': [H+s+'frog.gif', ':frog:', 'frog']
+,'89': [H+s+'27.gif', ':babi:', 'babi']
+,'90': [H+s+'52.gif', ':exclamati', 'exclamation']
+
+  };
+  gvar.smiliebesar = {
+ '291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
+,'292': [H+s+'kribo.gif', ':afro:', 'afro']
+,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
+,'294': [H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
+,'295': [H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
+
+/* New Big Smilies */
+,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
+
+,'501': [H+'najis.gif', ':najis', 'Najis']
+,'502': [H+'s_sm_maho.gif', ':maho', 'Maho']
+,'503': [H+'hoax.gif', ':hoax', 'Hoax']
+,'504': [H+'marah.gif', ':marah', 'Marah']
+,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
+,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
+,'507': [H+'sorry.gif', ':sorry', 'Sorry']
+
+,'508': [H+'capede.gif', ':cd', 'Cape d...']
+,'509': [H+'nohope.gif', ':nohope', 'No Hope']
+,'510': [H+'bingung.gif', ':bingung', 'Bingung']
+
+,'511': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'512': [H+'dp.gif', ':dp', 'DP']
+,'513': [H+'takut.gif', ':takut', 'Takut']
+,'514': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+
+,'515': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'516': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'517': [H+'toastcendol.gif', ':toast', 'Toast']
+,'518': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
+,'519': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+
+,'520': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+
+,'521': [H+'mewek.gif', ':mewek', 'Mewek']
+,'522': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'523': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+
+,'524': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'525': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'526': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'527': [H+'selamat.gif', ':selamat', 'Selamat']
+
+,'528': [H+'ultah.gif', ':ultah', 'Ultah']
+,'529': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'530': [H+'request.gif', ':request', 'Request']
+,'531': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+
+,'532': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'533': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'534': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'535': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'536': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'538': [H+'traveller.gif', ':travel', 'Traveller']
+
+/* Dec-2010, :kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
+,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+
+// -- OLD ---
+,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
+,'901': [H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
+,'902': [H+'fd_5.gif', ':sup:', 'Sundul Up']
+,'903': [H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
+,'904': [H+'fd_8.gif', ':kacau:', 'Thread Kacau']
+,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
+,'906': [H+'fd_7.gif', ':repost:', 'Repost']
+,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
+  };
+}
 ,getCSS: function(){
   return (''
     +'span.thread_preview,span.thread_preview-readed{cursor:pointer;font:bold 13px/16px "Comic Sans MS";margin-right:1px;}'
     +'span.thread_preview{color:#FF0000;}'
     +'span.thread_preview-readed{color:#6B6BB6;}'
-    +'#controller_wraper{border:1px solid transparent;background-color:transparent;margin-top:-20px;line-height:80px;}'
-	+'.textarea{clear:both;height:100px;width:99%;margin:0 3px;}'
-	+'.controlbar{text-align:left;}'
-    +'.txta_cont{min-width:100%;width:100%;padding-right:5px;}'
-    +'.panelsurrounds .panel, .imagebutton{background:#DFDFE0;}'
+    
     +'.input_title, .textarea{border:1px solid #B1B1B1;}'
     +'.input_title:focus, .textarea:focus, .activeField:focus{border:1px solid #275C7C;}'
     +'#recapctha_header{min-width:320px;text-align:right;font-weight:bold;}'
@@ -1645,26 +2888,59 @@ var rSRC = {
     +'.cblue{color:#000080!important;}'
     +'.cred{color:#FF0000!important;}'
     +'.qrsmallfont, .qrsmallfont div, .g_notice{font-size:11px;}'
+    +'div.qrsmallfont a{text-decoration:none;}'
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
     +'.nodeco{text-decoration:none;}'
     +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
-    +'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
+    //+'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
     +'.hd_layer-right{float:right; margin-right:5px;}'
     +'.hd_layer-left{float:left; margin-left:5px;}'
 	+'.qr_button_cont{width:100%; text-align:center;}'
 	+'#qr_button{margin-right:-40px;}'
-	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;}'
+	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;outline:none;}'
     +'#collapseimg_quickreply{border:0;}'
     +'#atoggle{outline:none;}'
 
 /* ==settings== */ 
     +'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;}'
     +'a.lilbutton.twbtn-primary{color:#F0F000;}a.lilbutton.twbtn-primary:hover{color:#fff;}'
+    +'.setting_subtitle{padding:0 0 3px 25px;}'
+	+'#tbl_setting textarea{font-family:"Courier New";font-size:9pt;width:95%;margin-top:3px;}'
+    +'.cancel_layout {margin:6px 3px 0 0;}'
+    +'.cancel_layout-invi {display:none;}'
 	
-
+/* ==Updater== */ 
+  +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
+  +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
+  +'.qrdialog-child{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em; font-size:8pt; border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; box-shadow:3px 3px 15px #888; -moz-box-shadow:3px 3px 15px #888; -khtml-box-shadow:3px 3px 15px #888; -webkit-box-shadow:3px 3px 15px #888;}'
+	
+/* ==QR-&-controler== */ 
+    +'.controlbar{text-align:left;}'
+    +'.txta_cont{min-width:100%;width:100%;padding-right:5px;}'
+	+'#controller_wraper{border:1px solid transparent;background-color:transparent;margin-top:-20px;line-height:80px;}'
+	+'.textarea{clear:both;height:100px;width:100%;}'
+    +'.panelsurrounds .panel, .imagebutton{background:#DFDFE0;}'
+    +'.imagebutton:hover, .imagebutton_color:hover{cursor:pointer;}'
+    +'.customed_addcontroller img, .imagebutton img, .ofont, .osize{color:#000;border:1px solid transparent;background-color:transparent;}'
+    +'.customed_addcontroller img:hover, .imagebutton img:hover{color:#000;border:1px solid #2085C1;background-color:#B0DAF2;}'
+/* ==QR-smiley-tab== */ 
+    +'#skecil_container, #sbesar_container, #scustom_container{border: 1px solid #BBC7CE;padding:2px;}'
+    +'#scustom_container{padding-top:10px !important;}'
+    +'#skecil_container img, #sbesar_container img, #scustom_container img{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'
+    +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
+    +'#content_scustom_container .ofont{text-decoration:none;cursor:pointer;}'
+    +'#content_scustom_container .nothumb{padding:1px 3px;}'
+    +'#content_scustom_container .scustom-thumb{margin-left:2px;}'
+    +'.ul_tabsmile{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'
+    +'.ul_tabsmile li{display:inline;margin-left:3px;}'
+    +'li.tab_close{float:right !important;}'
+    +'.ul_tabsmile a{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;}'
+    +'.ul_tabsmile a:hover{background-color:#B0DAF2;}'
+    +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover{background-color:#DDDDDD;}'
+    +'.qbutton{padding:1px 3px;border:1px solid #1E67C1; background-color:#C7C7C7; color:#000; text-decoration:none; border-radius:3px; -moz-border-radius:3px; -khtml-border-radius:3px; -webkit-border-radius:3px;}'
 
 /* ==ktp popup== */ 
     +'#img_ngaskuser{height:120px;}'
@@ -1696,8 +2972,8 @@ var rSRC = {
     +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
     +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
     +'}'
-	/* twitter's button */
     
+	/* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #B1B1B1;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn-primary{border-color:#3B3B3B;font-weight:bold;color:#F0F000;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
 	/* thumb image */
 	+'.imgthumb:hover {background-color:#80FF80 !important;}'
@@ -1728,7 +3004,7 @@ var rSRC = {
  +'<div id="popup_container" class="popup_block"> '
  + '<div class="popup" id="popup_child">'
  +  '<a tabindex="209" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
- +  '<a tabindex="208" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.setting.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
+ +  '<a tabindex="208" href="javascript:;"><img id="imgsticky" title="Toggle Fixed View" class="sticky" src="'+(gvar.settings.fixed_preview ? gvar.B.sticky1_png : gvar.B.sticky2_png)+'"/></a>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<tbody><tr>'
  +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
@@ -1737,10 +3013,10 @@ var rSRC = {
  + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow" ><b>'+gvar.TS.name+'</b></a>]' : '')
  
  // 
- + (gvar.current.isLastPost ? ' - [<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Single Post</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
+ + (gvar.current.isLastPost ? ' - [<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Post By</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
  
  +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
- +     '<span id="ktp_version" class="hd_layer-right" style=""><a href="javascript:;" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ +     '<a id="preview_setting" href="javascript:;" style="right:45px;position:absolute;margin-top:-4px;"><img src="'+gvar.B.setting_gif+'" alt="setting" title="Settings" border="0" /></a>'
  +    '</div>' // #head_layer 
 
  +   '</td>'
@@ -1751,8 +3027,6 @@ var rSRC = {
  +   '<div id="preview_content"></div>' // main post-content
  + (gvar.user.id ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
- //+    '<a id="btn_reply_qr" onclick="return false" href="javascript:;" target="_blank" style="margin-right:5px;">'
- //+     '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick-Reply" title="Quick Reply this message" border="0"/></a>'
  +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Quote & Quick Reply this Message" border="0"/></a>'
  +     '<div id="quote_loading" style="margin-right:5px;padding:3px;display:none;">'+_LOADING+'</div>'
@@ -1763,7 +3037,7 @@ var rSRC = {
 
  +  '<div id="tbl_separator" class="spacer"></div>'
 
- +( !gvar.current.isLastPost ? ''
+ +( !gvar.current.isLastPost && gvar.LPOST.pid ? ''
  +  '<div id="threadpost_navi" style="float:right;">'
  +    '<input type="button" id="last_post" class="twbtn twbtn-m" value="Show Last Post" style="margin-right:5px;" />' 
  +  '</div>' 
@@ -1784,7 +3058,7 @@ var rSRC = {
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
  +   '<td class="tcat">'
  +    'Quick Reply<span id="loggedin_as"></span>'
- +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+'</span>'
+ +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +   '</td>'
  +  '</tr></thead>'
  +  '<tbody id="collapseobj_quickreply" style="display:none;">'
@@ -1802,7 +3076,7 @@ var rSRC = {
  +  '<tr><td class="tcat">' 
  +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>'
  + (gvar.user.id ? ''
- +    '<a tabindex="207" id="preview_setting" href="javascript:;" class="cyellow hd_layer-right" style=""><b>Setting</b></a>'
+ +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
  +    '</div>' : '')
@@ -1824,7 +3098,7 @@ var rSRC = {
  +'<input type="hidden" name="wysiwyg" value="0" />'
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
  +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
- +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.setting.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label></span>'
+ +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.settings.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label></span>'
  +   '</div>' // #button_preview
  +(gvar.user.id ? '</form>' : '')
  
@@ -1839,42 +3113,42 @@ var rSRC = {
 ,getTPL_setting: function(){
  var spacer = '<div class="spc1" style=""></div>';
  return (''
- + '<table id="tbl_setting" cellpadding="0" cellspacing="0" border="0" style="">'
+ + '<table id="tbl_setting" cellpadding="0" cellspacing="0" border="0">'
  + '<tr><td colspan="2" align="center">'
- +  '<div class="g_notice" style="display:inline-block;padding-top:5px;height:20px;width:450px;">'
- +   '<div style="float:left;margin-left:20px;"><strong>Thread Preview Settings</strong></div>'
+ + '<div class="g_notice" style="display:inline-block;margin-bottom:0;padding-top:8px;height:20px;width:450px;">'
+ +   '<div style="float:left;margin-left:10px;"><strong>'+gvar.codename+' Settings</strong></div>'
  +   '<div style="float:right;margin-right:10px;">'
  +     '<a id="save_settings" href="javascript:;" class="twbtn twbtn-m twbtn-primary lilbutton" style="">save</a>&nbsp;&nbsp;'
- +     '<a id="cancel_settings" href="javascript:;">cancel</a></div>'
- +  '</div>'
+ +     '<a id="cancel_settings" href="javascript:;">cancel</a>'
+ +   '</div>'
+ + '</div>'
  + '</td></tr><tr>'
- + '<td id="td_setting_control" valign="top" style="padding-left:5px;">'
- +  '<div style="padding:1px 0 3px 25px;"><b>::QR::</b></div>'
- +  '<input id="stg_autolayout_sigi" type="checkbox" /> AutoSignature&nbsp;'
+ // stg_autolayout_sigi stg_autolayout_tpl stg_autoshow_smile 
+ + '<td class="alt2" valign="top" style="padding-left:5px;">'
+ +  '<div class="setting_subtitle"><b>::QR::</b></div>'
+ +  '<input id="stg_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/> AutoSignature&nbsp;'
  +  '<small><a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
  +  '<div id="edit_sigi_Editor" style="display:none;"></div>'
  +spacer
- +  '<input id="stg_autolayout_tpl" type="checkbox" /> AutoLayout&nbsp;'
+ +  '<input id="stg_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1' ? 'checked':'')+'/> AutoLayout&nbsp;'
  +  '<small><a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi">X</a></small><br />'
  +  '<div id="edit_tpl_Editor" style="display:none;"></div>'
  +spacer
- +  '<input id="misc_autoshow_smile" type="checkbox" /> AutoLoad Smiley<br />'
+ +  '<input id="stg_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/> AutoLoad Smiley<br />'
  +  '<small style="margin-left:20px;">'
- +   '<label for="stg_autoshow_smile_kecil"><input name="rd_sml" id="stg_autoshow_smile_kecil" type="radio" value="kecil" />kecil</label>&nbsp;'
- +   '<label for="stg_autoshow_smile_besar"><input name="rd_sml" id="stg_autoshow_smile_besar" type="radio" value="besar" />besar</label>&nbsp;'
- +   '<label for="stg_autoshow_smile_custm"><input name="rd_sml" id="stg_autoshow_smile_custm" type="radio" value="custom" />[+]</label>'
+ +   '<label for="stg_autoshow_smile_kecil"><input name="rd_sml" id="stg_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/>kecil</label>&nbsp;'
+ +   '<label for="stg_autoshow_smile_besar"><input name="rd_sml" id="stg_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/>besar</label>&nbsp;'
+ +   '<label for="stg_autoshow_smile_custm"><input name="rd_sml" id="stg_autoshow_smile_custm" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/>[+]</label>'
  +  '</small>'
- +spacer
-   
- + '</td>'
- 
- + '<td width="220" style="border-left:1px solid #000; padding-left:5px;" valign="top">'
- +  '<div style="padding:1px 0 3px 25px;"><b>::General::</b></div>'
+ +spacer   
+ + '</td>' 
+ + '<td class="alt2" valign="top" style="padding:0 5px 10px 5px; border-left:1px solid #BBC7CE; width:200px;">'
+ +  '<div class="setting_subtitle"><b>::General::</b></div>'
  
  +(!gvar.noCrossDomain ? ''
- +  '<label for="stg_updates" title="Check Userscripts.org for QR latest update"><input id="stg_updates" type="checkbox" '+(gvar.setting.updates==1 ? 'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a></small>'
+ +  '<label for="stg_updates" title="Check Userscripts.org for QR latest update"><input id="stg_updates" type="checkbox" '+(gvar.settings.updates==1 ? 'checked':'')+'/> Updates</label>&nbsp;&nbsp;<small><a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a></small>'
  +spacer
- +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval&nbsp;<input id="stg_updates_interval" type="text" value="'+gvar.setting.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
+ +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval&nbsp;<input id="stg_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
  +spacer : '') 
  
  //+  '<input id="stg_autoload_qr" type="checkbox" /> AutoLoad QR<br />'
@@ -1882,37 +3156,41 @@ var rSRC = {
  // 
  +'&nbsp;*<span style="margin-left:8px;">Images Policy</span><br />'
  +'<div id="image_policy" style="margin-left:20px;font-size:10px;">'
- +   '<label for="stg_showimages_none"><input name="rd_img" id="stg_showimages_none" type="radio" value="0" '+(gvar.setting.imgload==0?'checked':'')+'/>No-Image</label>' + '<br/>'
- +   '<label for="stg_showimages_emot"><input name="rd_img" id="stg_showimages_emot" type="radio" value="1" '+(gvar.setting.imgload==1?'checked':'')+'/>Emotes-Only</label>' + '&nbsp;'
- +   '<label for="stg_showimages_alll"><input name="rd_img" id="stg_showimages_alll" type="radio" value="2" '+(gvar.setting.imgload==2?'checked':'')+'/>Show All</label>'
+ +   '<label for="stg_showimages_none"><input name="rd_img" id="stg_showimages_none" type="radio" value="0" '+(gvar.settings.imgload==0?'checked':'')+'/>No-Image</label>' + '<br/>'
+ +   '<label for="stg_showimages_emot"><input name="rd_img" id="stg_showimages_emot" type="radio" value="1" '+(gvar.settings.imgload==1?'checked':'')+'/>Emotes-Only</label>' + '&nbsp;'
+ +   '<label for="stg_showimages_alll"><input name="rd_img" id="stg_showimages_alll" type="radio" value="2" '+(gvar.settings.imgload==2?'checked':'')+'/>Show All</label>'
  +'</div>'
  +spacer
- +  '<input id="stg_scrollto_lastrow" type="checkbox" '+(gvar.setting.thread_lastscroll==1 ? 'checked':'')+'> Scroll to Last Position<br />'
- +  '<input id="stg_reload_afterpost" type="checkbox" '+(gvar.setting.reload_aftersent==1 ? 'checked':'')+'/> Reload after Posting<br />'
- 
+ +  '<input id="stg_scrollto_lastrow" type="checkbox" '+(gvar.settings.thread_lastscroll==1 ? 'checked':'')+'> Scroll to Last Position<br />'
+ +  '<input id="stg_reload_afterpost" type="checkbox" '+(gvar.settings.reload_aftersent==1 ? 'checked':'')+'/> Reload after Posting<br />'
+
  +'<div style="height:6px;"></div>'
  +'<a id="reset_default" class="nodeco" href="javascript:;"><small>reset default</small></a>'
- +'<div style="height:6px;"></div>'
+ //+'<div style="height:6px;"></div>'
  +spacer
- + ''
-
- 
+ + '' 
+ + '</td></tr><tr>'
+ + '<td colspan="2" align="center">'
+ + '<div class="g_notice" style="display:inline-block;margin-bottom:0;padding:2px 0;height:13px;width:460px;">'
+ +   '<div style="clear:both;text-align:center;font-size:9px;">'
+ +   'Save-Setting <b>WILL CLOSE</b> Pop-Up Preview and may require reload page.'
+ +   '</div>'
+ + '</div>'
  + '</td></tr>'
  + '</table>'
- + '<div class="spacer"></div>'
+ //+ '<div class="spacer"></div>'
  );
 }
 ,getTPL_qr: function(){
  return (''
  +'<div id="quoted_notice" class="g_notice"></div>' // Quoted notice
- +'<table cellpadding="0" cellspacing="0"><tr>'
+ +'<table cellpadding="0" cellspacing="0" border="0"><tr>'
  + '<td><div class="qrsmallfont">'
  + '<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
  +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
  + '</div></td>'
  + '<td id="recapctha_header" valign="bottom">reCAPTCHA&nbsp;&nbsp;</td>'
- + '</tr><tr>'
- 
+ + '</tr><tr>' 
  // vB_Editor_QR_textarea
  +  '<td class="txta_cont panelsurrounds">'
  
@@ -1920,23 +3198,19 @@ var rSRC = {
  +   rSRC.getTPL_vbEditor()
  +   '</div></div>'
  
- // Setting container will be containing from rSRC.getTPL_setting()
- //+'<div id="settings_cont"></div>' 
- 
- +   '</td>'
- 
+ +  '</td>' 
  +   '<td id="recaptcha_cont">'
  +    '<div id="recaptcha_container" style="text-align:center;">'
  +      '<div>'+_LOADING+'</div>'
  +    '</div>'
  +   '</td>'
  + '</tr></table>'
+ +'<div id="smile_cont" style="display:none;"></div>'
 
  /* -remote-capctha- */
  +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'    
- + '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="showRecaptcha(\'recaptcha_container\');" />' // fake button create
- + '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:" onclick="Recaptcha.reload();" />' // fake button reload
- //+ '<input id="docapcayfocus" value="" type="hidden"  />' // flag for callback caller click capcay
+ +  '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:;" onclick="showRecaptcha(\'recaptcha_container\');" />' // remote create
+ +  '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:;" onclick="Recaptcha.reload();" />' // remote reload
  +'</fieldset>'
  );
 }
@@ -1945,7 +3219,12 @@ var rSRC = {
   +'<table cellpadding="0" cellspacing="0" border="0" width="100%">'
   +'<tr><td id="vB_Editor_001" class="vBulletin_editor">'
   +  '<div id="vB_Editor_001_controls" class="controlbar" style="width:100%;">'
-  +    '' // controller should we fill this?
+  // controller filled here..
+  + '<table cellpadding="0" cellspacing="0" border="0">'
+  + '<tr>'
+  +  '<td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>'
+  + '</tr>'
+  +  '</table>'
   +  '</div>' // end #vB_Editor_001_controls
   +  '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
   +   '<tr><td class="controlbar">'
@@ -1967,3 +3246,4 @@ init();
 // ------
 
 })();
+/* Mod By Idx. */
