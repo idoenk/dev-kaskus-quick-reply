@@ -41,7 +41,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug| 
+gvar.__DEBUG__ = true; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -205,6 +205,10 @@ var LINK = {
     var cucok = link.match(/\.php\?p=(\d+)/im);
     return (cucok ? cucok[1] : false);
   }
+ ,fixDomain: function(link){
+    if(link.match(/http\:\/\/kaskus\.us\/.+/))
+	  return link.replace(/\:\/\//,'://www.');
+  }
 };
 
 var tTRIT = {
@@ -213,11 +217,11 @@ var tTRIT = {
 	
 	var styles = ['font-size:10px;vertical-align:top;margin:0 5px 0 -18px;position:relative;', 'font-size:10px;',''];
 	var areas = {
-	     'navforumisi': {style:styles[0],pos:'first',parentLevel:2}
-	    ,'LingBawah': {style:styles[0],pos:'first',parentLevel:1}
-	    ,'Conhomemidd': {style:styles[1],pos:'last',parentLevel:1}
-	    ,'tabcontentcontainer': {style:styles[1],pos:'last',parentLevel:1}
-	    ,'navigation': {style:styles[1],pos:'last',parentLevel:1}
+	     'navforumisi': {style:styles[0],pos:'first',parentLevel:2} // HT
+	    ,'LingBawah': {style:styles[0],pos:'first',parentLevel:1} // Terkini / FJB
+	    ,'Conhomemidd': {style:styles[1],pos:'last',parentLevel:1} // LKL ; Lounge
+	    ,'tabcontentcontainer': {style:styles[1],pos:'last',parentLevel:1} // FJB
+	    ,'navigation': {style:styles[1],pos:'last',parentLevel:1} // beside hot-threads
 		
 	    ,'tblForumBits': {style:styles[2],pos:2,parentLevel:1} // @ forumdisplay
 	};	  
@@ -229,6 +233,8 @@ var tTRIT = {
 	    if(par && nodes.snapshotLength > 0){
 	     for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
 	      node = nodes.snapshotItem(i);
+		  //fixDomain
+		  if(area=='navigation') node.href = LINK.fixDomain(node.href)
 		  tid = LINK.getTID(node.href);
 	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[area].style, rel:node.href};
 	      el = createEl('span',Attr,'[+]');		  
@@ -279,8 +285,11 @@ var tTRIT = {
 	    }
 	   } // end-for
 	  } // end-if
-	  even_node('LingBawah');
-	  even_node('tblForumBits');
+	  
+	  if(gvar.loc.indexOf('/forumdisplay.php?')!=-1){
+	    even_node('LingBawah');
+	    even_node('tblForumBits');
+	  }
 	  
 	}else if(gvar.loc.indexOf('/member.php?')!=-1){
 
@@ -298,9 +307,9 @@ var tTRIT = {
 	}else{
 	
 	  // Kaskus Home --
-	 for(var field in areas){
+	 for(var field in areas)
 	    even_node(field);
-	 }
+	 
 	 
 	 // menubwhjb
 	 par = $D('#menubwhjb');
@@ -427,6 +436,8 @@ var tTRIT = {
 	
 	reply_html = reply_html.responseText;
     var rets = tTRIT.parse_preview(reply_html);
+
+	clog(gvar.current.tofetch);
 	
 	if(rets===null){
 	  if(caller) {
@@ -434,6 +445,7 @@ var tTRIT = {
 	    window.setTimeout(function() { caller.innerHTML='[+]';}, 3500);
 	  }
 	  tTRIT.fetch_failed('t2, ' + 'Thread Not Loaded, might be `kepenuhan`'); // end of story
+	  return;
 	}	
 	// tahap-3 yg bikin failed
 	if( tTRIT.is_fetch_expire() ) tTRIT.fetch_failed('t3');	
@@ -442,6 +454,7 @@ var tTRIT = {
 	if( caller ) tTRIT.fetch_done(caller);	
 	
 	// ready to next step
+	clog(rets.newreply);
 	gvar.current.newreply = rets.newreply;
     gvar.current.content= rets.content;
 	
