@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name          Kaskus Thread Preview - reCoded-2
+// @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0
 // @dtversion     110108100
-// @timestamp     1294425859937
+// @timestamp     1294493098820
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,10 +16,7 @@
 //
 // -!--latestupdate
 //
-//
 //  v1.0 - 2011-01-08
-//    support wide-range location
-//    fill setting with event
 //    init recoded
 //
 // -/!latestupdate---
@@ -31,7 +28,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0';
 gvar.scriptMeta = {
-  timestamp: 1294425859937 // version.timestamp
+  timestamp: 1294493098820 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -41,7 +38,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug| 
+gvar.__DEBUG__ = false; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -1192,6 +1189,8 @@ var tQR = {
 	    if(gvar.current.qr_fetch === null)
 		  tQR.fetch_error(true);
 	    vB_textarea.focus();
+		if(gvar.settings.autoload_smiley[0]=='1')
+         tQR.create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
 	  };
 	
 	  if( !gvar.current.QR_isLoaded ){
@@ -2365,9 +2364,9 @@ var Updater = {
 	Updater.showDialog(
        '<img id="nfo_version" src="'+gvar.B.news_png+'" class="qbutton" style="float:left; margin:3px 5px 0 2px;padding:3px;"/> '
 	  +'<b>New'+' '+gvar.codename+'</b> (v'+ Updater.meta.cvv[1]+') is available'
-      +'<div style="float:right;margin:9px 0 0 15px;"><a class="qbutton" href="http://'+ 'userscripts.org'
+      +'<div style="float:right;margin:9px 0 0 15px;"><a class="qbutton twbtn twbtn-m lilbutton" href="http://'+ 'userscripts.org'
       +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="Goto '+gvar.codename+' Home">Home</a></div>'
-      +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
+      +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton twbtn twbtn-m lilbutton" href="javascript:;"><b>Update</b></a></div>'
       +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
     Dom.Ev($D('#upd_close'),'click', function(){
@@ -2404,7 +2403,7 @@ var Updater = {
 	if( Updater.meta.news ){
 	  $D('#nfo_version').setAttribute('title', 'What\' New...');
 	  $D('#nfo_version').style.setProperty('cursor', 'pointer', '');
-	  Dom.Ev($D('#nfo_version'), 'click', function(){ alert( gvar.codename+'\n== Last LOG Update ==' + Updater.meta.news );});
+	  Dom.Ev($D('#nfo_version'), 'click', function(){ alert( gvar.codename+'\n\n== Last LOG Update ==' + Updater.meta.news );});
 	}
     
     Updater.notify_done(true);
@@ -2431,7 +2430,7 @@ var Updater = {
      news:(function(x){
 	      var wrp=['// -!--latestupdate','// -/!latestupdate---'];
 	      var p=[x.indexOf(wrp[0]), x.indexOf(wrp[1])];
-		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/^\s+|\/+\s*/gm, function($str,$1){return '';}) : '');
+		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/\/+\s*/gm, function($str,$1){return " ";}) : '');
 	    })(rt)
     };	
   }
@@ -2928,7 +2927,7 @@ Format will be valid like this:
 /* ==Updater== */ 
   +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
   +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
-  +'.qrdialog-child{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em; font-size:8pt; border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; box-shadow:3px 3px 15px #888; -moz-box-shadow:3px 3px 15px #888; -khtml-box-shadow:3px 3px 15px #888; -webkit-box-shadow:3px 3px 15px #888;}'
+  +'.qrdialog-child{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:450px;margin-left:3px;padding:.2em .5em; font-size:8pt; border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; box-shadow:3px 3px 15px #888; -moz-box-shadow:3px 3px 15px #888; -khtml-box-shadow:3px 3px 15px #888; -webkit-box-shadow:3px 3px 15px #888;}'
 	
 /* ==QR-&-controler== */ 
     +'.controlbar{text-align:left;}'
@@ -3009,6 +3008,12 @@ Format will be valid like this:
    +  '}'
    + ');'
    +'};'
+   +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
+   + 'this.open_smilie_window=function(width,height){'
+   +  'smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'
+   + '};'
+   +'};'
+   +"vB_Editor['vB_Editor_001']= new vB_Text_Editor('vB_Editor_001', 0, '13', '1', undefined, '');"
   );  
  }
 // tPL
@@ -3022,11 +3027,11 @@ Format will be valid like this:
  +  '<tbody><tr>'
  +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
  
- +     '<div class="hd_layer"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;') 
+ +     '<div class="hd_layer"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')
  + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow" ><b>'+gvar.TS.name+'</b></a>]' : '')
- 
  // 
  + (gvar.current.isLastPost ? ' - [<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Post By</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
+ + ' <span id="upd_notify"></span>'
  
  +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
  +     '<a id="preview_setting" href="javascript:;" style="right:45px;position:absolute;margin-top:-4px;"><img src="'+gvar.B.setting_gif+'" alt="setting" title="Settings" border="0" /></a>'
