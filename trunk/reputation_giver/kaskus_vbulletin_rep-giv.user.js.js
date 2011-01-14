@@ -17,8 +17,7 @@
 /*
 // mod.R.14 : 2011-01-14
 // Fix red/black sender
-// Fix kaskus-donat sender
-// Fix minor CSS
+// Fix minor CSS, kaskus-donat sender
 // 
 // mod.R.13 : 2011-01-03
 // Fix prefer to define 'var' on global namespace (major issue Opera-11)
