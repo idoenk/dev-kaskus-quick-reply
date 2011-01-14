@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0
-// @dtversion     110108100
-// @timestamp     1294493098820
+// @version       1.0.1
+// @dtversion     110115101
+// @timestamp     1295032308823
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -12,9 +12,15 @@
 // @include       */subscription.php?*
 // @include       */member.php?*
 // @include       */search.php?do=finduser&u=*&starteronly=1
+// @include       */search_result.php?*
 // @include       http://www.kaskus.us/
+// @include       http://www.kaskus.us/index.php
 //
 // -!--latestupdate
+//
+//  v1.0.1 - 2011-01-15
+//    Fix Improve findCurrentRow
+//    Add include search_result.php
 //
 //  v1.0 - 2011-01-08
 //    init recoded
@@ -26,9 +32,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0';
+gvar.sversion = 'v' + '1.0.1';
 gvar.scriptMeta = {
-  timestamp: 1294493098820 // version.timestamp
+  timestamp: 1295032308823 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -102,7 +108,7 @@ function init(){
   gvar.B= rSRC.getSetOf('button');
   gvar.TS= {}; // all about TS: {id:'',name:'',tid:'',pid:'',urifetch:''}
   gvar.LPOST= {}; // all about LASTPOST: {id:'',name:'',pid:'',urifetch:''}  
-  gvar.current= {}; // {cImg:'',cEmote:'',cSPL:'',content:'',isLastPost:'',QR_isLoaded:''}
+  gvar.current= {}; // {cImg:'',cEmote:'',cSPL:'',content:'',isLastPost:'',QR_isLoaded:'',TRIT_isClosed:''}
   gvar.loc= location.href;
 
   //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.settings.fixed_preview) );
@@ -182,11 +188,12 @@ function start_Main(){
     nodes = $D("//meta[@http-equiv='refresh']", null, true);
 	if(nodes) Dom.remove(nodes);
     gvar.meta_refresh = createEl('meta', {id:'meta_refresh',content:'600','http-equiv':'refresh'});
-	Dom.add(gvar.meta_refresh, head[0]);
+	head[0].appendChild( gvar.meta_refresh.cloneNode(true) );
+	//Dom.add(gvar.meta_refresh, head[0]);
   }
+  
   tTRIT.init();
   
-
 } // end start_Main
 
 
@@ -212,134 +219,163 @@ var tTRIT = {
   init: function(){
 	var nodes, lnodes, node, href, tid, pid, par, Attr, el;
 	
-	var styles = ['font-size:10px;vertical-align:top;margin:0 5px 0 -18px;position:relative;', 'font-size:10px;',''];
-	var areas = {
+	var shiftedLeft = 'vertical-align:top;margin:0 5px 0 -18px;position:relative;';
+	var styles = ['font-size:10px;'+shiftedLeft, 'font-size:10px;', 'font-size:12px;'+shiftedLeft];
+	// we're givin properties at every places which has diff behaviour depend on its parent
+	var areas_home = {
 	     'navforumisi': {style:styles[0],pos:'first',parentLevel:2} // HT
-	    ,'LingBawah': {style:styles[0],pos:'first',parentLevel:1} // Terkini / FJB
+	    ,'LingBawah': {style:styles[0],pos:'first',parentLevel:1} // Terkini / FJB | forumdisplay.php
 	    ,'Conhomemidd': {style:styles[1],pos:'last',parentLevel:1} // LKL ; Lounge
 	    ,'tabcontentcontainer': {style:styles[1],pos:'last',parentLevel:1} // FJB
 	    ,'navigation': {style:styles[1],pos:'last',parentLevel:1} // beside hot-threads
 		
-	    ,'tblForumBits': {style:styles[2],pos:2,parentLevel:1} // @ forumdisplay
-	};	  
-	var even_node = function(area){
-	    par = $D('#'+area);
-		if(!par) return;
+	};
+	var areas_forum = {
+	     'tblForumBits': {style:'',pos:2,parentLevel:1} // @ forumdisplay.php
+		,'LingBawah': {style:styles[0],pos:'first',parentLevel:1} // Terkini / FJB | forumdisplay.php
+	};
+	var areas_search = {
+	   'searchResult': {style:styles[2],pos:'first',parentLevel:1} // search_result
+	};
+	var even_node = function(areas, field){
+		var par, node, nodes, tid; // local var
+		par = (field==='searchResult' ? document.body : $D('#'+field) );
+		if( !par || isUndefined(areas[field]) ) return;
 		
 	    nodes = $D(".//a[contains(@href,'showthread.php?')]", par);
 	    if(par && nodes.snapshotLength > 0){
 	     for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
 	      node = nodes.snapshotItem(i);
-		  //fixDomain
-		  if(area=='navigation') node.href = LINK.fixDomain(node.href)
+		  //fixDomain| add missing www.
+		  if(field=='navigation')
+		    node.href = LINK.fixDomain(node.href)
 		  tid = LINK.getTID(node.href);
-	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[area].style, rel:node.href};
-	      el = createEl('span',Attr,'[+]');		  
+		  
+	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[field].style, rel:node.href};
+	      el = createEl('span',Attr,'[+]');
 	      par = node.parentNode; // parenting level
-		  if(areas[area].parentLevel==2)
-		    par = par.parentNode
-		  par.style.setProperty('list-style-type','none','');
+		  if(areas[field].parentLevel==2)
+		    par = par.parentNode;
+	      
+		  if(par.nodeName=='LI')
+		    par.style.setProperty('list-style-type','none','');
 		  
-		  if(areas[area].pos=='first')
+		  if(areas[field].pos=='first'){
 		    par.insertBefore(el, par.firstChild);
-		  else if(!isNaN(areas[area].pos) ){
-		    clog(area)
-		    clog(areas[area].pos)
-		    par.insertBefore(el, par.childNodes[areas[area].pos] );
-		  }else
+		  }else if(!isNaN(areas[field].pos) ){
+		    
+			clog('field='+field+'; '+'pos='+areas[field].pos);
+		    
+			par.insertBefore(el, par.childNodes[areas[field].pos] );
+		  }else{
 		    Dom.add(el, par);
-		  
+		  }
 		  // attach event-click
 	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
 	     }
 	    }
 	}; // end even_node
 
-
-	if(gvar.loc!=gvar.domain && gvar.loc.indexOf('/member.php?')==-1){
-      // append icon [+] on all thread & lastpost link
-      nodes = $D("//a[starts-with(@id,'thread_title')]");
-      if(nodes.snapshotLength > 0){
-       for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
-        node = nodes.snapshotItem(i);
-	    tid = LINK.getTID(node.href);
-	    Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
-	    el = createEl('span',Attr,'[+]');
-	    par = node.parentNode; // parent of cont (DIV)
-	    par.insertBefore(el, par.firstChild);
-	    // attach event-click
-	    Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	var curpage = '/' + basename(gvar.loc, null, "\\?");
+	clog('curpage='+curpage);
+	switch(curpage){
+	  case "/": case "/index.php":
+	    clog('home');		
+	     // Kaskus Home --
+	    for(var field in areas_home)
+	       even_node(areas_home, field);
 	    
-	    // lastpost nodes (single node)
-	    lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
+	    // menubwhjb | retrigger even_node after ajax done fetch links
+	    par = $D('#menubwhjb');
+	    nodes = $D(".//div[contains(@onclick,'getJBData')]", par);
+	    clog(nodes.snapshotLength );
+	    if(par && nodes.snapshotLength > 0){
+	      for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+	        node = nodes.snapshotItem(i);
+	   	    // attach event-click
+	        Dom.Ev(node, 'click', function(e){ 
+	   	      gvar.sTryWaitLoader = window.setInterval(function() {
+	   	        var loader = $D('#loaderani');
+	   	    	if(loader && loader.style.display=='none'){
+	   	    	  clearInterval(gvar.sTryWaitLoader);
+	   	    	  even_node(areas_home, 'tabcontentcontainer');
+	   	    	}
+	   	      }, 100);
+	   	    }); // end click event
+	      }
+	    }
+	  break;
+	  
+	  case "/member.php":
+	    clog('member');
+	    par = $D('#collapseobj_stats');
+	    lnodes = $D(".//a[contains(@href,'showthread.php?')]", par, 1);
 	    if(lnodes){
 	      pid = LINK.getPID(lnodes.href);
-	  	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
-	  	  el = createEl('span',Attr,'[+]');
-	  	  Dom.add(el, lnodes.parentNode);
-	      // attach event-click
+		  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+	    	el = createEl('span',Attr,'[+]');
+	    	Dom.add(el, lnodes.parentNode);
+		  // attach event-click
 	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
 	    }
-	   } // end-for
-	  } // end-if
+	  break;
 	  
-	  if(gvar.loc.indexOf('/forumdisplay.php?')!=-1){
-	    even_node('LingBawah');
-	    even_node('tblForumBits');
-	  }
+	  case "/search_result.php":
+	    clog('search_result');
+	    even_node(areas_search, 'searchResult');
+	  break;
 	  
-	}else if(gvar.loc.indexOf('/member.php?')!=-1){
+	  default:
+	    // common location eg. forumdisplay; usercp
+	    clog('default');
+		
+        // append icon [+] on all thread & lastpost link
+        nodes = $D("//a[starts-with(@id,'thread_title')]");
+        if(nodes.snapshotLength > 0){
+         for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
+          node = nodes.snapshotItem(i);
+	      tid = LINK.getTID(node.href);
+	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
+	      el = createEl('span',Attr,'[+]');
+	      par = node.parentNode; // parent of cont (DIV)
+	      par.insertBefore(el, par.firstChild);
+	      // attach event-click
+	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	      
+	      // lastpost nodes (single node)
+	      lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
+	      if(lnodes){
+	        pid = LINK.getPID(lnodes.href);
+	    	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+	    	  el = createEl('span',Attr,'[+]');
+	    	  Dom.add(el, lnodes.parentNode);
+	        // attach event-click
+	        Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	      }
+	     } // end-for
+	    } // end-if
+		
+	    if( curpage== "/forumdisplay.php" ){
+		  clog(curpage);
+	       even_node(areas_forum, 'LingBawah');
+	       even_node(areas_forum, 'tblForumBits');
+	    }
+	  break;
+	} // end switch
+	
 
-	  par = $D('#collapseobj_stats');
-	  lnodes = $D(".//a[contains(@href,'showthread.php?')]", par, 1);
-	  if(lnodes){
-	    pid = LINK.getPID(lnodes.href);
-		Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
-	  	el = createEl('span',Attr,'[+]');
-	  	Dom.add(el, lnodes.parentNode);
-		// attach event-click
-	    Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
-	  }	  
-	
-	}else{
-	
-	  // Kaskus Home --
-	 for(var field in areas)
-	    even_node(field);
-	 
-	 
-	 // menubwhjb
-	 par = $D('#menubwhjb');
-	 nodes = $D(".//div[contains(@onclick,'getJBData')]", par);
-	 clog(nodes.snapshotLength );
-	 if(par && nodes.snapshotLength > 0){
-	   for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
-	    node = nodes.snapshotItem(i);		
-		// attach event-click
-	    Dom.Ev(node, 'click', function(e){ 
-		  gvar.sTryWaitLoader = window.setInterval(function() {
-		    var loader = $D('#loaderani');
-			if(loader && loader.style.display=='none'){
-			  clearInterval(gvar.sTryWaitLoader);
-			  even_node('tabcontentcontainer');
-			}
-		  }, 100);
-		}); // end click event
-	   }
-	 }
-	  
-	} // end kaskus home
-	
-	
 	// event buat window
 	Dom.Ev(window.document, 'keydown', function(e) { return tTRIT.is_keydown_ondocument(e); });
-  }
+	
+	
+  } // end tTRIT.init()
  ,collectRowInfo: function(e){
     var task = (e.getAttribute('class') && e.getAttribute('class').indexOf('lastpost')!=-1 ? 'lastpost' : 'firstpost');
 	var trInner, inner, ret, cucok, isLast; 
+	gvar.current.TRIT_isClosed = false;
 	isLast = gvar.current.isLastPost = (task=='lastpost');
-    trInner = gvar.current.cRow = e.parentNode.parentNode.parentNode;
-    trInner = trInner.innerHTML;
+    trInner = gvar.current.cRow = tTRIT.findCurrentRow(e);
+    trInner = (trInner ? trInner.innerHTML : e.parentNode.innerHTML);
     if(isLast){ // find its parent (TR)
 
       gvar.TS.tid = LINK.getTID(trInner);
@@ -367,6 +403,18 @@ var tTRIT = {
 	clog('LPOST.id:'+gvar.LPOST.id+'; LPOST.name:'+gvar.LPOST.name+'; LPOST.pid:'+gvar.LPOST.pid+'; ');
 	
  }
+ ,findCurrentRow: function(e){
+    var par = null;
+	if(typeof(e)=='object'){
+	  var maxJump= 3, i= 0;
+	  par = e.parentNode;
+	  while(i < maxJump && par.nodeName!='TR'){
+	    par = par.parentNode; i++;
+	  }
+	  par = (par.nodeName!='TR' ? null : par);
+	}
+	return par;
+  }
  ,is_keydown_ondocument: function(e){
     var C = (!e ? window.event : e);
     var pressedCSA = (C.ctrlKey ? '1':'0')+','+(C.shiftKey ? '1':'0')+','+(C.altKey ? '1':'0');
@@ -387,6 +435,12 @@ var tTRIT = {
 	  alert(9);
 	  return;
     }
+  }
+ ,is_closed_thread: function(text){ // text-mode
+    // find first href with noquote    
+    //var anode = $D('.//a[contains(@href,"noquote")]', null, true);
+    //return (!anode ? false : (anode.innerHTML.indexOf('Closed Thread')==-1 ? anode.href : false) );
+	return (text.match(/[\'\"]\s*alt=[\'\"]Closed\s*Thread[\'\"]/i));
   }
  ,clickNode: function(e){
     e = e.target||e;	
@@ -495,6 +549,7 @@ var tTRIT = {
      _tit = cucok[1].replace(/\s*\-\s*Kaskus\s*\-\s*The Largest Indonesian Community/,"").trim();
      // step-two if it's single post
 	 //if(_tit.indexOf('- View Single Post -')!=-1){
+	 //alert('gvar.current.isLastPost='+gvar.current.isLastPost)
 	 if(gvar.current.isLastPost){
 	    _tit = _tit.replace(/^[^(?:P)]+.ost\s*\-\s*/,"").trim();
 		cucok = text.match(/name[\'\"]\s*href=[\'\"][^\?]+.u=(\d+)[^\>]+.([^\<]+).\/a>/im);
@@ -505,9 +560,11 @@ var tTRIT = {
 	 }else{
 	    // store pid of TS
 		cucok = text.match(/newreply\.php\?do=newreply([^\"\']+)/im);
-		if(cucok) cucok = cucok[1].replace(/\&amp;/gi,'&').replace(/\&noquote=1/gi,'').replace(/\&/,'.php?');		
-		clog(cucok);
-		gvar.TS.pid = (cucok ? LINK.getPID( cucok ) : false);
+		if(cucok) {
+		  cucok = cucok[1].replace(/\&amp;/gi,'&').replace(/\&noquote=1/gi,'').replace(/\&/,'.php?');
+		  clog(cucok);
+		  gvar.TS.pid = (cucok ? LINK.getPID( cucok ) : false);
+		}
 		// updating user.is & user.name
 		cucok = text.match(/ass=[\"\']bigusername[\'\"]\s*[^\?]+.u=(\d+).>(.+)<\/a>/i);
 		if(cucok){
@@ -515,6 +572,8 @@ var tTRIT = {
 		   gvar.TS.name = cucok[2];
 		}
 	 }
+	 gvar.current.TRIT_isClosed = tTRIT.is_closed_thread(text);
+	 
 	 clog('after');
 	 clog('TS.id:'+gvar.TS.id+'; TS.name:'+gvar.TS.name+'; TS.tid:'+gvar.TS.tid+'; TS.pid:'+gvar.TS.pid+'; ');
 	 clog('LPOST.id:'+gvar.LPOST.id+'; LPOST.name:'+gvar.LPOST.name+'; LPOST.pid:'+gvar.LPOST.pid+'; ');
@@ -570,6 +629,7 @@ var tPOP = {
   } 
  ,loadLayer: function(){
     var Attr = {id:'hideshow',style:'display:none;'};
+	//alert(gvar.current.TRIT_isClosed);
     var el = createEl('div', Attr, rSRC.getTPL_preview() );
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
 	tPOP.event_Static();
@@ -946,11 +1006,10 @@ var tPOP = {
        }
        $D('#open_spoilers').style.setProperty('display','inline','important');
     }
-    //if( !gvar.current.is_singlepost || gvar.current.cEMOTE || gvar.current.cIMG || gvar.current.cSPL )
-    if( !gvar.current.is_singlepost ) {
-	  if( gvar.current.cEMOTE || gvar.current.cIMG || gvar.current.cSPL )
-        $D('#thread_separator').style.setProperty('display','','');
-	  
+
+	var kasi_jarak = (gvar.current.cEMOTE || gvar.current.cIMG || gvar.current.cSPL || gvar.LPOST.pid);
+	$D('#thread_separator').style.setProperty('display',(kasi_jarak  ? '':'none'), '');
+    if( !gvar.current.isLastPost ) {	  
 	  if( $D('#last_post') && $D('#remotePID_'+gvar.LPOST.pid) )
         Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse($D('#remotePID_'+gvar.LPOST.pid), 'click', true); });		
 	}
@@ -1054,7 +1113,8 @@ var tPOP = {
 	//restore the meta refresh
 	var head = getTag('head');
 	if( isDefined(head[0]) && gvar.meta_refresh ){
-	  Dom.add(gvar.meta_refresh, head[0]);
+	  //Dom.add(gvar.meta_refresh, head[0]);
+	  head[0].appendChild( gvar.meta_refresh.cloneNode(true) );
 	}
 	Dom.remove( Dom.g(tgt) );
   }
@@ -2030,7 +2090,7 @@ function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
-function basename(path, suffix) {
+function basename(path, suffix, tailcut) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
   // *     example 1: basename('/www/site/home.htm', '.htm');    // *     returns 1: 'home'
@@ -2038,6 +2098,8 @@ function basename(path, suffix) {
   var b = path.replace(/^.*[\/\\]/g, '');
   if(typeof(suffix) == 'string' && b.substr(b.length-suffix.length) == suffix)
     b = b.substr(0, b.length-suffix.length);
+  if(typeof(tailcut) == 'string')
+    b = b.replace(new RegExp(tailcut+".*$", "g"), '');
   return b;
 };
 function toCharRef(text){
@@ -2410,18 +2472,21 @@ var Updater = {
  }
   
  ,notify_progres: function(caller){
-    $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+    if($D('#upd_notify'))
+	  $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
 	if(Dom.g(caller)) {
 	  Updater.caller=caller;
 	  Dom.g(caller).innerHTML='checking..'; // OR check now
 	}
  }
  ,notify_done: function(anyupd){
-    $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
-    if($D('#upd_notify').innerHTML==''){
-       $D('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
-       window.setTimeout(function(){ $D('#upd_notify').innerHTML=''; }, 4000);
-    }
+    if($D('#upd_notify')){
+	  $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
+      if($D('#upd_notify').innerHTML==''){
+        $D('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
+        window.setTimeout(function(){ $D('#upd_notify').innerHTML=''; }, 4000);
+      }
+	}
  }
  ,mparser: function(rt){
 	return {
@@ -3043,7 +3108,7 @@ Format will be valid like this:
 
  +   '<div id="post_detail"></div>' // kaskus badge | user detail
  +   '<div id="preview_content"></div>' // main post-content
- + (gvar.user.id ? ''
+ + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
  +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Quote & Quick Reply this Message" border="0"/></a>'
@@ -3068,14 +3133,15 @@ Format will be valid like this:
  +  '<div id="thread_separator" style="height:25px; display:'+(gvar.current.isLastPost?'none':'')+';"></div>'
 
  // quick-reply form
- +(gvar.user.id ? '<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">' : '')
+ +(gvar.user.id && !gvar.current.TRIT_isClosed ? '<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">' : '')
  +   '<div style="display:none;">'
  +    '<input type="submit" name="real_submit" value="Submit Post"/>'
  +   '</div>'
  +  '<table id="qr_container_table" class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
  +   '<td class="tcat">'
- +    'Quick Reply<span id="loggedin_as"></span>'
+ +(!gvar.current.TRIT_isClosed ? 'Quick Reply' : '')
+ +     '<span id="loggedin_as"></span>'
  +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +   '</td>'
  +  '</tr></thead>'
@@ -3093,8 +3159,8 @@ Format will be valid like this:
  +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed 
  +  '<tr><td class="tcat">' 
  +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>'
- + (gvar.user.id ? ''
- +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
  +    '</div>' : '')
@@ -3102,6 +3168,7 @@ Format will be valid like this:
  +  '</tfoot>' 
  +'</table>'
 
+ +(!gvar.current.TRIT_isClosed ? ''
  +   '<div id="button_preview" style="display:none;">'
  +'<input type="hidden" name="humanverify[hash]" value="" id="qr_hash" />'
  +'<input type="hidden" name="s" value="" />'
@@ -3118,7 +3185,9 @@ Format will be valid like this:
  +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
  +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.settings.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label></span>'
  +   '</div>' // #button_preview
- +(gvar.user.id ? '</form>' : '')
+ : '')
+ 
+ +(gvar.user.id && !gvar.current.TRIT_isClosed ? '</form>' : '')
  
  + '<div id="setting_container" style="position:absolute;right:1%;min-width:450px;border:2px outset;background:#F5F5FF;margin-top:1px;display:none;">'
  //+ rSRC.getTPL_setting()
