@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.1
-// @dtversion     110107311
-// @timestamp     1294339106097
+// @dtversion     110117311
+// @timestamp     1295204184866
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,8 +13,10 @@
 //
 // -!--latestupdate
 //
-// v3.1.1 - 2011-01-07
+// v3.1.1 - 2011-01-17
+//   Add QR-Settings raw-data
 //   Improve reorder smiley(besar), Add missing emote :bingung
+//   Lil fix on Updater.mparser(); Precheck '#upd_notify' element
 //   
 // -/!latestupdate---
 // ==/UserScript==
@@ -62,7 +64,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.1';
 gvar.scriptMeta = {
-  timestamp: 1294339106097 // version.timestamp
+  timestamp: 1295204184866 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -106,6 +108,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
 };
 const GMSTORAGE_PATH      = 'GM_';
+const KS            = 'KEY_SAVE_';
 
 // initialize assign global var
 function init(){
@@ -180,7 +183,6 @@ function getSettings(){
   /** 
   eg. gvar.settings.updates_interval
   */
-  var KS = 'KEY_SAVE_';
   var hVal,hdc;
   gvar.settings = {
     lastused : {
@@ -661,19 +663,20 @@ function buildQuery(){
 
 function closeLayerBox(tgt){
     var doLastFocus = false;
+	var isPreviewMode = (!$D('#preview_update'));
     if(tgt=='hideshow' && $D('#hideshow')) {
 	 var curv = Dom.g(gvar.id_textarea).value;
 	 var last2 = curv.substring(curv.length-2, curv.length);
-	 if( last2!="\n\n" && (last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13) ){
+	 if( isPreviewMode && last2!="\n\n" && (last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13) ){
 	    vB_textarea.init();
 	    vB_textarea.add('\n\n');
 		doLastFocus = true;
 	 }
     }
     Dom.remove( Dom.g(tgt) );
-    try{ 
-     Dom.g(gvar.id_textarea).focus(); 
-	 if(doLastFocus) vB_textarea.lastfocus(); 
+    try {
+      Dom.g(gvar.id_textarea).focus(); 
+	  if(isPreviewMode && doLastFocus) vB_textarea.lastfocus(); 
     }catch(e){}
 }
 
@@ -763,20 +766,13 @@ function loadLayer_reCaptcha(){
 
 } // end loadLayer_reCaptcha
 
-function loadLayer(){
-    var Attr,el;
-    Attr = {id:'hideshow',style:'display:none;'};
-    el = createEl('div', Attr, getTPL_Preview() );
-    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
-    
-    // event close button
-    Dom.Ev($D("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
-    
-    // calibrate width container
-    $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
-    	  
-    // cancel preview
-    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); });
+function loadLayer_rawdata(){
+	loadLayer( getTPL_Preview, 'rawdata' );
+}
+
+function loadLayer_preview(){
+    loadLayer( getTPL_Preview );
+	
     //submit from preview
     if($D('#preview_presubmit'))
       Dom.Ev($D('#preview_presubmit'), 'click', function(e){
@@ -794,7 +790,24 @@ function loadLayer(){
            }, 200);
          }
       });
+}
+
+function loadLayer( theTPL, flag ){
+
+	var Attr,el;
+    Attr = {id:'hideshow',style:'display:none;'};
+    el = createEl('div', Attr, (typeof(theTPL)=='function' ? theTPL( isDefined(flag) ? flag : null ) : '') );
+    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+	
+    // event close button
+    Dom.Ev($D("#imghideshow"), 'click', function(){closeLayerBox('hideshow');});
     
+    // calibrate width container
+    $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
+    	  
+    // cancel preview
+    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); });
+	
 }
 
 
@@ -887,7 +900,7 @@ function initEventTpl(){
             Dom.add( createTextEl( getCSS_fixup() ), $D('#css_fixups') );
             e.setAttribute('checked','checked');
           }
-          setValue('KEY_SAVE_WIDE_THREAD', (chk ? 0:1));        
+          setValue(KS+'WIDE_THREAD', (chk ? 0:1));        
         controler_resizer(); // resize elements width
       });
       
@@ -948,7 +961,7 @@ function initEventTpl(){
           e.preventDefault(); return false;
         }
         if(!$D('#hideshow')){
-          loadLayer(); 
+          loadLayer_preview(); 
           toogleLayerDiv('hideshow');
         }else{
           closeLayerBox('hideshow');
@@ -1331,6 +1344,8 @@ function re_event_vbEditor(){
   
   // event buat settings
   Dom.Ev( $D('#settings_btn'), 'click', function(){ toggle_setting() });
+  // event buat rawdata_btn
+  Dom.Ev( $D('#rawdata_btn'), 'click', function(){ rawdata_setting() });
 
 }
 // end re_event_vbEditor
@@ -1339,9 +1354,9 @@ function reset_setting(){
     var home=['http:/'+'/www.kaskus.us/showthread.php?t=3170414','http:/'+'/userscripts.org/topics/58227'];
     var space = '';
     for(var i=0;i<20;i++) space+=' ';
-    var csmiley = (getValue('KEY_SAVE_CUSTOM_SMILEY').replace(/^\s+|\n|\s+$/g,"")!='');
+    var csmiley = (getValue(KS+'CUSTOM_SMILEY').replace(/^\s+|\n|\s+$/g,"")!='');
     var msg = ''
-     +( (getValue('KEY_SAVE_CUSTOM_SMILEY').replace(/^\s+|\n|\s+$/g,"")!='') ?
+     +( (getValue(KS+'CUSTOM_SMILEY').replace(/^\s+|\n|\s+$/g,"")!='') ?
          HtmlUnicodeDecode('&#182;') + ' ::Alert::\nCustom Smiley detected. You should consider it.\n\n' 
       : '')
      +'This will delete/reset all saved data.\nThings that might be conflict with your QR.'     
@@ -1349,21 +1364,20 @@ function reset_setting(){
      '\n\n'+HtmlUnicodeDecode('&#187;')+' Continue with Reset?';
     var yakin = confirm(msg);
     if(yakin) {
-      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR',
+      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR',
                   'HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER','SHOW_SMILE'
-                  ,'QR_HOTKEY_KEY'
-                  ,'QR_HOTKEY_CHAR'
+                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
+				  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
                  ];
       for(var i in keys){
-        try{ if(isString(keys[i])) GM_deleteValue('KEY_SAVE_'+keys[i]); }catch(e){}        
+        try{ if(isString(keys[i])) GM_deleteValue(KS + keys[i]); }catch(e){}        
       }
       window.setTimeout(function() { location.reload(false); }, 300);
     }
 }
 function save_setting(){
     var par, value, misc;
-    var KS = 'KEY_SAVE_';
     gvar.restart=true;
 
     misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
@@ -1552,6 +1566,155 @@ function toggle_setting(){
     updown(disp);
 }; // end toggle_setting()
 
+function rawdata_setting(){
+    var el, Attr, inner;
+	loadLayer_rawdata();
+	toogleLayerDiv('hideshow');
+	//$D('#preview_update').focus();
+	
+	// collect all settings from storage,. 
+    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR'
+                 ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
+				 ,'WIDE_THREAD','QR_COLLAPSE'
+                 ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
+                 ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
+				 ,'SCUSTOM_ALT','CUSTOM_SMILEY','SCUSTOM_NOPARSE'
+                ];
+    var keykomeng = {
+	  'LAST_FONT':'Last Used Color Controller.'
+	 ,'LAST_COLOR':'Last Used Color Controller.'
+	 ,'LAST_SIZE':'Last Used Size Controller. validValue=[1,0]'
+	 ,'LAST_SPTITLE':'Last Used Spoiler Title.'
+	 ,'UPDATES':'Should check update enabled?. validValue=[1,0]'
+	 ,'UPDATES_INTERVAL':'Check update Interval (day). validValue=[0< interval < 99]'
+	 ,'DYNAMIC_QR':'State of QR Dynamic. validValue=[1,0]'
+	 ,'SAVED_AVATAR':'Buffer of logged in user avatar. [userid=username::avatar_filename];'
+	 ,'HIDE_AVATAR':'State of Show Avatar. validValue=[1,0]'
+	 ,'HIDE_CONTROLLER':'State of Show Controller. validValue=[1,0]'
+	 ,'TEXTA_EXPANDER':'Textarea Expander preferences. [isEnabled,minHeight,maxHeight]; validValue1=[1,0]; validValue2=>75; validValue3=<2048;'
+	 ,'SHOW_SMILE':'Autoload smiley. [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
+	 ,'WIDE_THREAD':'State of Expand thread with css_fixup. validValue=[1,0]'
+	 ,'QR_COLLAPSE':'State of QR collapsed. validValue=[1,0]'
+	 ,'QR_HOTKEY_KEY':'Key of QR-Hotkey. [Ctrl,Shift,Alt]; validValue=[1,0]'
+	 ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey. validValue=[A-Z0-9]'
+	 ,'LAYOUT_CONFIG':'Layout Config. [userid=isEnable_autoSIGI,isEnable_autoTEMPLATE]; isEnable\'s validValue=[1,0]'
+	 ,'LAYOUT_SIGI':'Layout Signature. [userid=SIGI];'
+	 ,'LAYOUT_TPL':'Layout Template. [userid=TEMPLATE]; TEMPLATE\'s validValue should contain escaped string {MESSAGE}'
+	 ,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail. validValue=[1,0]'
+	 ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data. tagname|smileylink'
+	 ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed. validValue=[1,0]'
+	};
+	var getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
+	gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
+	gvar.buftxt+= '# Engine: QR '+gvar.sversion+'\n';
+	gvar.buftxt+= '# Source: http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'\n';
+	gvar.buftxt+= '# Last Saved: '+getToday()+'\n';
+	gvar.buftxt+= '\n';
+	for(var keyname in keys){
+      try { if( isString(keys[keyname]) && getValue(KS+keys[keyname]) ){
+	          if( isDefined(keykomeng[keys[keyname]]) )
+			     gvar.buftxt+= '# '+keykomeng[keys[keyname]]+'\n';
+		      gvar.buftxt+='['+keys[keyname]+']'+'\n'+getValue(KS + keys[keyname]) + '\n\n';		
+			}
+	  } catch(e){}
+    }
+	
+	// done, finishing.. update inner preview_content in layer..
+	window.setTimeout(function() {
+	  // estimate fsize
+	  if($D('#fsize')) $D('#fsize').innerHTML = ' <small>(Estimated: '+gvar.buftxt.length+' bytes)</small>';
+	  // reset & attach
+	  if($D('#preview_content')) {
+	    $D('#preview_content').innerHTML = '';
+	    
+		inner = ''
+		 +'To export your settings, copy the text below and save it in a file, eg. <input id="fn_qr_set" tabindex:"106" class="smallfont" type="text" style="border:0; background:transparent; font-weight:bold; width:40%;" readonly="true" value="QR_Settings_'+(new Date()).getTime()+'.txt" /><br/>'
+         +'To import your settings later, overwrite the text below with the text you saved previously and click "Update".'
+		 ;
+		Attr = {'class':'smallfont',style:'margin-bottom:5px;'};
+	    el = createEl('div', Attr, inner);
+	    Dom.add(el, $D('#preview_content'));
+		el = $D('#fn_qr_set');
+		if(el) Dom.Ev(el, 'focus', function(e){ selectAll(e); });
+		Attr = {id:'textarea_rawdata','class':'textarea',style:'min-height:300px;height:'+(parseInt(GetHeight())-200)+'px;width:100%;',tabindex:'101'};
+	    el = createEl('textarea', Attr, gvar.buftxt);
+	    Dom.Ev(el, 'focus', function(e){ selectAll(e); });
+	    Dom.Ev(el, 'dblclick', function(e){ selectAll(e); });
+	    Dom.Ev(el, 'keyup', function(){
+		   if(isDefined(gvar.raw_data_changed) && gvar.raw_data_changed) return;
+		   var tgt=$D('#textarea_rawdata');
+		   if(tgt && gvar.buftxt && tgt.value!=gvar.buftxt){
+		     $D('#fsize').innerHTML = ' <b title="Raw Data Changed" style="color:#FFFF00;">*</b>';
+			 gvar.raw_data_changed = true;
+	       }
+		});
+	    Dom.add(el, $D('#preview_content'));
+		el = createEl('a', {href:'javascript:;','class':'qrsmallfont', style:'margin:5px 10px 0 0;float:left;text-decoration:none;',tabindex:'104'}, '<b>'+HtmlUnicodeDecode('&#9650;')+' Select All</b>');
+		Dom.Ev(el, 'click', function(){ var tgt=$D('#textarea_rawdata'); tgt.focus(); });
+		Dom.add(el, $D('#preview_content'));
+		el = createEl('a', {href:'javascript:;','class':'qrsmallfont', style:'margin:5px 0 0 0;color:red;float:right;',tabindex:'105'}, '<small>'+'reset default</small>');
+		Dom.Ev(el, 'click', function(){ reset_setting() });
+		Dom.add(el, $D('#preview_content'));
+		
+		inner = '<b>Once Updated, page will be refreshed to reload your new Settings.</b>';
+		Attr = {'class':'smallfont',style:'margin-top:5px;float:left;width:82%;text-align:center;'};
+		el = createEl('div', Attr, inner);
+	    Dom.add(el, $D('#preview_content'));
+		
+		if($D('#textarea_rawdata')) $D('#textarea_rawdata').focus();
+	  }
+	  // update
+      if($D('#preview_update')){
+	   Dom.Ev($D('#preview_update'), 'click', function(){
+	    var raw, tgt = $D('#textarea_rawdata');
+		if(!tgt) return;
+		$D('#preview_update').setAttribute('disabled','disabled');
+		raw = tgt.value;
+		if(gvar.buftxt && raw==gvar.buftxt){
+		   $D('#preview_update').value='Nothing changed. Closing...';
+		   if(gvar.buftxt) delete(gvar.buftxt);
+		   window.setTimeout(function() { closeLayerBox('hideshow'); }, 800);
+		   return;
+		}else{
+		  var msg = ''
+		    +'Are you sure you want to update these settings?'+'\n'
+            +'Your current settings will be lost.';
+		  var yakin = confirm(msg);
+		  if(!yakin) {
+		    $D('#preview_update').removeAttribute('disabled');
+			return;
+		  }
+		  $D('#preview_update').value=' Saving... ';
+		}		
+		raw = raw.split('\n');
+		var cucok, diff=false, lastkey = false;
+		for(var line in raw){
+		  var newval = trimStr(raw[line]);
+		  if( cucok = newval.match(/^\[([^\]]+)]/) ){
+		    // is this a defined key?
+		    cucok[1] = trimStr(cucok[1]);
+		    lastkey = (isDefined(OPTIONS_BOX[KS+cucok[1]]) ? cucok[1] : false); // only allow registered key
+		  
+		  }else if(lastkey && newval && !newval.match(/^\#\s(?:\w.+)*/)){
+		    // is lastkey is defined, newval is not blank and is not a komeng
+			try{ setValue(KS+lastkey, newval.toString() ); }catch(e){};
+			lastkey = false; // flushed, find next key
+		  }
+		} // end for
+		// check & save text on TMP_TEXT before reload-page
+	    if(value=vB_textarea.Obj.value){
+          if(value && value!=gvar.silahken)
+            setValue(KS+'TMP_TEXT',value.toString());
+        }
+		window.setTimeout(function() {
+		 $D('#preview_update').value=' Reloading... ';location.reload(false);
+		}, 300);
+	   });
+	  }
+	  $D('#preview_update').value=' Update ';
+	}, 200);
+} // end rawdata_setting
+
 function cancelLayout(e){
   e=e.target||e; var tgt = e.id.replace('_cancel','')+'_Editor';
   Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', e );
@@ -1642,7 +1805,7 @@ function create_smile_tab(caller){
   var parent = $D('#smile_cont');
   if(parent.innerHTML!='') {
     parent.style.display=(parent.style.display=='none' ? '':'none');
-    showhide($D('#settings_btn'), (parent.style.display=='none'));
+    showhide($D('#settings_btn_cont'), (parent.style.display=='none'));
     force_focus(10);
     return;
   }
@@ -1685,7 +1848,7 @@ function create_smile_tab(caller){
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
   Dom.Ev(el2, 'click', function(){
     $D('#smile_cont').style.display='none';
-	showhide($D('#settings_btn'), true);
+	showhide($D('#settings_btn_cont'), true);
 	force_focus(10); 
     var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
 	if(obj){
@@ -1727,7 +1890,7 @@ function create_smile_tab(caller){
     }, 50);
   }
   parent.style.display='';
-  showhide($D('#settings_btn'), false);
+  showhide($D('#settings_btn_cont'), false);
   
 }
 // end create_smile_tab
@@ -1885,7 +2048,6 @@ function insert_smile_content(scontent_Id, smileyset){
       }else{
         // task save 
         var buff=false;
-        var KS = 'KEY_SAVE_';
         var lastsave = getValue(KS+'CUSTOM_SMILEY');
         var lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
         imgtxta = $D('#textarea_'+cont_id);
@@ -1972,7 +2134,7 @@ function create_popup_size(){
       eOut.innerHTML=eTitle;
       do_insertTag('size',eTitle);
       gvar.settings.lastused.size = eTitle;
-      setValue('KEY_SAVE_LAST_SIZE',eTitle);
+      setValue(KS+'LAST_SIZE',eTitle);
       if(gvar.isOpera) force_focus();
     });
     Dom.add(tCont,el);
@@ -2005,7 +2167,7 @@ function create_popup_font(){
       out.innerHTML=sfont.substring(0,11)+(sfont.length>11?'..':''); // cut up to 12 char only      
       do_insertTag('font',sfont);
       gvar.settings.lastused.font = sfont;
-      setValue('KEY_SAVE_LAST_FONT',sfont);
+      setValue(KS+'LAST_FONT',sfont);
       if(gvar.isOpera) force_focus();
       // this still not workin (force scrollTop of font_menu), biarin aj aah minor :p
       //Dom.g(id).scrollTop = 0;
@@ -2052,7 +2214,7 @@ function create_popup_color(){
       bar.style.backgroundColor=etitle;
       bar.setAttribute('title',etitle);
       gvar.settings.lastused.color = etitle;
-      setValue('KEY_SAVE_LAST_COLOR',etitle);
+      setValue(KS+'LAST_COLOR',etitle);
       if(gvar.isOpera) force_focus();
     });
   }
@@ -2308,7 +2470,7 @@ function do_btncustom(e){
 	if(title==null) return endFocus();
 	title = (title ? title : ' ');
 	gvar.settings.lastused.sptitle = trimStr(title);
-	setValue('KEY_SAVE_LAST_SPTITLE', title);
+	setValue(KS+'LAST_SPTITLE', title);
     vB_textarea.wrapValue( 'spoiler', title );
 
   }else{
@@ -2417,7 +2579,7 @@ function massive_lock(isChanged){
       $D('#qravatar_refetch').innerHTML='';
     }
     
-    var tokill = ['textarea_clear','capcay_container','capcay_header','settings_btn'];
+    var tokill = ['textarea_clear','capcay_container','capcay_header','settings_btn_cont'];
     for(var i=0; i<tokill.length;i++)
        if(Dom.g(tokill[i])) showhide(Dom.g(tokill[i]), false);
        
@@ -2437,7 +2599,7 @@ function massive_lock(isChanged){
     // save tmp_text
     if(value=vB_textarea.Obj.value){
       gvar.tmp_text=value;
-      setValue('KEY_SAVE_TMP_TEXT',value.toString());
+      setValue(KS+'TMP_TEXT',value.toString());
     }
  }else{ // not changed
     if($D('#quickreply').parentNode)
@@ -2450,7 +2612,7 @@ function toogle_quickreply(show, nofocus){
        //clog('in toogle_quickreply');
   var obj = $D('#collapseobj_quickreply');
   var state = (obj.style.display=='none');
-  var lastCollapse = getValue('KEY_SAVE_QR_COLLAPSE');
+  var lastCollapse = getValue(KS+'QR_COLLAPSE');
   if(isDefined(show))
     if(show) state = true; // force open toggle, trigered by bulu pena
 
@@ -2472,7 +2634,7 @@ function toogle_quickreply(show, nofocus){
        ajax_additional_opt();
   }
   if(lastCollapse!=state)
-     setValue('KEY_SAVE_QR_COLLAPSE', (state ? 1:0));     
+     setValue(KS+'QR_COLLAPSE', (state ? 1:0));     
 }
 
 function check_avatar(){
@@ -2776,29 +2938,29 @@ function is_opened_thread(){
 
 function setValueForId(userID, value, gmkey, sp){
     sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];
-    var i, ks = 'KEY_SAVE_'+gmkey;
-    var info = getValue(ks);
+    var i, ksg = KS+gmkey;
+    var info = getValue(ksg);
     if(!userID) return null;
     if(!info){
-        setValue(ks, userID+"="+value);
+        setValue(ksg, userID+"="+value);
         return;
     }
     info = info.split(sp[0]);
     for(i=0; i<info.length; i++){
         if(info[i].split('=')[0]==userID){
             info.splice(i,1,userID+"="+value);
-            setValue(ks, info.join(sp[0]));
+            setValue(ksg, info.join(sp[0]));
             return;
         }
     }
     info.splice(i,0,userID+"="+value);
-    setValue(ks, info.join(sp[0]));
+    setValue(ksg, info.join(sp[0]));
 }
 //values stored in format "userID=value;..."
 // sp = array of records separator
 function getValueForId(userID, gmkey, sp){
     sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];    
-    var info = getValue('KEY_SAVE_'+gmkey);
+    var info = getValue(KS+gmkey);
     if(!info || !userID)
       return null;
     info = info.split(sp[0]);
@@ -2818,14 +2980,14 @@ function getValueForId(userID, gmkey, sp){
     return null;
 }
 function delValueForId(userID, gmkey){
-  var ks = 'KEY_SAVE_'+gmkey;
-  var info = getValue(ks);
+  var ksg = KS+gmkey;
+  var info = getValue(ksg);
   info = info.split(';'); var tmp=[];
   for(var i=0; i<info.length; i++){
     if(info[i].split('=')[0]!=userID)
       tmp.push(info[i]);    
   }
-  setValue(ks, tmp.join(';'));
+  setValue(ksg, tmp.join(';'));
 }
 
 // if type is not defined, return [id,username,isDonatur]
@@ -2864,8 +3026,9 @@ function getTPL_main(){
     
     +(!gvar.user.isDonatur ? '</div></div>':'')
     
-    // Setting container will be containing from getTPL_Settings()    
-    +'<div id="settings_cont"></div>'    
+    // Setting container will be containing from getTPL_Settings()
+    +'<div id="settings_cont"></div>'
+
     +'</td>'    
     +'</tr></table>'
     ;
@@ -3090,8 +3253,13 @@ function getTPL_vbEditor(){
     +        '</table>'
     +'<div id="smile_cont" style="display:none;"></div>'
     
+	+'<div id="settings_btn_cont">'
     // setting toggle link
-    +'<div class="qrsmallfont" style="float:right;margin:0 0 -6px 0;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
+    +'<div class="qrsmallfont" style="margin:0 0 -6px 0;float:right;"><a href="javascript:;" style="text-decoration:none;" id="settings_btn"><u style="font-size:8pt;">settings</u><small id="updown_setting">'+HtmlUnicodeDecode('&#9660;')+'</small></a></div>'
+
+	// rawdata
+    +'<div class="qrsmallfont" style="margin:0 10px -6px 0;float:right;"><a href="javascript:;" style="text-decoration:none;" id="rawdata_btn" title="Settings Raw-Data"><u style="font-size:8pt;">raw-data</u></a></div>'
+	+'</div>' // #settings_btn_cont
 
     +    '</td>'
     +'</tr>'
@@ -3161,7 +3329,7 @@ function getTPL_Settings(){
 
    +'<div style="height:5px;">&nbsp;</div>'
     
-   +'<a id="reset_default" href="javascript:;"><small>reset default</small></a>'
+   +'<a id="reset_default" href="javascript:;" style="color:red;text-decoration:none;"><small>reset default</small></a>'
    
    +'</td></tr>'
    +tbo_
@@ -3235,8 +3403,8 @@ function getTPL_prompt_reCAPTCHA(){
 
   return divInner;
 }
-function getTPL_Preview(){
-  var divInner = ''
+function getTPL_Preview(tipe){
+  return (''
  +'<div class="trfade"></div> '
  +'<div class="fade"></div> '
  +'<div id="popup_container" class="popup_block"> '
@@ -3244,20 +3412,27 @@ function getTPL_Preview(){
  +  '<a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
  +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<tbody><tr>'
- +   '<td class="tcat">Preview Quick Reply</td>'
+ 
+ +   '<td class="tcat">'+(isDefined(tipe) && tipe=='rawdata' ? 'Settings Raw Data<span id="fsize"></span>' : 'Preview Quick Reply')+'</td>'
  +  '</tr><tr>'
  +  '<td class="alt1">'
  +   '<div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>'
  +  '</td></tr>'
  +  '<tbody></table>'
  +   '<div id="button_preview" >'
- +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
+ +(isDefined(tipe) && tipe=='rawdata' ? ''
+  +    '<input tabindex="102" id="preview_update" type="button" class="button" value="working..." />&nbsp;&nbsp;'
+ : ''
+  +    '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" '+(gvar.user.isDonatur ? '':'pre-')+'Post " />&nbsp;&nbsp;'
+ )
  +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
  +   '</div>'
  + '</div>'
- +'</div>';
-  return divInner;  
+ +'</div>'
+ );
 }
+
+
 // end tpl
 
 
@@ -3274,7 +3449,7 @@ Format will be valid like this:
 */
   //var sample = 'lopeh|http://static.kaskus.us/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.us/images/smilies/sumbangan/06.gif';
   gvar.smiliecustom = {};
-  var buff = getValue('KEY_SAVE_CUSTOM_SMILEY');
+  var buff = getValue(KS+'CUSTOM_SMILEY');
   if(buff!=''){
     var idx=1;
     var sepr = ',';
@@ -3811,7 +3986,7 @@ function getCSS(){
   +'.qbutton'
    +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;border-radius:3px;-moz-border-radius:3px;-khtml-border-radius:3px;-webkit-border-radius:3px;}'
   +'#tb_setting td{padding:1px 5px;}'
-  +'#tb_setting textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
+  +'#tb_setting textarea,#hideshow textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
   +'.cancel_layout {float:right;margin:6px 3px 0 0;}'
   +'.cancel_layout-invi {display:none;}'
   /* for updates */
@@ -3879,7 +4054,7 @@ function getCSS(){
 function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
-function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
+function trimStr(x) { return (typeof(x)=='string' && x ? x.replace(/^\s+|\s+$/g,"") : '') };
 function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
 
 function basename(path, suffix) {
@@ -3947,6 +4122,12 @@ function removeClass(cName, Obj){
   var neocls = (Obj.className ? Obj.className : '');
   neocls = trimStr ( neocls.replace(cName,"") ); // replace and trim
   Obj.setAttribute('class', neocls);
+}
+function selectAll(e){
+   e=e.target||e;
+   if(typeof(e)!='object') return false;
+   var end = e.value.length;
+   e.setSelectionRange(0,end);
 }
 function getValue(key) {
   var data=OPTIONS_BOX[key];
@@ -4354,7 +4535,7 @@ var Updater = {
   caller:''
  ,check: function(forced){
     var intval = (1000*60*60*gvar.settings.updates_interval);
-    if((forced)||(parseInt(getValue("KEY_SAVE_"+"QR_LastUpdate", "0")) + parseInt(intval) <= (new Date().getTime()))) {
+    if((forced)||(parseInt(getValue(KS+"QR_LastUpdate", "0")) + parseInt(intval) <= (new Date().getTime()))) {
      gvar.updateForced = forced;
 	 if(!forced) Updater.caller='';
      // prep xhr request
@@ -4365,7 +4546,7 @@ var Updater = {
     }
   }
  ,callback: function(r){
-    setValue("KEY_SAVE_"+"QR_LastUpdate", new Date().getTime() + "");
+    setValue(KS+"QR_LastUpdate", new Date().getTime() + "");
 	if(Dom.g(Updater.caller)) 
 	  Dom.g(Updater.caller).innerHTML = 'check now';
     if (r&&r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp) { 
@@ -4427,18 +4608,21 @@ var Updater = {
  }
   
  ,notify_progres: function(caller){
-    $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+    if($D('#upd_notify'))
+	  $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
 	if(Dom.g(caller)) {
 	  Updater.caller=caller;
 	  Dom.g(caller).innerHTML='checking..'; // OR check now
 	}
  }
  ,notify_done: function(anyupd){
-    $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
-    if($D('#upd_notify').innerHTML==''){
+    if($D('#upd_notify')){
+	  $D('#upd_notify').innerHTML = (anyupd ? '<a id="upd_notify_lnk" href="javascript:;" title="Update Available"><img style="position:absolute;margin:-5px 0 0 5px;" src="'+gvar.B.updates_png+'" width="17" border="0"/></a>':'');
+      if($D('#upd_notify').innerHTML==''){
        $D('#upd_notify').innerHTML=' <small class="normal_notice">No Update Available</small>';
        window.setTimeout(function(){ $D('#upd_notify').innerHTML=''; }, 4000);
-    }
+      }
+	}
  }
  ,mparser: function(rt){
 	return {
@@ -4447,7 +4631,7 @@ var Updater = {
      news:(function(x){
 	      var wrp=['// -!--latestupdate','// -/!latestupdate---'];
 	      var p=[x.indexOf(wrp[0]), x.indexOf(wrp[1])];
-		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/\/\/\s/gm, function($str,$1){return '';}) : '');
+		  return (p[0]!=-1 && p[1]!=-1 ? String( x.substring(p[0]+wrp[0].length, p[1]) ).replace(/\/+\s*/gm, function($str,$1){return " ";}) : '');
 	    })(rt)
     };	
   }
