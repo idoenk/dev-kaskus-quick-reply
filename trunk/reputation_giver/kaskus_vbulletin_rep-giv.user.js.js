@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.14
-// @dtversion     11011414
-// @timestamp     1295015068583
+// @version       1.15
+// @dtversion     11011715
+// @timestamp     1295207497930
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,6 +15,9 @@
 //
 // ----CHANGE LOG-----
 /*
+// mod.R.15 : 2011-01-17
+// Fix missing reputation rank title
+// 
 // mod.R.14 : 2011-01-14
 // Fix red/black sender
 // Fix minor CSS, kaskus-donat sender
@@ -36,9 +39,9 @@
 // Global Variables
 var gvar=function() {}
 
-gvar.sversion = 'R' + '14';
+gvar.sversion = 'R' + '15';
 gvar.scriptMeta = {
-  timestamp: 1295015068583 // version.timestamp
+  timestamp: 1295207497930 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -144,7 +147,7 @@ function init(){
       'rep_redimg2' : 'reputation_highneg.gif', // red-terang
      };
   gvar.spliter = '[||]'; // for data
-  gvar.f = ['uid','kaskus_id','tag_id','location','join_date','total_post','avatar_url','rep_count','rep_filename'];
+  gvar.f = ['uid','kaskus_id','tag_id','location','join_date','total_post','avatar_url','rep_count','rep_filename','rep_rank_title'];
   
   gvar.dereplace = {
    '\\[\\|\\]' : gvar.spliter,
@@ -541,19 +544,23 @@ function parseIt(page){
        break;
     }
   }
+  //rep_rank_title
+  var re = new RegExp( '<img\\\s*(?:class=[\\\'\\\"]\\\w+[\\\'\\\"]).src=[\\\'\\\"][^\\\s]+.alt=[\\\'\\\"]('+result[gvar.f[1]]+'[^\\\"\\\']+)',  'im');
+  var cucok = dpage.match(re);
+  result[gvar.f[9]] = (cucok ? cucok[1].replace(/\s{2,}/g,' ') : result[gvar.f[1]] + '\'s reputation rank');  
   
   return result;
 }
 // end parseIt
  
 function ucendol(data){
-  var bufcen = '', halftag = '<img src="'+gvar.uri['cendol_img'];
+  var bufcen = '<span title="'+data["rep_rank_title"]+'" style="cursor:help;">', halftag = '<img src="'+gvar.uri['cendol_img'];
   var upto = (data["rep_count"]<5 ? data["rep_count"] : 5);
   for(j=0;j<upto;j++){ bufcen+= halftag + data["rep_filename"] + '"/>';}
   if((j-1) < data["rep_count"])
      for(k=j;k<data["rep_count"];k++)
         bufcen+= halftag + (data["rep_filename"].indexOf('neg.')!=-1 ?  gvar.uri['rep_redimg2'] : gvar.uri['rep_img2']) + '"/>';
-  return bufcen;
+  return bufcen+'</span>';
 };
  
 function createSender(data, x){
