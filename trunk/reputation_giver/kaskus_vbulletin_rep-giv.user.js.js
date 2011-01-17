@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.15
 // @dtversion     11011715
-// @timestamp     1295207497930
+// @timestamp     1295268938071
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -17,6 +17,7 @@
 /*
 // mod.R.15 : 2011-01-17
 // Fix missing reputation rank title
+// Try Fix failed load image "</a></span>" issue
 // 
 // mod.R.14 : 2011-01-14
 // Fix red/black sender
@@ -41,7 +42,7 @@ var gvar=function() {}
 
 gvar.sversion = 'R' + '15';
 gvar.scriptMeta = {
-  timestamp: 1295207497930 // version.timestamp
+  timestamp: 1295268938071 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -186,7 +187,7 @@ function start_Main() {
     // replacement head column
     var trTable = tbcontainer.getElementsByTagName("tr")[0];
     if(trTable){
-      Attr = {'class':'thead','width':'10%', id:'psby', style:'min-width:100px;'};
+      Attr = {'class':'thead','width':'10%', id:'psby', style:'min-width:110px;'};
       var td = createEl('td', Attr);
       Attr = {'style':'float:left;width:auto;',id:'divpsby'};
       var div = createEl('div', Attr, '<u>Posted By</u>');
@@ -231,8 +232,8 @@ function start_Main() {
     var dstr, repID = [];    
     if( gvar._SIMULATE_ ){
     
-      // intercept to simulate 
-      dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,2589'; // selected kaskuser just to simulate error
+      // intercept to simulate ; 1174280
+      dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,1174280'; // selected kaskuser just to simulate error
       gvar.userID = dstr.split(',');
       dstr = '347914936,341574768,339584718,339584718,339584718,339584718,339584718,339584718,339584718,339584718'; // just a sample, not a major
       repID = dstr.split(',');
@@ -286,12 +287,12 @@ function start_Main() {
         Attr = {'class':'alt'+(gvar.user.isDonatur ? '2':'1'),width:'13%'};
         td = createEl('td', Attr); // reputation
         
-        Attr = {id:'_pcnd' + i};
-        span = createEl('span', Attr);
+        //Attr = {id:'_pcnd' + i};
+        //span = createEl('span', Attr);
         
         Attr = {'class':'smallfont', href:gvar.uri['rep_link']+repID[i] };
         a1 = createEl('a', Attr, 'p='+repID[i]);
-        mass_append(elem.parentNode, [td,span,a1]);
+        mass_append(elem.parentNode, [td,a1]);
  
       } // end for
     } // end tdTable
@@ -554,13 +555,13 @@ function parseIt(page){
 // end parseIt
  
 function ucendol(data){
-  var bufcen = '<span title="'+data["rep_rank_title"]+'" style="cursor:help;">', halftag = '<img src="'+gvar.uri['cendol_img'];
+  var bufcen = '<div title="'+data["rep_rank_title"]+'" style="cursor:help;min-width:110px;text-align:right;float:right;">', halftag = '<img src="'+gvar.uri['cendol_img'];
   var upto = (data["rep_count"]<5 ? data["rep_count"] : 5);
   for(j=0;j<upto;j++){ bufcen+= halftag + data["rep_filename"] + '"/>';}
   if((j-1) < data["rep_count"])
      for(k=j;k<data["rep_count"];k++)
         bufcen+= halftag + (data["rep_filename"].indexOf('neg.')!=-1 ?  gvar.uri['rep_redimg2'] : gvar.uri['rep_img2']) + '"/>';
-  return bufcen+'</span>';
+  return bufcen+'</div>';
 };
  
 function createSender(data, x){
