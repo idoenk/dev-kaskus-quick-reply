@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.1
-// @dtversion     110115101
-// @timestamp     1295032308823
+// @version       1.0.2
+// @dtversion     110117102
+// @timestamp     1295260598888
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -17,6 +17,9 @@
 // @include       http://www.kaskus.us/index.php
 //
 // -!--latestupdate
+//
+//  v1.0.2 - 2011-01-17
+//    Fix failed get Obfuscated lastpost
 //
 //  v1.0.1 - 2011-01-15
 //    Fix Improve findCurrentRow
@@ -32,9 +35,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.1';
+gvar.sversion = 'v' + '1.0.2';
 gvar.scriptMeta = {
-  timestamp: 1295032308823 // version.timestamp
+  timestamp: 1295260598888 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -343,9 +346,10 @@ var tTRIT = {
 	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
 	      
 	      // lastpost nodes (single node)
-	      lnodes = $D(".//a[contains(@href,'#post')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
+	      lnodes = $D(".//a[contains(@href,'#p') and contains(@href,'?p=')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
 	      if(lnodes){
-	        pid = LINK.getPID(lnodes.href);
+	          pid = LINK.getPID(lnodes.href);
+			  show_alert(pid);
 	    	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
 	    	  el = createEl('span',Attr,'[+]');
 	    	  Dom.add(el, lnodes.parentNode);
