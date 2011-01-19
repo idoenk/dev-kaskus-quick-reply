@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.3
-// @dtversion     110119103
-// @timestamp     1295434482655
+// @dtversion     110120103
+// @timestamp     1295458498119
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,7 +18,8 @@
 //
 // -!--latestupdate
 //
-//  v1.0.3 - 2011-01-19
+//  v1.0.3 - 2011-01-20
+//    Add simple anti-batman-Trap
 //    Fix edit @VM (collision with open window more smiley)
 //
 //  v1.0.2 - 2011-01-17
@@ -40,7 +41,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.3';
 gvar.scriptMeta = {
-  timestamp: 1295434482655 // version.timestamp
+  timestamp: 1295458498119 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -532,6 +533,26 @@ var tTRIT = {
 	}
   }
 
+ ,scanBetmen: function(text){
+  if(!text) return '';
+  var temp = createEl('div',{}, text), cleanRet=text;
+  var elInside, buff, aTag = getTag('a', temp), aL=aTag.length;
+  var newHref = function(inner){
+    var nel = createEl('div', {}, inner );
+	return nel;
+  }
+  for(var i=0; i<aL; i++){
+    buff = aTag[i].innerHTML;
+	var el, elInside = getTag('div', aTag[i]);
+	if(elInside.length > 0){
+		temp.removeChild(aTag[i]);
+	    el = newHref(buff);
+		temp.appendChild(el);
+	}
+  }
+  cleanRet = temp.innerHTML;
+  return cleanRet;
+ }
  ,parse_preview: function(text){
    // sumthin like kepenuhan
    if(text.indexOf('td_post_')==-1) return null;
@@ -544,6 +565,10 @@ var tTRIT = {
    _ret = _ret.substring(poss[0]+wraper[0].length, poss[1]);
    // a lil hack to strip this.innerText = '', which bring error on GC.
    _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
+   
+   // simple anti-batman-trap
+   _ret = tTRIT.scanBetmen(_ret);
+   
  //clog(_ret);
    _ret = tTRIT.parse_image(_ret);
    
