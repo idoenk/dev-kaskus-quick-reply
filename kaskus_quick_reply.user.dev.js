@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.1
 // @dtversion     110119311
-// @timestamp     1295384841942
+// @timestamp     1295446890279
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,8 @@
 // -!--latestupdate
 //
 // v3.1.1 - 2011-01-19
+//   Fix failed iterate in Array (FF 4.0b10)
+//   Fix Minor Typo @ Export-Import; UserAgent Nfo;
 //   Improved QR-Settings on Pop-up
 //   Fix ignore shortcut on active Popup (except Esc)
 //   Add Export-Import raw-data
@@ -53,7 +55,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.1';
 gvar.scriptMeta = {
-  timestamp: 1295384841942 // version.timestamp
+  timestamp: 1295446890279 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -118,6 +120,7 @@ function init(){
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
   gvar.avatarLink= gvar.domainstatic + 'customavatars/';
   gvar.titlename= 'Quick Reply';
+  gvar.fullname= 'Kaskus '+gvar.titlename;
   gvar.scriptId= '80409';
 
   // min-height postbit assumed with OR w/o quote per singleline, [{adaQuote}, {ga_adaQuote}]
@@ -421,8 +424,8 @@ function additional_opt_parser(text){
    var par_adt_opt = $D('#additional_options');
    pos[0] = rets.indexOf('<select');
    rets = rets.substring(pos[0], pos[1]);
-   var selects = rets.split('</select');
-   for(var i in selects){
+   var selects = rets.split('</select'), sL=selects.length;
+   for(var i=0;i<sL;i++){
      if(!isString(selects[i]) || !selects[i].match(/<select\sname\=/)  ) continue;
      var fdname, el, cucok = /<select\sname\=\"([^\"]+)/.exec(selects[i]);
      if(cucok && cucok[1]!='rating'){ // rating will be showed-up on qr-optional dropdown
@@ -616,8 +619,8 @@ function template_wrapper(txt){
 
 function buildQuery(){
   var hidden = getTag( 'input', $D('#submit_container') );
-  var el, q='';
-  for(var h in hidden)
+  var el, q='', hL=hidden.length;
+  for(var h=0; h<hL; h++)
     if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
       q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
 
@@ -1192,8 +1195,8 @@ function re_event_vbEditor(){
        
   // event common button controller
   if($D('#vB_Editor_001')) {
-   var imgs = $D('#vB_Editor_001').getElementsByTagName('img');
-   for(var i in imgs){
+   var imgs = $D('#vB_Editor_001').getElementsByTagName('img'), iL=imgs.length;
+   for(var i=0;i<iL;i++){
     var el = imgs[i];
     var alt = el.alt;
     switch(alt){
@@ -1608,8 +1611,8 @@ function toggle_tabsmile(e){
         //clog('in toggle_tabsmile');
    e=e.target||e; 
    if(!e) return;
-   var elem = getTag('a',$D('#tab_parent'));
-   for(var i in elem){ // hideall tab
+   var elem = getTag('a',$D('#tab_parent')), eL=elem.length;
+   for(var i=0; i<eL;i++){ // hideall tab
      var id = elem[i].id;
      if(id && id.indexOf('remote_')!=-1) {
        showhide(Dom.g(id.replace('remote_','')), false); // hide container
@@ -1628,9 +1631,9 @@ function create_popup_size(){
   var Attr = {id:id,'class':'vbmenu_popup',
        style:'width:40px;height:215px;overflow:auto;z-index:99;clip:rect(auto,auto,auto,auto);display:none;'
     };
-  var el = createEl('div',Attr);
+  var el = createEl('div',Attr), sL=gvar.sizeoptions.length;
   var tCont,tFont,size;
-  for (var idx in gvar.sizeoptions) {
+  for (var idx=0; idx<sL; idx++) {
     size = gvar.sizeoptions[idx];
     if(!isString(size)) continue; // should do this, coz Opera lil weirdo
     Attr={title:size,'class':'osize',style:'text-align:left;'};
@@ -1661,9 +1664,9 @@ function create_popup_font(){
   var Attr = {id:id,'class':'vbmenu_popup',
        style:'width:200px;height:250px;overflow:auto;z-index:99;clip:rect(auto,auto,auto,auto);display:none;'
     };
-  var el = createEl('div',Attr);
+  var el = createEl('div',Attr), oL=gvar.fontoptions.length;
   var tClr,tFont,font;
-  for (var idx in gvar.fontoptions) {
+  for (var idx=0; idx<oL; idx++) {
     font = gvar.fontoptions[idx];
     if(!isString(font)) continue; // should do this, coz Opera lil weirdo
     Attr={'class':'ofont',title:font};
@@ -1815,12 +1818,12 @@ function do_sanitize(text){
     ,"</?(?:[a-z][a-z0-9]*\\b).+(style=[\\\"\\\'](?:\\w+)\\/\\*[.+]*\\*\\/\\w+\\:[^\\\"]+\\\")"
     ,"<[\s]*>"
    ];
-  var re, torep, do_it_again='';
+  var re, torep, do_it_again='', fL=filter.length;
   // need a loop until it's really clean | no match patern
   while( do_it_again=='' || do_it_again.indexOf('1')!=-1 )
   {
     do_it_again = '';
-    for(var idx in filter){
+    for(var idx=0; idx<fL; idx++){
      if(!isString(filter[idx])) continue;
      re = new RegExp(filter[idx], "ig");
      if(ret.match(re)){
@@ -1859,9 +1862,9 @@ function do_filter_scustom(text){
     // step -3 to validate per line    
     buf=(document.all ? buf.split("\r\n") : buf.split("\n")); // IE : FF/Chrome
     
-    var sml,retbuf='';
+    var sml,retbuf='', bL=buf.length;
     var sepr = ','; // must be used on extracting from storage
-      for(var line in buf){
+      for(var line=0; line<bL; line++){
        if(!isString(buf[line])) continue;
          buf[line] = trimStr ( buf[line] ); // trim perline
           //clog('line='+line+'; val='+buf[line]);
@@ -2235,7 +2238,7 @@ function appendAvatar(){
          if($D('#fetching_avatar')) return;
          refetch_avatar();
        });   
-         el=createEl('a',{href:'http:/'+'/www.kaskus.us/member.php?u='+gvar.user.id,'class':'cleanlink'},'<b><small>'+gvar.user.name+'</small>'+(gvar.user.isDonatur ? ' <span style="color:red;">$</span>':'')+'</b>');
+         el=createEl('a',{href:'http:/'+'/www.kaskus.us/member.php?u='+gvar.user.id,'class':'cleanlink'},'<b><small>'+gvar.user.name+'</small>'+(gvar.user.isDonatur ? ' <span style="color:red;">[$]</span>':'')+'</b>');
          Dom.add(el,$D('#qravatar_cont'));
     }
    
@@ -2256,12 +2259,12 @@ function refetch_avatar(){
 function unescapeHtml(text){
   if(!text) return '';
   var temp = createEl('div',{},text);
-  var cleanRet='';  
-  for(var i in temp.childNodes){
-    if(typeof(temp.childNodes[i])!='object' || isUndefined(temp.childNodes[i].nodeValue)) continue;
-    cleanRet += temp.childNodes[i].nodeValue;
+  var cleanRet='', tL=temp.childNodes.length;
+  for(var i=0; i<tL; i++){
+     if(typeof(temp.childNodes[i])!='object') continue;
+     cleanRet += temp.childNodes[i].nodeValue;
   }
-  temp.removeChild(temp.firstChild);
+  try{temp.removeChild(temp.firstChild);}catch(e){}
   return cleanRet;
 }
 
@@ -2482,8 +2485,8 @@ function getValueForId(userID, gmkey, sp){
         var recs = info[i].split('=');
         if(recs[0]==userID){
             var rets = [userID];
-            var values = recs[1].split(sp[1]);            
-            for(var idx in values){
+            var values = recs[1].split(sp[1]), vL=values.length;
+            for(var idx=0; idx<vL; idx++){
               if(!isString(values[idx])) continue;
               rets.push(values[idx]);
             }
@@ -3140,8 +3143,8 @@ var ST = {
     if($D('#misc_hotkey')) Dom.Ev( $D('#misc_hotkey'), 'click', function(e){
        e=e.target||e;
 	   if(e && !e.checked){
-	    var childs = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'];
-	    for(var i in childs) if( Dom.g(childs[i]) ) Dom.g(childs[i]).checked=false;
+	    var childs = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'], cL=childs.length;
+	    for(var i=0; i<cL; i++) if( Dom.g(childs[i]) ) Dom.g(childs[i]).checked=false;
 	    if( Dom.g(childs[childs.length-1]) ) Dom.g(childs[childs.length-1]).disabled='disabled';
 	   }
 	});
@@ -3159,8 +3162,8 @@ var ST = {
     }catch(e){ show_alert(e);};
 	// event for input nodes inside #general_control
 	par = $D('#general_control');
-    var alNod = getTag('input', par);
-    if(alNod && alNod.length > 0) for(var idx in alNod){
+    var alNod = getTag('input', par), aL=alNod.length;
+    if(alNod && alNod.length > 0) for(var idx=0; idx<aL; idx++){
         if(typeof(alNod[idx])=='object') Dom.Ev( alNod[idx], 'keydown', function(e){
           var C = (!e ? window.event : e );
           if(C.keyCode==13){ // mijit enter
@@ -3172,6 +3175,10 @@ var ST = {
         });
     }
 	
+	// customable_btn jmp to #tab_general
+	if($D('#customable_btn')) Dom.Ev($D('#customable_btn'), 'click', function(){ 
+	 var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
+	});
 	// ex-imp		
 	if($D('#textarea_rawdata')) {
 	    el = $D('#textarea_rawdata');
@@ -3224,7 +3231,6 @@ var ST = {
     // --
  }
  ,load_rawsetting: function(){
-    var el, Attr, inner;	
 	// collect all settings from storage,. 
     var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
@@ -3233,36 +3239,34 @@ var ST = {
                  ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
 				 ,'SCUSTOM_ALT','CUSTOM_SMILEY','SCUSTOM_NOPARSE'
                 ];
-    var keykomeng = {
-	  'LAST_FONT':'Last Used Color Controller.'
-	 ,'LAST_COLOR':'Last Used Color Controller.'
-	 ,'LAST_SIZE':'Last Used Size Controller. validValue=[1,0]'
-	 ,'LAST_SPTITLE':'Last Used Spoiler Title.'
-	 ,'UPDATES':'Should check update enabled?. validValue=[1,0]'
-	 ,'UPDATES_INTERVAL':'Check update Interval (day). validValue=[0< interval < 99]'
-	 ,'DYNAMIC_QR':'State of QR Dynamic. validValue=[1,0]'
-	 ,'SAVED_AVATAR':'Buffer of logged in user avatar. [userid=username::avatar_filename];'
+    var kL=keys.length;
+	var keykomeng = {
+	  'LAST_FONT':'Last Used Font'
+	 ,'LAST_COLOR':'Last Used Color'
+	 ,'LAST_SIZE':'Last Used Size; validValue=[1,0]'
+	 ,'LAST_SPTITLE':'Last Used Spoiler Title'
+	 ,'UPDATES':'Check Update enabled? validValue=[1,0]'
+	 ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
+	 ,'DYNAMIC_QR':'State of QR Dynamic; validValue=[1,0]'
+	 ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
 	 ,'HIDE_AVATAR':'State of Show Avatar. validValue=[1,0]'
-	 ,'HIDE_CONTROLLER':'State of Show Controller. validValue=[1,0]'
-	 ,'TEXTA_EXPANDER':'Textarea Expander preferences. [isEnabled,minHeight,maxHeight]; validValue1=[1,0]; validValue2=>75; validValue3=<2048;'
-	 ,'SHOW_SMILE':'Autoload smiley. [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
-	 ,'WIDE_THREAD':'State of Expand thread with css_fixup. validValue=[1,0]'
-	 ,'QR_COLLAPSE':'State of QR collapsed. validValue=[1,0]'
-	 ,'QR_HOTKEY_KEY':'Key of QR-Hotkey. [Ctrl,Shift,Alt]; validValue=[1,0]'
-	 ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey. validValue=[A-Z0-9]'
-	 ,'LAYOUT_CONFIG':'Layout Config. [userid=isEnable_autoSIGI,isEnable_autoTEMPLATE]; isEnable\'s validValue=[1,0]'
-	 ,'LAYOUT_SIGI':'Layout Signature. [userid=SIGI];'
-	 ,'LAYOUT_TPL':'Layout Template. [userid=TEMPLATE]; TEMPLATE\'s validValue should contain escaped string {MESSAGE}'
-	 ,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail. validValue=[1,0]'
-	 ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data. tagname|smileylink'
-	 ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed. validValue=[1,0]'
+	 ,'HIDE_CONTROLLER':'State of Show Controller; validValue=[1,0]'
+	 ,'TEXTA_EXPANDER':'Textarea Expander preferences; [isEnabled,minHeight,maxHeight]; validValue1=[1,0]; validValue2=>75; validValue3=<2048'
+	 ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
+	 ,'WIDE_THREAD':'State of Expand thread with css_fixup; validValue=[1,0]'
+	 ,'QR_COLLAPSE':'State of QR collapsed; validValue=[1,0]'
+	 ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
+	 ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
+	 ,'LAYOUT_CONFIG':'Layout Config; [userid=isEnable_autoSIGI,isEnable_autoTEMPLATE]; isEnable\'s validValue=[1,0]'
+	 ,'LAYOUT_SIGI':'Layout Signature; [userid=SIGI];'
+	 ,'LAYOUT_TPL':'Layout Template; [userid=TEMPLATE]; TEMPLATE\'s validValue must contain escaped string {MESSAGE}'
+	 ,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail; validValue=[1,0]'
+	 ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
+	 ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'
 	};
 	var getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
 	var parse_UA_Vers = function(){
-	  var lpos, ua, el = window.navigator;
-	  if(el) el = el.userAgent;
-	  lpos = el.lastIndexOf('\)');
-	  return (lpos ? trimStr(el.substring(lpos+1, el.length)).replace(/\//g,'-') : '?');
+	  return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/,' ').replace(/\//g,'-') );
 	};
 	gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
 	gvar.buftxt+= '# Version: QR '+gvar.sversion+'\n';
@@ -3270,11 +3274,11 @@ var ST = {
 	gvar.buftxt+= '# User-Agent: '+parse_UA_Vers()+'\n';
 	gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
 	gvar.buftxt+= '\n';
-	for(var keyname in keys){
-      try { if( isString(keys[keyname]) && getValue(KS+keys[keyname]) ){
-	          if( isDefined(keykomeng[keys[keyname]]) )
-			     gvar.buftxt+= '# '+keykomeng[keys[keyname]]+'\n';
-		      gvar.buftxt+='['+keys[keyname]+']'+'\n'+getValue(KS + keys[keyname]) + '\n\n';		
+	for(var i=0; i<kL; i++){
+      try { if( isString(keys[i]) && getValue(KS+keys[i]) ){
+	          if( isDefined(keykomeng[keys[i]]) )
+			     gvar.buftxt+= '# '+keykomeng[keys[i]]+'\n';
+		      gvar.buftxt+='['+keys[i]+']'+'\n'+getValue(KS + keys[i]) + '\n\n';		
 			}
 	  } catch(e){}
     }
@@ -3286,8 +3290,8 @@ var ST = {
 	var raw, tgt = $D('#textarea_rawdata');
 	if(!tgt) return;
 	$D('#import_setting').setAttribute('disabled','disabled');
-	raw = tgt.value;
-	if(gvar.buftxt && raw==gvar.buftxt){
+	raw = trimStr(tgt.value);
+	if( gvar.buftxt && raw==trimStr(gvar.buftxt) ){
 	   $D('#import_setting').value='Nothing changed. Closing...';
 	   if(gvar.buftxt) delete(gvar.buftxt);
 	   window.setTimeout(function() { ST.close_setting() }, 800);
@@ -3304,9 +3308,9 @@ var ST = {
 	  }
 	  $D('#import_setting').value=' Saving... ';	  
 	}		
-	raw = raw.split('\n');
+	raw = raw.split('\n'), rL=raw.length;
 	var cucok, diff=false, lastkey = false;
-	for(var line in raw){
+	for(var line=0; line<rL; line++){
 	  var newval = trimStr(raw[line]);
 	  if( cucok = newval.match(/^\[([^\]]+)]/) ){
 	    // is this a defined key?
@@ -3354,22 +3358,24 @@ var ST = {
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
 				  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
                  ];
-      for(var i in keys){
+      var kL=keys.length;
+	  for(var i=0; i<kL; i++){
         try{ if(isString(keys[i])) GM_deleteValue(KS + keys[i]); }catch(e){}        
       }
       window.setTimeout(function() { location.reload(false); }, 300);
     }
  }
  ,save_setting: function(){
-    var par, value, misc, Chr='';
+    var par, value, misc, oL, Chr='';
     gvar.restart=true;
 	if($D('#save_settings')) $D('#save_settings').value=' Saving... ';
 
-    misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];
+    misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];	
     var reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
 	
+	oL=misc.length;
     value = [];
-    for(var id in misc){
+    for(var id=0; id<oL; id++){
       if(!isString(misc[id])) continue;
       par = Dom.g(misc[id]);
       if(par) value.push( par.checked ? '1' : '0' );  
@@ -3389,10 +3395,10 @@ var ST = {
       }
     }
     // saving serial controller
-    par = getTag('input',$D('#main_controller'));
+    par = getTag('input',$D('#main_controller'));	
     if(par){
-      value = [];
-      for(var i in par)
+      oL=par.length; value = [];
+      for(var i=0; i<oL; i++)
 		value.push(par[i].checked ? '1' : '0');
       setValue(KS+'HIDE_CONTROLLER',value.toString());
     }
@@ -3438,9 +3444,10 @@ var ST = {
     // saving autoshow_smiley
     value = [];
     misc = ['kecil','besar','custom'];
+	oL=misc.length;
     par = $D('#misc_autoshow_smile');
     if(par) value.push(par.checked ? '1':'0');
-    for(var id in misc){
+    for(var id=0; id<oL; id++){
       if(!isString(misc[id])) continue;
       par = $D('#misc_autoshow_smile'+'_'+misc[id]);
       if(par && par.checked){
@@ -3452,8 +3459,9 @@ var ST = {
     
     // saving autolayout
     misc = ['misc_autolayout_sigi','misc_autolayout_tpl'];
+	oL=misc.length;
     value = [];
-    for(var i in misc){
+    for(var i=0; i<oL; i++){
       if(!isString(misc[i])) continue;
       value.push(Dom.g(misc[i]).checked ? '1' : '0');
     }
@@ -3593,8 +3601,8 @@ var ST = {
  ,fill_TPL_Setting: function(){
     if($D('#preview_content')) $D('#preview_content').innerHTML = rSRC.getTPL_Settings();
 	if($D('#subtitle')) $D('#subtitle').innerHTML = ''
-	    +'[&nbsp;<a class="cyellow" href="./member.php?u='+gvar.user.id+'">'
-	    + gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b class="cred">$</b>':'')+'&nbsp;]';
+	    +'[&nbsp;<a class="cyellow" href="./member.php?u='+gvar.user.id+'" target="_blank">'
+	    + gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b style="color:red;">[$]</b>':'')+'&nbsp;]';
  }
 }; // end ST; Settings
 
@@ -3901,7 +3909,7 @@ var rSRC = {
     +'.qroutline{ border:1px solid #9F9F9F; margin:-3px 5px; padding:5px; height:420px;}'
     +'.qrset-content{ display:none;}'
     +'.qrset-content label{ padding-left:2px;}'
-    +'.qrset-content br { margin:5px 0;}'
+    +'.qrset-content br { margin:4px 0;}'
     +'.qrset-show{display:block!important;}'
 	+'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;font-size:11px;}'
 	+'.opr{color:#D20000;}'
@@ -4120,23 +4128,21 @@ var rSRC = {
         +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1"
 		+"4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2"
 		+"07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
-      ,setting_gif : ""
-        +"data:image/gif;base64,R0lGODlhGQAYAPcAABweHISKjMTCxFRWVASi7KSmpNze3HRydDw6PJyanLS2tMzS1Hx+fKyurIySlGRmZExKTCwuLOzu7NTa3MzKz"
-		+"KSmrJyipISGjFxeXOTm5Hx6fERCRLy+vNTW3ISGhJSWnCQmJIyOjNze5HR2fJyepLS2vNTW1Hx+hKyutJSWlGxubFRSVDQ2NMzO1KSqrIyKjMTGxFxaXKSqpHR2d"
-		+"Dw+PJyenNTS1JSSlGxqbExOTDQyNPTy9Nza3MzOzKSipGRiZERGRCwqLOTi5Ly6vISChLSytKyqrAAAAP93CP8AAgAAAAEAAAAAWAAACgAALwAAAJhFCAMA7AAAE"
-		+"gAAAHxQXeYK1wEvJgEAd3QAYuUADxIq4gAABtDwzLgM6y8vEgAAAGAuaPtnABJpagBmAF0ARNcAOiYAXHcAAAIhcw+tZeKHcgZ2c/4AU/8B3/8Ah/8Adt8ArDEAYi"
-		+"oABXcA09iMAC3nACoSAHcAAACXAAA7AAAqAAB3ANCciLg7Yi8qLQB3ANCmALjhYC/aLQBxAKEAVB8A6CoAEncAAAAAEQABAQAAAAAAAMghsLit6C+HEgB2AIBkmuf"
-		+"nkxISjgAAdrwAdMIAVYcAkHYApQCs/gBt/yoF/wDT/wC0UwDn3wAShwAAdtCRSbis2C+HhwB2dgAAiAAAYgAALQAAAAAAPgEA0gAAiAAAdsvo7MK1YocmBXZ308zq"
-		+"AOfhABLaAABxANB5ALjpAC8SAAAAAAwMAJ6hAEFPAHcAAAFBAAAAAAAAAAAAAwIAAX8AAAAAAAAAAC6UkG/n6HISEmcAAFwMzWmhq21PumEA3GdgYGX7+3MSElwAA"
-		+"ABdmubXkxImjgB3drBiZG8NWJLin3YGpQL+/gD//wD//4D//5joPkG10pMmiHZ3dgBbiAB/gQCKQgB2ABnciADoYgISLQAAANhrAOZ/ABKKAAB2AByNeW+t6ZKHEn"
-		+"Z2AEABMc0ArYgAh3YAdgAx8AAAYgAABQAC00RIMTq2rQA5hwAAdlIuamVncXBpSGxmACH5BAEAAAQALAAAAAAZABgARwj/AAkQ8JGiho8CBSoUMJKwgAyFBQymECiQ"
-		+"x4gZKhRQUGDjxQMcM3D8EECEQY8hNXowUKEBxYIVNGJAoLEBwYAYMX780IABJwsELDZgWLFhBIwaDYwkbdBAQREZNoxsNFKE6VIjNUiImDFDw4sICGbceJEiQdkUHh"
-		+"DQYMHCgwqcAVaqmPGhBw8FGlZEiAAiSAQgGhSY6FFDw9wbFkjAoACj8eLHjhszdkxhYscUIW6EoNDAhwQbEkL3yECBSA/MKV6EKGEgxoMhDTi8WDEAw4ABKzz4WBF"
-		+"jBQYFN2q8yJFgAgYaBwbQWHug648cODTMOLDhJ5ADQTUUGSLEQAMiLzYA/xG/gXz1DSE8NMhgQMEMgVwZ8DTiHkSEICAA4FBg5EdXBj7AIJAPUtnQgw0GDoYggj2"
-		+"Y0AKDLRgh0BA+cDDEhRdaOISGG3aYIQc+eNBCWT7UUIMRCXCUwg4NSGCEETaYSIKJPoRQxAQvaOBBAhoYkQEPJhgRAhFEwPAjkBoQ6YF2E4SEAwY9cDCATk/+oEIP"
-		+"D0w5RAs3xIDDAwWIsIIODxhxQA03DAAEET40UEQIEAABBAI/FHADCxA4wMMKOHjwA1ssqPCCBx4MOugDP7GAwQsMPHBCByE9AAQNCGyAw5c5ePCACpeqoMIBl345g"
-		+"gArFAAnBgggAMQKOazwwwCtAlDxEwYb3JDACjMkwF0GPyoQAhAg/AQUCzoA8UIDPGQghBBDeEDADAzI90ARFNQQAxA63IdADAlsBFK0PjBAEQMvIMWBAOgKcC4H62"
-		+"K4kUABAQA7"
+      ,setting_gif : "" // more-color
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAABnRSTlMAPwBIAMyhjHolAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEmElE"
+		+"QVR42oWUW2hcZRDH51z2nL1kk7O7SdPEJiaxjfRirdaWei+0gmgRH0QoKBZafNGnCmLFFqmC4JO++KZUUqnYCj60qKiILRil8cG46SW9mE3aZDfb7GZ3z55zvsvM+JC"
+		+"QttrgvHwwzP/HDN/M33jy6RFYJg7t6QGAYl0DwEDCCWJ0+MjUcsX2HbND765N9cSstGnHTWSDCFCTCvjT+9Ozl+SBTy7/V2L8q6PP3xz0NibcjE0miAlZm1TRrFYazD"
+		+"bT7bWTPQ5ZVqOorv8YvP/N5WVBxz9Y17IxoSOqnQ3Kp/36hBQEZsRIUFNaB+B0xbq3pzp2embCKvw0f/izK0taq2/1q0uU7Ia4nsPCUPXGmSCc17yOM3cnalcUM1AX3b"
+		+"UjOf1LMPlrMJcPvfuSHeuTG1pTZ/6sLMjNhefo/kFvYyKq4NWhav2cUBp9T2zZ2+V1uFFIQci2a23ZvfKeF1p0pEvD/m8HpuqT2L+zbd9j3beB2jcnOaDCsfn6BckahK"
+		+"SB53KpVkdp1gREjNowADa/uKKtLx4Inhpp/nBwIqzoNU9lboK+em9tPGOVR4L6uAQAZjBj4K2IAQAzK4VRqCQpNDjVbsfSlpRMxNeHG6Nfl1u63dd39QCAfWhPT6o7xs"
+		+"Q3fvYpIjANEaFOGpZpAkDHw4lNOQ8AEh2O45ooSPoYBAoAGOH8sbnVuzLpAXdxj5w2y59SzStCWqAlMAFXYf5v7BiAXF881xdf+prJkaDwV5MZFAMDXb9UL4010l3xV7b"
+		+"mzMFE3HIN/5LQGrQAUkyCVR2vflH1S5ppEcEMfll//+G0X9EIAMxKawYojobMXC6GJkVkWoYoYxgSBqQaJH1Ugqrnou/2T13L1xdAjaI6urdw8XRDg6E1RkqGjJJwviRQc"
+		+"7MBJhEAADJQxCriKMQwoLBJwqfS70Hhj9oCKKzi5Nm6QoVKCCUDJgQQQEIoLZCRbGRAzU7ajEJSilCzDBmJlWIhiXlxNDQoACURGUAaLEExAzInM6aKMJ4w7IIpeyJOD"
+		+"TphAw3L0AGhhlCzQo40LZGYWbOSpAkgNAiZFYJi8nqTMqBsp2MCgKxob8D1VjmqgaghUKyZlKEU6FvPEoElYGAgMksEAs72Ol6X7d8QX47WzMNHpubPC7CNVc+3SeSmIA"
+		+"SSjEqxYuJbQIpAMixkGIBidO8TGcuE5ky4uNkvfTxeK6nuZ1tTm5wQUJCWihSzJuKl0QCQmQlYgyJAxs41Lf1bvWpJn8j7N29t+tu6YdFDb3XmNrihQsUUoRaEt3UEWoE"
+		+"WJBFlts95dHenHbfmLvi3He1rxyeKw0FyZWzbO13tD7qRyQK1VDyTjyrTojIjRk4Vg4bWDOQYnevbtu/rSeacmXzj1FR4B2P76OX+7LZ4s6zyp+byJyvFCxItTA/abMK1"
+		+"c76MKL3KHXw827/Ns117eqxx8qK/rNUe3NHpPZBw223RxNJYc3pcVGdCKdH17NYu1+tNmgY3K3J2PFrq5c6ghXj7mZy7wrFSFjIHIRKBkhw1MfLRL8kTY83/N/9b441Hs"
+		+"rMzohEiErBtZtrNoVF/ueJ/AE95J7K8On4lAAAAAElFTkSuQmCC"
       ,twbutton_gif : ""
         +"data:image/gif;base64,R0lGODlhCgBYAsQfAPPz8+vr6/7+/uHh4fn5+eXl5d7e3vv7++jn6Ofo5/j4+Ojo6d/g4Ofn59/g3+Pk5OPj4/f29vv7+vz7/ODf3/"
 		+"Dw8Pb29vv8+/z8/ODf4O/v7+fn5unp6N/f3+Dg4P///yH5BAEAAB8ALAAAAAAKAFgCAAX/oCCOZGmeIqau7OG6UiwdRG3fSqTs/G79wCDAMiwSiYCkUllpOp+aqHQ"
@@ -4395,10 +4401,10 @@ Format will be valid like this:
     
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+HtmlUnicodeDecode('&#8212;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home Kaskus Quick Reply - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+HtmlUnicodeDecode('&#8212;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
-	+'<a id="qr_setting_btn" href="javascript:;" style="position:absolute;right:55px;margin-top:-5px;"><img src="'+gvar.B.setting_gif+'" alt="S" title="Settings" border="0" /></a>'
+	+'<div style="position:absolute;right:55px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:3px 0 0 3px;">Settings</div></a></div>'
     +'</td></tr></thead>'
 	
     +'<tbody id="collapseobj_quickreply" style="display:'+(gvar.settings.qrtoggle==1?'':'none')+';"><tr><td class="panelsurround" align="center">'
@@ -4425,8 +4431,6 @@ Format will be valid like this:
     :'')
 	
   +'</tr></table>'
-     // Multi quote container
-     //+'<input id="mq_container" type="text" value="" '+(gvar.__DEBUG__ ? 'readonly="true" class="txa_readonly" style="width:100%;"':'style="display:none;"')+'/>\n'
     +'</div>' // end .MYvBulletin_editor
     // end header_component
     
@@ -4701,9 +4705,9 @@ Format will be valid like this:
     //
 	return (''
 	 +'<div id="exporimpor_container" class="qrsmallfont">'
-	 +'To export your settings, copy the text below and save it in a file, eg. <input id="fn_qr_set" tabindex:"106" class="qrsmallfont" type="text" style="border:0; background:transparent; font-weight:bold; width:40%;" readonly="true" value="QR_Settings_'+(new Date()).getTime()+'.txt" /><br/>'
-     +'To import your settings later, overwrite the text below with the text you saved previously and click "Update".'
-	 +'<textarea id="textarea_rawdata" class="textarea" style="height:325px;width:99%;overflow:auto;white-space:pre;"></textarea>'
+	 +'To export your settings, copy the text below and save it in a file,.<br>'
+     +'To import your settings later, overwrite the text below with the text you saved previously and click "<b>Import</b>".'
+	 +'<textarea id="textarea_rawdata" class="textarea" style="height:335px;width:99%;overflow:auto;white-space:pre;"></textarea>'
 	 +'<div style="float:left;"><a id="exim_select_all" class="qrsmallfont" style="margin:10px 0 0 5px;text-decoration:none;" href="javascript:;"><b>'+HtmlUnicodeDecode('&#9650;')+' Select All</b></a></div>'
 	 +'<div style="float:right;"><a id="reset_default" class="qrsmallfont" style="margin:10px 10px 0 0;color:red;" href="javascript:;"><small>reset default</small></a></div>'
 	 +'<div style="text-align:center;width:100%;margin:10px 0 5px 0;"><input type="button" id="import_setting" class="twbtn twbtn-m" value="Import.." /></div>'
@@ -4711,22 +4715,22 @@ Format will be valid like this:
 	);
  }
  ,getTPL_Settings_About: function(){
-    var spacer = '<div style="height:5px;">&nbsp;</div>';
+    var spacer = '<div style="height:5px;"></div>';
 	return (''
-	 +'<div id="about_container" class="qrsmallfont">'
-	 +'<b>Kaskus Quick Reply (QR) '+gvar.sversion+'</b><br/>'
+	 +'<div id="about_container" class="qrsmallfont" style="">'
+	 +'<b>'+gvar.fullname+' (QR) '+gvar.sversion+'</b><br>'
 	 +spacer
-	 +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">Kaskus Quick Reply</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
+	 +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">'+gvar.fullname+'</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
 	 +'<div style="height:10px;"></div>'
-	 +'<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img height="33" src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" border="0" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code"/></a>&nbsp;'+HtmlUnicodeDecode('&#183;')+'&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"/></a><br>'
+	 +'<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img height="33" src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" border="0" title="dev-kaskus-quick-reply - '+gvar.fullname+' on Google Code"/></a>&nbsp;'+HtmlUnicodeDecode('&#183;')+'&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"/></a><br>'
 	 +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
 	 +'<div style="height:10px;"></div>'
 	 +'KASKUS brand is a registered trademark of www.kaskus.us<br>'
-	 +'Kaskus Quick Reply (QR) is not related to or endorsed by www.kaskus.us in any way.<br>'
+	 +gvar.fullname+' (QR) is not related to or endorsed by www.kaskus.us in any way.<br>'
 	 +spacer	 
-	 +'<b>Modify By</b>: <a href="javascript:;" class="nostyle">Idx</a><br>'
-	 +'<b>Contributor</b>'
-	 +'<div style="height:'+(gvar.isBuggedChrome ? '248':'225')+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
+	 +'<b>Modified By</b>: <a href="javascript:;" class="nostyle">Idx</a><br>'
+	 +'<b>Contributors:</b>'
+	 +'<div style="height:'+(gvar.isBuggedChrome ? '248':'220')+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
 	 +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
 	 +'</div>'
 	 +'</div>' // #about_container
@@ -4737,28 +4741,28 @@ Format will be valid like this:
     var spacer= '<div style="height:10px;"></div>';
 	return (''
 	 +'<div id="shotcuts_container" class="qrsmallfont">'
-	 +'<b>Keyboard Shortucts</b><br/>'
+	 +'<b>Keyboard Shortucts</b><br>'
 	 +spacer
-	 +'<em>Globaly on showthread page</em><br/>'
-	 +'<b>Esc</b> - Close Active-Popup [Preview, Input reCapcay, Settings]<br/>'
-	 +'<b>Ctrl + Q</b> - Focus to Quick Reply Editor Now. (customable)<br/>'
-	 +'<b>Alt + Q</b> - Fetch Quoted Post<br/>'
-	 +'<b>Ctrl + Alt + Q</b> - Fetch Quoted Post <span class="opr">(Opera)</span><br/>'
-	 +'<b>Ctrl + Shift + Q</b> - Deselect All Quoted Post<br/>'
+	 +'<em>Globaly on showthread page</em><br>'
+	 +'<b>Esc</b> - Close Active-Popup [Preview, Input reCapcay, Settings]<br>'
+	 +'<b>Ctrl + Q</b> - Focus to Quick Reply Editor Now. (<a id="customable_btn" href="javascript:;">customable</a>)<br>'
+	 +'<b>Alt + Q</b> - Fetch Quoted Post<br>'
+	 +'<b>Ctrl + Alt + Q</b> - Fetch Quoted Post <span class="opr">(Opera)</span><br>'
+	 +'<b>Ctrl + Shift + Q</b> - Deselect All Quoted Post<br>'
 	 +spacer
-	 +'<em>While focus on Editor / textarea</em><br/>'
-	 +'<b>Ctrl + Enter</b> - Post Reply<br/>'
-	 +'<b>Alt + S</b> - Post  Reply<br/>'
-	 +'<b>Shift + Alt + S</b> - Post Reply <span class="opr">(Opera)</span><br/>'
-	 +'<b>Alt + P</b> -  Preview Quick Reply<br/>'
-	 +'<b>Shift + Alt + P</b> -  Preview Quick Reply <span class="opr">(Opera)</span><br/>'
-	 +'<b>Alt + X</b> -  Go Advanced<br/>'
-	 +'<b>Shift + Alt + X</b> -  Go Advanced <span class="opr">(Opera)</span><br/>'
+	 +'<em>While focus on Editor / textarea</em><br>'
+	 +'<b>Ctrl + Enter</b> - Post Reply<br>'
+	 +'<b>Alt + S</b> - Post  Reply<br>'
+	 +'<b>Shift + Alt + S</b> - Post Reply <span class="opr">(Opera)</span><br>'
+	 +'<b>Alt + P</b> -  Preview Quick Reply<br>'
+	 +'<b>Shift + Alt + P</b> -  Preview Quick Reply <span class="opr">(Opera)</span><br>'
+	 +'<b>Alt + X</b> -  Go Advanced<br>'
+	 +'<b>Shift + Alt + X</b> -  Go Advanced <span class="opr">(Opera)</span><br>'
 	 +spacer
-	 +'<em>While focus on Input reCapctha</em><br/>'
-	 +'<b>Pg-Up</b> or <b>Pg-Down</b> - Reload reCaptcha<br/>'
-	 +'<b>Alt + R</b> - Reload reCaptcha<br/>'
-	 +'<b>Ctrl + Alt + R</b> - Reload reCaptcha <span class="opr">(Opera)</span><br/>'
+	 +'<em>While focus on Input reCapctha</em><br>'
+	 +'<b>Pg-Up</b> or <b>Pg-Down</b> - Reload reCaptcha<br>'
+	 +'<b>Alt + R</b> - Reload reCaptcha<br>'
+	 +'<b>Ctrl + Alt + R</b> - Reload reCaptcha <span class="opr">(Opera)</span><br>'
 	 +'</div>' // #shotcuts_container	
 	);
  }
@@ -4766,12 +4770,13 @@ Format will be valid like this:
     var sett = '';
 	var spacer = '<div style="height:5px;">&nbsp;</div>';
 	sett+='<div id="visibility_container" class="qrsmallfont">';
-    sett+='<input id="chk_select_all" type="checkbox"/><label for="chk_select_all"><b>Toggle All</b></label><br />';
+    sett+='<input id="chk_select_all" type="checkbox"/><label for="chk_select_all"><b>Toggle All</b></label><br>';
     sett+=spacer;
-    sett+='<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/><label for="misc_hideavatar">Hide Avatar</label><br />';
+    sett+='<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/><label for="misc_hideavatar">Hide Avatar</label><br>';
     sett+=spacer;
     sett+='<div id="main_controller">';
-	for(var i in gvar.labelControl)
+	var lcL=gvar.labelControl.length;
+	for(var i=0; i<lcL; i++)
      if( isString(gvar.labelControl[i]) )
       sett+='<input id="qrset_'+gvar.labelControl[i]+'" type="checkbox" '+(gvar.settings.hidecontroll[i]=='1' ? 'checked':'')+'/><label for="qrset_'+gvar.labelControl[i]+'">Hide ' + gvar.labelControl[i]+'</label><br>';
 	sett+='</div></div>'; // #main_controller  #visibility_container
@@ -4784,7 +4789,7 @@ Format will be valid like this:
      +(!gvar.noCrossDomain ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
      +(!gvar.noCrossDomain ? '<div class="smallfont" style="margin:2px 0 0 20px;" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer     
-     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label><br />'
+     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label><br>'
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1' ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
      +'<div class="smallfont" style="margin:3px 0 0 20px;">'
      +'<label for="misc_autoexpand_1">min:</label><input id="misc_autoexpand_1" type="text" title="MINIMUM Height &gt= 75" value="'+(gvar.settings.textareaExpander[1])+'" style="width:35px;padding:0" maxlength="4"/>'
