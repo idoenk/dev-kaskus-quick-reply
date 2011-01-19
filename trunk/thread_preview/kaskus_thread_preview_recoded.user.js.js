@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.2
-// @dtversion     110117102
-// @timestamp     1295260598888
+// @version       1.0.3
+// @dtversion     110119103
+// @timestamp     1295434482655
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,8 +18,11 @@
 //
 // -!--latestupdate
 //
+//  v1.0.3 - 2011-01-19
+//    Fix edit @VM (collision with open window more smiley)
+//
 //  v1.0.2 - 2011-01-17
-//    Fix failed get Obfuscated lastpost
+//    Fix failed get lastpost link (is it Obfuscated or serverside error?)
 //
 //  v1.0.1 - 2011-01-15
 //    Fix Improve findCurrentRow
@@ -35,9 +38,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.2';
+gvar.sversion = 'v' + '1.0.3';
 gvar.scriptMeta = {
-  timestamp: 1295260598888 // version.timestamp
+  timestamp: 1295434482655 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -114,7 +117,6 @@ function init(){
   gvar.current= {}; // {cImg:'',cEmote:'',cSPL:'',content:'',isLastPost:'',QR_isLoaded:'',TRIT_isClosed:''}
   gvar.loc= location.href;
 
-  //GM_addGlobalStyle( getCSS() + getCSS_fixed(gvar.settings.fixed_preview) );
   GM_addGlobalStyle( rSRC.getCSS() );
   GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 ); // to body for css-fixed
   
@@ -1563,7 +1565,7 @@ var tQR = {
   el = createEl('li',{'class':'li_tabsmile tab_close'});
   Dom.add(el2,el); Dom.add(el,cont);
   // tab more
-  el = createEl('li',{'class':'li_tabsmile tab_close'},'<a href="javascript:;" onclick="vB_Editor[\'vB_Editor_001\'].open_smilie_window(440,'+getScreenHeight()+');return false" title="Show all smilie">[ More ]</a>');
+  el = createEl('li',{'class':'li_tabsmile tab_close'},'<a href="javascript:;" onclick="open_win_smiley();" title="Show all smilie">[ More ]</a>');
   Dom.add(el,cont);
   
   Dom.add(cont,parent);
@@ -3077,12 +3079,9 @@ Format will be valid like this:
    +  '}'
    + ');'
    +'};'
-   +'function vB_Text_Editor(editorid,mode,parsetype,parsesmilies,initial_text,ajax_extra){'
-   + 'this.open_smilie_window=function(width,height){'
-   +  'smilie_window=openWindow("misc.php?do=getsmilies&editorid=vB_Editor_001",width,height,"smilie_window");'
-   + '};'
+   +'function open_win_smiley(){'
+   +  'window.open("misc.php?do=getsmilies&editorid=vB_Editor_001","smilie_window", "left=20,top=10,width=520,height='+getScreenHeight()+'");return false;'
    +'};'
-   +"vB_Editor['vB_Editor_001']= new vB_Text_Editor('vB_Editor_001', 0, '13', '1', undefined, '');"
   );  
  }
 // tPL
