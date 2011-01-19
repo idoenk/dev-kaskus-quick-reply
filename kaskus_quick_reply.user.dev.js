@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.1
 // @dtversion     110119311
-// @timestamp     1295446890279
+// @timestamp     1295453436676
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,7 @@
 // -!--latestupdate
 //
 // v3.1.1 - 2011-01-19
+//   Fix minor normalize behaviour @general Setting
 //   Fix failed iterate in Array (FF 4.0b10)
 //   Fix Minor Typo @ Export-Import; UserAgent Nfo;
 //   Improved QR-Settings on Pop-up
@@ -55,7 +56,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.1';
 gvar.scriptMeta = {
-  timestamp: 1295446890279 // version.timestamp
+  timestamp: 1295453436676 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -3129,7 +3130,7 @@ var ST = {
 
  ,event_settings: function(){
     // main left-tab
-	var par, el = $D('.qrtab');
+	var elSet, par, el = $D('.qrtab');
 	for(var i=0; i<el.length; i++)
 	  if($D(el[i])) Dom.Ev(el[i], 'click', function(e){ ST.switch_tab(e); });
 	if($D('#tab_close')) Dom.Ev($D('#tab_close'), 'click', function(){ ST.close_setting(); });
@@ -3138,19 +3139,43 @@ var ST = {
 	if($D('#save_settings')) Dom.Ev( $D('#save_settings'), 'click', function(){ ST.save_setting(); } );
 	if($D('#chk_select_all')) Dom.Ev( $D('#chk_select_all'), 'click', function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
 	
-    if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ e=e.target||e; ST.toggle_editLayout(e); });
-    if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ e=e.target||e; ST.toggle_editLayout(e); });
+	// having child set
+	elSet = ['misc_updates','misc_autoexpand_0','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
+	for(var i=0;i<cL;i++)
+	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_childs(e); });
+	   
+	//if($D('#misc_autoexpand_0')) Dom.Ev($D('#misc_autoexpand_0'), 'click', function(e){ ST.toggle_childs(e); });
+	//if($D('#misc_autoshow_smile')) Dom.Ev($D('#misc_autoshow_smile'), 'click', function(e){ ST.toggle_childs(e); });
+	//if($D('#misc_hotkey')) Dom.Ev($D('#misc_hotkey'), 'click', function(e){ ST.toggle_childs(e); });
+	//if($D('#misc_updates')) Dom.Ev($D('#misc_updates'), 'click', function(e){ ST.toggle_childs(e); });
+	
+	//misc_autolayout_sigi, misc_autolayout_tpl
+	elSet = ['misc_autolayout_sigi','misc_autolayout_tpl'], cL=elSet.length;
+	for(var i=0;i<cL;i++)
+	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_autolayout(e); });
+	   
+    //if($D('#misc_autolayout_sigi')) Dom.Ev( $D('#misc_autolayout_sigi'), 'click', function(e){ ST.toggle_autolayout(e); });
+    //if($D('#misc_autolayout_tpl')) Dom.Ev( $D('#misc_autolayout_tpl'), 'click', function(e){ ST.toggle_autolayout(e); });
+	
+	elSet = ['edit_sigi','edit_tpl'], cL=elSet.length;
+	for(var i=0;i<cL;i++)
+	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_editLayout(e); });
+    //if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ ST.toggle_editLayout(e); });
+    //if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ ST.toggle_editLayout(e); });
     if($D('#misc_hotkey')) Dom.Ev( $D('#misc_hotkey'), 'click', function(e){
        e=e.target||e;
 	   if(e && !e.checked){
-	    var childs = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'], cL=childs.length;
-	    for(var i=0; i<cL; i++) if( Dom.g(childs[i]) ) Dom.g(childs[i]).checked=false;
-	    if( Dom.g(childs[childs.length-1]) ) Dom.g(childs[childs.length-1]).disabled='disabled';
+	      var elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'], cL=elSet.length;
+	      for(var i=0; i<cL; i++) if( Dom.g(elSet[i]) ) Dom.g(elSet[i]).checked=false;
+	      if( Dom.g(elSet[cL-1]) ) Dom.g(elSet[cL-1]).disabled='disabled';
 	   }
 	});
-    if($D('#misc_hotkey_ctrl')) Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ e=e.target||e; ST.precheck_shift(e); });
-    if($D('#misc_hotkey_alt')) Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ e=e.target||e; ST.precheck_shift(e); });
-    if($D('#misc_hotkey_char')) Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ e=e.target||e; ST.precheck_shift(e); });
+	elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_char'], cL=elSet.length;
+	for(var i=0;i<cL;i++)
+	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.precheck_shift(e); });
+    //if($D('#misc_hotkey_ctrl')) Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ ST.precheck_shift(e); });
+    //if($D('#misc_hotkey_alt')) Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ ST.precheck_shift(e); });
+    //if($D('#misc_hotkey_char')) Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ ST.precheck_shift(e); });
     try { // check noCrossDomain and/or isOpera
      if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera still T_T
       Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
@@ -3266,7 +3291,7 @@ var ST = {
 	};
 	var getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
 	var parse_UA_Vers = function(){
-	  return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/,' ').replace(/\//g,'-') );
+	  return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/g,' ').replace(/\//g,'-') );
 	};
 	gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
 	gvar.buftxt+= '# Version: QR '+gvar.sversion+'\n';
@@ -3329,7 +3354,6 @@ var ST = {
         setValue(KS+'TMP_TEXT',value.toString());
     }
 	window.setTimeout(function() {
-	  $D('#import_setting').value=' Cold-Boot QR... ';
 	  gvar.restart=true;
 	  // ==
 	  window.setTimeout(function() { ST.cold_boot_qr(); }, 350);
@@ -3472,7 +3496,6 @@ var ST = {
     if(value) setValue(KS+'TMP_TEXT', value );
 
 	window.setTimeout(function() {
-	  $D('#save_settings').value=' Cold-Boot QR... ';
 	  gvar.restart=true;
       // ==
 	  window.setTimeout(function() { ST.cold_boot_qr(); }, 350);
@@ -3480,7 +3503,15 @@ var ST = {
 	}, 300);    
 	
  } // end save_setting
+ ,toggle_childs: function(e){
+  e=e.target||e;
+  if(typeof(e)!='object' || (e && !e.id) || (e && e.getAttribute('type')!='checkbox') ) return;
+  var disp=e.checked, tgt=e.id+'_child';  
+  if(Dom.g(tgt))
+    Dom.g(tgt).style.setProperty('display',(disp ? '':'none'),'important');  
+ }
  ,precheck_shift: function(e){
+  e=e.target||e;
   if(typeof(e)!='object') return;
   var hVal=''; var hChk=true;
   if(e.getAttribute('type')!='text'){
@@ -3502,11 +3533,20 @@ var ST = {
   }
   $D('#misc_hotkey').checked=(!hChk || hVal=='' ? false : 'checked');
  }
+ ,toggle_autolayout: function(e){
+  e=e.target||e;
+  if(typeof(e)!='object' || (e && !e.id) || (e && e.getAttribute('type')!='checkbox') ) return;
+  var disp=e.checked;
+  var tgt='edit_'+e.id.replace(/misc_autolayout_/,'')+'_cancel';
+  if(!disp && Dom.g(tgt) && Dom.g(tgt).className.indexOf('cancel_layout-invi')==-1)
+    SimulateMouse(Dom.g(tgt), 'click', true);
+ }
  ,cancelLayout: function(e){
   e=e.target||e; var tgt = e.id.replace('_cancel','')+'_Editor';
   Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', e );
  }
  ,toggle_editLayout: function(e){
+  e=e.target||e;
   if(typeof(e)!='object') return;
   var todo=e.innerHTML; // edit | set
   var value, task=e.id; // sigi | tpl
@@ -4787,17 +4827,18 @@ Format will be valid like this:
 	return (''
 	 +'<div id="general_container" class="qrsmallfont">'
      +(!gvar.noCrossDomain ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
-     +(!gvar.noCrossDomain ? '<div class="smallfont" style="margin:2px 0 0 20px;" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
-     +spacer     
-     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label><br>'
+     +(!gvar.noCrossDomain ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
+     +spacer
+     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label>'
+     +spacer
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1' ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
-     +'<div class="smallfont" style="margin:3px 0 0 20px;">'
+     +'<div id="misc_autoexpand_0_child" class="smallfont" style="margin:3px 0 0 20px;'+(gvar.settings.textareaExpander[0]=='1' ? '':'display:none;')+'">'
      +'<label for="misc_autoexpand_1">min:</label><input id="misc_autoexpand_1" type="text" title="MINIMUM Height &gt= 75" value="'+(gvar.settings.textareaExpander[1])+'" style="width:35px;padding:0" maxlength="4"/>'
      +'&nbsp;<label for="misc_autoexpand_2">max:</label><input id="misc_autoexpand_2" type="text" title="MAXIMUM Height &lt;= 2048" value="'+(gvar.settings.textareaExpander[2])+'" style="width:35px;padding:0" maxlength="4"/>'
      +'</div>'
      +spacer
      +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
-     +'<div class="smallfont" style="margin:0 0 0 20px;">'
+     +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:0 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_kecil">kecil</label>&nbsp;'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_besar">besar</label>&nbsp;'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_custom">[+]</label>'
@@ -4812,7 +4853,7 @@ Format will be valid like this:
      +'<div id="edit_tpl_Editor" style="display:none;"></div>'
      +spacer     
      +'<input id="misc_hotkey" type="checkbox" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/><label for="misc_hotkey">QR-Hotkey</label>'
-     +'<div class="smallfont" style="margin:2px 0 0 15px;">'
+     +'<div id="misc_hotkey_child" class="smallfont" style="margin:2px 0 0 15px;'+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? 'display:none;':'')+'">'
      +'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1' ? 'checked':'')+'/><label for="misc_hotkey_ctrl">ctrl</label>&nbsp;'
      +'<input id="misc_hotkey_alt" type="checkbox" '+(gvar.settings.hotkeykey[2]=='1' ? 'checked':'')+'/><label for="misc_hotkey_alt">alt</label>&nbsp;'
      +'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1' ? 'checked':'')+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? ' disabled="disabled"':'')+'/><label for="misc_hotkey_shift">shift</label>'
