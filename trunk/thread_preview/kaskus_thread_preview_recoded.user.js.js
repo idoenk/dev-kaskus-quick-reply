@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.3
-// @dtversion     110120103
-// @timestamp     1295458498119
+// @version       1.0.4
+// @dtversion     110120104
+// @timestamp     1295554136055
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,6 +18,17 @@
 //
 // -!--latestupdate
 //
+//  v1.0.4 - 2011-01-20
+//    Fix preserve subscription's folderid
+//    Add Rate Thread;
+//    Fix fetch_error callback
+//    Improve Invalid Thread callback
+//    Fix TS.name strip font color 
+//    Improve anti-batman-Trap; extract href batman-trap
+//    
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //  v1.0.3 - 2011-01-20
 //    Add simple anti-batman-Trap
 //    Fix edit @VM (collision with open window more smiley)
@@ -31,17 +42,14 @@
 //
 //  v1.0 - 2011-01-08
 //    init recoded
-//
-// -/!latestupdate---
-//
-// ==/UserScript==
+*/
 (function () {
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.3';
+gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1295458498119 // version.timestamp
+  timestamp: 1295554136055 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -51,7 +59,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug| 
+gvar.__DEBUG__ = true; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -96,7 +104,7 @@ function init(){
   
   gvar.codename= 'Kaskus Thread Preview';
   gvar.id_textarea= 'vB_Editor_001_textarea';
-  _LOADING = '<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>';
+  _LOADING = '<div class="ktp-loading" style="display:inline-block;padding-left:15px;">loading...</div>';
   
   gvar.zIndex = 99997; // one level above KFTI
   gvar.offsetTop= -35; // buat scroll offset
@@ -353,7 +361,7 @@ var tTRIT = {
 	      if(lnodes){
 	          pid = LINK.getPID(lnodes.href);
 			  show_alert(pid);
-	    	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
+	    	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'display:inline-block;',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
 	    	  el = createEl('span',Attr,'[+]');
 	    	  Dom.add(el, lnodes.parentNode);
 	        // attach event-click
@@ -439,7 +447,6 @@ var tTRIT = {
 		if(yakin)
 		  tPOP.closeLayerBox('hideshow');
 	  }	  
-	  alert(9);
 	  return;
     }
   }
@@ -457,6 +464,8 @@ var tTRIT = {
 	  tPOP.closeLayerBox('hideshow');
 	  if($D('#prev_loader')) $D('#prev_loader').parentNode.innerHTML = '[+]';
 	}
+	tPOP.imediateStop(); // make sure blinking is stop at all
+	
 	// reset this gvar.
 	gvar.current= {};
 	
@@ -464,8 +473,9 @@ var tTRIT = {
 	// kill the meta
 	if($D('#meta_refresh')) Dom.remove($D('#meta_refresh'));
 	
-	e.innerHTML = '<img id="prev_loader" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" style="margin:0 4px 0 3px;" border="0"/>';
 	tTRIT.collectRowInfo(e);
+	e.innerHTML = '<div id="prev_loader" class="ktp-loading" style="display:inline-block;'+(gvar.current.isLastPost ? (gvar.isOpera ? 'margin:-8px 2px 0 4px;':'margin:1px 2px 0 4px;'):'margin:2px 4px 1px 4px;')+'"></div>';
+	
 	
 	// re-syncroning from storage avoid changed value when qr-click
 	gvar.settings.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
@@ -500,11 +510,22 @@ var tTRIT = {
 	if(rets===null){
 	  if(caller) {
 	    caller.innerHTML = '<blink title="">[X]</blink>';
+		caller.setAttribute('title', 'Page not Loaded');
 	    window.setTimeout(function() { caller.innerHTML='[+]';}, 3500);
 	  }
 	  tTRIT.fetch_failed('t2, ' + 'Thread Not Loaded, might be `kepenuhan`'); // end of story
 	  return;
-	}	
+	}else if(!rets){
+	  if(caller) {
+	    caller.innerHTML = '[-]';
+		caller.setAttribute('title', 'Invalid Thread');
+		removeClass('thread_preview', caller);
+	    addClass('thread_preview-invalid', caller);
+	  }
+	  tTRIT.fetch_failed('invalid-thread'); // end of story
+	  return;
+	}
+	
 	// tahap-3 yg bikin failed
 	if( tTRIT.is_fetch_expire() ) tTRIT.fetch_failed('t3');	
 	
@@ -521,7 +542,7 @@ var tTRIT = {
 	
   }
  ,fetch_failed: function(msg){
-	clog('Fetch Failed::' + msg);
+	clog('Fetch Failed::' + msg);	  
 	return false;
   }
  ,fetch_done: function(caller){
@@ -536,26 +557,38 @@ var tTRIT = {
  ,scanBetmen: function(text){
   if(!text) return '';
   var temp = createEl('div',{}, text), cleanRet=text;
-  var elInside, buff, aTag = getTag('a', temp), aL=aTag.length;
-  var newHref = function(inner){
-    var nel = createEl('div', {}, inner );
+  var el, buff, aL, isClean, aTag = getTag('a', temp);
+  if(!aTag) return text;  
+  var newHref = function(inner, href){
+    var nel = createEl('div', {}, (href ? '<small class="btman-suspect">Batman Trap:</small><pre class="btman-href">'+href+'</pre>':'') + inner );
 	return nel;
   }
-  for(var i=0; i<aL; i++){
-    buff = aTag[i].innerHTML;
-	var el, elInside = getTag('div', aTag[i]);
-	if(elInside.length > 0){
-		temp.removeChild(aTag[i]);
-	    el = newHref(buff);
-		temp.appendChild(el);
-	}
+  aL=aTag.length; isClean='';
+  while(isClean=='' || isClean.indexOf('0')!=-1 ){
+   isClean= '1';
+   for(var i=0; i<aL; i++){
+     if(isUndefined(aTag[i])) continue;
+     buff = aTag[i].innerHTML;
+	 if(buff.match(/<input\s*(?:(?:value|style)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i)){
+	    el = newHref(buff, aTag[i].href);
+	 	temp.insertBefore(el, aTag[i].nextSibling);
+	 	temp.removeChild(aTag[i]);
+		isClean+= '0';
+	 }
+	 isClean+= '1';
+   }
   }
   cleanRet = temp.innerHTML;
   return cleanRet;
  }
  ,parse_preview: function(text){
    // sumthin like kepenuhan
-   if(text.indexOf('td_post_')==-1) return null;
+   if(text.indexOf('td_post_')==-1) {
+     if(text.indexOf('>Invalid Thread')!=-1)
+	   return false; // thread is deleted or invalid
+	 else
+	   return null; // page not loaded, maybe..
+   }
    var cucok, wraper, poss, _ret, _tit, _nr;
    /*content*/
    _ret = text.split('td_post_');
@@ -600,7 +633,14 @@ var tTRIT = {
 		cucok = text.match(/ass=[\"\']bigusername[\'\"]\s*[^\?]+.u=(\d+).>(.+)<\/a>/i);
 		if(cucok){
 		   gvar.TS.id = cucok[1];
-		   gvar.TS.name = cucok[2];
+		   // for pejabat kaskus|strip coloring username
+           var cl_Name=cucok[2];
+           // clean TS.name if it's contain tag
+           if(cl_Name && cl_Name.indexOf('"')!=-1){
+             cucok = cl_Name.match(/<[^\>]+>([^<]+)<\//);
+             if(cucok) cl_Name = cucok[1];
+           }
+		   gvar.TS.name = cl_Name;
 		}
 	 }
 	 gvar.current.TRIT_isClosed = tTRIT.is_closed_thread(text);
@@ -966,7 +1006,7 @@ var tPOP = {
 		    loaduser(uid);
 			if($D('#post_detail')) {
 			  $D('#post_detail').style.setProperty('display','block','');
-			  $D('#post_detail').innerHTML+= '<span id="wait_userlink">'+_LOADING+'</span>';
+			  $D('#post_detail').innerHTML+= '<div id="wait_userlink">'+_LOADING+'</div>';
 			}
 	        gvar.sITryLoadCard = window.setInterval(function() {
               var img = dumy_el_img;
@@ -1056,8 +1096,10 @@ var tPOP = {
 	Dom.remove($D("#imgsticky"));
 	
 	// moving link to #button_preview
-	if($D('#button_preview')){
-	  if($D('#preview_cancel')){ Dom.add($D('#preview_cancel'), $D('#button_preview')); removeClass('cyellow', $D('#preview_cancel')); }
+	if( $D('#button_preview') && $D('#preview_cancel') ){
+		$D('#button_preview').insertBefore($D('#preview_cancel'), $D('#button_preview').firstChild);
+		$D('#preview_cancel').style.setProperty('float','left','important');
+		removeClass('cyellow', $D('#preview_cancel')); 
 	}
 	
 	if($D('#tr_qr_button')) Dom.remove('tr_qr_button');
@@ -1114,6 +1156,10 @@ var tPOP = {
 	}
   }
 
+ ,imediateStop: function(){
+    if(gvar.sITryBlinkRow) clearInterval(gvar.sITryBlinkRow);
+	if(gvar.current.cRow) removeClass('selected_row', gvar.current.cRow);
+ }
  ,closeLayerBox: function(tgt, direct){
 	if(gvar.current.cRow){
 	  var lastRow = gvar.current.cRow;
@@ -1126,8 +1172,7 @@ var tPOP = {
 	    var iLastRow = gvar.current.cRow;
         if(gvar.blinkRow >= 7){
 	      clearInterval(gvar.sITryBlinkRow);
-	  	  removeClass('selected_row', iLastRow);
-		  
+	  	  removeClass('selected_row', iLastRow);		  
 	  	  return;
 	    }
 	    gvar.blinkRow++;
@@ -1275,6 +1320,10 @@ var tQR = {
 
 	if(gvar.current.qr_fetch === null){
 	   tQR.fetch_error();
+	}else if(gvar.current.qr_fetch[0]==false){	   
+	   
+	   tQR.fetch_error(false, gvar.current.qr_fetch[1]);
+	   
 	}else{
 	   var snapTo = function(){
 	    if(gvar.current.qr_fetch === null)
@@ -1312,18 +1361,19 @@ var tQR = {
 	}
   }
 
- ,fetch_error: function(isQuote){
-    var notice, msg = 'Fetch failed, server might be busy. <a href="javascript:;" id="try_again_now">Try again</a>';
+ ,fetch_error: function(isQuote, msg){
+    var notice, msg = (!msg ? 'Fetch failed, server might be busy. <a href="javascript:;" id="try_again_now">Try again</a>' : msg);
 	isQuote = (isUndefined(isQuote) ? false : isQuote);
 	if( !isQuote ){
       notice = $D('#qr_container');	
-	  notice.innerHTML = '<div class="g_notice-error g_notice">'+msg+'</div>';
+	  notice.innerHTML = '<div class="g_notice-error g_notice" style="display:block;">'+msg+'</div>';
 	}else{
       notice = $D('#quoted_notice');
 	  addClass('g_notice-error', notice);
-	  notice.innerHTML = msg;	
+	  notice.innerHTML = msg;
+	  notice.setAttribute('style','display:block;');	  
 	}
-	Dom.Ev($D('#try_again_now'), 'click', function(){
+	if($D('#try_again_now')) Dom.Ev($D('#try_again_now'), 'click', function(){
 	  if(notice) notice.innerHTML = '<div>'+_LOADING+'</div>';
 	  tQR.fetch(tQR.uri_lastFetch);
 	});
@@ -1341,7 +1391,14 @@ var tQR = {
     return cleanRet;
   }
  ,parse_fetch: function(text){
-    if(text.indexOf('vbform')==-1) return null;
+    var cucok, re, ret={};
+	if(text.indexOf('vbform')==-1) {
+	   if(cucok = text.match(/<div\s*style=[\'\"]margin\:\s*10px[\'\"]>([^<]+)/i)){
+	     return [false, cucok[1]];
+	   }else{
+	     return null;
+	   }
+	}
     var hidden_name = {
       "qr_hash": "humanverify\\\[hash\\\]"
      ,"qr_securitytoken": "securitytoken"
@@ -1349,7 +1406,7 @@ var tQR = {
      ,"qr_specifiedpost": "specifiedpost"
      ,"qr_loggedinuser": "loggedinuser"
     };
-    var cucok, re, ret={};
+    
     for(var hid in hidden_name){
       if(!isString(hidden_name[hid])) continue;
 	  
@@ -1360,6 +1417,9 @@ var tQR = {
     // isDonatur check
     gvar.user.isDonatur = (text.indexOf('recaptcha_response_field')==-1);
     
+	// additional opt
+	tQR.build_additional_opt(text);
+	
 	// get textarea
     // this regexp failed on symbolize userid : http://bit.ly/9A9GMg
     //match = /<textarea\sname=\"message\"(?:[^>]+.)([^<]+)*</i.exec(text);    
@@ -1372,9 +1432,57 @@ var tQR = {
     parts = parts.substring( (pos[0]+1), parts.length);
     return (parts ? tQR.unescapeHtml(parts) : '');   
   }
-
+ ,additional_opt_parser: function(html){   
+   var pos = [html.indexOf('collapseobj_newpost_options'), html.lastIndexOf('</select')];
+   var rets = html.substring(pos[0], pos[1]);
+   var par_adt_opt = $D('#button_preview');
+   pos[0] = rets.indexOf('<select');
+   rets = rets.substring(pos[0], pos[1]);
+   var selects = rets.split('</select'), sL=selects.length;
+   for(var i=0;i<sL;i++){
+     if(!isString(selects[i]) || !selects[i].match(/<select\sname\=/)  ) continue;
+     var fdname, el, cucok = /<select\sname\=\"([^\"]+)/.exec(selects[i]);
+     if(cucok && cucok[1]!='rating'){ // rating will be showed-up on qr-optional dropdown
+       fdname = cucok[1];
+       cucok = /<option\svalue\=\"([^\"]+)\"\sselected\=/.exec(selects[i]);
+       opt_val = (cucok ? cucok[1] : '0');
+       el = createEl('input', {name:fdname, value:opt_val, type:'hidden'});
+       Dom.add(el, par_adt_opt);
+     }
+   }
+  }
+ ,buildRate: function(){
+   var el,par,sel;
+   var rates = { '5':'5: Excellent', '4':'4: Good', '3':'3: Average', '2':'2: Bad', '1':'1: Terrible' };
+   par = createEl('div', {style:'float:left'}, ' '+HtmlUnicodeDecode('&#8212;') + ' Rating:&nbsp;');
+   sel = createEl('select', {name:'rating',tabindex:'6'});
+    Dom.add(sel, par);
+   el=createEl('option', {value:0},'Choose a rating');
+    Dom.add(el, sel);
+   el=createEl('optgroup', {label:' '});
+    Dom.add(el, sel);
+   sel=el;
+   for(var i in rates){
+     if(!isString(rates[i])) continue;
+     el=createEl('option', {value:i},rates[i]);
+     Dom.add(el, sel);
+   }
+   return par;
+  }
+ ,build_additional_opt: function(html){
+	// create rating, and hidden element of additional options
+    tQR.additional_opt_parser(html);
+    var rate = (html.indexOf('a rating')!=-1 ? tQR.buildRate() : false);
+    if($D('#rate_thread')){
+      $D('#rate_thread').innerHTML= '';
+      Dom.add(rate ? rate : createTextEl('Thread Rated'), $D('#rate_thread'));
+	  $D('#rate_thread').style.display='';
+    }
+  }
  ,prepost_QR: function(){
-    var ret, rrf = $D('#recaptcha_response_field');
+    var ret;
+	//if(!)
+	var rrf = $D('#recaptcha_response_field');
     if(!rrf) return;
     ret = (!rrf || (rrf && rrf.value.trim()=='') ? false : true );
     if( !ret ){
@@ -1628,7 +1736,7 @@ var tQR = {
   target = Dom.g(scontent_Id);
   target.innerHTML='';
   
-  dumycont = createEl('div',{id:'loader_'+scontent_Id},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
+  dumycont = createEl('div',{id:'loader_'+scontent_Id}, _LOADING);
   realcont = createEl('div',{id:'content_'+scontent_Id,style:'display:none;'});
   Dom.add(dumycont,target);
   Dom.add(realcont,target);
@@ -2504,7 +2612,7 @@ var Updater = {
   
  ,notify_progres: function(caller){
     if($D('#upd_notify'))
-	  $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+	  $D('#upd_notify').innerHTML = '<div id="fetch_update" class="ktp-loading" style="margin-left:10px;"></div>';
 	if(Dom.g(caller)) {
 	  Updater.caller=caller;
 	  Dom.g(caller).innerHTML='checking..'; // OR check now
@@ -2698,6 +2806,13 @@ var rSRC = {
         +"4N5BhKxpMS0RFRjs6kCIkTk9QT0ZDPDKCLi6EMRtKTVhaWVc9LSNhsbGwsUlgxVZCMCkSvyVbsrE0LmBeX11gLx0ZYMzOvzTRXFtVQFMoGA4c3M80zlRSPzYn"
         +"FxAKCOq/W85RSDUmFg0MEhxQFyufiyM0SlRosCCBgQK/XLBzYdDFg4sYMcJiV/HBgAABCIAUGSCixIouCAgIORIksG/5nMVSKaCmTYnQKjp7wLKnxGjAKMq82D"
         +"LAT6AxZYaJkPFBIAA7"
+     ,loading_gif : ""
+        +"data:image/gif;base64,R0lGODlhCwALALMIAEdHRyQkJGtra7Kyso+Pj9bW1gAAAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wA"
+		+"wEAAAAh+QQFAAAIACwAAAAACwALAAAEJBBJaeYMs8pz6bYIVnFgKQEoMBVsYZoCQiADGMtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJGeYEs0pz6bYIV"
+		+"nFgKQmoMB3sYZoEMiAFGMtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJCeYUs8pw6bYIVnFgKREoMRmsYZoDUiAHGMtSLd14Xs6WCAAh+QQFAAAIACwAA"
+		+"AAACwALAAAEJBBJKeYks0pw6bYIVnFgKQ3oMAVsYJoFciAGGMtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJSeYcs0px6bYIVnFgKRVoMQEsYJoHYiABG"
+		+"MtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJOeYss0py6bYIVnFgKR3oMQmsYJoGEiAAGMtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJWeY8s"
+		+"8px6bYIVnFgKRmoMREsYZoBAiACGMtSLd14Xs6WCAAh+QQFAAAIACwAAAAACwALAAAEJBBJeeY0s8py6bYIVnFgKQVoMA3sYJoAIiAEGMtSLd14Xs6WCAA7"
      ,setting_gif : ""
         +"data:image/gif;base64,R0lGODlhGQAYAPcAABweHISKjMTCxFRWVASi7KSmpNze3HRydDw6PJyanLS2tMzS1Hx+fKyurIySlGRmZExKTCwuLOzu7NTa3MzKz"
 		+"KSmrJyipISGjFxeXOTm5Hx6fERCRLy+vNTW3ISGhJSWnCQmJIyOjNze5HR2fJyepLS2vNTW1Hx+hKyutJSWlGxubFRSVDQ2NMzO1KSqrIyKjMTGxFxaXKSqpHR2d"
@@ -2979,9 +3094,11 @@ Format will be valid like this:
 }
 ,getCSS: function(){
   return (''
-    +'span.thread_preview,span.thread_preview-readed{cursor:pointer;font:bold 13px/16px "Comic Sans MS";margin-right:1px;}'
-    +'span.thread_preview{color:#FF0000;}'
-    +'span.thread_preview-readed{color:#6B6BB6;}'
+    +'.ktp-loading{background:transparent url("'+gvar.B.loading_gif+'") no-repeat 0 0;height:11px;min-width:11px;font-size:9px;vertical-align:bottom;}'
+    +'.thread_preview, .thread_preview-readed, .thread_preview-invalid{cursor:pointer;font:bold 12px/14px "Comic Sans MS";margin-right:1px;}'
+    +'.thread_preview{color:#FF0000;}'
+    +'.thread_preview-readed{color:#6B6BB6;}'
+    +'.thread_preview-invalid{color:#999999;}'
     
     +'.input_title, .textarea{border:1px solid #B1B1B1;}'
     +'.input_title:focus, .textarea:focus, .activeField:focus{border:1px solid #275C7C;}'
@@ -3003,7 +3120,6 @@ Format will be valid like this:
     +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
-    //+'.hd_layer{background-color:transparent;-moz-user-select:none;-webkit-user-select:none;}'
     +'.hd_layer-right{float:right; margin-right:5px;}'
     +'.hd_layer-left{float:left; margin-left:5px;}'
 	+'.qr_button_cont{width:100%; text-align:center;}'
@@ -3011,6 +3127,9 @@ Format will be valid like this:
 	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;outline:none;}'
     +'#collapseimg_quickreply{border:0;}'
     +'#atoggle{outline:none;}'
+    +'.btman-suspect{color:red;font-weight:bold;}'
+    +'.btman-href{padding:0;margin:0;font-size:11px;text-decoration:line-through;}'
+    +'.btman-href:hover{text-decoration:none;color:red;}'
 
 /* ==settings== */ 
     +'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;}'
@@ -3121,9 +3240,9 @@ Format will be valid like this:
  +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
  
  +     '<div class="hd_layer"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')
- + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow" ><b>'+gvar.TS.name+'</b></a>]' : '')
+ + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow"><b>'+gvar.TS.name+'</b></a>]' : '')
  // 
- + (gvar.current.isLastPost ? ' - [<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Post By</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
+ + (gvar.current.isLastPost ? (gvar.TS.id ? ' - ' : '' )+'[<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Post By</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
  + ' <span id="upd_notify"></span>'
  
  +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
@@ -3140,7 +3259,7 @@ Format will be valid like this:
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
  +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Quote & Quick Reply this Message" border="0"/></a>'
- +     '<div id="quote_loading" style="margin-right:5px;padding:3px;display:none;">'+_LOADING+'</div>'
+ +     '<div id="quote_loading" style="margin-right:5px;float:right;display:none;"><div class="ktp-loading" style="display:inline-block;padding:3px 0 2px 15px;">loading...</div></div>'
  +   '</div>' : '') // #container_reply
 
  +  '</td></tr>'
@@ -3210,8 +3329,11 @@ Format will be valid like this:
  +'<input type="hidden" name="parseurl" value="1" />'
  +'<input type="hidden" name="wysiwyg" value="0" />'
  +'<input type="hidden" name="styleid" value="0" />' + "\n\n"
- +    '<span><input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
- +    '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.settings.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label></span>'
+ +'<div id="rate_thread" class="smallfont" style="position:absolute;left:80px;margin-top:1px;display:none;"></div>'
+ +'<span>'
+ +  '<input tabindex="205" id="preview_submit" type="button" class="twbtn twbtn-m twbtn-primary" value=" Post " />&nbsp;'
+ +  '<label for="then_gotothread"><input type="checkbox" id="then_gotothread" value="1"'+(gvar.settings.then_goto_thread ? ' checked="checked"':'')+' /><small style="font-weight:bold;" class="cblue">Then Goto Thread</small></label>'
+ +'</span>'
  +   '</div>' // #button_preview
  : '')
  
