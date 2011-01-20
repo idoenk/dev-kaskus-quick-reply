@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 //  v1.0.4 - 2011-01-20
+//    Add setting node-state (beta)
 //    Fix preserve subscription's folderid
 //    Add Rate Thread;
 //    Fix fetch_error callback
@@ -71,6 +72,7 @@ OPTIONS_BOX = {
  ,KEY_KTP_UPDATES:         ['1'] // settings check update
  ,KEY_KTP_UPDATES_INTERVAL:['1'] // settings update interval, default: 1 day
  
+ ,KEY_KTP_NODE_STATE:      ['#FF0000,#6B6BB6,#999999'] // node state coloring [ready, readed, invalid-thread]
  ,KEY_KTP_SCROLL_THREAD:   ['0'] // scroll to last opened-thread
  ,KEY_KTP_IMGLOAD:         ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
  ,KEY_KTP_RELOAD_AFTERSENT:['1'] // fresh reload after send reply
@@ -187,7 +189,11 @@ function getSettings(){
   hVal=getValue(KEY_KTP+'SHOW_SMILE');
   gvar.settings.autoload_smiley=(!hVal.match(/^([01]{1}),(kecil|besar|custom)+/) ? ['0','kecil'] : hVal.split(',') );  
 
-  //  gvar.settings.autoshow_spoiler = true;
+  //NODE_STATE gvar.color_state 
+  hVal=getValue(KEY_KTP+'NODE_STATE');
+  gvar.settings.color_state=(!hVal.match(/^(?:\#[0-9A-F]+|\w+)\,*/i) ? ['#FF0000','#6B6BB6','#999999'] : hVal.split(',') );  
+
+  
   
   // check if kfti do sumthin like fixed itself	
   chk_kfti_pos();
@@ -265,7 +271,7 @@ var tTRIT = {
 		    node.href = LINK.fixDomain(node.href)
 		  tid = LINK.getTID(node.href);
 		  
-	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[field].style, rel:node.href};
+	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:areas[field].style, rel:node.href,title:'Preview First Post'};
 	      el = createEl('span',Attr,'[+]');
 	      par = node.parentNode; // parenting level
 		  if(areas[field].parentLevel==2)
@@ -349,7 +355,7 @@ var tTRIT = {
          for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
           node = nodes.snapshotItem(i);
 	      tid = LINK.getTID(node.href);
-	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href};
+	      Attr = {id:'remoteTID_'+tid,'class':'thread_preview',style:'',rel:node.href,title:'Preview First Post'};
 	      el = createEl('span',Attr,'[+]');
 	      par = node.parentNode; // parent of cont (DIV)
 	      par.insertBefore(el, par.firstChild);
@@ -848,7 +854,8 @@ var tPOP = {
     //UPDATES UPDATES_INTERVAL IMGLOAD THEN_GOTHREAD RELOAD_AFTERSENT
     // single chkbox 
 	// , 'stg_autolayout_sigi', 'stg_autolayout_tpl', 'stg_autoshow_smile'
-	var value, sets;
+	// stg_state_color_ready stg_state_color_readed  stg_state_color_invalid
+	var cnt, value, sets, cucok;
 	sets ={
 	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
 	 ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
@@ -892,8 +899,10 @@ var tPOP = {
 	
     // images policy 
     sets = ['stg_showimages_none', 'stg_showimages_emot', 'stg_showimages_alll'];
+	cnt = sets.length;
 	value = 0;
-	for(var i in sets){
+	//for(var i in sets){
+	for(var i=0; i<cnt; i++){
 	  if( isString(sets[i]) && $D('#'+sets[i]) && $D('#'+sets[i]).checked ){	    
 		  value=$D('#'+sets[i]).value;
 		  break;		
@@ -901,8 +910,26 @@ var tPOP = {
 	}
 	setValue(KEY_KTP+'IMGLOAD', value.toString());
 	
+    // node state color
+    sets = ['stg_state_color_ready', 'stg_state_color_readed', 'stg_state_color_invalid'];
+	cnt = sets.length;
+	value = '';
+	for(var i=0; i<cnt; i++){
+	  if( isString(sets[i]) ){
+		  var tmpVal= trimStr($D('#'+sets[i]).value);
+		  cucok=tmpVal.match(/^(?:\#[0-9A-F]|\w)+$/i);
+		  value+=(cucok ? cucok[0] : gvar.settings.color_state[i]) + ',';
+	  }
+	}
+	value = value.substring(0, value.length-1);
+	setValue(KEY_KTP+'NODE_STATE', value.toString());
+	
 	// reload settings for gvar
 	getSettings();
+	
+	// reload css to body
+	GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 );
+	
     // done save then close layer
 	tPOP.closeLayerBox('hideshow');
    }
@@ -3095,7 +3122,7 @@ Format will be valid like this:
 ,getCSS: function(){
   return (''
     +'.ktp-loading{background:transparent url("'+gvar.B.loading_gif+'") no-repeat 0 0;height:11px;min-width:11px;font-size:9px;vertical-align:bottom;}'
-    +'.thread_preview, .thread_preview-readed, .thread_preview-invalid{cursor:pointer;font:bold 12px/14px "Comic Sans MS";margin-right:1px;}'
+    +'.thread_preview, .thread_preview-readed, .thread_preview-invalid{cursor:pointer;font:normal 12px/14px "Comic Sans MS";margin-right:1px;}'
     +'.thread_preview{color:#FF0000;}'
     +'.thread_preview-readed{color:#6B6BB6;}'
     +'.thread_preview-invalid{color:#999999;}'
@@ -3212,6 +3239,9 @@ Format will be valid like this:
    +'#popup_container{' + (fixed ? 'position:fixed;top:'+gvar.offsetLayer+'px;':'position:absolute;') + '}'
    +'#preview_content {overflow:auto;height:auto; max-height:'+(parseInt(getScreenHeight()) - gvar.offsetMaxHeight - gvar.offsetLayer)+'px; }'
    +'#preview_content div table{max-width:95%;overflow:auto;}'
+   +'.thread_preview{color:'+gvar.settings.color_state[0]+'}'
+   +'.thread_preview-readed{color:'+gvar.settings.color_state[1]+'}'
+   +'.thread_preview-invalid{color:'+gvar.settings.color_state[2]+'}'
   );
  }
 ,getSCRIPT: function(){
@@ -3360,7 +3390,7 @@ Format will be valid like this:
  +   '</div>'
  + '</div>'
  + '</td></tr><tr>'
- // stg_autolayout_sigi stg_autolayout_tpl stg_autoshow_smile 
+
  + '<td class="alt2" valign="top" style="padding-left:5px;">'
  +  '<div class="setting_subtitle"><b>::QR::</b></div>'
  +  '<input id="stg_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/> AutoSignature&nbsp;'
@@ -3396,6 +3426,14 @@ Format will be valid like this:
  +   '<label for="stg_showimages_none"><input name="rd_img" id="stg_showimages_none" type="radio" value="0" '+(gvar.settings.imgload==0?'checked':'')+'/>No-Image</label>' + '<br/>'
  +   '<label for="stg_showimages_emot"><input name="rd_img" id="stg_showimages_emot" type="radio" value="1" '+(gvar.settings.imgload==1?'checked':'')+'/>Emotes-Only</label>' + '&nbsp;'
  +   '<label for="stg_showimages_alll"><input name="rd_img" id="stg_showimages_alll" type="radio" value="2" '+(gvar.settings.imgload==2?'checked':'')+'/>Show All</label>'
+ +'</div>'
+ +spacer
+ //stg_state_color_ready stg_state_color_readed  stg_state_color_invalid
+ +'&nbsp;*<span style="margin-left:8px;">Node State Color</span><br />'
+ +'<div id="node_state_colors" style="margin-left:20px;font-size:10px;">'
+ +   '<label for="stg_state_color_ready">Ready:</label><input id="stg_state_color_ready" class="qrsmallfont" type="text" size="10" value="'+gvar.settings.color_state[0]+'"/>' + '<br>'
+ +   '<label for="stg_state_color_readed">Readed:</label><input id="stg_state_color_readed" class="qrsmallfont" type="text" size="10" value="'+gvar.settings.color_state[1]+'"/>' + '<br>'
+ +   '<label for="stg_state_color_invalid">Invalid:</label><input id="stg_state_color_invalid" class="qrsmallfont" type="text" size="10" value="'+gvar.settings.color_state[2]+'"/>'
  +'</div>'
  +spacer
  +  '<input id="stg_scrollto_lastrow" type="checkbox" '+(gvar.settings.thread_lastscroll==1 ? 'checked':'')+'> Scroll to Last Position<br />'
