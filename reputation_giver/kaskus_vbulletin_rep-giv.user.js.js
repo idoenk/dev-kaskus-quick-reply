@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.15
-// @dtversion     11011715
-// @timestamp     1295268938071
+// @version       1.16
+// @dtversion     11012016
+// @timestamp     1295458935400
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,6 +15,10 @@
 //
 // ----CHANGE LOG-----
 /*
+// mod.R.16 : 2011-01-20
+// Fix failed get reputation rank title
+// 
+// 
 // mod.R.15 : 2011-01-17
 // Fix missing reputation rank title
 // Try Fix failed load image "</a></span>" issue
@@ -40,9 +44,9 @@
 // Global Variables
 var gvar=function() {}
 
-gvar.sversion = 'R' + '15';
+gvar.sversion = 'R' + '16';
 gvar.scriptMeta = {
-  timestamp: 1295268938071 // version.timestamp
+  timestamp: 1295458935400 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -233,7 +237,8 @@ function start_Main() {
     if( gvar._SIMULATE_ ){
     
       // intercept to simulate ; 1174280
-      dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,1174280'; // selected kaskuser just to simulate error
+      //dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,1174280'; // selected kaskuser just to simulate error
+      dstr = '3,446837,16644,232784,1817178,247123,507569,862335,196369,601934'; // selected kaskuser just to simulate error
       gvar.userID = dstr.split(',');
       dstr = '347914936,341574768,339584718,339584718,339584718,339584718,339584718,339584718,339584718,339584718'; // just a sample, not a major
       repID = dstr.split(',');
@@ -546,7 +551,7 @@ function parseIt(page){
     }
   }
   //rep_rank_title
-  var re = new RegExp( '<img\\\s*(?:class=[\\\'\\\"]\\\w+[\\\'\\\"]).src=[\\\'\\\"][^\\\s]+.alt=[\\\'\\\"]('+result[gvar.f[1]]+'[^\\\"\\\']+)',  'im');
+  var re = new RegExp('<img\\\s*(?:(?:title|class|src)=[\\\'\\\"][^\\\'\\\"]+.\\\s*)*alt=[\\\'\\\"]([^\\\'\\\"]+)',  'im');
   var cucok = dpage.match(re);
   result[gvar.f[9]] = (cucok ? cucok[1].replace(/\s{2,}/g,' ') : result[gvar.f[1]] + '\'s reputation rank');  
   
