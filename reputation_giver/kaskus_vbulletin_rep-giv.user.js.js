@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.16
 // @dtversion     11012016
-// @timestamp     1295458935400
+// @timestamp     1295524490994
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -46,7 +46,7 @@ var gvar=function() {}
 
 gvar.sversion = 'R' + '16';
 gvar.scriptMeta = {
-  timestamp: 1295458935400 // version.timestamp
+  timestamp: 1295524490994 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
