@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 //  v1.0.4 - 2011-01-20
+//    Improve fix preview for vBul4 (unfinished)
 //    Add setting node-state (beta)
 //    Fix preserve subscription's folderid
 //    Add Rate Thread;
@@ -588,18 +589,26 @@ var tTRIT = {
   return cleanRet;
  }
  ,parse_preview: function(text){
+   var isVBul4 = function(itext){
+       return (itext.indexOf('postbody')!=-1);
+   };
+   gvar.isVBul4 = false;
+   
    // sumthin like kepenuhan
    if(text.indexOf('td_post_')==-1) {
-     if(text.indexOf('>Invalid Thread')!=-1)
+     if(text.indexOf('>Invalid Thread')!=-1){
 	   return false; // thread is deleted or invalid
-	 else
-	   return null; // page not loaded, maybe..
+	 }else{
+	   if(!isVBul4) return null; // page not loaded and it's not vBul4, maybe..
+	   gvar.isVBul4 = true;
+	 }
    }
+   var dSpliter = (gvar.isVBul4 ? 'postbody':'td_post_');
    var cucok, wraper, poss, _ret, _tit, _nr;
    /*content*/
-   _ret = text.split('td_post_');
+   _ret = text.split(dSpliter);
    _ret = _ret[1];
-   wraper = ['>', '<!-- / message -->'];
+   wraper = (gvar.isVBul4 ? ['>','<div class="after_content">'] : ['>', '<!-- / message -->']);
    poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];
    _ret = _ret.substring(poss[0]+wraper[0].length, poss[1]);
    // a lil hack to strip this.innerText = '', which bring error on GC.
@@ -1420,8 +1429,8 @@ var tQR = {
  ,parse_fetch: function(text){
     var cucok, re, ret={};
 	if(text.indexOf('vbform')==-1) {
-	   if(cucok = text.match(/<div\s*style=[\'\"]margin\:\s*10px[\'\"]>([^<]+)/i)){
-	     return [false, cucok[1]];
+	   if(cucok = text.match(/<div\s*style=[\'\"]margin\:\s*10px[\'\"]>([^<]+)/im)){
+	     return [false, cucok[1].replace(/\n|\r/,' ')];
 	   }else{
 	     return null;
 	   }
