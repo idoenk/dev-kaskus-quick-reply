@@ -28,6 +28,7 @@ Changelog:
 0.7 (idx)
 - add // @include       http://www.kaskus.us/blog.php?* 
 - enhance+antibetmen
+- removed "Rossi"
 0.6.7.1
 - clearing up script
 0.6.7
@@ -125,7 +126,6 @@ dragon*adopters,dragonadopters
         "krack": "crack",
         "paypai": "paypal",
         "pocongk": "pocong",
-        //"Rossi": "rossi", // this is no longer obfuscated i guess
         "rapid\\*share": "rapidshare",
         "zid\\*du": "ziddu"
     };
