@@ -7,6 +7,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
+// @include       http://www.kaskus.us/group.php?*
 // @include       http://archive.kaskus.us/thread/*
 // @include       http://m.kaskus.us/thread/*
 // ==/UserScript==
@@ -21,6 +22,9 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.1
+- clear up debug line
+- add // @include       http://www.kaskus.us/group.php?* 
 0.7 (idx)
 - add // @include       http://www.kaskus.us/blog.php?* 
 - enhance+antibetmen
@@ -70,23 +74,7 @@ v0.1   : First release
 
 (function () {
 
-    var gvar = function () {};
-
-    gvar.__DEBUG__ = true;
-
     var replacements, regex, key, thenodes, node, s, z;
-
-    var DOMTimer = {
-        start: function () {
-            var dT = new Date();
-            this.dtStart = dT.getTime()
-        },
-        get: function () {
-            var nT = new Date();
-            return (nT.getTime() - this.dtStart)
-        }
-    };
-    if (gvar.__DEBUG__) DOMTimer.start();
 
     // You can customize the script by adding new pairs of words.
     // First, let's build the "obfuscated":"de-obfuscated" words list
@@ -150,108 +138,74 @@ dragon*adopters,dragonadopters
     thenodes = document.evaluate("//body//text()", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
 
     // Perform a replacement over all the nodes
-    clog('body//text');
-    var count = 0;
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         s = node.data;
-        if (!s.match(/[a-z0-9\.]/i) || s.length < 5) continue; // pre-check
-        clog(']' + s + '[');
-        for (key in replacements) {
+        if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
+        for (key in replacements) 
             s = s.replace(regex[key], replacements[key]);
-        }
         node.data = s;
-
-        if (gvar.__DEBUG__) count++;
-        clog('hit=' + count);
     }
 
     // Now, retrieve the A nodes
     thenodes = document.evaluate("//a", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
 
-    clog('//a');
-    count = 0;
     // Finally, perform a replacement over all A nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
         s = node.href;
-        if (!s || s.match(/^https?:\/\/[^\.]+\.kaskus\.us|kaskusnetworks\.com/i)) continue; // pre-check
-        clog('[s]' + s + '[');
+        if(!s || s.match(/^https?:\/\/[^\.]+\.kaskus\.us|kaskusnetworks\.com/i) ) continue; // pre-check        
         for (key in replacements)
-        s = s.replace(regex[key], replacements[key]);
+			s = s.replace(regex[key], replacements[key]);
         node.href = s;
-
-        if (gvar.__DEBUG__) count++;
-        clog('hit=' + count);
     }
-
-    //for ( var i=0 ; i<thenodes.snapshotLength ; i++ ) {
-    //  node = thenodes.snapshotItem(i);
-    //  z = node.data;
-    //  for ( key in replacements ) {
-    //    z = s.replace( regex[key] , replacements[key] );
-    //  }
-    //  node.data = z;
-    //}
-
-    // using xpath anti-batman @postbit 
-    var el, buff, pnode;
-    var pnodes = document.evaluate("//td[contains(@id,'td_post')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-    var isBatman = function (inner) {
-        return (inner.match(/<input\s*(?:(?:value|style)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
-    };
-    var newHref = function (href) {
-        var nel = createEl('div', {}, (href ? '<small class="btman-suspect">Batman Trap:</small><br><span class="btman-href" style="padding:0;margin:0;background:#FFD7FF;font:11px/12px \'Courier New\',sans-serif!important;">' + href + '</span>' : ''));
-        return nel;
-    };
-    if (pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
-        pnode = pnodes.snapshotItem(i);
+	
+	var whereAmI = function(href){
+		var asocLoc = {
+		   'td_post_' : '/showthread.php'
+		  ,'blog_message' : '/blog.php'
+		  ,'gmessage_text_' : '/group.php'
+		};
+		for(var theID in asocLoc){
+		  if(href.indexOf(asocLoc[theID])!=-1) 
+		    return theID;
+		}
+	};	
+    var isBatman = function(inner){
+		return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
+    };	
+    var el, pnode, xID = whereAmI(location.href);
+	// using perform anti-batman @container id
+    var pnodes = document.evaluate("//*[contains(@id,'"+xID+"')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	
+    if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
+        pnode = pnodes.snapshotItem(i);		
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-        if (thenodes.snapshotLength > 0) for (var j = 0; j < thenodes.snapshotLength; j++) {
+        if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
-            buff = node.innerHTML;
-            if (buff.match(/<img\s*[^>]+/i)) continue;
-            clog(']' + buff + '[')
-            if (buff.indexOf(' onclick="') != -1 && isBatman(buff)) {
-                el = newHref(node.href);
-                pnode.insertBefore(el, node.previousSibling);
-                node.removeAttribute('href');
-                node.setAttribute('title', 'Link Deactived');
+            if(node.innerHTML.indexOf(' onclick="')!=-1 && !node.innerHTML.match(/<img\s*[^>]+/i) && isBatman(node.innerHTML)){
+               
+			   pnode.insertBefore(
+			    (function(href){
+					return createEl('div', {}, (href ? '<div style="font-size:11px;margin-bottom:2px;"><a href="'+href+'" target="_blank">Batman Trap..!</a></div><span style="margin-left:20px;background:#FFD7FF;font:11px/12px \'Courier New\',sans-serif!important;">'+href+'</span>':''));
+			    })(node.href) ,
+			   node.previousSibling);
+			   
+               node.removeAttribute('href');
+               node.setAttribute('title','Link Deactived');
             }
         }
     }
-    // ~Idx.
-    clog('DONE. DOM Created: ' + DOMTimer.get() + ' ms');
 
     //
-
-
     function createEl(type, attrArray, html) {
         var node = document.createElement(type);
         for (var attr in attrArray)
-        if (attrArray.hasOwnProperty(attr)) node.setAttribute(attr, attrArray[attr]);
+			if (attrArray.hasOwnProperty(attr)) node.setAttribute(attr, attrArray[attr]);
         if (html) node.innerHTML = html;
         return node;
     }
     //
-
-
-    function show_alert(msg, force) {
-        if (arguments.callee.counter) {
-            arguments.callee.counter++;
-        } else {
-            arguments.callee.counter = 1;
-        }
-        GM_log('(' + arguments.callee.counter + ') ' + msg);
-        if (force == 0) {
-            return;
-        }
-    }
-
-    function clog(msg) {
-        if (!gvar.__DEBUG__) return;
-        show_alert(msg);
-    }
 
 })();
