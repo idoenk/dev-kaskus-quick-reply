@@ -2,9 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.1.1
-// @dtversion     110119311
-// @timestamp     1295453436676
+// @version       3.1.2
+// @dtversion     110122312
+// @timestamp     1295794402637
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -12,6 +12,9 @@
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
+//
+// v3.1.2 - 2011-01-22
+//   Fix auto SET(Sigi & Layout) before Save Setting
 //
 // v3.1.1 - 2011-01-19
 //   Fix minor normalize behaviour @general Setting
@@ -54,9 +57,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.1';
+gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1295453436676 // version.timestamp
+  timestamp: 1295794402637 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -3143,25 +3146,15 @@ var ST = {
 	elSet = ['misc_updates','misc_autoexpand_0','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_childs(e); });
-	   
-	//if($D('#misc_autoexpand_0')) Dom.Ev($D('#misc_autoexpand_0'), 'click', function(e){ ST.toggle_childs(e); });
-	//if($D('#misc_autoshow_smile')) Dom.Ev($D('#misc_autoshow_smile'), 'click', function(e){ ST.toggle_childs(e); });
-	//if($D('#misc_hotkey')) Dom.Ev($D('#misc_hotkey'), 'click', function(e){ ST.toggle_childs(e); });
-	//if($D('#misc_updates')) Dom.Ev($D('#misc_updates'), 'click', function(e){ ST.toggle_childs(e); });
-	
-	//misc_autolayout_sigi, misc_autolayout_tpl
+
 	elSet = ['misc_autolayout_sigi','misc_autolayout_tpl'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_autolayout(e); });
-	   
-    //if($D('#misc_autolayout_sigi')) Dom.Ev( $D('#misc_autolayout_sigi'), 'click', function(e){ ST.toggle_autolayout(e); });
-    //if($D('#misc_autolayout_tpl')) Dom.Ev( $D('#misc_autolayout_tpl'), 'click', function(e){ ST.toggle_autolayout(e); });
 	
 	elSet = ['edit_sigi','edit_tpl'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_editLayout(e); });
-    //if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ ST.toggle_editLayout(e); });
-    //if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ ST.toggle_editLayout(e); });
+
     if($D('#misc_hotkey')) Dom.Ev( $D('#misc_hotkey'), 'click', function(e){
        e=e.target||e;
 	   if(e && !e.checked){
@@ -3173,10 +3166,8 @@ var ST = {
 	elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_char'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.precheck_shift(e); });
-    //if($D('#misc_hotkey_ctrl')) Dom.Ev( $D('#misc_hotkey_ctrl'), 'click', function(e){ ST.precheck_shift(e); });
-    //if($D('#misc_hotkey_alt')) Dom.Ev( $D('#misc_hotkey_alt'), 'click',  function(e){ ST.precheck_shift(e); });
-    //if($D('#misc_hotkey_char')) Dom.Ev( $D('#misc_hotkey_char'), 'keyup', function(e){ ST.precheck_shift(e); });
-    try { // check noCrossDomain and/or isOpera
+
+	   try { // check noCrossDomain and/or isOpera
      if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera still T_T
       Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
         if($D('#fetch_update')) return; // there is a fetch update in progress
@@ -3201,7 +3192,7 @@ var ST = {
     }
 	
 	// customable_btn jmp to #tab_general
-	if($D('#customable_btn')) Dom.Ev($D('#customable_btn'), 'click', function(){ 
+	if($D('#customable_btn')) Dom.Ev($D('#customable_btn'), 'click', function(){
 	 var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
 	});
 	// ex-imp		
@@ -3389,9 +3380,18 @@ var ST = {
       window.setTimeout(function() { location.reload(false); }, 300);
     }
  }
+ ,isEditingLayout: function(){
+    var elSet = ['edit_sigi','edit_tpl'], cL=elSet.length;
+	for(var i=0; i<cL; i++){
+	  if( Dom.g(elSet[i]) && Dom.g(elSet[i]).innerHTML!='edit' )
+	    SimulateMouse(Dom.g(elSet[i]), 'click', true);
+	}
+  }
  ,save_setting: function(){
     var par, value, misc, oL, Chr='';
-    gvar.restart=true;
+    
+	ST.isEditingLayout();	// auto-SET `em before Saving performed
+	gvar.restart=true;
 	if($D('#save_settings')) $D('#save_settings').value=' Saving... ';
 
     misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];	
@@ -3550,16 +3550,16 @@ var ST = {
   if(typeof(e)!='object') return;
   var todo=e.innerHTML; // edit | set
   var value, task=e.id; // sigi | tpl
-  var el_cancel = Dom.g(task+'_cancel');
+  var el_cancel = Dom.g(task+'_cancel');  
   var genTxta = function(_task, value){
     var tgt = Dom.g(_task+'_Editor'); tgt.innerHTML='';
     var el = createEl('textarea',{id:_task+'_txta',style:'margin-top:3px;'}, value);
     Dom.add(el, tgt); tgt.style.display='';
     window.setTimeout(function(e) { try{Dom.g(_task+'_txta').focus();}catch(e){} }, 100);
-  };
-  
-  if(todo=='edit'){
-    var uLayout = gvar.settings.userLayout;
+  };  
+  if(todo=='edit'){    
+	var uLayout = gvar.settings.userLayout;
+	var tgtID = task.replace(/edit_/,'misc_autolayout_');
     switch(task){
     case "edit_sigi":
       genTxta(task, uLayout.signature);
@@ -3567,8 +3567,9 @@ var ST = {
     case "edit_tpl":
       genTxta(task, uLayout.template);
     break;
-    };
+    };	
     removeClass('cancel_layout-invi', el_cancel );
+	if(Dom.g(tgtID) && !Dom.g(tgtID).checked) Dom.g(tgtID).checked = true;
   }else{ // set
     value = Dom.g(task+'_txta').value;
     if(task=='edit_tpl'){
