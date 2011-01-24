@@ -19,6 +19,9 @@
 // 
 // -!--latestupdate
 // 
+// v 2.24 - 2011-01-24
+// : Fix minor CSS (blog_post.php)
+// 
 // v 2.23 - 2011-01-13
 // : Fix CSS (Improve CSS3 Opera)
 // : Fix Uploader (deprecate some CSS; -Opera)
@@ -1145,7 +1148,7 @@ function spoiler_act(){
 		if(gvar.loc.indexOf('visitormessage.php')==-1)
 		  tr_cont[0].appendChild(Insert.separator().cloneNode(true));		
 		
-		Attr = {'class':'smilekecil tcat',style:'padding:1px;width:100%;'};
+		Attr = {'class':'smilekecil tcat',style:'padding:1px;width:100%;min-width:130px;'};
 		td = mycreateElement('td', Attr);
 		
 		if(gvar.loc.indexOf('visitormessage.php')==-1){ // no controler for VM
