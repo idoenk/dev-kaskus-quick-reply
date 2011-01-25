@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
 // @dtversion     110120104
-// @timestamp     1295554136055
+// @timestamp     1295935726807
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 //  v1.0.4 - 2011-01-20
+//    Attach (infinite) autogrow w/ jQuery
 //    Improve fix preview for vBul4 (unfinished)
 //    Add setting node-state (beta)
 //    Fix preserve subscription's folderid
@@ -51,7 +52,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1295554136055 // version.timestamp
+  timestamp: 1295935726807 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -133,7 +134,10 @@ function init(){
   GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 ); // to body for css-fixed
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
-  GM_addGlobalScript( rSRC.getSCRIPT() );  
+  GM_addGlobalScript('http:\/\/ajax\.googleapis\.com\/ajax\/libs\/jquery\/1.4.4\/jquery\.min\.js');
+  GM_addGlobalScript( rSRC.getSCRIPT() );
+  GM_addGlobalScript( rSRC.getSCRIPT_Elastic() );
+  GM_addGlobalStyle( '', 'elastic_trigger', 1 ); // to body for elsatic-trigger
 
   //-----Let's Roll-------
     start_Main();
@@ -367,7 +371,6 @@ var tTRIT = {
 	      lnodes = $D(".//a[contains(@href,'#p') and contains(@href,'?p=')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
 	      if(lnodes){
 	          pid = LINK.getPID(lnodes.href);
-			  show_alert(pid);
 	    	  Attr = {id:'remotePID_'+pid,'class':'thread_preview lastpost',style:'display:inline-block;',rel:'showpost.php?p='+pid,title:'Preview Last Post'};
 	    	  el = createEl('span',Attr,'[+]');
 	    	  Dom.add(el, lnodes.parentNode);
@@ -1276,6 +1279,7 @@ var tQR = {
 		  var C = (!e ? window.event : e ); C = do_an_e(C);
 		});
 		Dom.g(gvar.id_textarea).removeAttribute('disabled');
+		SimulateMouse($D('#hidrecap_elastic_btn'), 'click', true);
       } // end #recaptcha_response_field
     }, 200); // end sITryFocusOnLoad
     
@@ -2828,7 +2832,18 @@ var vB_textarea = {
 
 
 var rSRC = {
- getSetOf: function(type){
+ getSCRIPT_Elastic: function(type){
+   return(""
+   +"(function(jQuery){jQuery.fn.extend({elastic:function(){var mimics=['paddingTop','paddingRight','paddingBottom','paddingLeft','fontSize','lineHeight','fontFamily','width','fontWeight'];return this.each(function(){if(this.type!='textarea'){return false;}"
+   +"var $textarea=jQuery(this),$twin=jQuery('<div />').css({'position':'absolute','display':'none','word-wrap':'break-word'}),lineHeight=parseInt($textarea.css('line-height'),10)||parseInt($textarea.css('font-size'),'10'),minheight=parseInt($textarea.css('height'),10)||lineHeight*3,maxheight=parseInt($textarea.css('max-height'),10)||Number.MAX_VALUE,goalheight=0,i=0;if(maxheight<0){maxheight=Number.MAX_VALUE;}"
+   +"$twin.appendTo($textarea.parent());var i=mimics.length;while(i--){$twin.css(mimics[i].toString(),$textarea.css(mimics[i].toString()));}"
+   +"function setHeightAndOverflow(height,overflow){curratedHeight=Math.floor(parseInt(height,10));if($textarea.height()!=curratedHeight){$textarea.css({'height':curratedHeight+'px','overflow':overflow});}}"
+   +"function update(){var textareaContent=$textarea.val().replace(/&/g,'&amp;').replace(/  /g,'&nbsp;').replace(/<|>/g,'&gt;').replace(/\\n/g,'<br />');var twinContent=$twin.html();if(textareaContent+'&nbsp;'!=twinContent){$twin.html(textareaContent+'&nbsp;');if(Math.abs($twin.height()+lineHeight-$textarea.height())>3){var goalheight=$twin.height()+lineHeight;if(goalheight>=maxheight){setHeightAndOverflow(maxheight,'auto');}else if(goalheight<=minheight){setHeightAndOverflow(minheight,'hidden');}else{setHeightAndOverflow(goalheight,'hidden');}}}}"
+   +"$textarea.css({'overflow':'hidden'});$textarea.keyup(function(){update();});$textarea.live('input paste',function(e){setTimeout(update,250);});update();});}});})(jQuery);"   
+   +"function elastic_trigger(){$('#"+gvar.id_textarea+"').elastic();};"
+   );   
+ }
+,getSetOf: function(type){
   if(isUndefined(type)) return false;
   switch(type){
     case "button":
@@ -3483,7 +3498,7 @@ Format will be valid like this:
  +   '</div></div>'
  
  +  '</td>' 
- +   '<td id="recaptcha_cont">'
+ +   '<td id="recaptcha_cont" valign="top">'
  +    '<div id="recaptcha_container" style="text-align:center;">'
  +      '<div>'+_LOADING+'</div>'
  +    '</div>'
@@ -3495,6 +3510,7 @@ Format will be valid like this:
  +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'    
  +  '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:;" onclick="showRecaptcha(\'recaptcha_container\');" />' // remote create
  +  '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:;" onclick="Recaptcha.reload();" />' // remote reload
+ +  '<input id="hidrecap_elastic_btn" value="elastic" type="button" style="visibility:hidden; position:absolute; left:-10000px;" onclick="elastic_trigger();" />' // remote elastic
  +'</fieldset>'
  );
 }
