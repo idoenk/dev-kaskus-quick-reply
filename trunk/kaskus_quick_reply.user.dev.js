@@ -2,9 +2,10 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
+// @include       http://localhost/test-kaskus/showthread.php*
 // @version       3.1.2
-// @dtversion     110122312
-// @timestamp     1295794402637
+// @dtversion     110127312
+// @timestamp     1296075020977
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,8 +15,10 @@
 // -!--latestupdate
 //
 // v3.1.2 - 2011-01-22
+//   Fix autogrow (use Module by Sophia.B, -iGoogle)
 //   Fix auto SET(Sigi & Layout) before Save Setting
 //
+// -/!latestupdate---
 // v3.1.1 - 2011-01-19
 //   Fix minor normalize behaviour @general Setting
 //   Fix failed iterate in Array (FF 4.0b10)
@@ -27,7 +30,6 @@
 //   Improve reorder smiley(besar), Add missing emote :bingung
 //   Lil fix on Updater.mparser(); Precheck '#upd_notify' element
 //   
-// -/!latestupdate---
 // ==/UserScript==
 /*
 //
@@ -59,7 +61,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1295794402637 // version.timestamp
+  timestamp: 1296075020977 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -69,7 +71,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -88,7 +90,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
- ,KEY_SAVE_TEXTA_EXPANDER:   ['1,100,350'] // [flag,minHeight,maxHeight] of textarea_expander
+ ,KEY_SAVE_TEXTA_EXPANDER:   ['1'] // [flag,minHeight,maxHeight] of textarea_expander
  ,KEY_SAVE_SHOW_SMILE:       ['0,kecil']   // [flag,type] of autoshow_smiley
  ,KEY_SAVE_LAYOUT_CONFIG:    ['']       // flag of [signature_on, template_on], 
  ,KEY_SAVE_LAYOUT_SIGI:      [''] // signature layout, eg. [RIGHT]&#8212;[SIZE=1][b]QR[/b][/SIZE]&#8482;[/RIGHT]
@@ -225,8 +227,9 @@ function getSettings(){
   
   // setting textarea expander
   hVal=getValue(KS+'TEXTA_EXPANDER');
-  gvar.settings.textareaExpander=(!hVal.match(/^([01]{1}),(\d+),(\d+)/)?['1,100,500']:hVal.split(',') );
+  gvar.settings.textareaExpander=(!hVal.match(/^([01]{1})/)?['1']:hVal.split(',') );
   gvar.settings.textareaExpander[0] = (gvar.settings.textareaExpander[0]=='1');
+  
   // hotkey settings, predefine [ctrl,shift,alt]; [01]
   hVal = gvar.settings.hotkeykey; 
   gvar.settings.hotkeykey = (!hVal.match(/^([01]{1}),([01]{1}),([01]{1})/)?['1','0','0'] : hVal.split(',') );
@@ -328,12 +331,13 @@ function start_Main(){
            vB_textarea.readonly();
          }
          gvar.tmp_text=null;
+         
          if(gvar.settings.textareaExpander[0])
-           vB_textarea.adjustGrow(); // retrigger autogrow now
+           vB_textarea.setElastic(); // retrigger autogrow now
        }else{ // disable|readonly textarea.
          vB_textarea.readonly();
-         if(gvar.settings.textareaExpander[0])
-           Dom.g(gvar.id_textarea).style.height=gvar.settings.textareaExpander[1]+'px';
+         //if(gvar.settings.textareaExpander[0])
+         Dom.g(gvar.id_textarea).style.height=100+'px';
        }
        gvar.restart = false;
        if(gvar.user.isDonatur) 
@@ -1189,9 +1193,9 @@ function re_event_vbEditor(){
   // event reset / clear textarrea
   Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });
   
-  // event textarea autogrowth
+  // event textarea autogrowth  
   if(gvar.settings.textareaExpander[0])
-    growIt(Dom.g(gvar.id_textarea), [gvar.settings.textareaExpander[1],gvar.settings.textareaExpander[2]]);
+	vB_textarea.setElastic();
   
   // general event buat more smile
   el=createEl('script',{type:'text/javascript'},"vB_Editor['vB_Editor_001'] = new vB_Text_Editor('vB_Editor_001', 0, '13', '1', undefined, '');");
@@ -2333,7 +2337,7 @@ function ajax_chk_newval(reply_html){
          deselect_it(); // clear selected quotes
 		 vB_textarea.lastfocus();
 		 if(gvar.settings.textareaExpander[0])
-           vB_textarea.adjustGrow(); // retrigger autogrow now
+           vB_textarea.setElastic(); // retrigger autogrow now
 	   }
 	}
 	if(re_event_btn){
@@ -2396,38 +2400,6 @@ function do_deselect(mqs) {
   chk_newval(0); // trigger showhide notice
 }
 
-function growIt(T,minmax){
-    gvar.lastTopGrow = null;
-    Dom.Ev(T, 'mousemove', function(){ autoGrow(T,minmax);});
-    Dom.Ev(T, 'keydown', function(){ gvar.lastTopGrow = ss.getCurrentYPos(); });
-    Dom.Ev(T, 'keyup', function(){ autoGrow(T,minmax);});
-    //Dom.Ev(T, 'keypress', function(){ autoGrow(T,minmax);});
-    Dom.Ev(T, 'focus', function(){ autoGrow(T,minmax);});
-}
-function autoGrow(f, batas) {
-   /* Default max height */
-   var min = (isUndefined(batas[0]) ? 100:batas[0]);
-   var max = (isUndefined(batas[1]) ? 100:batas[1]);
-   //var evt = (e) ? e : ((event)) ? event : null;
-   f.style.paddingTop = f.style.paddingBottom = '0px';
-   //var hCheck = !($.browser.msie || $.browser.opera);
-   var hCheck = true; // assumed browser is not msie nor opera
-   var vlen = f.value.length;
-   if (vlen != f.valLength ) {
-     if (hCheck && (vlen < f.valLength )) f.style.height = "0px";
-     var h = Math.max(min, Math.min(f.scrollHeight, max));
-      //show_alert('len= '+f.value.length+'; flen= '+f.valLength+'; sH= '+f.scrollHeight+'; h= '+h+'; maxmin= '+(Math.min(f.scrollHeight, max)) + 'f.style.overflow='+f.style.overflow);	  
-     f.style.overflow = (f.scrollHeight > h ? "auto" : "hidden");
-	 if(f.style.overflow=='auto' && f.style.height==(h+"px") ) 
-	   return true;
-     f.style.height = h + "px";
-     f.valLength = vlen;
-	 if(f.style.overflow=='auto' && gvar.lastTopGrow) {
-	   window.scrollTo(0,gvar.lastTopGrow);
-	   gvar.lastTopGrow = null;
-	 }
-   }
-}
 
 function fetch_property(){
    var match=null;   
@@ -2813,12 +2785,11 @@ var vB_textarea = {
     this.last_scrollTop = this.Obj.scrollTop; // last scrolltop pos
   },
   rearmPos: function(){ return [this.getCaretPos(), this.Obj.selectionEnd]; },
-  adjustGrow: function(){ autoGrow(this.Obj, [gvar.settings.textareaExpander[1],gvar.settings.textareaExpander[2]]); },
   clear: function (id){
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.set('');
+	this.Obj.style.height='1px'; // min-height should be set before
     this.enabled();
-    if(gvar.settings.textareaExpander[0]) this.adjustGrow();
     this.focus();
   },
   disabled: function(){ 
@@ -2933,7 +2904,15 @@ var vB_textarea = {
     this.set(bufValue);
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
-  }  
+  },
+  setElastic: function(){
+    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
+    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
+	var a=this.Obj||Dom.g(gvar.id_textarea);
+	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
+	Dom.Ev(a,'keyup', function(){setCols_Elastic()});
+	window.setTimeout(function(){setCols_Elastic()}, 110);
+  }
 };
 // Get Elements
 var $D=function (q, root, single) {
@@ -3143,7 +3122,8 @@ var ST = {
 	if($D('#chk_select_all')) Dom.Ev( $D('#chk_select_all'), 'click', function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
 	
 	// having child set
-	elSet = ['misc_updates','misc_autoexpand_0','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
+	//elSet = ['misc_updates','misc_autoexpand_0','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
+	elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) Dom.Ev( Dom.g(elSet[i]), 'click', function(e){ ST.toggle_childs(e); });
 
@@ -3448,21 +3428,6 @@ var ST = {
     // saving autoexpand
     value = [];
     value.push($D('#misc_autoexpand_0').checked ? '1':'0');
-    for(var i=1;i<3;i++){
-      par = $D('#misc_autoexpand_'+i);
-      if(par){
-        var tVal = parseInt( trimStr(par.value) );
-        if( isNaN(tVal) ){
-          value.push(gvar.settings.textareaExpander[i]);
-        }else{
-          var rolback=false;
-          if(i==1 && (tVal<75 || tVal>2049)) rolback=true;
-          if(i==2 && (tVal>2049 || tVal<=value[1])) rolback=true;
-          if(rolback) tVal=gvar.settings.textareaExpander[i];          
-          value.push(tVal);
-        }
-      }
-    }
     setValue(KS+'TEXTA_EXPANDER', value.toString());
 
     // saving autoshow_smiley
@@ -3826,7 +3791,7 @@ var rSRC = {
   +'#'+gvar.id_textarea
    +'{min-width:100%;}'
   +'.textarea'
-   +'{clear:both;width:100%;height:100px;}'
+   +'{/* clear:both; */width:100%;min-height:95px;}'
   +'#dv_accessible'
    +'{cursor:default;text-align:center;border:1px solid #949494;position:absolute;padding:10px 50px 10px 10px;background:#FDECC8;width:auto;margin:20px 10px;}'
   +'.icon-accessible'
@@ -4832,11 +4797,7 @@ Format will be valid like this:
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label>'
      +spacer
-     +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0]=='1' ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
-     +'<div id="misc_autoexpand_0_child" class="smallfont" style="margin:3px 0 0 20px;'+(gvar.settings.textareaExpander[0]=='1' ? '':'display:none;')+'">'
-     +'<label for="misc_autoexpand_1">min:</label><input id="misc_autoexpand_1" type="text" title="MINIMUM Height &gt= 75" value="'+(gvar.settings.textareaExpander[1])+'" style="width:35px;padding:0" maxlength="4"/>'
-     +'&nbsp;<label for="misc_autoexpand_2">max:</label><input id="misc_autoexpand_2" type="text" title="MAXIMUM Height &lt;= 2048" value="'+(gvar.settings.textareaExpander[2])+'" style="width:35px;padding:0" maxlength="4"/>'
-     +'</div>'
+     +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
      +spacer
      +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
      +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:0 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
