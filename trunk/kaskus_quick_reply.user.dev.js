@@ -2980,7 +2980,6 @@ var SML_LDR = {
     if(countSmiley<=0){
       var el = $D('#loader_'+SML_LDR.scID);
       if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
-	  alert(countSmiley)
       RC.innerHTML = 'No Images found';
       RC.style.display='';
     } else {
