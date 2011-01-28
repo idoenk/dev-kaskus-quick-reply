@@ -4,8 +4,8 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://localhost/test-kaskus/showthread.php*
 // @version       3.1.2
-// @dtversion     110127312
-// @timestamp     1296152729922
+// @dtversion     110129312
+// @timestamp     1296240738235
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,7 @@
 // -!--latestupdate
 //
 // v3.1.2 - 2011-01-22
-//   Add Grouped customsmiley (alpha)
+//   Add Grouped customsmiley (beta-1)
 //   Fix autogrow (use Module by Sophia.B, -iGoogle)
 //   Fix auto SET(Sigi & Layout) before Save Setting
 //
@@ -62,7 +62,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1296152729922 // version.timestamp
+  timestamp: 1296240738235 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -1186,9 +1186,6 @@ function insert_custom_control(){
 
 }
 
-
-var vbEditor = function(){};
-
 // create event controler on vbEditor & settings
 function re_event_vbEditor(){
   // event reset / clear textarrea
@@ -1338,6 +1335,13 @@ function create_smile_tab(caller){
     el2 = createEl('a',{href:'javascript:;','class':'current',id:'remote_'+tab},mtab[tab]);
 	on('click',el2,function(e){
       var tt = (e.target||e).innerHTML, tgt='sTGT_container'.replace(/TGT/,tt),S = eval('gvar.smilie'+tt);
+	  if(tt=='custom' && Dom.g(tgt).innerHTML!=''){ // need to make sure about this, really
+	    rSRC.getSmileySet(true);
+		S=SML_LDR.smlset=gvar.smiliecustom;
+		SML_LDR.scID=tab;
+		if($D('#manage_cancel') && $D('#manage_cancel').style.display!='none')
+		  SML_LDR.custom.close_edit();
+	  }
 	  toggle_tabsmile(e);
       if(Dom.g(tgt).innerHTML=='') insert_smile_content(tgt,S);
     });
@@ -1349,7 +1353,7 @@ function create_smile_tab(caller){
 	Attr={id:(tab!='scustom_container'? '' : 'wrap_')+tab,'class':'smallfont',style:'display:none;'};
 	el = createEl('div',Attr, (tab=='scustom_container'? rSRC.getTPL_sCustom():'') );
 	Dom.add(el,parent);
-  }
+  } // end for
   
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
@@ -1393,458 +1397,10 @@ function create_smile_tab(caller){
 }
 // end create_smile_tab
 
-
-
-// smiley loader
-var SML_LDR = {
-  init: function(scID,smlset){
-    var target,dumycont;
-	SML_LDR.scID = scID;
-	//SML_LDR.smlset = smlset = (scID=='scustom_container'? (isDefined(smlset[gvar.smiliegroup[0]]) ? smlset[gvar.smiliegroup[0]] : null) : smlset);
-	SML_LDR.smlset = smlset;
-
-	target = Dom.g(scID);
-    target.innerHTML='';
-	SML_LDR.dumycont=dumycont = createEl('div',{id:'loader_'+scID},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
-    SML_LDR.realcont=realcont = createEl('div',{id:'content_'+scID,style:'display:none;'});
-    Dom.add(dumycont,target);
-    Dom.add(realcont,target);
-	
-	SML_LDR.load(smlset);
-  }
- ,load: function(smlset){
-    var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb'), RC=SML_LDR.realcont;
-	var Attr,img,imgEl2,imgEl=false,countSmiley=0;
-	
-	//if(SML_LDR.scID=='scustom_container')
-	//  smlset = isDefined(smlset[gvar.smiliegroup[0]]) ? smlset[gvar.smiliegroup[0]]:null; // ambil group pertama aja
-	smlset = (SML_LDR.scID=='scustom_container'? (isDefined(smlset[gvar.smiliegroup[0]]) ? smlset[gvar.smiliegroup[0]] : null) : smlset);
-
-	for(var i in smlset) {
-	   img=smlset[i];
-	    if( !isString(img) ){
-	      if(SML_LDR.scID=='scustom_container'){
-            Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
-		          src:img[0], alt:'_alt_'+img[1],'class':adclass };
-            if(gvar.settings.scustom_alt) {
-              imgEl = createEl('a',Attr,'[['+img[1]+']');
-            }else{
-              imgEl = createEl('a',Attr);
-              Attr = {src:img[0], alt:'_alt_'+img[1]};
-              imgEl2 = createEl('img',Attr);
-              Dom.add(imgEl2,imgEl);
-            }
-		  
-		  }else{
-            Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
-            imgEl = createEl('img',Attr);
-          }		  
-		  on('click',imgEl,function(e){ 
-	         var C = e; e=e.target||e; do_smile(e); 
-		     try{do_an_e(C);return false;}catch(ev){} 
-	      });
-          Dom.add(imgEl,RC);
-          countSmiley++;
-	   
-	    }else { // this is string and do replace to suitable value
-          var sep,retEl=validTag(img, true, 'view');
-          if(!retEl) continue;
-          if(retEl.nodeName=='B'){
-            if(RC.innerHTML!='') {
-             sep = createEl('br', {});
-             Dom.add(sep,RC);
-            }
-            Dom.add(retEl,RC);
-            sep = createEl('br', {});
-            Dom.add(sep,RC);
-          }else{
-            Dom.add(retEl,RC);
-          }
-        }
-	} // end for
-	
-	SML_LDR.praload(countSmiley,imgEl);
-
-  }
- ,praload: function(countSmiley, lastEl){
-	var RC=SML_LDR.realcont;
-	// make a dummy last-img that, avoid bad img on last element
-	if( SML_LDR.scID=='scustom_container' && !gvar.settings.scustom_alt) {
-	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
-        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
-        imgEl2 = createEl('img',Attr);
-        Dom.add(imgEl2,imgEl);
-		Dom.add(imgEl,RC);
-	}else{
-	   imgEl=lastEl;
-	}
-	
-    if(countSmiley<=0){
-      var el = $D('#loader_'+SML_LDR.scID);
-      if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
-      RC.innerHTML = 'No Images found ';
-      RC.style.display='';
-    } else {
-      if(imgEl){
-       // find last element
-       var showContent = function(){
-          el=$D('#loader_'+SML_LDR.scID);
-          if(el) el.style.display='none';
-          el = $D('#content_'+SML_LDR.scID);
-          if(el) el.style.display='';
-          el = $D('#wrap_'+SML_LDR.scID); // wrapper for scustom smiley
-          if(el) el.style.display='';
-       };
-       if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
-          showContent();
-       }else{
-          // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
-          if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
-          on('load',imgEl,function(){showContent()});
-		  // obj has beed loaded before this line executed
-          if(imgEl.height) showContent();
-       }
-      }
-    }
-	// custom images ?
-	if(SML_LDR.scID=='scustom_container') SML_LDR.custom.initCustom();
-  }
- ,custom:{
-    initCustom: function(){
-	  var par,cL,el,el2,tit,cont=createEl('div',{style:'margin:15px 0 5px 0;'});
-	  el = createEl('hr',{style:'border:0;border-top:1px solid #BBC7CE;'}); Dom.add(el,cont);
-	  el = createEl('input',{id:'current_grup',type:'text',value:gvar.smiliegroup[0]}); Dom.add(el,cont);
-	  // ekstrak all group
-	  cL=gvar.smiliegroup.length;
-	  if(par=$D('#ul_group')) {
-	   $D('#ul_group').innerHTML = '';
-	   for(var i=0; i<cL;i++){
-	      el = createEl('li',{'class':'qrtab'+(i==0?' current':'')}); 
-		  tit = gvar.smiliegroup[i].substring(0,10);
-	      el2 = createEl('a',{href:'javascript:;',title:gvar.smiliegroup[i]},tit);
-		  on('click',el2,function(e){
-			clog('pejet'+e.title)
-		    e=e.target||e; 
-			if(e.nodeName!='A') return;
-			var ipar=$D('#ul_group'), lis=$D('.qrtab', $D('#ul_group'));
-			if(lis.length > 0){
-			  for(var j=0; j<lis.length; j++)
-			    removeClass('current', el[i]);
-			  addClass('current', e.parentNode);
-			}
-		  });
-		  Dom.add(el2,el); Dom.add(el,par);
-	   }
-	  }
-	  
-	  el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'},'Manage');
-      Dom.add(el,cont);
-	  on('click',el,function(e){SML_LDR.custom.manage(e)});
-	  el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
-      Dom.add(el,cont);
-	  on('click',el,function(e){
-	    e=e.target||e
-		var mcPar=$D('#manage_container');
-		if(mcPar) Dom.remove(mcPar);		
-		if($D('manage_btn')) $D('manage_btn').innerHTML='Manage';
-		e.style.display = 'none';
-	  });
-
-	  el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn twbtn-m lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
-      Dom.add(el,cont);
-	  on('click',el,function(e){
-      alert( ''
-        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
-        +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
-        +(!gvar.settings.scustom_noparse ? ''
-        +'\n\nUse Custom Smiley BBCODE with this format:'
-        +'\n eg.\n[[yourtag]'
-        :'') + '')
-      });	
-	  Dom.add(cont,SML_LDR.realcont);
-	}
-   ,manage: function(e){
-	 e=e.target||e;
-     var imgtxta,obj,obj2,buff,mcPar=$D('#manage_container'),cont_id = 'scustom_container',task = e.innerHTML;
-     if(task!='Manage'){
-	    SML_LDR.custom.manage_save(e);
-	 }else{
-	    if($D('#manage_help')) $D('#manage_help').style.display='';
-	    if($D('#manage_cancel')) $D('#manage_cancel').style.display='';
-        if(mcPar){
-          mcPar.style.display=(mcPar.style.display=='none' ? '':'none');          
-        }else{
-          buff='';
-		  var cgrup = $D('#current_grup'), smlset=SML_LDR.smlset[cgrup.value];		  
-          if(smlset){
-            var ret;
-            for (var i in smlset) {
-             img=smlset[i]; ret='';
-             if( !isString(img) )
-               buff+=img[1]+'|'+img[0]+'\n';
-             else if(ret=validTag(img, false, 'editor') )
-               buff+=ret;
-            }
-          }
-          mcPar = createEl('div',{id:'manage_container'});
-          Attr = {id:'textarea_'+cont_id,'class':'textarea txta_smileyset'};
-          imgtxta = createEl('textarea',Attr,buff);
-          Dom.add(imgtxta,mcPar);
-          
-          Attr = {'for':'scustom_alt',title:'Checked: Use tag instead of thumbnail'};
-          obj = createEl('label',Attr,'Don\'t create thumbnail');
-          Attr = {id:'scustom_alt',type:'checkbox'};
-          if(gvar.settings.scustom_alt) Attr.checked = 'checked';
-          obj2 = createEl('input',Attr);
-          Dom.add(obj2,obj);
-          Dom.add(obj,mcPar);
-          
-          Attr = {'for':'scustom_noparse',title:'Checked: custom smiley tag will not parsed'};
-          obj = createEl('label',Attr,'&nbsp;&nbsp;&nbsp;Don\'t parse custom tag');
-          Attr = {id:'scustom_noparse',type:'checkbox'};
-          if(gvar.settings.scustom_noparse) Attr.checked = 'checked';
-          obj2 = createEl('input',Attr);
-          Dom.add(obj2,obj);
-          Dom.add(obj,mcPar);
-          
-          //Dom.add(mcPar, $D('#content_'+cont_id));
-          Dom.add(mcPar, $D('#right_'+cont_id));
-          try{imgtxta.focus();}catch(e){}
-		  e.innerHTML = 'Save';
-        }
-	 }
-    }
-   ,manage_save: function(e){    
-		e=e.target||e;
-		// task save 
-        var mcPar=$D('#manage_container'),buff=false,cont_id = 'scustom_container';
-        var lastsave = getValue(KS+'CUSTOM_SMILEY'), lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
-        imgtxta = $D('#textarea_'+cont_id);
-        if(imgtxta)
-           buff = do_filter_scustom(imgtxta.value).toString();
-        gvar.settings.scustom_alt = ($D('#scustom_alt').checked);
-        gvar.settings.scustom_noparse = ($D('#scustom_noparse').checked);
-           //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
-        if( (buff && lastsave!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse) {
-          setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
-          setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
-          setValue(KS+'CUSTOM_SMILEY', buff); //save custom smiley
-             //clog('sc saved..')
-          rSRC.getSmileySet(true); // load only custom          
-          // re attach
-          window.setTimeout(function() {
-            insert_smile_content(cont_id, gvar.smiliecustom)
-          }, 200);
-        }
-        Dom.remove(mcPar);
-        if($D('#manage_help')) $D('#manage_help').style.display='none';
-	    if($D('#manage_cancel')) $D('#manage_cancel').style.display='none';
-		e.innerHTML = 'Manage';
-	}
- }
-};
 function insert_smile_content(scontent_Id, smileyset){
   
   if(!scontent_Id || !smileyset) return;
-  
   SML_LDR.init(scontent_Id, smileyset);
-}
-
-
-
-
-function insert_smile_content2(scontent_Id, smileyset){
-       //clog('in insert_smile_content');
-  var target,dumycont,Attr,img,imgEl2,imgEl=false;
-  var countSmiley=0;
-  if(!scontent_Id || !smileyset) return;
-  target = Dom.g(scontent_Id);
-  target.innerHTML='';
-  
-  dumycont = createEl('div',{id:'loader_'+scontent_Id},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
-  realcont = createEl('div',{id:'content_'+scontent_Id,style:'display:none;'});
-  Dom.add(dumycont,target);
-  Dom.add(realcont,target);
-  if(smileyset){
-    var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb');
-    for (var i in smileyset) {
-     img=smileyset[i];
-     if( !isString(img) ){
-       if(scontent_Id=='scustom_container'){
-             //clog('ekstrakting ['+typeof(img)+']='+img);
-          Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
-		        src:img[0], alt:'_alt_'+img[1],'class':adclass };
-          // gak pake thumbnail ?
-          if(gvar.settings.scustom_alt) {
-            imgEl = createEl('a',Attr,'[['+img[1]+']');
-          }else{
-            imgEl = createEl('a',Attr);
-            Attr = {src:img[0], alt:'_alt_'+img[1]};
-            imgEl2 = createEl('img',Attr);
-            Dom.add(imgEl2,imgEl);
-          }
-       }else{
-          Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
-          imgEl = createEl('img',Attr);
-       }
-       on('click',imgEl,function(e){ 
-	      var C = e; e=e.target||e; do_smile(e); 
-		  // stop default action
-		  try{do_an_e(C);return false;}catch(ev){} 
-	   });
-       Dom.add(imgEl,realcont);
-       countSmiley++;
-     }else { // this is string and do replace to suitable value
-       var sep,retEl=validTag(img, true, 'view');
-       if(!retEl) continue;
-          //clog('sep='+retEl.nodeName);
-       if(retEl.nodeName=='B'){
-         if(realcont.innerHTML!='') {
-          sep = createEl('br', {});
-          Dom.add(sep,realcont);
-         }
-         Dom.add(retEl,realcont);
-         sep = createEl('br', {});
-         Dom.add(sep,realcont);
-       }else{
-         Dom.add(retEl,realcont);
-       }
-     }
-    }
-       //clog('Inner=\n'+realcont.innerHTML)
-	// make a dummy last-img that, avoid bad img on last element
-	if( scontent_Id=='scustom_container' && !gvar.settings.scustom_alt) {
-	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
-        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
-        imgEl2 = createEl('img',Attr);
-        Dom.add(imgEl2,imgEl);
-		Dom.add(imgEl,realcont);
-	}
-  }
-
-  if(countSmiley<=0){
-    var el = $D('#loader_'+scontent_Id);
-    if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
-    realcont.innerHTML = 'No Images found ';
-    realcont.style.display='';
-  } else {
-    if(imgEl){
-     // find last element
-     var showContent = function(){
-        el=$D('#loader_'+scontent_Id);
-        if(el) el.style.display='none';
-        el = $D('#content_'+scontent_Id);
-        if(el) el.style.display='';
-     };
-     if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
-        showContent();
-     }else{
-        // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
-        if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
-            on('load',imgEl,function(){
-             //clog('all smiley has been loaded');
-             showContent();
-            });
-            if(imgEl.height) // obj has beed loaded before this line executed
-               showContent();
-     }
-    }
-  }
-   
-  // custom images ?
-  if(scontent_Id=='scustom_container'){
-    var el,cont;
-    cont = createEl('div',{style:'margin-top:10px;'});
-    el = createEl('a',{href:'javascript:;','class':'qrsmallfont',style:'padding:1px 5px;'},'Manage');
-    Dom.add(el,cont);
-    on('click',el,function(e){
-      var imgtxta,obj,obj2,task,buff;
-      var mcPar=$D('#manage_container');
-      var cont_id = 'scustom_container';
-      e=e.target||e;
-      task = e.innerHTML;
-      if(task=='Manage'){
-        if($D('#help_manage')) $D('#help_manage').style.display='';
-        if(mcPar){
-          mcPar.style.display=(mcPar.style.display=='none' ? '':'none');          
-        }else{
-          buff='';
-          if(smileyset){
-            var ret;
-            for (var i in smileyset) {
-             img=smileyset[i]; ret='';
-             if( !isString(img) )
-               buff+=img[1]+'|'+img[0]+'\n';
-             else if(ret=validTag(img, false, 'editor') )
-               buff+=ret;
-            }
-          }
-          mcPar = createEl('div',{id:'manage_container'});
-          Attr = {id:'textarea_'+cont_id,'class':'textarea txta_smileyset'};
-          imgtxta = createEl('textarea',Attr,buff);
-          Dom.add(imgtxta,mcPar);
-          
-          Attr = {'for':'scustom_alt',title:'Checked: Use tag instead of thumbnail'};
-          obj = createEl('label',Attr,'Don\'t create thumbnail');
-          Attr = {id:'scustom_alt',type:'checkbox'};
-          if(gvar.settings.scustom_alt) Attr.checked = 'checked';
-          obj2 = createEl('input',Attr);
-          Dom.add(obj2,obj);
-          Dom.add(obj,mcPar);
-          
-          Attr = {'for':'scustom_noparse',title:'Checked: custom smiley tag will not parsed'};
-          obj = createEl('label',Attr,'&nbsp;&nbsp;&nbsp;Don\'t parse custom tag');
-          Attr = {id:'scustom_noparse',type:'checkbox'};
-          if(gvar.settings.scustom_noparse) Attr.checked = 'checked';
-          obj2 = createEl('input',Attr);
-          Dom.add(obj2,obj);
-          Dom.add(obj,mcPar);
-          
-          Dom.add(mcPar, $D('#content_'+cont_id));
-          try{imgtxta.focus();}catch(e){}
-        }
-      }else{
-        // task save 
-        var buff=false;
-        var lastsave = getValue(KS+'CUSTOM_SMILEY');
-        var lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
-        imgtxta = $D('#textarea_'+cont_id);
-        if(imgtxta)
-           buff = do_filter_scustom(imgtxta.value).toString();
-        gvar.settings.scustom_alt = ($D('#scustom_alt').checked);
-        gvar.settings.scustom_noparse = ($D('#scustom_noparse').checked);
-           //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
-        if( (buff && lastsave!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse) {
-          setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
-          setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
-          setValue(KS+'CUSTOM_SMILEY', buff); //save custom smiley
-             //clog('sc saved..')
-          rSRC.getSmileySet(true); // load only custom          
-          // re attach
-          window.setTimeout(function() {
-            insert_smile_content(cont_id, gvar.smiliecustom)
-          }, 200);
-        }
-        //mcPar.style.display='none';
-        Dom.remove(mcPar);
-        if($D('#help_manage')) $D('#help_manage').style.display='none';
-      }
-      e.innerHTML = (task=='Manage' ? 'Save' : 'Manage');
-    }); // end event click Manage-Save
-    el = createEl('a',{id:'help_manage',href:'javascript:;','class':'qrsmallfont',style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'},' ? ');
-    Dom.add(el,cont);
-    on('click',el,function(e){
-      alert( ''
-       +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
-       +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
-        +(!gvar.settings.scustom_noparse ? ''
-        +'\n\nUse Custom Smiley BBCODE with this format:'
-        +'\n eg.\n[[yourtag]'
-        :'')
-      +'');      
-    });
-    Dom.add(cont,realcont);
-  } // end when it's scustom_container
 }
 // end insert_smile_content()
 
@@ -2636,7 +2192,6 @@ function do_deselect(mqs) {
   chk_newval(0); // trigger showhide notice
 }
 
-
 function fetch_property(){
    var match=null;   
    gvar.page = gvar.newreply = match;
@@ -3335,6 +2890,380 @@ var Updater = {
     };	
   }
 }; // -end Updater
+
+// global smiley loader
+var SML_LDR = {
+  init: function(scID,smlset){
+    var dumycont, target=Dom.g(scID);
+	target.innerHTML='';
+	
+	SML_LDR.scID = scID;
+	SML_LDR.smlset = smlset;
+	
+	SML_LDR.tgt_content='content_'+scID+(scID=='scustom_container'?'_'+gvar.smiliegroup[0]:'');
+    SML_LDR.realcont=realcont = createEl('div',{id:SML_LDR.tgt_content,style:'display:none;'});
+	
+	dumycont = createEl('div',{id:'loader_'+scID},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
+    Dom.add(dumycont,target);
+    Dom.add(realcont,target);
+	
+	SML_LDR.load(smlset);
+  }
+ ,load: function(smlset, idx){
+    var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb'), RC=SML_LDR.realcont;
+	var Attr,img,imgEl2,imgEl=false,countSmiley=0;
+	if(isUndefined(idx)) idx=0;
+	if( SML_LDR.scID=='scustom_container' && isDefined(smlset[gvar.smiliegroup[idx].toString()]) )
+	   smlset = smlset[gvar.smiliegroup[idx].toString()];	  
+
+	for(var i in smlset) {
+	    img=smlset[i];
+	    if( !isString(img) ){
+	      if(SML_LDR.scID=='scustom_container'){
+            Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
+		          src:img[0], alt:'_alt_'+img[1],'class':adclass };
+            if(gvar.settings.scustom_alt) {
+              imgEl = createEl('a',Attr,'[['+img[1]+']');
+            }else{
+              imgEl = createEl('a',Attr);
+              Attr = {src:img[0], alt:'_alt_'+img[1]};
+              imgEl2 = createEl('img',Attr);
+              Dom.add(imgEl2,imgEl);
+            }
+		  
+		  }else{
+            Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
+            imgEl = createEl('img',Attr);
+          }		  
+		  on('click',imgEl,function(e){ 
+	         var C = e; e=e.target||e; do_smile(e); 
+		     try{do_an_e(C);return false;}catch(ev){} 
+	      });
+          Dom.add(imgEl,RC);
+          countSmiley++;
+	   
+	    }else { // this is string and do replace to suitable value
+          var sep,retEl=validTag(img, true, 'view');
+          if(!retEl) continue;
+          if(retEl.nodeName=='B'){
+            if(RC.innerHTML!='') {
+             sep = createEl('br', {});
+             Dom.add(sep,RC);
+            }
+            Dom.add(retEl,RC);
+            sep = createEl('br', {});
+            Dom.add(sep,RC);
+          }else{
+            Dom.add(retEl,RC);
+          }
+        }
+	} // end for
+	
+	//if(SML_LDR.realcont.innerHTML=='')
+	   SML_LDR.praload(countSmiley,imgEl);
+
+  }
+ ,praload: function(countSmiley, lastEl){
+	var RC=SML_LDR.realcont;
+	//if(isUndefined(deadEnd)) deadEnd=false;
+	// make a dummy last-img that, avoid bad img on last element
+	if( SML_LDR.scID=='scustom_container' && !gvar.settings.scustom_alt) {
+	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
+        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
+        imgEl2 = createEl('img',Attr);
+        Dom.add(imgEl2,imgEl);
+		Dom.add(imgEl,RC);
+	}else{
+	   imgEl=lastEl;
+	}
+	
+    if(countSmiley<=0){
+      var el = $D('#loader_'+SML_LDR.scID);
+      if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
+	  alert(countSmiley)
+      RC.innerHTML = 'No Images found';
+      RC.style.display='';
+    } else {
+      if(imgEl){
+       // find last element
+       var showContent = function(){
+          el=$D('#loader_'+SML_LDR.scID);
+          if(el) el.style.display='none';
+          el = $D('#'+SML_LDR.tgt_content);
+          if(el) el.style.display='';
+          el = $D('#wrap_'+SML_LDR.scID); // wrapper for scustom smiley
+          if(el) el.style.display='';
+       };
+       if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
+          showContent();
+       }else{
+          // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
+          if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
+          on('load',imgEl,function(){showContent()});
+		  // obj has beed loaded before this line executed
+          if(imgEl.height) showContent();
+       }
+      }
+    }
+	// custom images ?
+	if(SML_LDR.scID=='scustom_container' && !$D('#custom_bottom') ) SML_LDR.custom.initCustom();
+  }
+  
+ ,custom:{
+    initCustom: function(){
+	  var par,cL,el,el2,tit,cont=createEl('div',{id:'custom_bottom',style:'margin:8px 0 8px 0;'});
+	  //clog('initCustom');
+	  SML_LDR.smlset=gvar.smiliecustom;
+	  el = createEl('input',{id:'current_grup', type:'hidden',value:gvar.smiliegroup[0]}); Dom.add(el,cont);
+	  el = createEl('input',{id:'current_order',type:'hidden',value:'0'}); Dom.add(el,cont);
+	  // ekstrak all group
+	  cL=gvar.smiliegroup.length;
+	  if(par=$D('#ul_group')) {
+	   $D('#ul_group').innerHTML = '';
+	   for(var i=0; i<cL;i++){
+	      el = createEl('li',{'class':'qrtab'+(i==0 ? ' current':'')}); 
+	      el2 = createEl('a',{id:'tbgrup_'+i,href:'javascript:;',title:gvar.smiliegroup[i]}, gvar.smiliegroup[i].substring(0,10)+(gvar.smiliegroup[i].length>10?'..':''));
+		  on('click',el2,function(e){
+		    e=e.target||e;
+			if(e.nodeName!='A') return;
+			try{if(e.parentNode.className.indexOf('current')!=-1)return;}catch(ei){};
+			var idx=e.id.replace(/tbgrup_/,''),tgt=$D('#content_scustom_container_'+gvar.smiliegroup[idx]);
+			var lis=$D('.qrtab', $D('#ul_group'));
+			if(lis.length > 0){
+			  SML_LDR.custom.switch_tab(e.title);
+			  if($D('#current_grup')) $D('#current_grup').value=e.title;
+			  if($D('#current_order')) $D('#current_order').value=SML_LDR.custom.find_index(e.title);
+			  rSRC.getSmileySet(true);
+			  SML_LDR.smlset = gvar.smiliecustom[e.title.toString()];
+			  SML_LDR.realcont=tgt;
+			  SML_LDR.load(SML_LDR.smlset, $D('#current_order').value);
+			}
+		  });
+		  Dom.add(el2,el); Dom.add(el,par);
+		  
+		  if(i>0){ //content_scustom_container
+		    el = createEl('div',{id:'content_scustom_container'+'_'+gvar.smiliegroup[i],style:'display:none;'});
+			Dom.add(el, $D('#scustom_container'));
+		  }		  
+	   }// end for
+	   el = createEl('li',{}); el2=createEl('div',{style:'height:5px'}); 
+	   Dom.add(el2,el); Dom.add(el,par);
+	   el = createEl('li',{'class':'qrtab add_group'}); 
+	   el2 = createEl('a',{href:'javascript:;',title:'Add Group'},'Add Group');
+	   on('click',el,function(e){SML_LDR.custom.add_group(e)});
+	   Dom.add(el2,el); Dom.add(el,par);
+	  }
+	  
+	  el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'},'Manage');
+      Dom.add(el,cont);
+	  on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
+	  el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
+      Dom.add(el,cont);
+	  on('click',el,function(){
+		var mcPar=$D('#manage_container');
+		if(mcPar) Dom.remove(mcPar);
+		SML_LDR.custom.toggle_manage();
+	  });
+
+	  el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn twbtn-m lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
+      Dom.add(el,cont);
+	  on('click',el,function(e){
+      alert( ''
+        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
+        +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
+        +(!gvar.settings.scustom_noparse ? ''
+        +'\n\nUse Custom Smiley BBCODE with this format:'
+        +'\n eg.\n[[yourtag]'
+        :'') + '')
+      });	
+	  
+	  // bikin div kosong utk add group
+	  el = createEl('div',{id:'add_content_'+SML_LDR.scID,style:'display:none;'}); //No Images found
+	  Dom.add(el,$D('#right_'+SML_LDR.scID));
+
+	  Dom.add(cont,$D('#right_'+SML_LDR.scID));
+	}
+   ,close_edit: function(callback){
+     // close manage activity || reqrite instead of simulate click on cancel
+	  var mcPar=$D('#manage_container');
+	  if(mcPar) Dom.remove(mcPar);
+	  SML_LDR.custom.toggle_manage();
+      //callback
+	  if(typeof(callback)=='function') callback();
+    }
+   ,find_index: function(label){
+	  for(var k=0;k<gvar.smiliegroup.length; k++)
+	    if(gvar.smiliegroup[k]==label){return k;break;}
+	}
+   ,switch_tab: function(label){
+      var lis=$D('.qrtab', $D('#ul_group')),csc='content_'+SML_LDR.scID;
+	  if(lis.length > 0){
+	    for(var j=0; j<lis.length; j++){
+		  var ch=getTag('a',lis[j])[0], idx=(ch.id ? ch.id.replace(/tbgrup_/,''):'')
+		  ,dvC=(lis[j].className.indexOf('add_group')!=-1?'add_':'') + csc + (idx ? '_'+gvar.smiliegroup[idx]:'');
+
+		  dvC=$D('#'+dvC);
+	      if(label && ch.title && ch.title.indexOf(label)==-1){
+		    removeClass('current', lis[j]);
+			//if(dvC) dvC.style.display='none';
+			if(dvC) dvC.innerHTML='';
+			//if(dvC) Dom.remove(dvC);
+		  }else{
+		    addClass('current', lis[j]);
+			if(dvC) dvC.style.display='block';
+		  }
+	    } // end for
+	  }
+    }
+   ,add_group: function(e){
+      e=e.target||e;
+	  if($D('#current_grup')) $D('#current_grup').value='';
+	  if($D('#current_order')) $D('#current_order').value='';
+	  SML_LDR.custom.switch_tab(e.innerHTML);
+	  if($D('manage_btn')) SML_LDR.custom.manage($D('manage_btn'));	  
+    }
+   ,toggle_manage: function(flag){
+	    if(isUndefined(flag)) flag = ($D('manage_btn') && $D('manage_btn').innerHTML=='Manage');
+		if($D('manage_btn')) $D('manage_btn').innerHTML=(flag?'Save':'Manage');
+		/*to show*/
+		if($D('#manage_help')) $D('#manage_help').style.display=(flag?'':'none');
+	    if($D('#manage_cancel')) $D('#manage_cancel').style.display=(flag?'':'none');
+	    if($D('#dv_menu_disabler')) $D('#dv_menu_disabler').style.display=(flag?'':'none');
+		/*to hide*/
+	    if($D('#scustom_container')) $D('#scustom_container').style.display=(flag?'none':'');
+		if(!flag && $D('#current_grup') && $D('#current_grup').value=='') // cancel from add grup
+		   if($D('#tbgrup_0')) SimulateMouse($D('#tbgrup_0'), 'click', true);
+    }
+   ,manage: function(e){
+
+     var imgtxta,obj,obj2,buff='',cont_id=SML_LDR.scID,task = e.innerHTML;
+	 if(task!='Manage'){
+	    SML_LDR.custom.manage_save(e);
+	 }else{
+		  var smlset=false;
+		  if($D('#current_order').value!=''){
+		    rSRC.getSmileySet(true);
+			smlset = gvar.smiliecustom[gvar.smiliegroup[$D('#current_order').value].toString()];
+		  }
+		  var generateGrup = function(){
+		    var isAvail = function(g){
+			    var ret=false;
+			    for(var k=0;k<gvar.smiliegroup.length;k++){if(gvar.smiliegroup[k]!=g){ret=true;break;}}
+			    return ret;
+			};
+			var nG = 'untitled_'+Math.floor(Math.random()*100),MX=10,oK=isAvail(nG);
+			if(!oK) while(!oK && MX--){
+			  nG = 'untitled_'+Math.floor(Math.random()*100)
+			  oK=isAvail(nG);
+			}
+			return nG;
+		  }; // end generateGrup
+          if(smlset){
+            var ret;
+            for (var i in smlset) {
+             img=smlset[i]; ret='';
+             if( !isString(img) )
+               buff+=img[1]+'|'+img[0]+'\n';
+             else if(ret=validTag(img, false, 'editor') )
+               buff+=ret;
+            }
+			SML_LDR.custom.lastload=buff;
+          }
+		  
+          var mcPar = createEl('div',{id:'manage_container'});
+		  Dom.add(mcPar, $D('#right_'+cont_id));
+          Attr = {'class':'smallfont'};
+          obj = createEl('div',Attr,'&nbsp;<b>'+($D('#current_grup') && $D('#current_grup').value==''?'Add ':'')+'Group</b>:&nbsp;');
+          Attr = {id:'input_grupname','class':'input_title',title:'Group Name',style:'width:200px',value:gvar.smiliegroup[$D('#current_order').value]||generateGrup() };
+          obj2 = createEl('input',Attr);
+		  on('keydown',obj2,function(e){var C=(!e?window.event:e);if(C.keyCode==13){C = do_an_e(C);SML_LDR.custom.manage_save();}else{return C;}});
+		  Dom.add(obj2,obj);Dom.add(obj,mcPar);
+		  
+          Attr = {id:'textarea_'+cont_id,'class':'textarea txta_smileyset'};
+          imgtxta = createEl('textarea',Attr,buff);
+          Dom.add(imgtxta,mcPar);
+          
+          Attr = {'for':'scustom_alt',title:'Checked: Use tag instead of thumbnail'};
+          obj = createEl('label',Attr,'Don\'t create thumbnail');
+          Attr = {id:'scustom_alt',type:'checkbox'};
+          if(gvar.settings.scustom_alt) Attr.checked = 'checked';
+          obj2 = createEl('input',Attr);
+          Dom.add(obj2,obj); Dom.add(obj,mcPar);
+          
+          Attr = {'for':'scustom_noparse',title:'Checked: custom smiley tag will not parsed'};
+          obj = createEl('label',Attr,'&nbsp;&nbsp;&nbsp;Don\'t parse custom tag');
+          Attr = {id:'scustom_noparse',type:'checkbox'};
+          if(gvar.settings.scustom_noparse) Attr.checked = 'checked';
+          obj2 = createEl('input',Attr);
+          Dom.add(obj2,obj); Dom.add(obj,mcPar);
+
+		  SML_LDR.custom.toggle_manage();
+		  window.setTimeout(function() {		    
+            try{imgtxta.focus();}catch(e){}
+		  }, 50);
+	 }
+    }
+   ,manage_save: function(){
+		// task save 
+        var mcPar=$D('#manage_container'),buff=false,cont_id=SML_LDR.scID;
+		var	lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
+		var remixBuff = function(niubuf){
+		   // ['<!>','<!!>']; 
+		   var ret='',curG=[$D('#current_order').value, $D('#current_grup').value]
+		    , grup=trimStr($D('#input_grupname').value.replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_'));
+		   var ch_grup, CS=getValue(KS+'CUSTOM_SMILEY'), CRaw=CS.split('<!>'), CR_OBJ={}, part;
+		   for(var n=0;n<CRaw.length;n++){
+		     part=CRaw[n].split('<!!>');
+		     CR_OBJ[String(part[0])]=String(part[1]);
+		   }
+		   ch_grup=(curG[1]!='' && grup!='' && grup!=curG[1]);
+		   if(curG[0]!='' && curG[1]!=''){			 
+		     for(var k=0;k<gvar.smiliegroup.length;k++){
+				if(gvar.smiliegroup[k]==curG[1]){
+				   CR_OBJ[gvar.smiliegroup[k].toString()] = niubuf.toString();
+				   grup=trimStr(ch_grup ? $D('#input_grupname').value : curG[1]).replace(/\!/g,'\\!');
+				}else{
+				   grup=gvar.smiliegroup[k];
+				}
+			    ret+=grup.toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()]+( (k+1)<gvar.smiliegroup.length?'<!>':'');
+		     }
+		   }else{
+		     var joined=false;
+		     for(var k=0;k<gvar.smiliegroup.length;k++){
+			    joined=joined||(gvar.smiliegroup[k]==grup);
+				ret+=gvar.smiliegroup[k].toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()] +(joined ? niubuf.toString():'') + ( (k+1)<gvar.smiliegroup.length?'<!>':'');
+			 }
+			 if(!joined) ret+='<!>'+grup.toString()+'<!!>'+niubuf.toString();
+		   }
+		   return ret;
+		};
+        imgtxta = $D('#textarea_'+cont_id);
+        if(imgtxta) buff = do_filter_scustom(imgtxta.value).toString();		
+        gvar.settings.scustom_alt = ($D('#scustom_alt') && $D('#scustom_alt').checked);
+        gvar.settings.scustom_noparse = ($D('#scustom_noparse') && $D('#scustom_noparse').checked);
+		if(trimStr($D('#input_grupname').value)==''){
+		   alert('Group Name can not be empty');
+		   SML_LDR.custom.toggle_manage();
+		   return;
+		}
+           //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
+        if( (buff && SML_LDR.custom.lastload!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse ) {
+          setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
+          setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
+          
+		  //clog(buff);
+		  setValue(KS+'CUSTOM_SMILEY', remixBuff(buff)); //save custom smiley
+          rSRC.getSmileySet(true); // load only custom
+		  SML_LDR.custom.toggle_manage();
+		  if($D('#right_scustom_container')) $D('#right_scustom_container').innerHTML='<div id="scustom_container"></div>';
+          window.setTimeout(function() {
+			SML_LDR.init(cont_id,gvar.smiliecustom);
+          }, 200);
+        }
+	} //end manage_save
+ } // end custom
+};
+// end SML_LDR
 // global var for settings
 var ST = {
   init_setting: function(){
@@ -3848,7 +3777,7 @@ var ST = {
 	    + gvar.user.name+'</a>'+(gvar.user.isDonatur ? ' <b style="color:red;">[$]</b>':'')+'&nbsp;]';
  }
 }; // end ST; Settings
-
+//end ST
 /* Modified Smooth scrolling
    Todd Anglin  14 October 2006, sil, http://www.kryogenix.org/
    v1.1 2005-06-16 wrap it up in an object
@@ -4431,23 +4360,27 @@ Format will be valid like this:
        }
 	  return customs;
 	};
-	if(buff.indexOf('<!>')==-1){
+	if(buff.indexOf('<!!>')==-1){ // old raw-data
 	  ret = extractSmiley(buff);
 	  grup='untitled';
-	  gvar.smiliecustom[grup.toString()] = ret;
-	  
+	  gvar.smiliecustom[grup.toString()] = ret;	  
 	  gvar.smiliegroup.push(grup);
 	}else{
-	  var parts = buff.split('<!>'),grup,rawtext,part2;
+	  // spliter: ['<!>','<!!>']; 
+	  // '<!>' each group; '<!!>' group w/ its data
+	  var parts = buff.split('<!>'),part2;
 	  for(var i=0; i<parts.length; i++){
-	    part2=parts[i].split('[|]');
+	    part2=parts[i].split('<!!>');
+		//part2[0]=part2[0].replace('\!','!');
+		part2[0]=part2[0].replace(/\\!/g,'!');
 		if(part2.length > 0){
 		  ret = extractSmiley(part2[1]);
 		  gvar.smiliecustom[part2[0].toString()] = ret;
-		  gvar.smiliegroup.push(part2[0]);
+		  //gvar.smiliegroup.push(part2[0].replace(/\\!/g,'!'));
+		  gvar.smiliegroup.push(part2[0].toString());
 		}
 	  }  
-	}    
+	}
   }
   if(isDefined(custom) && custom) return;
   
@@ -5137,21 +5070,22 @@ Format will be valid like this:
 //   createTab(cont,'scustom_container','custom');
 
  ,getTPL_sCustom: function(){
-    return(''
-	+'<table class="" border="0" cellpadding="0" cellspacing="0" width="100%" style=""><tbody>'
-	+'<tr><td class="smallfont" style="">'
-	+'<div id="scustom_group" style="padding:3px 2px 1px 1px;margin:1px;">'
-	+'<ul id="ul_group" class="qrset-menu" style="">'
-	+'<li class="qrtab current"><a href="javascript:;">Untitled</a></li>'
-	+'</ul>'
-	+'</div>'
-	+'</td><td width="100%">'
-	+'<div id="right_scustom_container">'
-	+'<div id="scustom_container" style="display:none;" class="smallfont"></div>'
-	+'</div>'
-	+'</td></tr>'
-	+'</tbody></table>'
-	);
+return(''
++'<table class="" border="0" cellpadding="0" cellspacing="0" width="100%" style=""><tbody>'
++'<tr><td class="smallfont" style="">'
++'<div id="scustom_group" style="padding:3px 2px 1px 1px;margin:1px;position:relative;">'
++'<div id="dv_menu_disabler" style="position:absolute;padding:2px 0;margin:-4px 0 0 -2px;opacity:.15;filter:alpha(opacity=15);background:#000;width:100%;height:100%;border:0;display:none;"></div>'
++  '<ul id="ul_group" class="qrset-menu" style="">'
++  '<li class="qrtab current"><a href="javascript:;">Untitled</a></li>'
++  '</ul>'
++'</div>'
++'</td><td width="100%">'
++'<div id="right_scustom_container" class="smallfont">'
++  '<div id="scustom_container" style="display:none;"></div>'
++'</div>'
++'</td></tr>'
++'</tbody></table>'
+);
   }
 };
 
