@@ -4,8 +4,8 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://localhost/test-kaskus/showthread.php*
 // @version       3.1.2
-// @dtversion     110129312
-// @timestamp     1296240738235
+// @dtversion     110130312
+// @timestamp     1296340376989
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,8 @@
 // -!--latestupdate
 //
 // v3.1.2 - 2011-01-22
-//   Add Grouped customsmiley (beta-1)
+//   Fix on parsing bbcode custom smiley
+//   Add Grouped customsmiley (beta-2)
 //   Fix autogrow (use Module by Sophia.B, -iGoogle)
 //   Fix auto SET(Sigi & Layout) before Save Setting
 //
@@ -62,7 +63,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1296240738235 // version.timestamp
+  timestamp: 1296340376989 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -805,6 +806,9 @@ function scustom_parser(msg){
   // trim content and/or parse it
   msg = trimStr(Dom.g(gvar.id_textarea).value);
   if(!gvar.settings.scustom_noparse){
+  
+   clog('in scustom_parser');
+   
     pmsg = do_parse_scustom(msg);
     Dom.g(gvar.id_textarea).value=pmsg;
     if(vB_textarea.Obj && pmsg!=msg)
@@ -1338,10 +1342,11 @@ function create_smile_tab(caller){
 	  if(tt=='custom' && Dom.g(tgt).innerHTML!=''){ // need to make sure about this, really
 	    rSRC.getSmileySet(true);
 		S=SML_LDR.smlset=gvar.smiliecustom;
-		SML_LDR.scID=tab;
+		//SML_LDR.scID=tab;
 		if($D('#manage_cancel') && $D('#manage_cancel').style.display!='none')
 		  SML_LDR.custom.close_edit();
 	  }
+	  SML_LDR.scID=tab;
 	  toggle_tabsmile(e);
       if(Dom.g(tgt).innerHTML=='') insert_smile_content(tgt,S);
     });
@@ -1684,43 +1689,101 @@ function do_filter_scustom(text){
 
 function do_parse_scustom(msg){
   var buf = msg;
-  if(buf!=''){
-    if(!buf.match(/\[\[([^\]]+)/gi)) 
+  if(buf!=''){    
+    if(!buf.match(/\[\[([^\]]+)/gi))  // no containing necessary hash-tag ? -> getout
       return buf;
-    var re,re_W,tag,done = false;
-    var lastTag='';
+    var re,re_W, tag,done=false,lTag='',retag=[],maxstep=200; // avoid infinite loop, set for max step
     // prepared paired key and tag of custom image
-    var paired = prep_paired_scustom();    
-    while(!done){
-      tag = /\[\[([^\]]+)/.exec(buf);      
-      if( tag && isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lastTag ){
-               //clog('parsing['+tag[1]+']...');
-          re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
-          re = new RegExp( re_W.toString() , "g"); // incase-sensitive and global, save the loop
+    var paired=prep_paired_scustom();	
+    while(!done && maxstep--){
+      tag = /\[\[([^\]]+)/.exec(buf);
+	  //clog('in while. tag='+tag[1] );
+	  if( tag ){
+        re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
+        re = new RegExp( re_W.toString() , "g"); // incase-sensitive and global, save the loop
+	    if( isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lTag ){      
+            //clog('parsing['+tag[1]+']...');
           buf = buf.replace(re, '[IMG]'+paired['tag_'+tag[1]]+'[/IMG]');
-          lastTag = tag[1];
-      }else{
-        done = true;
+          lTag = tag[1];
+		}else{
+		  clog('no match tag for:'+tag[1]);
+		  buf = buf.replace(re, '\\[\\['+tag[1]+'\\]');
+		  retag.push(tag[1]);
+		}
+      }else{		
+		  done=true;
       }
     } // end while
-  }  
+
+	if(retag.length){
+	  clog('turing back');
+	  buf = buf.replace(/\\\[\\\[([^\]]+)\]/gm, function(S,$1){return('[['+$1.replace(/\\/g,'')+']')});
+	}
+  }
+  clog('END='+buf);
   return buf;
 }
 
+/*
+    var grup,ret,extractSmiley=function(partition){
+      var idx=1,sepr = ',',customs={};
+	  var smileys = partition.split(sepr);
+      if(isDefined(smileys[0]))
+       for(var i in smileys){
+         if(isString(smileys[i]) && smileys[i]!=''){
+           var parts = smileys[i].split('|');
+           customs[idx.toString()] = (isDefined(parts[1]) ? [parts[1], parts[0], parts[0]] : smileys[i]);
+           idx++;
+         }
+       }
+	  return customs;
+	};
+	if(buff.indexOf('<!!>')==-1){ // old raw-data
+	  ret = extractSmiley(buff);
+	  grup='untitled';
+	  gvar.smiliecustom[grup.toString()] = ret;	  
+	  gvar.smiliegroup.push(grup);
+	}else{
+	  // spliter: ['<!>','<!!>']; 
+	  // '<!>' each group; '<!!>' group w/ its data
+	  var parts = buff.split('<!>'),part2;
+	  for(var i=0; i<parts.length; i++){
+	    part2=parts[i].split('<!!>');
+		//part2[0]=part2[0].replace('\!','!');
+		part2[0]=part2[0].replace(/\\!/g,'!');
+		if(part2.length > 0){
+		  ret = extractSmiley(part2[1]);
+		  gvar.smiliecustom[part2[0].toString()] = ret;
+		  //gvar.smiliegroup.push(part2[0].replace(/\\!/g,'!'));
+		  gvar.smiliegroup.push(part2[0].toString());
+		}
+	  }  
+	}
+
+*/
+
+// here we load and prep paired custom smiley to do parsing purpose
+// make it compatible for old structure, which no containing <!!>
 function prep_paired_scustom(){
-   var img,paired={};
-   // preload smiliecustom database if needed
-   if(!gvar.smiliecustom) rSRC.getSmileySet(true); 
-   for(var i in gvar.smiliecustom){
-     img = gvar.smiliecustom[i];
+   var grup,sml,idx=0,paired={};
+   // preload smiliecustom database
+   if(gvar.__DEBUG__) DOMTimer.start();
+   if(!gvar.smiliecustom) rSRC.getSmileySet(true);
+   for(var grup in gvar.smiliecustom){
+     sml = gvar.smiliecustom[grup];
      /** gvar.smiliecustom[idx.toString()] = [parts[1], parts[0], parts[0]];
      # where :
      # idx= integer
      # gvar.smiliecustom[idx.toString()] = [link, tags, tags];
      */
-          //clog(img.toString())
-     paired['tag_'+img[1].toString()] = img[0].toString();
+	 for(var j in sml){
+	    if(sml[j].toString().match(/^https?\:\/\//i)) {
+		   paired['tag_'+sml[j][1].toString()] = sml[j][0].toString();
+		   idx++;
+		}		
+	 }
    }
+   if(gvar.__DEBUG__) clog('End. Elapsed:'+DOMTimer.get());
    return paired;
 }
 
@@ -2900,7 +2963,7 @@ var SML_LDR = {
 	SML_LDR.scID = scID;
 	SML_LDR.smlset = smlset;
 	
-	SML_LDR.tgt_content='content_'+scID+(scID=='scustom_container'?'_'+gvar.smiliegroup[0]:'');
+	SML_LDR.tgt_content='content_'+scID+(scID=='scustom_container' && gvar.smiliegroup ?'_'+gvar.smiliegroup[0]:'');
     SML_LDR.realcont=realcont = createEl('div',{id:SML_LDR.tgt_content,style:'display:none;'});
 	
 	dumycont = createEl('div',{id:'loader_'+scID},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
@@ -2913,7 +2976,7 @@ var SML_LDR = {
     var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb'), RC=SML_LDR.realcont;
 	var Attr,img,imgEl2,imgEl=false,countSmiley=0;
 	if(isUndefined(idx)) idx=0;
-	if( SML_LDR.scID=='scustom_container' && isDefined(smlset[gvar.smiliegroup[idx].toString()]) )
+	if( SML_LDR.scID=='scustom_container' && gvar.smiliegroup && isDefined(smlset[gvar.smiliegroup[idx].toString()]) )
 	   smlset = smlset[gvar.smiliegroup[idx].toString()];	  
 
 	for(var i in smlset) {
@@ -3011,13 +3074,46 @@ var SML_LDR = {
  ,custom:{
     initCustom: function(){
 	  var par,cL,el,el2,tit,cont=createEl('div',{id:'custom_bottom',style:'margin:8px 0 8px 0;'});
-	  //clog('initCustom');
+	  clog('initCustom');
 	  SML_LDR.smlset=gvar.smiliecustom;
-	  el = createEl('input',{id:'current_grup', type:'hidden',value:gvar.smiliegroup[0]}); Dom.add(el,cont);
-	  el = createEl('input',{id:'current_order',type:'hidden',value:'0'}); Dom.add(el,cont);
+	  el = createEl('input',{id:'current_grup', type:'hidden',value:(gvar.smiliegroup ? gvar.smiliegroup[0]:'')}); Dom.add(el,cont);
+	  el = createEl('input',{id:'current_order',type:'hidden',value:(gvar.smiliegroup ? '0':'')}); Dom.add(el,cont);
 	  // ekstrak all group
-	  cL=gvar.smiliegroup.length;
+	  SML_LDR.custom.tab_menu_left();
+	  
+	  el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
+      Dom.add(el,cont);
+	  on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
+	  el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
+      Dom.add(el,cont);
+	  on('click',el,function(){
+		var mcPar=$D('#manage_container');
+		if(mcPar) Dom.remove(mcPar);
+		SML_LDR.custom.toggle_manage();
+	  });
+
+	  el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn twbtn-m lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
+      Dom.add(el,cont);
+	  on('click',el,function(e){
+      alert( ''
+        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
+        +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
+        +(!gvar.settings.scustom_noparse ? ''
+        +'\n\nUse Custom Smiley BBCODE with this format:'
+        +'\n eg.\n[[yourtag]'
+        :'') + '')
+      });	
+	  
+	  // bikin div kosong utk add group
+	  el = createEl('div',{id:'add_content_'+SML_LDR.scID,style:'display:none;'}); //No Images found
+	  Dom.add(el,$D('#right_'+SML_LDR.scID));
+
+	  Dom.add(cont,$D('#right_'+SML_LDR.scID));
+	}
+   ,tab_menu_left: function(){
+	  cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
 	  if(par=$D('#ul_group')) {
+	    clog('refresh group mnu');
 	   $D('#ul_group').innerHTML = '';
 	   for(var i=0; i<cL;i++){
 	      el = createEl('li',{'class':'qrtab'+(i==0 ? ' current':'')}); 
@@ -3052,42 +3148,16 @@ var SML_LDR = {
 	   on('click',el,function(e){SML_LDR.custom.add_group(e)});
 	   Dom.add(el2,el); Dom.add(el,par);
 	  }
+	  if(!gvar.smiliegroup && $D('#manage_btn')) $D('#manage_btn').style.display='none';
 	  
-	  el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'},'Manage');
-      Dom.add(el,cont);
-	  on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
-	  el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
-      Dom.add(el,cont);
-	  on('click',el,function(){
-		var mcPar=$D('#manage_container');
-		if(mcPar) Dom.remove(mcPar);
-		SML_LDR.custom.toggle_manage();
-	  });
 
-	  el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn twbtn-m lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
-      Dom.add(el,cont);
-	  on('click',el,function(e){
-      alert( ''
-        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
-        +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
-        +(!gvar.settings.scustom_noparse ? ''
-        +'\n\nUse Custom Smiley BBCODE with this format:'
-        +'\n eg.\n[[yourtag]'
-        :'') + '')
-      });	
-	  
-	  // bikin div kosong utk add group
-	  el = createEl('div',{id:'add_content_'+SML_LDR.scID,style:'display:none;'}); //No Images found
-	  Dom.add(el,$D('#right_'+SML_LDR.scID));
-
-	  Dom.add(cont,$D('#right_'+SML_LDR.scID));
-	}
+    }
    ,close_edit: function(callback){
      // close manage activity || reqrite instead of simulate click on cancel
 	  var mcPar=$D('#manage_container');
 	  if(mcPar) Dom.remove(mcPar);
-	  SML_LDR.custom.toggle_manage();
-      //callback
+	  SML_LDR.custom.toggle_manage();	  
+      //callback if any
 	  if(typeof(callback)=='function') callback();
     }
    ,find_index: function(label){
@@ -3099,14 +3169,12 @@ var SML_LDR = {
 	  if(lis.length > 0){
 	    for(var j=0; j<lis.length; j++){
 		  var ch=getTag('a',lis[j])[0], idx=(ch.id ? ch.id.replace(/tbgrup_/,''):'')
-		  ,dvC=(lis[j].className.indexOf('add_group')!=-1?'add_':'') + csc + (idx ? '_'+gvar.smiliegroup[idx]:'');
+		  ,dvC=(lis[j].className.indexOf('add_group')!=-1?'add_':'') + csc + (idx && gvar.smiliegroup ? '_'+gvar.smiliegroup[idx]:'');
 
 		  dvC=$D('#'+dvC);
 	      if(label && ch.title && ch.title.indexOf(label)==-1){
 		    removeClass('current', lis[j]);
-			//if(dvC) dvC.style.display='none';
 			if(dvC) dvC.innerHTML='';
-			//if(dvC) Dom.remove(dvC);
 		  }else{
 		    addClass('current', lis[j]);
 			if(dvC) dvC.style.display='block';
@@ -3118,38 +3186,54 @@ var SML_LDR = {
       e=e.target||e;
 	  if($D('#current_grup')) $D('#current_grup').value='';
 	  if($D('#current_order')) $D('#current_order').value='';
+	  // save last position
+	  var lp = $D('.current', $D('#ul_group')),cucok=(lp.length>0 ? /id=[\'\"]tbgrup_([^\'\"]+)[\'\"]/i.exec(lp[0].innerHTML.toString()) : false);
+	  gvar.lastpost_grupmnu = (cucok ? cucok[1] : '0');
+
 	  SML_LDR.custom.switch_tab(e.innerHTML);
 	  if($D('manage_btn')) SML_LDR.custom.manage($D('manage_btn'));	  
     }
    ,toggle_manage: function(flag){
 	    if(isUndefined(flag)) flag = ($D('manage_btn') && $D('manage_btn').innerHTML=='Manage');
 		if($D('manage_btn')) $D('manage_btn').innerHTML=(flag?'Save':'Manage');
+		$D('#manage_btn').style.display = (!gvar.smiliegroup ? (flag ? '':'none') : '');
 		/*to show*/
 		if($D('#manage_help')) $D('#manage_help').style.display=(flag?'':'none');
 	    if($D('#manage_cancel')) $D('#manage_cancel').style.display=(flag?'':'none');
 	    if($D('#dv_menu_disabler')) $D('#dv_menu_disabler').style.display=(flag?'':'none');
 		/*to hide*/
 	    if($D('#scustom_container')) $D('#scustom_container').style.display=(flag?'none':'');
-		if(!flag && $D('#current_grup') && $D('#current_grup').value=='') // cancel from add grup
-		   if($D('#tbgrup_0')) SimulateMouse($D('#tbgrup_0'), 'click', true);
+		if(!flag && $D('#current_grup') && $D('#current_grup').value==''){ // cancel from add grup
+		   var L = (gvar.lastpost_grupmnu?gvar.lastpost_grupmnu:'0');
+		   if($D('#tbgrup_'+L)) SimulateMouse($D('#tbgrup_'+L), 'click', true);
+		}
+    }
+   ,delete_group: function(){
+	  var cGrp=$D('#current_grup').value, yadeh=confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nAffirmative, proceed delete group?\n');
+	  if(yadeh){
+	    SML_LDR.custom.manage_save(cGrp);
+	  }
     }
    ,manage: function(e){
 
      var imgtxta,obj,obj2,buff='',cont_id=SML_LDR.scID,task = e.innerHTML;
 	 if(task!='Manage'){
-	    SML_LDR.custom.manage_save(e);
+	    SML_LDR.custom.manage_save();
 	 }else{
 		  var smlset=false;
-		  if($D('#current_order').value!=''){
+		  if($D('#current_order').value!='' && gvar.smiliegroup){
 		    rSRC.getSmileySet(true);
 			smlset = gvar.smiliecustom[gvar.smiliegroup[$D('#current_order').value].toString()];
 		  }
 		  var generateGrup = function(){
-		    var isAvail = function(g){
-			    var ret=false;
+		    if($D('#current_order').value!='' && gvar.smiliegroup) 
+			  return gvar.smiliegroup[$D('#current_order').value];
+			var isAvail = function(g){
+			    if(!gvar.smiliegroup) return true;
+				var ret=false;
 			    for(var k=0;k<gvar.smiliegroup.length;k++){if(gvar.smiliegroup[k]!=g){ret=true;break;}}
 			    return ret;
-			};
+			};			
 			var nG = 'untitled_'+Math.floor(Math.random()*100),MX=10,oK=isAvail(nG);
 			if(!oK) while(!oK && MX--){
 			  nG = 'untitled_'+Math.floor(Math.random()*100)
@@ -3173,10 +3257,18 @@ var SML_LDR = {
 		  Dom.add(mcPar, $D('#right_'+cont_id));
           Attr = {'class':'smallfont'};
           obj = createEl('div',Attr,'&nbsp;<b>'+($D('#current_grup') && $D('#current_grup').value==''?'Add ':'')+'Group</b>:&nbsp;');
-          Attr = {id:'input_grupname','class':'input_title',title:'Group Name',style:'width:200px',value:gvar.smiliegroup[$D('#current_order').value]||generateGrup() };
+          Attr = {id:'input_grupname','class':'input_title',title:'Group Name',style:'width:200px',value:generateGrup()};
           obj2 = createEl('input',Attr);
 		  on('keydown',obj2,function(e){var C=(!e?window.event:e);if(C.keyCode==13){C = do_an_e(C);SML_LDR.custom.manage_save();}else{return C;}});
-		  Dom.add(obj2,obj);Dom.add(obj,mcPar);
+		  on('focus',obj2,function(e){selectAll(e)});
+		  Dom.add(obj2,obj);		  
+          if($D('#current_order').value!=''){ // not add group?
+		    Attr = {id:'delete_grupname',href:'javascript:;','class':'smallfont',style:'margin-left:20px;color:red;',title:'Delete this Group'};
+            obj2 = createEl('a',Attr,'delete');
+		    on('click',obj2,function(){SML_LDR.custom.delete_group()});
+		    Dom.add(obj2,obj);
+		  }
+		  Dom.add(obj,mcPar);
 		  
           Attr = {id:'textarea_'+cont_id,'class':'textarea txta_smileyset'};
           imgtxta = createEl('textarea',Attr,buff);
@@ -3202,33 +3294,39 @@ var SML_LDR = {
 		  }, 50);
 	 }
     }
-   ,manage_save: function(){
+   ,manage_save: function(todel){
 		// task save 
         var mcPar=$D('#manage_container'),buff=false,cont_id=SML_LDR.scID;
 		var	lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
-		var remixBuff = function(niubuf){
+		var remixBuff = function(niubuf, nodel){
 		   // ['<!>','<!!>']; 
-		   var ret='',curG=[$D('#current_order').value, $D('#current_grup').value]
-		    , grup=trimStr($D('#input_grupname').value.replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_'));
+		   var ret='',curG=[$D('#current_order').value, $D('#current_grup').value],grup;
+		   var cleanGrup = function(){
+		     return trimStr($D('#input_grupname').value.replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_'));
+		   };grup=cleanGrup();
 		   var ch_grup, CS=getValue(KS+'CUSTOM_SMILEY'), CRaw=CS.split('<!>'), CR_OBJ={}, part;
 		   for(var n=0;n<CRaw.length;n++){
 		     part=CRaw[n].split('<!!>');
 		     CR_OBJ[String(part[0])]=String(part[1]);
 		   }
 		   ch_grup=(curG[1]!='' && grup!='' && grup!=curG[1]);
-		   if(curG[0]!='' && curG[1]!=''){			 
+		   if(curG[0]!='' && curG[1]!='' && gvar.smiliegroup){
 		     for(var k=0;k<gvar.smiliegroup.length;k++){
 				if(gvar.smiliegroup[k]==curG[1]){
+				  if(nodel){
 				   CR_OBJ[gvar.smiliegroup[k].toString()] = niubuf.toString();
-				   grup=trimStr(ch_grup ? $D('#input_grupname').value : curG[1]).replace(/\!/g,'\\!');
+				   grup=trimStr(ch_grup ? cleanGrup() : curG[1]).replace(/\!/g,'\\!');
+				  }else{
+				   grup=false;
+				  }
 				}else{
 				   grup=gvar.smiliegroup[k];
 				}
-			    ret+=grup.toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()]+( (k+1)<gvar.smiliegroup.length?'<!>':'');
+			    ret+=(grup ? grup.toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()]+( (k+1)<gvar.smiliegroup.length?'<!>':'') : '');
 		     }
 		   }else{
 		     var joined=false;
-		     for(var k=0;k<gvar.smiliegroup.length;k++){
+		     if(gvar.smiliegroup) for(var k=0;k<gvar.smiliegroup.length;k++){
 			    joined=joined||(gvar.smiliegroup[k]==grup);
 				ret+=gvar.smiliegroup[k].toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()] +(joined ? niubuf.toString():'') + ( (k+1)<gvar.smiliegroup.length?'<!>':'');
 			 }
@@ -3236,29 +3334,32 @@ var SML_LDR = {
 		   }
 		   return ret;
 		};
-        imgtxta = $D('#textarea_'+cont_id);
-        if(imgtxta) buff = do_filter_scustom(imgtxta.value).toString();		
-        gvar.settings.scustom_alt = ($D('#scustom_alt') && $D('#scustom_alt').checked);
-        gvar.settings.scustom_noparse = ($D('#scustom_noparse') && $D('#scustom_noparse').checked);
+		if(isUndefined(todel)){
+          imgtxta = $D('#textarea_'+cont_id);
+          if(imgtxta) buff = do_filter_scustom(imgtxta.value).toString();
+          gvar.settings.scustom_alt = ($D('#scustom_alt') && $D('#scustom_alt').checked);
+          gvar.settings.scustom_noparse = ($D('#scustom_noparse') && $D('#scustom_noparse').checked);
+		}else{
+		  buff='delete-group';
+		}
 		if(trimStr($D('#input_grupname').value)==''){
 		   alert('Group Name can not be empty');
-		   SML_LDR.custom.toggle_manage();
-		   return;
-		}
+		} else
            //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
-        if( (buff && SML_LDR.custom.lastload!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse ) {
-          setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
-          setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
-          
-		  //clog(buff);
-		  setValue(KS+'CUSTOM_SMILEY', remixBuff(buff)); //save custom smiley
-          rSRC.getSmileySet(true); // load only custom
-		  SML_LDR.custom.toggle_manage();
-		  if($D('#right_scustom_container')) $D('#right_scustom_container').innerHTML='<div id="scustom_container"></div>';
-          window.setTimeout(function() {
-			SML_LDR.init(cont_id,gvar.smiliecustom);
-          }, 200);
+          if( (buff && SML_LDR.custom.lastload!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse ) {
+            setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
+            setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser            
+		    setValue(KS+'CUSTOM_SMILEY', remixBuff(buff, (isUndefined(todel)) )); //save custom smiley			
         }
+		// cold-boot
+		delete(gvar.smiliegroup); // require to refresh left mnu
+		rSRC.getSmileySet(true); // load only custom		
+		SML_LDR.custom.toggle_manage();
+		if($D('#right_scustom_container')) $D('#right_scustom_container').innerHTML='<div id="scustom_container"></div>';
+        window.setTimeout(function() {
+	        SML_LDR.init(cont_id,gvar.smiliecustom);
+			SML_LDR.custom.tab_menu_left();
+        }, 200);
 	} //end manage_save
  } // end custom
 };
@@ -4347,7 +4448,8 @@ Format will be valid like this:
   if(buff!=''){
     gvar.smiliegroup=[];
     var grup,ret,extractSmiley=function(partition){
-      var idx=1,sepr = ',',customs={};
+      if(!partition) return false;
+	  var idx=1,sepr = ',',customs={};
 	  var smileys = partition.split(sepr);
       if(isDefined(smileys[0]))
        for(var i in smileys){
@@ -4361,26 +4463,28 @@ Format will be valid like this:
 	};
 	if(buff.indexOf('<!!>')==-1){ // old raw-data
 	  ret = extractSmiley(buff);
-	  grup='untitled';
-	  gvar.smiliecustom[grup.toString()] = ret;	  
-	  gvar.smiliegroup.push(grup);
+	  if(ret){
+	    grup='untitled';
+	    gvar.smiliecustom[grup.toString()] = ret;	  
+	    gvar.smiliegroup.push(grup);
+	  }
 	}else{
 	  // spliter: ['<!>','<!!>']; 
-	  // '<!>' each group; '<!!>' group w/ its data
+	  // '<!>' split each group; '<!!>' split group and raw-data
 	  var parts = buff.split('<!>'),part2;
 	  for(var i=0; i<parts.length; i++){
 	    part2=parts[i].split('<!!>');
-		//part2[0]=part2[0].replace('\!','!');
 		part2[0]=part2[0].replace(/\\!/g,'!');
 		if(part2.length > 0){
 		  ret = extractSmiley(part2[1]);
-		  gvar.smiliecustom[part2[0].toString()] = ret;
-		  //gvar.smiliegroup.push(part2[0].replace(/\\!/g,'!'));
-		  gvar.smiliegroup.push(part2[0].toString());
+		  if(ret){
+		   gvar.smiliecustom[part2[0].toString()] = ret;
+		   gvar.smiliegroup.push(part2[0].toString());
+		  }
 		}
-	  }  
+	  }  // end for
 	}
-  }
+  } // end is buff
   if(isDefined(custom) && custom) return;
   
   gvar.smiliekecil = {
