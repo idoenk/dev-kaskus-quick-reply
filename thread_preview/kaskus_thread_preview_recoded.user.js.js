@@ -2,7 +2,7 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
-// @dtversion     110120104
+// @dtversion     110131104
 // @timestamp     1295935726807
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
@@ -18,8 +18,9 @@
 //
 // -!--latestupdate
 //
-//  v1.0.4 - 2011-01-20
-//    Attach (infinite) autogrow w/ jQuery
+//  v1.0.4 - 2011-01-31
+//    Fix try force stop() onclosing popup (stop every download activity)
+//    Fix autogrow (use Module by Sophia.B, -iGoogle)
 //    Improve fix preview for vBul4 (unfinished)
 //    Add setting node-state (beta)
 //    Fix preserve subscription's folderid
@@ -62,7 +63,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug| 
+gvar.__DEBUG__ = false; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -134,10 +135,7 @@ function init(){
   GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 ); // to body for css-fixed
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
-  GM_addGlobalScript('http:\/\/ajax\.googleapis\.com\/ajax\/libs\/jquery\/1.4.4\/jquery\.min\.js');
   GM_addGlobalScript( rSRC.getSCRIPT() );
-  GM_addGlobalScript( rSRC.getSCRIPT_Elastic() );
-  GM_addGlobalStyle( '', 'elastic_trigger', 1 ); // to body for elsatic-trigger
 
   //-----Let's Roll-------
     start_Main();
@@ -456,8 +454,7 @@ var tTRIT = {
 	    var yakin = confirm('Discard content text on Quick-Reply?');
 		if(yakin)
 		  tPOP.closeLayerBox('hideshow');
-	  }	  
-	  return;
+	  }
     }
   }
  ,is_closed_thread: function(text){ // text-mode
@@ -1200,6 +1197,9 @@ var tPOP = {
 	if(gvar.current.cRow) removeClass('selected_row', gvar.current.cRow);
  }
  ,closeLayerBox: function(tgt, direct){
+	if(window.stop !== undefined){window.stop();}
+	else if(document.execCommand !== undefined){document.execCommand("Stop", false);}
+
 	if(gvar.current.cRow){
 	  var lastRow = gvar.current.cRow;
 	  if(gvar.settings.thread_lastscroll && gvar.settings.fixed_preview){
@@ -1279,7 +1279,6 @@ var tQR = {
 		  var C = (!e ? window.event : e ); C = do_an_e(C);
 		});
 		Dom.g(gvar.id_textarea).removeAttribute('disabled');
-		SimulateMouse($D('#hidrecap_elastic_btn'), 'click', true);
       } // end #recaptcha_response_field
     }, 200); // end sITryFocusOnLoad
     
@@ -1371,6 +1370,7 @@ var tQR = {
 	    vB_textarea.focus();
 		if(gvar.settings.autoload_smiley[0]=='1')
          tQR.create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
+		vB_textarea.setElastic();
 	  };
 	
 	  if( !gvar.current.QR_isLoaded ){
@@ -1383,6 +1383,7 @@ var tQR = {
 	    gvar.current.QR_isLoaded = 1;
 	  }
 	  vB_textarea.init();
+	  vB_textarea.Obj.style.height='100px';
 	  if( gvar.current.qr_fetch!=vB_textarea.content )
 	    vB_textarea.add(gvar.current.qr_fetch);
 		
@@ -2760,7 +2761,7 @@ var vB_textarea = {
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.set('');
     this.enabled();
-    //if(gvar.settings.textareaExpander[0]) this.adjustGrow();
+	this.Obj.style.height='1px'; // min-height should be set before
     this.focus();
   },
   readonly: function(id){
@@ -2825,6 +2826,14 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
     return bufValue; 
+  },
+  setElastic: function(){
+    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
+    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
+	var a=this.Obj||Dom.g(gvar.id_textarea);
+	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
+	Dom.Ev(a,'keyup', function(){setCols_Elastic()});
+	window.setTimeout(function(){setCols_Elastic()}, 110);
   }
 //
 };
@@ -2832,18 +2841,7 @@ var vB_textarea = {
 
 
 var rSRC = {
- getSCRIPT_Elastic: function(type){
-   return(""
-   +"(function(jQuery){jQuery.fn.extend({elastic:function(){var mimics=['paddingTop','paddingRight','paddingBottom','paddingLeft','fontSize','lineHeight','fontFamily','width','fontWeight'];return this.each(function(){if(this.type!='textarea'){return false;}"
-   +"var $textarea=jQuery(this),$twin=jQuery('<div />').css({'position':'absolute','display':'none','word-wrap':'break-word'}),lineHeight=parseInt($textarea.css('line-height'),10)||parseInt($textarea.css('font-size'),'10'),minheight=parseInt($textarea.css('height'),10)||lineHeight*3,maxheight=parseInt($textarea.css('max-height'),10)||Number.MAX_VALUE,goalheight=0,i=0;if(maxheight<0){maxheight=Number.MAX_VALUE;}"
-   +"$twin.appendTo($textarea.parent());var i=mimics.length;while(i--){$twin.css(mimics[i].toString(),$textarea.css(mimics[i].toString()));}"
-   +"function setHeightAndOverflow(height,overflow){curratedHeight=Math.floor(parseInt(height,10));if($textarea.height()!=curratedHeight){$textarea.css({'height':curratedHeight+'px','overflow':overflow});}}"
-   +"function update(){var textareaContent=$textarea.val().replace(/&/g,'&amp;').replace(/  /g,'&nbsp;').replace(/<|>/g,'&gt;').replace(/\\n/g,'<br />');var twinContent=$twin.html();if(textareaContent+'&nbsp;'!=twinContent){$twin.html(textareaContent+'&nbsp;');if(Math.abs($twin.height()+lineHeight-$textarea.height())>3){var goalheight=$twin.height()+lineHeight;if(goalheight>=maxheight){setHeightAndOverflow(maxheight,'auto');}else if(goalheight<=minheight){setHeightAndOverflow(minheight,'hidden');}else{setHeightAndOverflow(goalheight,'hidden');}}}}"
-   +"$textarea.css({'overflow':'hidden'});$textarea.keyup(function(){update();});$textarea.live('input paste',function(e){setTimeout(update,250);});update();});}});})(jQuery);"   
-   +"function elastic_trigger(){$('#"+gvar.id_textarea+"').elastic();};"
-   );   
- }
-,getSetOf: function(type){
+ getSetOf: function(type){
   if(isUndefined(type)) return false;
   switch(type){
     case "button":
@@ -3199,7 +3197,7 @@ Format will be valid like this:
     +'.controlbar{text-align:left;}'
     +'.txta_cont{min-width:100%;width:100%;padding-right:5px;}'
 	+'#controller_wraper{border:1px solid transparent;background-color:transparent;margin-top:-20px;line-height:80px;}'
-	+'.textarea{clear:both;height:100px;width:100%;}'
+	+'.textarea{/* clear:both; */width:100%;min-height:95px;}'
     +'.panelsurrounds .panel, .imagebutton{background:#DFDFE0;}'
     +'.imagebutton:hover, .imagebutton_color:hover{cursor:pointer;}'
     +'.customed_addcontroller img, .imagebutton img, .ofont, .osize{color:#000;border:1px solid transparent;background-color:transparent;}'
@@ -3488,7 +3486,7 @@ Format will be valid like this:
  + '<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
  +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
  + '</div></td>'
- + '<td id="recapctha_header" valign="bottom">reCAPTCHA&nbsp;&nbsp;</td>'
+ + '<td>&nbsp;</td>'
  + '</tr><tr>' 
  // vB_Editor_QR_textarea
  +  '<td class="txta_cont panelsurrounds">'
@@ -3498,7 +3496,8 @@ Format will be valid like this:
  +   '</div></div>'
  
  +  '</td>' 
- +   '<td id="recaptcha_cont" valign="top">'
+ +   '<td id="recaptcha_cont" valign="bottom">'
+ +    '<div id="recapctha_header" style="float:right;margin-top:-15px;">reCAPTCHA&nbsp;</div>'
  +    '<div id="recaptcha_container" style="text-align:center;">'
  +      '<div>'+_LOADING+'</div>'
  +    '</div>'
@@ -3510,7 +3509,6 @@ Format will be valid like this:
  +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'    
  +  '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:;" onclick="showRecaptcha(\'recaptcha_container\');" />' // remote create
  +  '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:;" onclick="Recaptcha.reload();" />' // remote reload
- +  '<input id="hidrecap_elastic_btn" value="elastic" type="button" style="visibility:hidden; position:absolute; left:-10000px;" onclick="elastic_trigger();" />' // remote elastic
  +'</fieldset>'
  );
 }
@@ -3528,7 +3526,7 @@ Format will be valid like this:
   +  '</div>' // end #vB_Editor_001_controls
   +  '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
   +   '<tr><td class="controlbar">'
-  +     '<textarea name="message" id="'+gvar.id_textarea+'" class="textarea" rows="10" tabindex="201" dir="ltr" disabled="disabled"></textarea>'
+  +     '<textarea name="message" id="'+gvar.id_textarea+'" class="textarea" rows="5" tabindex="201" dir="ltr" disabled="disabled" style=""></textarea>'
   +   '</td></tr>'
   +  '</table>'
   +'</td></tr>'
