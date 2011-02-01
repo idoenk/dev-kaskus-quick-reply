@@ -5,7 +5,7 @@
 // @include       http://localhost/test-kaskus/showthread.php*
 // @version       3.1.2
 // @dtversion     110201312
-// @timestamp     1296570503674
+// @timestamp     1296571680160
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -58,7 +58,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1296570503674 // version.timestamp
+  timestamp: 1296571680160 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -4987,8 +4987,8 @@ Format will be valid like this:
  }
  ,getTPL_Settings_About: function(){
 	var E={
-	   'Quick Reply+':{t:6616714,tt:'Add-ons Kaskus Quick Reply + [QR]',tsl:572275,ts:'slifer2006'}
-	  ,'Emoticon Corner':{t:6849735,tt:'Emoticon Corner',tsl:1323912,ts:'Piluze'}
+	   'Quick Reply+':{t:6616714,tt:'Add-ons Kaskus Quick Reply + [QR]',tsl:1323912,ts:'Piluze'}
+	  ,'Emoticon Corner':{t:6849735,tt:'Emoticon Corner',tsl:572275,ts:'slifer2006'}
 	},T={
 	   'Firefox':{t:3170414,tt:'Add-Ons Firefox Plus Script - [UPDATE]',tsl:601361,ts:'thiaz4rhytem'}
 	  ,'Opera':{t:6595796,tt:'[Rebuild] '+HtmlUnicodeDecode('&#187;')+' Opera Community',tsl:786407,ts:'ceroberoz'}
@@ -4997,7 +4997,7 @@ Format will be valid like this:
 	for(var i in T)
 	  QT+= ' '+HtmlUnicodeDecode('&#167;')+' <a href="'+st+T[i].t+'"'+bl+' title="'+T[i].tt+'">'+i+'</a> <a href="'+mb+T[i].tsl+'"'+bl+' title="TS: '+T[i].ts+'">*</a>';
 	QT+='<br>Other:';for(var i in E)
-	  QT+='<br> - <a href="'+st+E[i].t+'"'+bl+'>'+i+'</a> <a href="'+mb+E[i].tsl+'"'+bl+' title="TS: '+E[i].ts+'">*</a>&nbsp;';
+	  QT+='<br> - <a href="'+st+E[i].t+'"'+bl+' title="'+E[i].tt+'">'+i+'</a> <a href="'+mb+E[i].tsl+'"'+bl+' title="TS: '+E[i].ts+'">*</a>&nbsp;';
 	
 	return (''
 	 +'<div id="about_container" class="qrsmallfont" style="">'
