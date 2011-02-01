@@ -4,8 +4,8 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://localhost/test-kaskus/showthread.php*
 // @version       3.1.2
-// @dtversion     110130312
-// @timestamp     1296340376989
+// @dtversion     110201312
+// @timestamp     1296570503674
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,13 +14,17 @@
 //
 // -!--latestupdate
 //
-// v3.1.2 - 2011-01-22
+// v3.1.2 - 2011-02-01
+//   Add 2 New Kaskus Emotes(Cool, Bola)
+//   Notify collision w/ QR+
 //   Fix on parsing bbcode custom smiley
 //   Add Grouped customsmiley (beta-2)
 //   Fix autogrow (use Module by Sophia.B, -iGoogle)
 //   Fix auto SET(Sigi & Layout) before Save Setting
 //
 // -/!latestupdate---
+// ==/UserScript==
+/*
 // v3.1.1 - 2011-01-19
 //   Fix minor normalize behaviour @general Setting
 //   Fix failed iterate in Array (FF 4.0b10)
@@ -31,20 +35,6 @@
 //   Fix failed find_parent (Obfuscated table id)
 //   Improve reorder smiley(besar), Add missing emote :bingung
 //   Lil fix on Updater.mparser(); Precheck '#upd_notify' element
-//   
-// ==/UserScript==
-/*
-//
-// v3.1.0 - 2011-01-03
-//   Fix (Opera) disabled checkbox QR-Hotkey on Settings not well-defined as 'checked'
-//   Fix prefer to define 'var' on global namespace (major issue Opera-11)
-//   Fix typo in getTPL mismatch syntax
-//   Fix check exist element before giving Event on toggle_setting
-//   Fix (Opera), deprecate isOpera, due-to missing hotkey checkbox element on TPL_Settings.
-//
-// v3.0.9 - 2011-01-01
-//   Fix (Opera) missing hotkey checkbox element on Settings
-//   Fix failed show Settings when all controllers hide
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -58,12 +48,17 @@
 */
 (function () {
 
+const isQR_PLUS      = 0; // purpose for QR+ pack
+if( oExist(isQR_PLUS) ){
+  delete gvar; return;
+}
+
 // Initialize Global Variables
 var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1296340376989 // version.timestamp
+  timestamp: 1296570503674 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -73,7 +68,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = 0; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -106,8 +101,8 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
 };
-const GMSTORAGE_PATH      = 'GM_';
-const KS            = 'KEY_SAVE_';
+const GMSTORAGE_PATH = 'GM_';
+const KS             = 'KEY_SAVE_';
 
 // initialize assign global var
 function init(){
@@ -127,7 +122,7 @@ function init(){
   
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
   gvar.avatarLink= gvar.domainstatic + 'customavatars/';
-  gvar.titlename= 'Quick Reply';
+  gvar.titlename= 'Quick Reply'+(isQR_PLUS?'+':'');
   gvar.fullname= 'Kaskus '+gvar.titlename;
   gvar.scriptId= '80409';
 
@@ -168,13 +163,21 @@ function init(){
 
   if(gvar.settings.widethread)
     Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
-  
+    
   //------------
   start_Main();
   //------------
   
-  if(!gvar.noCrossDomain && gvar.settings.updates)
+  if(!gvar.noCrossDomain && gvar.settings.updates && !isQR_PLUS)
     window.setTimeout(function(){ Updater.check(); }, 5000);
+}
+
+// preprepre-Initialized
+function oExist(P){
+  // dari sejak awal aj klo ada node #quickreply, assume collision X
+  var q=document.getElementById('quickreply');
+  if(q) alert('QR'+(!P?' userscript':'+')+' load aborted.\n#quickreply already created.\nYou have to disable one of these QR script or QR+');
+  return q;
 }
 
 // populate settings value
@@ -1724,43 +1727,6 @@ function do_parse_scustom(msg){
   return buf;
 }
 
-/*
-    var grup,ret,extractSmiley=function(partition){
-      var idx=1,sepr = ',',customs={};
-	  var smileys = partition.split(sepr);
-      if(isDefined(smileys[0]))
-       for(var i in smileys){
-         if(isString(smileys[i]) && smileys[i]!=''){
-           var parts = smileys[i].split('|');
-           customs[idx.toString()] = (isDefined(parts[1]) ? [parts[1], parts[0], parts[0]] : smileys[i]);
-           idx++;
-         }
-       }
-	  return customs;
-	};
-	if(buff.indexOf('<!!>')==-1){ // old raw-data
-	  ret = extractSmiley(buff);
-	  grup='untitled';
-	  gvar.smiliecustom[grup.toString()] = ret;	  
-	  gvar.smiliegroup.push(grup);
-	}else{
-	  // spliter: ['<!>','<!!>']; 
-	  // '<!>' each group; '<!!>' group w/ its data
-	  var parts = buff.split('<!>'),part2;
-	  for(var i=0; i<parts.length; i++){
-	    part2=parts[i].split('<!!>');
-		//part2[0]=part2[0].replace('\!','!');
-		part2[0]=part2[0].replace(/\\!/g,'!');
-		if(part2.length > 0){
-		  ret = extractSmiley(part2[1]);
-		  gvar.smiliecustom[part2[0].toString()] = ret;
-		  //gvar.smiliegroup.push(part2[0].replace(/\\!/g,'!'));
-		  gvar.smiliegroup.push(part2[0].toString());
-		}
-	  }  
-	}
-
-*/
 
 // here we load and prep paired custom smiley to do parsing purpose
 // make it compatible for old structure, which no containing <!!>
@@ -2851,7 +2817,8 @@ var GM_XHR = {
 var Updater = {
   caller:''
  ,check: function(forced){
-    var intval = (1000*60*60*gvar.settings.updates_interval);
+    if(!isQR_PLUS) return;
+	var intval = (1000*60*60*gvar.settings.updates_interval);
     if((forced)||(parseInt(getValue(KS+"QR_LastUpdate", "0")) + parseInt(intval) <= (new Date().getTime()))) {
      gvar.updateForced = forced;
 	 if(!forced) Updater.caller='';
@@ -3388,7 +3355,6 @@ var ST = {
 	if($D('#chk_select_all')) on('click',$D('#chk_select_all'),function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
 	
 	// having child set
-	//elSet = ['misc_updates','misc_autoexpand_0','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
 	elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
 	for(var i=0;i<cL;i++)
 	   if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.toggle_childs(e); });
@@ -4404,7 +4370,7 @@ var rSRC = {
         +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA1"
 		+"4gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B2"
 		+"07ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
-      ,setting_gif : "" // more-color
+      ,setting_gif : ""
         +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAABnRSTlMAPwBIAMyhjHolAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEmElE"
 		+"QVR42oWUW2hcZRDH51z2nL1kk7O7SdPEJiaxjfRirdaWei+0gmgRH0QoKBZafNGnCmLFFqmC4JO++KZUUqnYCj60qKiILRil8cG46SW9mE3aZDfb7GZ3z55zvsvM+JC"
 		+"QttrgvHwwzP/HDN/M33jy6RFYJg7t6QGAYl0DwEDCCWJ0+MjUcsX2HbND765N9cSstGnHTWSDCFCTCvjT+9Ozl+SBTy7/V2L8q6PP3xz0NibcjE0miAlZm1TRrFYazD"
@@ -4648,8 +4614,12 @@ Format will be valid like this:
 ,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
 ,'538': [H+'traveller.gif', ':travel', 'Traveller']
 
-/* Dec-2010, :kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
+/* 2010Dec,:kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
 ,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+
+/* 2011Jan,:cool,:bola*/
+,'540': [H+'cool2.gif', ':cool', 'Cool']
+,'541': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
@@ -4702,10 +4672,10 @@ Format will be valid like this:
     
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+HtmlUnicodeDecode('&#8212;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(!isQR_PLUS?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
-	+'<div style="position:absolute;right:55px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:3px 0 0 3px;">Settings</div></a></div>'
+	+'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
     +'</td></tr></thead>'
 	
     +'<tbody id="collapseobj_quickreply" style="display:'+(gvar.settings.qrtoggle==1?'':'none')+';"><tr><td class="panelsurround" align="center">'
@@ -4976,8 +4946,8 @@ Format will be valid like this:
 
  ,getTPL_Preview: function(tipe){
   var prop = {
-     'settings' : 'Settings Quick Reply<span id="fsize" style="display:none;"></span><span id="subtitle" style="float:right;margin-right:5px;"></span>'
-    ,'preview' : 'Preview Quick Reply'
+     'settings' : 'Settings '+gvar.titlename+'<span id="fsize" style="display:none;"></span><span id="subtitle" style="float:right;margin-right:5px;"></span>'
+    ,'preview' : 'Preview '+gvar.titlename
   };
   if( isUndefined(prop[tipe]) ) return;
   return (''
@@ -5016,10 +4986,22 @@ Format will be valid like this:
 	);
  }
  ,getTPL_Settings_About: function(){
-    var spacer = '<div style="height:5px;"></div>';
+	var E={
+	   'Quick Reply+':{t:6616714,tt:'Add-ons Kaskus Quick Reply + [QR]',tsl:572275,ts:'slifer2006'}
+	  ,'Emoticon Corner':{t:6849735,tt:'Emoticon Corner',tsl:1323912,ts:'Piluze'}
+	},T={
+	   'Firefox':{t:3170414,tt:'Add-Ons Firefox Plus Script - [UPDATE]',tsl:601361,ts:'thiaz4rhytem'}
+	  ,'Opera':{t:6595796,tt:'[Rebuild] '+HtmlUnicodeDecode('&#187;')+' Opera Community',tsl:786407,ts:'ceroberoz'}
+	  ,'Google-Chrome':{t:3319338,tt:'[Updated] Extensions/ Addons Google Chrome',tsl:449547,ts:'Aerialsky'}
+	},spacer = '<div style="height:5px;"></div>',mb='/member.php?u=',st='/showthread.php?t=',bl=' target="_blank" ',QT='<br><b>#QR</b> Topic<br>CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span>:<br>';
+	for(var i in T)
+	  QT+= ' '+HtmlUnicodeDecode('&#167;')+' <a href="'+st+T[i].t+'"'+bl+' title="'+T[i].tt+'">'+i+'</a> <a href="'+mb+T[i].tsl+'"'+bl+' title="TS: '+T[i].ts+'">*</a>';
+	QT+='<br>Other:';for(var i in E)
+	  QT+='<br> - <a href="'+st+E[i].t+'"'+bl+'>'+i+'</a> <a href="'+mb+E[i].tsl+'"'+bl+' title="TS: '+E[i].ts+'">*</a>&nbsp;';
+	
 	return (''
 	 +'<div id="about_container" class="qrsmallfont" style="">'
-	 +'<b>'+gvar.fullname+' (QR) '+gvar.sversion+'</b><br>'
+	 +'<b>'+gvar.fullname+' '+gvar.sversion+' '+(isQR_PLUS?' &nbsp;&nbsp;(ADDON)':'')+'</b><br>'
 	 +spacer
 	 +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">'+gvar.fullname+'</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
 	 +'<div style="height:10px;"></div>'
@@ -5033,6 +5015,7 @@ Format will be valid like this:
 	 +'<b>Contributors:</b>'
 	 +'<div style="height:'+(gvar.isBuggedChrome ? '248':'220')+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
 	 +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
+	 +QT
 	 +'</div>'
 	 +'</div>' // #about_container
 	);
@@ -5046,7 +5029,7 @@ Format will be valid like this:
 	 +spacer
 	 +'<em>Globaly on showthread page</em><br>'
 	 +'<b>Esc</b> - Close Active-Popup [Preview, Input reCapcay, Settings]<br>'
-	 +'<b>Ctrl + Q</b> - Focus to Quick Reply Editor Now. (<a id="customable_btn" href="javascript:;">customable</a>)<br>'
+	 +'<b>Ctrl + Q</b> - Focus to '+gvar.titlename+' Editor Now. (<a id="customable_btn" href="javascript:;">customable</a>)<br>'
 	 +'<b>Alt + Q</b> - Fetch Quoted Post<br>'
 	 +'<b>Ctrl + Alt + Q</b> - Fetch Quoted Post <span class="opr">(Opera)</span><br>'
 	 +'<b>Ctrl + Shift + Q</b> - Deselect All Quoted Post<br>'
@@ -5055,8 +5038,8 @@ Format will be valid like this:
 	 +'<b>Ctrl + Enter</b> - Post Reply<br>'
 	 +'<b>Alt + S</b> - Post  Reply<br>'
 	 +'<b>Shift + Alt + S</b> - Post Reply <span class="opr">(Opera)</span><br>'
-	 +'<b>Alt + P</b> -  Preview Quick Reply<br>'
-	 +'<b>Shift + Alt + P</b> -  Preview Quick Reply <span class="opr">(Opera)</span><br>'
+	 +'<b>Alt + P</b> -  Preview '+gvar.titlename+'<br>'
+	 +'<b>Shift + Alt + P</b> -  Preview '+gvar.titlename+' <span class="opr">(Opera)</span><br>'
 	 +'<b>Alt + X</b> -  Go Advanced<br>'
 	 +'<b>Shift + Alt + X</b> -  Go Advanced <span class="opr">(Opera)</span><br>'
 	 +spacer
@@ -5087,10 +5070,10 @@ Format will be valid like this:
     var spacer = '<div style="height:5px;">&nbsp;</div>';
 	return (''
 	 +'<div id="general_container" class="qrsmallfont">'
-     +(!gvar.noCrossDomain ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
-     +(!gvar.noCrossDomain ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
+     +(!gvar.noCrossDomain && !isQR_PLUS ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
+     +(!gvar.noCrossDomain && !isQR_PLUS ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
-     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR</label>'
+     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS?'+':'')+'</label>'
      +spacer
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
      +spacer
