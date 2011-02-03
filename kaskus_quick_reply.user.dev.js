@@ -2,10 +2,9 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @include       http://localhost/test-kaskus/showthread.php*
-// @version       3.1.2
-// @dtversion     110201312
-// @timestamp     1296571680160
+// @version       3.1.3
+// @dtversion     110204313
+// @timestamp     1296759231400
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,17 +13,21 @@
 //
 // -!--latestupdate
 //
-// v3.1.2 - 2011-02-01
-//   Add 2 New Kaskus Emotes(Cool, Bola)
-//   Notify collision w/ QR+
-//   Fix on parsing bbcode custom smiley
-//   Add Grouped customsmiley (beta-2)
-//   Fix autogrow (use Module by Sophia.B, -iGoogle)
-//   Fix auto SET(Sigi & Layout) before Save Setting
+// v3.1.3 - 2011-02-04
+//   Fix failed update checker
+//   Improve autogrow on Edit(Sigi & Layout)
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+// v3.1.2 - 2011-02-01
+//   Add 2 New Kaskus Emotes(Cool, Bola)
+//   Notify collision w/ QR+
+//   Fix on parsing bbcode custom smiley
+//   Add Grouped customsmiley
+//   Fix autogrow (use Module by Sophia.B, -iGoogle)
+//   Fix auto SET(Sigi & Layout) before Save Setting
+//
 // v3.1.1 - 2011-01-19
 //   Fix minor normalize behaviour @general Setting
 //   Fix failed iterate in Array (FF 4.0b10)
@@ -58,7 +61,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.2';
 gvar.scriptMeta = {
-  timestamp: 1296571680160 // version.timestamp
+  timestamp: 1296759231400 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -168,7 +171,7 @@ function init(){
   start_Main();
   //------------
   
-  if(!gvar.noCrossDomain && gvar.settings.updates && !isQR_PLUS)
+  if(!gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS==0)
     window.setTimeout(function(){ Updater.check(); }, 5000);
 }
 
@@ -2726,13 +2729,14 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
   },
-  setElastic: function(){
-    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
-    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
-	var a=this.Obj||Dom.g(gvar.id_textarea);
-	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
-	on('keyup',a,function(){setCols_Elastic()});
-	window.setTimeout(function(){setCols_Elastic()}, 110);
+  setElastic: function(tid,max){
+    if(isUndefined(tid)) tid=gvar.id_textarea;
+	function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7)); setRows_Elastic(max)}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
+	var a=Dom.g(tid)||this.Obj;
+	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px;'+(max?'max-height:'+max+'px;':''));
+	on('keyup',a,function(){setCols_Elastic(max)});
+	window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
 };
 // Get Elements
@@ -2817,7 +2821,7 @@ var GM_XHR = {
 var Updater = {
   caller:''
  ,check: function(forced){
-    if(!isQR_PLUS) return;
+    if(isDefined(isQR_PLUS) && isQR_PLUS!==0) return;
 	var intval = (1000*60*60*gvar.settings.updates_interval);
     if((forced)||(parseInt(getValue(KS+"QR_LastUpdate", "0")) + parseInt(intval) <= (new Date().getTime()))) {
      gvar.updateForced = forced;
@@ -3752,6 +3756,7 @@ var ST = {
     var tgt = Dom.g(_task+'_Editor'); tgt.innerHTML='';
     var el = createEl('textarea',{id:_task+'_txta',style:'margin-top:3px;'}, value);
     Dom.add(el, tgt); tgt.style.display='';
+	vB_textarea.setElastic(_task+'_txta',75);
     window.setTimeout(function(e) { try{Dom.g(_task+'_txta').focus();}catch(e){} }, 100);
   };  
   if(todo=='edit'){    
