@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.16
-// @dtversion     11012016
-// @timestamp     1295524490994
+// @version       1.17
+// @dtversion     11021017
+// @timestamp     1297357047234
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -14,10 +14,13 @@
 // Released under the GPL license; http://www.gnu.org/copyleft/gpl.html
 //
 // ----CHANGE LOG-----
+// mod.R.17 : 2011-02-10
+// Fix some regex parseIt()
+// ==/UserScript==
 /*
+// 
 // mod.R.16 : 2011-01-20
 // Fix failed get reputation rank title
-// 
 // 
 // mod.R.15 : 2011-01-17
 // Fix missing reputation rank title
@@ -30,23 +33,20 @@
 // mod.R.13 : 2011-01-03
 // Fix prefer to define 'var' on global namespace (major issue Opera-11)
 // 
-//
-//
 // mod.R.2 : 2010-01-08
 */
 /*
  :: About this script ::
   ~ .foobar.
 */
-// ==/UserScript==
 (function () {
  
 // Global Variables
 var gvar=function() {}
 
-gvar.sversion = 'R' + '16';
+gvar.sversion = 'R' + '17';
 gvar.scriptMeta = {
-  timestamp: 1295524490994 // version.timestamp
+  timestamp: 1297357047234 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -248,7 +248,7 @@ function start_Main() {
       repID=[]; //var userID=[];
       dstr = tbcontainer.innerHTML.replace(/\n|\r|\r\n/g, '').split('"time"');
       for(var i=0;i<dstr.length;i++) {
-        if(cucok = dstr[i].match(/alt1Active"\sid="p(\d{9})(\d+)"\swidth/i)){ 
+        if(cucok = dstr[i].match(/alt1Active"\sid="p(\d{9})(\d+)"\swidth/i)){
           gvar.userID[i] = cucok[2];
           repID[i] = cucok[1];    
         }
@@ -309,7 +309,7 @@ function start_Main() {
      }else{
         startDetail(gvar.userID, 0); // reload detail again
     }
-    if(gvar.user.isDonatur)
+    if(gvar.user.isDonatur && false)
       destroy_column(gvar.el_senders);
 }
 // end retransform_table
@@ -375,8 +375,8 @@ function noneed_upd(){
     Identity = buff.identity;
     gvar.user.bufferDATA = buff.data;
     gvar.user.givercount = buff.givercount;    
-  }  
-  var is_noneed = (gvar.userID.toString().replace(/\,/g,'') == Identity && notExpired() );
+  }
+  var is_noneed = (gvar.userID.toString()+',' == Identity && notExpired() );
   drawLoaderImg(is_noneed);
   return is_noneed;
 };
@@ -392,11 +392,11 @@ function getBuffer(uid){
       var ddata, serial_id='';
       ret = {'data':{}, 'identity':'', 'givercount':0};
       var givercount = 0;
-      for(var i in data){
+      for(var i=0; i<data.length; i++){
         if(!isString(data[i])) continue;
-        ret.data['giver_'+givercount] = data[i];
-        ddata = data[i].split(';;');
-        serial_id+= ddata[0];
+        ret.data['giver_'+givercount] = data[i];		
+        ddata = data[i].split(';;');        
+		serial_id+= ddata[0]+',';
         givercount++;
       } // end loop i
       ret['identity']=serial_id;
@@ -483,7 +483,6 @@ function pushData(dat){
   if(typeof(dat)=='object'){
     var ret='';
     for(var i in dat){
-       //if(typeof(dat[i])=='object' || typeof(dat[i])=='function') continue;
        if(!isString(dat[i])) continue;
        ret+=dat[i]+';;';
     }
@@ -504,14 +503,14 @@ function pushData(dat){
 function parseIt(page){
   var dpage; var result = {};
  
-  dpage = page.split('finduser')[1];
-  if(ret = getBetween(dpage, 'u=(\\d+)\\"')) result[gvar.f[0]] = ret; // uid
+  ret = page.match(/\?do=addlist[^\d]+(\d+)/im); // uid
+  if(ret) result[gvar.f[0]] = ret[1];
+    
+  ret = page.match(/View\s*Profile\:\s*([^\<]+)/im); // kaskus_id
+  if(ret) result[gvar.f[1]] = ret[1];  
   
-  dpage = page.split('View Profile')[1];
-  if(ret = getBetween(dpage, '^\\:\\s(.+)<\\/title')) result[gvar.f[1]] = ret; // kaskus_id
-  
-  dpage = page.split('<h2>')[1];
-  if(ret = getBetween(dpage, '^(.+)<\\/h2>')) result[gvar.f[2]] = ret; // tag_id
+  ret = page.match(/h2>([^\<]+)/im); // tag_id
+  if(ret) result[gvar.f[2]] = ret[1];  
   
   if(page.indexOf('Location')!=-1){
     dpage = page.split('Location</dt>')[1].split('</dd>')[0]; //location
@@ -520,8 +519,8 @@ function parseIt(page){
     result[gvar.f[3]] = 'N/A';
   }
   
-  dpage = page.split('Join Date:')[1].split('</li>')[0];
-  if(ret = getBetween(dpage, '>\\s(.+)')) result[gvar.f[4]] = ret; // join_date
+  ret=page.match(/Join\s*Date\:[^\d]+([^<]+)/im);
+  if(ret) result[gvar.f[4]] = ret[1]; // join_date
   
   dpage = page.split('Total Posts:')[1].split('</li>')[0];
   if(ret = getBetween(dpage, '>\\s(.+)')) result[gvar.f[5]] = ret; // total_post
