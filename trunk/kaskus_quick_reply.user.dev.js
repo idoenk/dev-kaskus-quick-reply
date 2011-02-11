@@ -2,9 +2,11 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
+// @include       http://*.imageshack.us/*
+// @include       http://localhost/test-kaskus/*
 // @version       3.1.3
-// @dtversion     110205313
-// @timestamp     1296842620331
+// @dtversion     110212313
+// @timestamp     1297454022633
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,8 +15,11 @@
 //
 // -!--latestupdate
 //
-// v3.1.3 - 2011-02-05
-//   Add Uploader (beta-1)
+// v3.1.3 - 2011-12-05
+//   Silent on oExist performed
+//   Fix minor CSS imageshack on iframe 
+//   reorder uploader nav
+//   Add Uploader (beta-2)
 //   Fix failed update checker
 //   Fix AutoLoad Smiley container
 //   Improve autogrow on Edit(Sigi & Layout)
@@ -64,7 +69,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.3';
 gvar.scriptMeta = {
-  timestamp: 1296842620331 // version.timestamp
+  timestamp: 1297454022633 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -123,7 +128,11 @@ function init(){
   
   // initialize gvar..
   gvar.domain= 'http://'+'www.kaskus.us/';  
-  gvar.isUploader = (location.href.match(/^http:\/\/u\.kaskus\.us\/.*/));
+  gvar.isNotForum = (!location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/));
+  if(gvar.isNotForum) {
+    outSideForumTreat();
+	return;
+  }
   gvar.reCAPTCHA_domain= 'http://'+'api.recaptcha.net';
   gvar.reCAPTCHA_google_domain= 'http://'+'www.google.com/recaptcha/api';
   
@@ -179,11 +188,43 @@ function init(){
     window.setTimeout(function(){ Updater.check(); }, 5000);
 }
 
+// outside forum like u.kaskus.us || imageshack.us
+function outSideForumTreat(){
+  var loc = location.href,el=$D('//input[@wrap="off"]',null,true),par,lb,m=20;
+  // do pre-check hostname on location just to make sure
+  // should try avoid security notice error
+  try{if(top===self)return;}catch(e){};
+  if(loc.indexOf('.imageshack.us')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
+  if(el){
+    gvar.sITryKill = window.setInterval(function() {      
+	  if ($D('#done-popup-close')) {
+	    clearInterval(gvar.sITryKill);
+		SimulateMouse( $D('#done-popup-close'), 'click', true );
+		window.setTimeout(function(){
+		    el.removeAttribute('disabled');
+		    par=el.parentNode.parentNode;
+		    lb=$D('.tooltip',par);
+			if(lb){
+			 lb[0].innerHTML=lb[1].innerHTML='';
+			 Dom.add(el,par);
+			}
+			GM_addGlobalStyle('h1,#top,.reducetop{display:none;}');
+		}, 500);
+	  }else{
+	    if(max>0)
+		  m=m-1;
+		else
+		  clearInterval(gvar.sITryKill);
+	  }
+	},  1);
+  }
+}
+
 // preprepre-Initialized
 function oExist(P){
   // dari sejak awal aj klo ada node #quickreply, assume collision X
   var q=document.getElementById('quickreply');
-  if(q) alert('QR'+(!P?' userscript':'+')+' load aborted.\n#quickreply already created.\nYou have to disable one of these QR script or QR+');
+  if(q) show_alert('QR'+(!P?' userscript':'+')+' load aborted.\n#quickreply already created.\nYou have to disable one of these QR script or QR+');
   return q;
 }
 
@@ -3916,7 +3957,6 @@ var UPL = {
  ,panic_stop: function(){
     if(window.stop !== undefined){window.stop();}
 	else if(document.execCommand !== undefined){document.execCommand("Stop", false);}
-	window.setTimeout(function(){UPL.cold_boot()},5);
   }
  ,cold_boot: function(){
     var tgt=$D('#'+UPL.parent);
@@ -3924,9 +3964,26 @@ var UPL = {
 	if($D('#frmPageAction')) Dom.remove($D('#frmPageAction'));	
 	window.setTimeout(function(){UPL.init_uploader(UPL.parent)},50);
   }
+ ,cancel_upload: function(){
+	UPL.panic_stop();
+	window.setTimeout(function(){UPL.reset_onloadIframe()},50);    
+  }
+ ,reset_onloadIframe: function(){
+    var g=function(i){return Dom.g(i)},el=g("btn_upload");
+    el.value="Upload"; el.removeAttribute("disabled"); 
+    el=g("userfile");if(el)el.style.display="inline";
+    
+    el=g("fld_title");if(el)el.innerHTML="Upload Images";
+    el=g("par_sel_host");if(el)el.style.display="inline-block";
+    el=g("cancel_upload");if(el)el.style.display="none";
+  }
  ,event_uploader: function(){
     var Attr,el,el2,src,par = $D('#upload_container');
 	if(par){ // create additional nodes	  
+	  // select host
+	  el=UPL.rebuild_selectHost();
+	  Dom.add(el,par);
+	  
 	  Attr={id:'label_file','class':'cabinet'}; el=createEl('label',Attr);	  
 	  Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
 	  el2=createEl('input',Attr);
@@ -3940,13 +3997,12 @@ var UPL = {
 	  on('click',el,function(){UPL.prep_upload()});
 	  Dom.add(el,par);
 	  
-	  // select host
-	  el=UPL.rebuild_selectHost();
-	  Dom.add(el,par);
+
 	  
 	  Attr={id:'cancel_upload',value:'Cancel','class':'twbtn twbtn-m',type:'button',style:'margin:1px 0 0 20px;display:none;'}
 	  el=createEl('input',Attr);
-	  on('click',el,function(){UPL.panic_stop()});
+	  //on('click',el,function(){UPL.panic_stop()});
+	  on('click',el,function(){UPL.cancel_upload()});
 	  Dom.add(el,par);
 	  
 	  Attr={style:'margin-top:7px;float:right;font-weight:bold;font-size:10px;'}; el=createEl('div',Attr);
@@ -3956,15 +4012,7 @@ var UPL = {
 	  
 	  Attr={style:'display:none;',src:'about:blank',name:'target_upload',scrolling:'auto',id:'target_upload'};
 	  el=createEl('iframe',Attr);
-	  on('load',el,function(){
-		 var g=function(i){return Dom.g(i)},el=g("btn_upload"); 
-		 el.value="Upload"; el.removeAttribute("disabled"); 
-		 el=g("userfile");if(el)el.style.display="inline";
-		 
-		 el=g("fld_title");if(el)el.innerHTML="Upload Images";
-		 el=g("par_sel_host");if(el)el.style.display="inline-block";
-		 el=g("cancel_upload");if(el)el.style.display="none";
-	  });
+	  on('load',el,function(){UPL.reset_onloadIframe()});
 	  Dom.add(el,par);
 	}
   }
@@ -4068,7 +4116,7 @@ var UPL = {
  ,rebuild_selectHost: function(els){
 	
 	var Attr,iner,el,sel=createEl('select',{id:'sel_host',title:'Image Host',style:'font-weight:bold;color:#0000FF'});
-	var ret=createEl('div',{id:'par_sel_host',style:'display:inline-block;margin-left:25px;border:1px solid #BBC7CE;padding-left:3px;',});
+	var ret=createEl('div',{id:'par_sel_host',style:'display:inline-block;margin-right:5px;border:1px solid #BBC7CE;padding-left:3px;',});
 	el=createEl('div',{style:'float:left;font-weight:bold;margin-top:4px;color:#0000FF'},'<a id="host_link" href="http://'+UPL.prop[gvar.upload_tipe]['src']+'">Host</a> :&nbsp;');
 	Dom.add(el,ret);
 	on('change',sel,function(e){
@@ -4405,7 +4453,7 @@ var rSRC = {
    +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'
   
   /* for uploader */ 
-    +'label.cabinet{display:block;float:left;padding-top:3px}'
+    +'label.cabinet{display:inline-block;padding-top:3px}'
     +'#uparent_container{position:relative;padding:1px 0 6px 3px;width:99%;}'
     +'#target_upload{margin-top:2px;width:100%;height:318px;border: 2px outset;clear:left;display:block;}'	
 	
