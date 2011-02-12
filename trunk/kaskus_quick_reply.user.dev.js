@@ -79,7 +79,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -3591,7 +3591,7 @@ var ST = {
 	  return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/g,' ').replace(/\//g,'-') );
 	};
 	gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
-	gvar.buftxt+= '# Version: QR '+gvar.sversion+'\n';
+	gvar.buftxt+= '# Version: QR'+(isQR_PLUS?'+':'')+' '+gvar.sversion+'\n';
 	gvar.buftxt+= '# Source: http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'\n';
 	gvar.buftxt+= '# User-Agent: '+parse_UA_Vers()+'\n';
 	gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
@@ -5001,10 +5001,10 @@ Format will be valid like this:
     +'\n<br/>'
     /* '!-- start form quick reply' */
     +'<form action="newreply.php?do=postreply&amp;t='+gvar.threadid+'" method="post" name="vbform" id="vbform">'
-    
+
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(!isQR_PLUS?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString()+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(!isQR_PLUS?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="'+(!isQR_PLUS?+'http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString():'https:/'+'/addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
 	+'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
