@@ -2,8 +2,8 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.17
-// @dtversion     11021017
+// @version       1.16
+// @dtversion     11021316
 // @timestamp     1297357047234
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
@@ -14,13 +14,13 @@
 // Released under the GPL license; http://www.gnu.org/copyleft/gpl.html
 //
 // ----CHANGE LOG-----
-// mod.R.17 : 2011-02-10
+//
+// mod.R.16 : 2011-02-13
 // Fix some regex parseIt()
+// Fix failed get reputation rank title
+//
 // ==/UserScript==
 /*
-// 
-// mod.R.16 : 2011-01-20
-// Fix failed get reputation rank title
 // 
 // mod.R.15 : 2011-01-17
 // Fix missing reputation rank title
@@ -44,7 +44,7 @@
 // Global Variables
 var gvar=function() {}
 
-gvar.sversion = 'R' + '17';
+gvar.sversion = 'R' + '16';
 gvar.scriptMeta = {
   timestamp: 1297357047234 // version.timestamp
 
