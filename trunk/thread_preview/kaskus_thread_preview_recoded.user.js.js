@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
-// @dtversion     110131104
-// @timestamp     1295935726807
+// @dtversion     110213104
+// @timestamp     1297556751086
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,7 +18,9 @@
 //
 // -!--latestupdate
 //
-//  v1.0.4 - 2011-01-31
+//  v1.0.4 - 2011-02-13
+//    Fix reply on other (VBul4) forum (tested on indowebster.web.id)
+//    Fix get current user, adapting VBul4
 //    Fix try force stop() onclosing popup (stop every download activity)
 //    Fix autogrow (use Module by Sophia.B, -iGoogle)
 //    Improve fix preview for vBul4 (unfinished)
@@ -53,7 +55,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1295935726807 // version.timestamp
+  timestamp: 1297556751086 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -119,6 +121,8 @@ function init(){
   
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
+  gvar.isVBul4 = false;
+  gvar.isKaskus = (location.href.indexOf(gvar.domain)!=-1 ? 1:null);
   
   gvar.user= tTRIT.getUserId(); // all about logged is user: {id:'',name:'',isDonat:[1,0]}
   gvar.settings = {};
@@ -398,7 +402,12 @@ var tTRIT = {
 	gvar.current.TRIT_isClosed = false;
 	isLast = gvar.current.isLastPost = (task=='lastpost');
     trInner = gvar.current.cRow = tTRIT.findCurrentRow(e);
-    trInner = (trInner ? trInner.innerHTML : e.parentNode.innerHTML);
+	if(!trInner) trInner = e.parentNode;
+	if(trInner.innerHTML.indexOf('member.php')==-1) trInner=trInner.parentNode;
+	trInner = trInner.innerHTML;
+    //trInner = (trInner ? trInner.innerHTML : e.parentNode.innerHTML);	
+	//if(trInner.indexOf('member.php')==-1) trInner=trInner.parent
+
     if(isLast){ // find its parent (TR)
 
       gvar.TS.tid = LINK.getTID(trInner);
@@ -412,12 +421,12 @@ var tTRIT = {
 	gvar.current.tofetch = e.getAttribute('rel');
 	
 	// nyari TS.id & TS.name
-	cucok = trInner.match(/member\.php\?u=(\d+)[^>]+.([^<]+).\/span>/im);
+	cucok = trInner.match(/member\.php\?u=(\d+)[^>]+.([^<]+).\//im);
 	gvar.TS.id = (cucok ? cucok[1]:null); gvar.TS.name = (cucok ? cucok[2]:null);
 	gvar.TS.pid = null; // ntar aj nyarinya.. abis fetch
 	
 	// nyari LPOST, actualy needed only on lastpost
-	cucok = inner.match(/by\s*<[^>]+.([^<]+).\/a>/im);
+	cucok = inner.match(/by\s*<[^>]+.([^<]+).\/a>/im);	
 	gvar.LPOST = (cucok ? {id:'#', name:cucok[1]} : {id:null,name:null} ); // # dulu id-nya
 	cucok = inner.match(/id=[\'\"]remotePID_(\d+)/m);
 	gvar.LPOST.pid = (cucok ? cucok[1] : null);
@@ -429,7 +438,7 @@ var tTRIT = {
  ,findCurrentRow: function(e){
     var par = null;
 	if(typeof(e)=='object'){
-	  var maxJump= 3, i= 0;
+	  var maxJump= 5, i= 0;
 	  par = e.parentNode;
 	  while(i < maxJump && par.nodeName!='TR'){
 	    par = par.parentNode; i++;
@@ -592,7 +601,6 @@ var tTRIT = {
    var isVBul4 = function(itext){
        return (itext.indexOf('postbody')!=-1);
    };
-   gvar.isVBul4 = false;
    
    // sumthin like kepenuhan
    if(text.indexOf('td_post_')==-1) {
@@ -603,32 +611,31 @@ var tTRIT = {
 	   gvar.isVBul4 = true;
 	 }
    }
+   //alert('parse_preview- isVBul4='+gvar.isVBul4);
+   
    var dSpliter = (gvar.isVBul4 ? 'postbody':'td_post_');
    var cucok, wraper, poss, _ret, _tit, _nr;
    /*content*/
    _ret = text.split(dSpliter);
    _ret = _ret[1];
-   wraper = (gvar.isVBul4 ? ['>','<div class="after_content">'] : ['>', '<!-- / message -->']);
-   poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];
-   _ret = _ret.substring(poss[0]+wraper[0].length, poss[1]);
+   
+   wraper = (gvar.isVBul4 ? ['<div class="postrow','<div class="cleardiv"></div>'] : ['>', '<!-- / message -->']);
+   poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];   
+   _ret = _ret.substring(poss[0], poss[1]);
+   
    // a lil hack to strip this.innerText = '', which bring error on GC.
    _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
    
    // simple anti-batman-trap
-   _ret = tTRIT.scanBetmen(_ret);
-   
- //clog(_ret);
+   if(gvar.isKaskus)
+     _ret = tTRIT.scanBetmen(_ret);   
    _ret = tTRIT.parse_image(_ret);
    
    /*title*/
    cucok = text.match(/<title>(.+)<\/title>/);
- //clog(cucok);
-
    if(cucok) {
      _tit = cucok[1].replace(/\s*\-\s*Kaskus\s*\-\s*The Largest Indonesian Community/,"").trim();
      // step-two if it's single post
-	 //if(_tit.indexOf('- View Single Post -')!=-1){
-	 //alert('gvar.current.isLastPost='+gvar.current.isLastPost)
 	 if(gvar.current.isLastPost){
 	    _tit = _tit.replace(/^[^(?:P)]+.ost\s*\-\s*/,"").trim();
 		cucok = text.match(/name[\'\"]\s*href=[\'\"][^\?]+.u=(\d+)[^\>]+.([^\<]+).\/a>/im);
@@ -660,8 +667,7 @@ var tTRIT = {
 	 }
 	 gvar.current.TRIT_isClosed = tTRIT.is_closed_thread(text);
 	 
-	 clog('after');
-	 clog('TS.id:'+gvar.TS.id+'; TS.name:'+gvar.TS.name+'; TS.tid:'+gvar.TS.tid+'; TS.pid:'+gvar.TS.pid+'; ');
+	 clog('(after) TS.id:'+gvar.TS.id+'; TS.name:'+gvar.TS.name+'; TS.tid:'+gvar.TS.tid+'; TS.pid:'+gvar.TS.pid+'; ');
 	 clog('LPOST.id:'+gvar.LPOST.id+'; LPOST.name:'+gvar.LPOST.name+'; LPOST.pid:'+gvar.LPOST.pid+'; ');
    }
    /*newreply*/
@@ -696,12 +702,19 @@ var tTRIT = {
    return text;
   }
  ,getUserId: function(){
-    var logusers = $D("//a[contains(@href, 'member.php')]", null, true);
+    var uid,logusers = $D("//li[@class='welcomelink']", null, true),ret=false;	
     if(logusers){
-      var uid = logusers.href.match(/member\.php\?u=(\d+$)/);
-      ret = {id:(uid ? uid[1] : null), name:(logusers ? logusers.innerHTML : null) };
-    }
-    return (logusers && ret ? ret : false);
+	  // isVBul4=1
+      uid = logusers.innerHTML.match(/member\.php\?u=([^\"\']+)[^>]+.([^<]+)/i);
+	  ret = {id:(uid ? uid[1] : null), name:(uid ? uid[2] : null)};
+    }else{
+	  logusers = $D("//a[contains(@href, 'member.php')]", null, true);
+	  if(logusers){
+	    uid = logusers.href.match(/member\.php\?u=([^\"\']+)/i);
+        ret = {id:(uid ? uid[1] : null), name:(logusers ? logusers.innerHTML : null) };
+	  }
+	}
+    return ret;
   }
 
 }; // end tTRIT
@@ -721,7 +734,7 @@ var tPOP = {
 	tPOP.event_Static();
  }
  ,fillLayer: function(rets){
-    $D('#preview_content').innerHTML = rets.content;
+	$D('#preview_content').innerHTML = rets.content;
 	if($D('#btn_quote_reply')){
 	  $D('#btn_quote_reply').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
 	  Dom.Ev($D('#btn_quote_reply'), 'click', function(){
@@ -742,12 +755,13 @@ var tPOP = {
 	
 	//gvar.LPOST.id poster_userlink
 	if($D('#poster_userlink')) {
-	  $D('#poster_userlink').innerHTML = '<a onclick="return false" href="member.php?u='+gvar.LPOST.id+'" class="ktp-user_link cyellow"><b>'+gvar.LPOST.name+'</b></a>';
+	  $D('#poster_userlink').innerHTML = '<a onclick="return '+(!gvar.isKaskus ? 'true':'false')+'" target="_blank" href="./member.php?u='+gvar.LPOST.id+'" class="ktp-user_link cyellow"><b>'+gvar.LPOST.name+'</b></a>';
 	}	
 	//ts_userlink poster_userlink
-	tPOP.event_Userlink();
+	if(gvar.isKaskus)
+	  tPOP.event_Userlink();
 	
-	//ts_userlink poster_userlink
+	// event_Additional
 	tPOP.event_Additional();
 	
 	
@@ -1237,7 +1251,7 @@ var tPOP = {
 
 var tQR = {
   init: function(fetch_uri){
-	gvar.sITryFocusOnLoad = window.setInterval(function() {
+	if(!gvar.user.isDonatur && gvar.isKaskus) gvar.sITryFocusOnLoad = window.setInterval(function() {
       if ($D('#recaptcha_response_field')) {
 	    clearInterval(gvar.sITryFocusOnLoad);
 		Dom.Ev( $D('#recaptcha_response_field'), 'keydown', function(e){
@@ -1258,26 +1272,8 @@ var tQR = {
 		Dom.g('recaptcha_response_field').setAttribute('tabindex', '202');
 		var reCp_field=['recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
 		for(var i=0; i<reCp_field.length; i++)
-		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '21'+(i+1) + '');
+		  if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '21'+(i+1) + '');		
 		
-		//#preview_submit
-        if($D('#preview_submit'))
-          Dom.Ev($D('#preview_submit'), 'click', function(){
-            var validate= ( !gvar.user.isDonatur  ? tQR.prepost_QR() : true );
-			if(validate){			   
-			   tQR.post();
-			}
-          });
-		//#then_gotothread
-		if($D('#then_gotothread'))
-		  Dom.Ev($D('#then_gotothread'),'click',function(e){
-		    e = e.target||e;
-			setValue(KEY_KTP+'THEN_GOTHREAD', (e.checked ? '1':'0'));
-			gvar.settings.then_goto_thread = ( e.checked );
-		  });		
-		Dom.Ev($D('#vbform'),'submit',function(e){
-		  var C = (!e ? window.event : e ); C = do_an_e(C);
-		});
 		Dom.g(gvar.id_textarea).removeAttribute('disabled');
       } // end #recaptcha_response_field
     }, 200); // end sITryFocusOnLoad
@@ -1290,6 +1286,23 @@ var tQR = {
   }
  ,event_TPL_vB: function(){
 	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });	
+	//#preview_submit
+    if($D('#preview_submit'))
+      Dom.Ev($D('#preview_submit'), 'click', function(){
+        var validate= ( !gvar.user.isDonatur && gvar.isKaskus ? tQR.prepost_QR() : true );
+		if(validate) tQR.post();
+      });
+	//#then_gotothread
+	if($D('#then_gotothread'))
+	  Dom.Ev($D('#then_gotothread'),'click',function(e){
+	    e = e.target||e;
+		setValue(KEY_KTP+'THEN_GOTHREAD', (e.checked ? '1':'0'));
+		gvar.settings.then_goto_thread = ( e.checked );
+	  });		
+	if($D('#vbform')) Dom.Ev($D('#vbform'),'submit',function(e){
+	  var C = (!e ? window.event : e ); C = do_an_e(C);
+	});
+		
 	// #atitle
 	if($D('#atitle'))
 	 Dom.Ev($D('#atitle'), 'click', function() {
@@ -1346,7 +1359,9 @@ var tQR = {
   }
  ,fetch: function(pid){
     // colecting necessary hidden value
-	tQR.uri_lastFetch = gvar.domain+'newreply.php?do=newreply&p='+pid;
+	// no need supply domain for multi-site support
+	//tQR.uri_lastFetch = gvar.domain+'newreply.php?do=newreply&p='+pid;
+	tQR.uri_lastFetch = './newreply.php?do=newreply&p='+pid;
     getFetch(tQR.uri_lastFetch, tQR.fetch_cb, true);
   }
  ,fetch_cb: function(reply_html){
@@ -1387,7 +1402,7 @@ var tQR = {
 	  if( gvar.current.qr_fetch!=vB_textarea.content )
 	    vB_textarea.add(gvar.current.qr_fetch);
 		
-	  if(gvar.user.isDonatur){
+	  if(gvar.user.isDonatur || !gvar.isKaskus){
 	      // kill capcay container
 	      Dom.remove('recapctha_header');
 	      Dom.remove('recaptcha_cont');
@@ -1456,7 +1471,7 @@ var tQR = {
 	     if( Dom.g(hid) ) Dom.g(hid).value = cucok[1];
     } // end for   
     // isDonatur check
-    gvar.user.isDonatur = (text.indexOf('recaptcha_response_field')==-1);
+    gvar.user.isDonatur = (gvar.isKaskus && text.indexOf('recaptcha_response_field')==-1);
     
 	// additional opt
 	tQR.build_additional_opt(text);
@@ -1471,6 +1486,9 @@ var tQR = {
     parts = text.substring(pos[0], pos[1]);
     pos[0] = parts.indexOf('>');
     parts = parts.substring( (pos[0]+1), parts.length);
+	
+	
+	
     return (parts ? tQR.unescapeHtml(parts) : '');   
   }
  ,additional_opt_parser: function(html){   
@@ -1513,7 +1531,7 @@ var tQR = {
  ,build_additional_opt: function(html){
 	// create rating, and hidden element of additional options
     tQR.additional_opt_parser(html);
-    var rate = (html.indexOf('a rating')!=-1 ? tQR.buildRate() : false);
+    var rate = (html.indexOf('Rate Thread')!=-1 ? tQR.buildRate() : false);
     if($D('#rate_thread')){
       $D('#rate_thread').innerHTML= '';
       Dom.add(rate ? rate : createTextEl('Thread Rated'), $D('#rate_thread'));
@@ -1522,7 +1540,6 @@ var tQR = {
   }
  ,prepost_QR: function(){
     var ret;
-	//if(!)
 	var rrf = $D('#recaptcha_response_field');
     if(!rrf) return;
     ret = (!rrf || (rrf && rrf.value.trim()=='') ? false : true );
@@ -1581,10 +1598,13 @@ var tQR = {
  ,buildQuery: function(){
     var hidden = getTag( 'input', $D('#vbform') );
     var el, q='';
+	if(!gvar.isKaskus && $D('#qr_do'))
+	   $D('#qr_do').value = 'postreply';
+	   
     for(var h in hidden)
       if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
         q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
-    q+= '&sbutton=Reply+Post';
+    q+= '&sbutton='+(!gvar.isKaskus?'Submit+Reply':'Reply+Post');
   
     el = $D('#recaptcha_response_field');
     if(el) q+= '&recaptcha_response_field='+$D('#recaptcha_response_field').value;
@@ -1605,6 +1625,8 @@ var tQR = {
  ,post: function(){
     var spost = tQR.buildQuery();
 	tQR.lockInput(true);
+	//clog(spost);
+
 	if(spost===false) {
       //SimulateMouse($D('#imghideshow'), 'click', true);
 	  show_alert('Upss, halted..::..e.3278', 0);
@@ -1983,12 +2005,13 @@ var tQR = {
  ,do_smile: function(Obj, nospace){
   // action to do insert smile
   if(isUndefined(Obj)) return;
-  var bbcode, link, tag, prehead;
-  //if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none') SimulateMouse($D('#dv_accessible'), 'click', true);
-  vB_textarea.init();
+  var bbcode, link, tag, prehead;  
+  //if(isUndefined(vB_textarea.Obj)) 
+  vB_textarea.init(); // always to reupdate this.content
   if( Obj.getAttribute("alt") ) bbcode = Obj.getAttribute("alt");
+  
   // custom mode using IMG tag instead
-  if(bbcode.match(/_alt_.+/)) {
+  if(bbcode.match(/_alt_.+/) || !gvar.isKaskus) {
     link=Obj.getAttribute("src");
     tag = 'IMG';
     prehead = [('['+tag+']').length, 0];
@@ -2286,7 +2309,7 @@ function toCharRef(text){
     var charRefs = [], codePoint, i;
     for(i = 0; i < text.length; ++i) {
         codePoint = text.charCodeAt(i);
-        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
+        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\*\.\!\~\}\{\|\/\r\n]/)){
          if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
             i++;
             codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
@@ -2760,28 +2783,32 @@ var vB_textarea = {
   clear: function (id){
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.set('');
-    this.enabled();
 	this.Obj.style.height='1px'; // min-height should be set before
+    this.enabled();
     this.focus();
   },
+  disabled: function(){ 
+    this.Obj.setAttribute('disabled','disabled');
+  },
   readonly: function(id){
-     //clog('txta readonly');
+         //clog('txta readonly');
     this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     removeClass('txa_enable', this.Obj);
     addClass('txa_readonly', this.Obj);
     this.Obj.setAttribute('readonly',true);
   },
   enabled: function(id){
-    //clog('txta enabled');
+         //clog('txta enabled');
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.Obj.removeAttribute('disabled');
+
     this.Obj.removeAttribute('readonly');
 
+    if($D('#recaptcha_response_field')) $D('#recaptcha_response_field').removeAttribute('disabled');
     removeClass('txa_readonly', this.Obj);
     addClass('txa_enable', this.Obj);
   },
   focus: function(){
-    //clog('txta focused');
     this.Obj.focus(); 
   },
   set: function(value){
@@ -2789,22 +2816,37 @@ var vB_textarea = {
       this.Obj = Dom.g(gvar.id_textarea);
     this.Obj.value = this.content = value;
   },
+  lastfocus: function (){
+    var pos = Dom.g(gvar.id_textarea).value.length; // use the actual content
+    if(this.Obj.setSelectionRange)    {
+        this.focus();
+        this.Obj.setSelectionRange(pos,pos);
+    }
+    this.focus();
+  },
+
   add: function(text){ // used on fetch post only
    this.Obj.value+=text; this.enabled(); this.focus();
+   if(isUndefined(this.cursorPos[0])) this.rearmPos();
    // fix chrome weird
    var lastpos=(this.cursorPos[0] + text.length);
    this.setCaretPos( lastpos, lastpos );
   },
   subStr: function(start, end){ return this.content.substring(start, end);},
-  getCaretPos: function() {
+  getSelectedText : function() {
+    if(isUndefined(this.cursorPos[0])) this.rearmPos();
+    return (this.cursorPos[0]==this.cursorPos[1]? '': this.subStr(this.cursorPos[0], this.cursorPos[1]) );
+  },
+  getCaretPos : function() {
     this.enabled(); /* this.focus();*/
-    var CaretPos = 0;    
-    if(this.Obj) //Mozilla/Firefox/Netscape 7+ support 
+    var CaretPos = 0;
+    //Mozilla/Firefox/Netscape 7+ support 
+    if(this.Obj)
       if (this.Obj.selectionStart || this.Obj.selectionStart == '0')
         CaretPos = this.Obj.selectionStart;
     return CaretPos;
   },  
-  setCaretPos: function (pos,end){
+  setCaretPos : function (pos,end){
     if(isUndefined(end)) end = pos;
     if(this.Obj.setSelectionRange)    { // Firefox, Opera and Safari
         this.focus();
@@ -2812,9 +2854,11 @@ var vB_textarea = {
     }
   },
   // ptpos stand to puretext position [start, end]
-  setValue: function(text, ptpos){
-    var start=this.cursorPos[0];
+  setValue : function(text, ptpos){
+    if(isUndefined(this.cursorPos[0])) this.rearmPos();
+	var start=this.cursorPos[0];
     var end=this.cursorPos[1];
+	
     if(isUndefined(ptpos)) ptpos=[text.length,text.length];
     if(start!=end) {
       this.replaceSelected(text,ptpos);
@@ -2827,15 +2871,40 @@ var vB_textarea = {
     this.Obj.scrollTop = (this.last_scrollTop+1);
     return bufValue; 
   },
-  setElastic: function(){
-    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
-    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
-	var a=this.Obj||Dom.g(gvar.id_textarea);
-	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
-	Dom.Ev(a,'keyup', function(){setCols_Elastic()});
-	window.setTimeout(function(){setCols_Elastic()}, 110);
+  wrapValue : function(tag, title){
+    if(isUndefined(this.cursorPos[0])) this.rearmPos();
+	var start=this.cursorPos[0];
+    var end=this.cursorPos[1];
+    tag = tag.toUpperCase();    
+    var bufValue = this.subStr(0, start) + 
+       '['+tag+(title?'='+title:'')+']' + 
+        (start==end ? '' : this.subStr(start, end)) + 
+       '[/'+tag+']' + this.subStr(end, this.content.length);    
+    this.set(bufValue);
+    var st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
+    this.setCaretPos( st2, st2+this.subStr(start, end).length );    
+    this.Obj.scrollTop = (this.last_scrollTop+1);
+    return bufValue; 
+  },
+  replaceSelected : function(text, ptpos){
+    if(isUndefined(this.cursorPos[0])) this.rearmPos();
+	var start=this.cursorPos[0];
+    var end=this.cursorPos[1];
+    if(start==end) return;    
+    var bufValue = this.subStr(0, start) + text + this.subStr(end, this.content.length);
+    this.set(bufValue);
+    this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
+    this.Obj.scrollTop = (this.last_scrollTop+1);
+  },
+  setElastic: function(tid,max){
+    if(isUndefined(tid)) tid=gvar.id_textarea;
+	function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7)); setRows_Elastic(max)}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
+	var a=Dom.g(tid)||this.Obj;
+	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px;'+(max?'max-height:'+max+'px;':''));
+	Dom.Ev('keyup',a,function(){setCols_Elastic(max)});
+	window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
-//
 };
 //== end Global Var ==
 
@@ -3282,6 +3351,7 @@ Format will be valid like this:
  }
 // tPL
 ,getTPL_preview: function(){
+
   return (''
  +'<div id="popup_container" class="popup_block"> '
  + '<div class="popup" id="popup_child">'
@@ -3291,22 +3361,22 @@ Format will be valid like this:
  +  '<tbody><tr>'
  +   '<td class="tcat" id="head_layer" style="cursor:s-resize;">'
  
- +     '<div class="hd_layer"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')
- + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return false" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow"><b>'+gvar.TS.name+'</b></a>]' : '')
+ +     '<div class="hd_layer blockhead"><span id="prev_title"></span>&nbsp;' +HtmlUnicodeDecode('&#8592;')
+ + (gvar.TS.id ? '[<small>TS :: </small><a id="ts_userlink" onclick="return '+(!gvar.isKaskus ? 'true':'false')+'" target="_blank" href="member.php?u='+gvar.TS.id+'" title="Thread starter by '+gvar.TS.name+'" class="ktp-user_link cyellow"><b>'+gvar.TS.name+'</b></a>]' : '')
  // 
  + (gvar.current.isLastPost ? (gvar.TS.id ? ' - ' : '' )+'[<small><a href="showthread.php?p='+gvar.LPOST.pid+'#post'+gvar.LPOST.pid+'" target="_blank" title="View Single Post">Post By</a> :: </small><span id="poster_userlink" class="cyellow"><b>'+gvar.LPOST.name+'</b></span>]' : '')
  + ' <span id="upd_notify"></span>'
  
  +     '<a id="atoggle" href="javascript:;" class="hd_layer-right"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat.gif" alt="" /></a>'
  +     '<a id="preview_setting" href="javascript:;" style="right:45px;position:absolute;margin-top:-4px;"><img src="'+gvar.B.setting_gif+'" alt="setting" title="Settings" border="0" /></a>'
- +    '</div>' // #head_layer 
+ +    '</div>' // .hd_layer | .blockhead
 
- +   '</td>'
+ +   '</td>' // #head_layer
  +  '</tr><tr id="row_content">'
  +  '<td class="alt1">'
 
  +   '<div id="post_detail"></div>' // kaskus badge | user detail
- +   '<div id="preview_content"></div>' // main post-content
+ +   '<div id="preview_content" class="blockbody formcontrols"></div>' // main post-content
  + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
  +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
@@ -3338,16 +3408,16 @@ Format will be valid like this:
  +   '</div>'
  +  '<table id="qr_container_table" class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
  +  '<thead id="qr_container_head" style="display:none;"><tr>'
- +   '<td class="tcat">'
+ +   '<td class="tcat blockhead" style="border:0;">'
  +(!gvar.current.TRIT_isClosed ? 'Quick Reply' : '')
  +     '<span id="loggedin_as"></span>'
- +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ +     '<span id="ktp_version" class="hd_layer-right" style="">'+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +   '</td>'
  +  '</tr></thead>'
  +  '<tbody id="collapseobj_quickreply" style="display:none;">'
  +   '<tr><td class="panelsurround">'
  +    '<div class="panel">'
- +    '<div id="qr_container">'
+ +    '<div id="qr_container" class="blockbody formcontrols">'
 
  +      '<div>'+_LOADING+'</div>' // this will be injected w/ getTPL_QuickReply()
 
@@ -3356,9 +3426,9 @@ Format will be valid like this:
  +  '</td></tr><tbody>'
  
  +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed 
- +  '<tr><td class="tcat">' 
- +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="cyellow hd_layer-left" style=""><b>Cancel</b></a>'
- +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ +  '<tr><td class="tcat blockhead" style="border:0;">' 
+ +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="'+(!gvar.isVBul4?'cyellow ':'')+'hd_layer-left" style=""><b>Cancel</b></a>'
+ +    '<span id="ktp_version" class="hd_layer-right" style="">'+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
