@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
 // @dtversion     110213104
-// @timestamp     1297559262377
+// @timestamp     1297566366217
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 //  v1.0.4 - 2011-02-13
+//    Fix antibetmen stop working (GC)
 //    Fix reply on other (VBul4) forum (tested on indowebster.web.id)
 //    Fix get current user, adapting VBul4
 //    Fix try force stop() onclosing popup (stop every download activity)
@@ -49,7 +50,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1297559262377 // version.timestamp
+  timestamp: 1297566366217 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -59,7 +60,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug| 
+gvar.__DEBUG__ = true; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -579,8 +580,9 @@ var tTRIT = {
    for(var i=0; i<aL; i++){
      if(isUndefined(aTag[i])) continue;
      buff = aTag[i].innerHTML;
-	 if(buff.match(/<input\s*(?:(?:value|style)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i)){
-	    el = newHref(buff, aTag[i].href);
+	 
+	 if(buff.match(/<input\s*(?:(?:type|value|style)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i)){
+		el = newHref(buff, aTag[i].href);
 	 	temp.insertBefore(el, aTag[i].nextSibling);
 	 	temp.removeChild(aTag[i]);
 		isClean+= '0';
@@ -622,8 +624,7 @@ var tTRIT = {
    _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
    
    // simple anti-batman-trap
-   if(gvar.isKaskus)
-     _ret = tTRIT.scanBetmen(_ret);   
+   _ret = tTRIT.scanBetmen(_ret);   
    _ret = tTRIT.parse_image(_ret);
    
    /*title*/
