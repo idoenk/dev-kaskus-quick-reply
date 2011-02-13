@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus
 // @author        hermawanadhis
-// @version       0.7.1
+// @version       0.7.2
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
@@ -22,6 +22,8 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.2
+- fix unescaped href required for GC
 0.7.1
 - clear up debug line
 - add // @include       http://www.kaskus.us/group.php?* 
@@ -75,7 +77,7 @@ v0.1   : First release
 
 (function () {
 
-    var replacements, regex, key, thenodes, node, s, z;
+	var replacements, regex, key, thenodes, node, s, z;
 
     // You can customize the script by adding new pairs of words.
     // First, let's build the "obfuscated":"de-obfuscated" words list
@@ -154,8 +156,8 @@ dragon*adopters,dragonadopters
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
-        s = node.href;
-        if(!s || s.match(/^https?:\/\/[^\.]+\.kaskus\.us|kaskusnetworks\.com/i) ) continue; // pre-check        
+        s = unescape(node.href);
+        if(!s || s.match(/^https?:\/\/[^\.]+\.kaskus\.us|kaskusnetworks\.com/i) ) continue; // pre-check
         for (key in replacements)
 			s = s.replace(regex[key], replacements[key]);
         node.href = s;
@@ -176,7 +178,7 @@ dragon*adopters,dragonadopters
 		return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
     };	
     var el, pnode, xID = whereAmI(location.href);
-	// using perform anti-batman @container id
+	// perform anti-batman @container id
     var pnodes = document.evaluate("//*[contains(@id,'"+xID+"')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
 	
     if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
