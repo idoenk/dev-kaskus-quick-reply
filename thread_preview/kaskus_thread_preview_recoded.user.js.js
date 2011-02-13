@@ -2,7 +2,7 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
-// @dtversion     110213104
+// @dtversion     110131304
 // @timestamp     1297556751086
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
@@ -18,7 +18,7 @@
 //
 // -!--latestupdate
 //
-//  v1.0.4 - 2011-02-13
+//  v1.0.4 - 2011-01-31
 //    Fix reply on other (VBul4) forum (tested on indowebster.web.id)
 //    Fix get current user, adapting VBul4
 //    Fix try force stop() onclosing popup (stop every download activity)
@@ -39,12 +39,6 @@
 //    Add simple anti-batman-Trap
 //    Fix edit @VM (collision with open window more smiley)
 //
-//  v1.0.2 - 2011-01-17
-//    Fix failed get lastpost link (is it Obfuscated or serverside error?)
-//
-//  v1.0.1 - 2011-01-15
-//    Fix Improve findCurrentRow
-//    Add include search_result.php
 //
 //  v1.0 - 2011-01-08
 //    init recoded
@@ -611,7 +605,7 @@ var tTRIT = {
 	   gvar.isVBul4 = true;
 	 }
    }
-   //alert('parse_preview- isVBul4='+gvar.isVBul4);
+   if( gvar.isVBul4 ) gvar.codename=gvar.codename.replace(/Kaskus/i,'vBulletin');
    
    var dSpliter = (gvar.isVBul4 ? 'postbody':'td_post_');
    var cucok, wraper, poss, _ret, _tit, _nr;
@@ -620,7 +614,8 @@ var tTRIT = {
    _ret = _ret[1];
    
    wraper = (gvar.isVBul4 ? ['<div class="postrow','<div class="cleardiv"></div>'] : ['>', '<!-- / message -->']);
-   poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];   
+   poss = [_ret.indexOf(wraper[0]), _ret.indexOf(wraper[1])];
+   if(!gvar.isVBul4) poss[0]=poss[0]+wraper[0].length;
    _ret = _ret.substring(poss[0], poss[1]);
    
    // a lil hack to strip this.innerText = '', which bring error on GC.
@@ -1625,10 +1620,8 @@ var tQR = {
  ,post: function(){
     var spost = tQR.buildQuery();
 	tQR.lockInput(true);
-	//clog(spost);
 
 	if(spost===false) {
-      //SimulateMouse($D('#imghideshow'), 'click', true);
 	  show_alert('Upss, halted..::..e.3278', 0);
       return false;
     }
@@ -1640,9 +1633,8 @@ var tQR = {
     if( !reply_html ) return;
 	reply_html = reply_html.responseText;
 	
- //clog(reply_html);
 	var retpost = tQR.parse_post(reply_html);
- //clog('error='+retpost.error+ '; msg='+retpost.msg);
+    //clog('error='+retpost.error+ '; msg='+retpost.msg);
 	
 	var notice = $D('#quoted_notice');
 	if(retpost.error != 0){
@@ -1686,7 +1678,7 @@ var tQR = {
   }
  ,after_post: function(mode, fn){
     if(isUndefined(mode)) mode = 'close';
-    gvar.blinkRow=10;
+    gvar.blinkRow=5;
     var myvar = "";
     var mcallback = (typeof(fn)=='function' ? fn : null);
 	window.status = (mode=='close' ? "Closing..." : "Redirecting...");
@@ -2309,7 +2301,7 @@ function toCharRef(text){
     var charRefs = [], codePoint, i;
     for(i = 0; i < text.length; ++i) {
         codePoint = text.charCodeAt(i);
-        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\*\.\!\~\}\{\|\/\r\n]/)){
+        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\*\.\,\!\~\}\{\|\/\r\n]/)){
          if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
             i++;
             codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
@@ -3411,7 +3403,7 @@ Format will be valid like this:
  +   '<td class="tcat blockhead" style="border:0;">'
  +(!gvar.current.TRIT_isClosed ? 'Quick Reply' : '')
  +     '<span id="loggedin_as"></span>'
- +     '<span id="ktp_version" class="hd_layer-right" style="">'+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ +     '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
  +   '</td>'
  +  '</tr></thead>'
  +  '<tbody id="collapseobj_quickreply" style="display:none;">'
