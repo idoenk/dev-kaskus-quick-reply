@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
-// @dtversion     110131304
-// @timestamp     1297556751086
+// @dtversion     110213104
+// @timestamp     1297559262377
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,12 +18,12 @@
 //
 // -!--latestupdate
 //
-//  v1.0.4 - 2011-01-31
+//  v1.0.4 - 2011-02-13
 //    Fix reply on other (VBul4) forum (tested on indowebster.web.id)
 //    Fix get current user, adapting VBul4
 //    Fix try force stop() onclosing popup (stop every download activity)
 //    Fix autogrow (use Module by Sophia.B, -iGoogle)
-//    Improve fix preview for vBul4 (unfinished)
+//    Improve fix preview for vBul4 (beta)
 //    Add setting node-state (beta)
 //    Fix preserve subscription's folderid
 //    Add Rate Thread;
@@ -49,7 +49,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1297556751086 // version.timestamp
+  timestamp: 1297559262377 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
