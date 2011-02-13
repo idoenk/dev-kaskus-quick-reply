@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.4
 // @dtversion     110213104
-// @timestamp     1297566366217
+// @timestamp     1297573325774
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 //  v1.0.4 - 2011-02-13
+//    Fix autogrow not working
 //    Fix antibetmen stop working (GC)
 //    Fix reply on other (VBul4) forum (tested on indowebster.web.id)
 //    Fix get current user, adapting VBul4
@@ -50,7 +51,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.4';
 gvar.scriptMeta = {
-  timestamp: 1297566366217 // version.timestamp
+  timestamp: 1297573325774 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -2889,14 +2890,13 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
   },
-  setElastic: function(tid,max){
-    if(isUndefined(tid)) tid=gvar.id_textarea;
-	function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7)); setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
-	var a=Dom.g(tid)||this.Obj;
-	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px;'+(max?'max-height:'+max+'px;':''));
-	Dom.Ev('keyup',a,function(){setCols_Elastic(max)});
-	window.setTimeout(function(){setCols_Elastic(max)}, 110);
+  setElastic: function(){
+    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
+    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
+	var a=this.Obj||Dom.g(gvar.id_textarea);
+	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
+	Dom.Ev(a,'keyup', function(){setCols_Elastic()});
+	window.setTimeout(function(){setCols_Elastic()}, 350);
   }
 };
 //== end Global Var ==
