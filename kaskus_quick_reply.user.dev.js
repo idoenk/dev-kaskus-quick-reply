@@ -3,10 +3,9 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://*.imageshack.us/*
-// @include       http://localhost/test-kaskus/*
 // @version       3.1.3
 // @dtversion     110213313
-// @timestamp     1297557533150
+// @timestamp     1297632946979
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -70,7 +69,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.3';
 gvar.scriptMeta = {
-  timestamp: 1297557533150 // version.timestamp
+  timestamp: 1297632946979 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -139,7 +138,7 @@ function init(){
   
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
   gvar.avatarLink= gvar.domainstatic + 'customavatars/';
-  gvar.titlename= 'Quick Reply'+(isQR_PLUS?'+':'');
+  gvar.titlename= 'Quick Reply'+(isQR_PLUS!==0?'+':'');
   gvar.fullname= 'Kaskus '+gvar.titlename;
   gvar.scriptId= '80409';
 
@@ -3595,7 +3594,7 @@ var ST = {
 	  return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/g,' ').replace(/\//g,'-') );
 	};
 	gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
-	gvar.buftxt+= '# Version: QR'+(isQR_PLUS?'+':'')+' '+gvar.sversion+'\n';
+	gvar.buftxt+= '# Version: QR'+(isQR_PLUS!==0?'+':'')+' '+gvar.sversion+'\n';
 	gvar.buftxt+= '# Source: http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'\n';
 	gvar.buftxt+= '# User-Agent: '+parse_UA_Vers()+'\n';
 	gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
@@ -5008,7 +5007,7 @@ Format will be valid like this:
 
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(!isQR_PLUS?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="'+(!isQR_PLUS?+'http:/'+'/userscripts.org/scripts/show/'+gvar.scriptId.toString():'https:/'+'/addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
 	+'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
@@ -5337,7 +5336,7 @@ Format will be valid like this:
 	
 	return (''
 	 +'<div id="about_container" class="qrsmallfont" style="">'
-	 +'<b>'+gvar.fullname+' '+gvar.sversion+' '+(isQR_PLUS?' &nbsp;&nbsp;(ADDON)':'')+'</b><br>'
+	 +'<b>'+gvar.fullname+' '+gvar.sversion+' '+(isQR_PLUS!==0?' &nbsp;&nbsp;(ADDON)':'')+'</b><br>'
 	 +spacer
 	 +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">'+gvar.fullname+'</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
 	 +'<div style="height:10px;"></div>'
@@ -5406,10 +5405,10 @@ Format will be valid like this:
     var spacer = '<div style="height:5px;">&nbsp;</div>';
 	return (''
 	 +'<div id="general_container" class="qrsmallfont">'
-     +(!gvar.noCrossDomain && !isQR_PLUS ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
-     +(!gvar.noCrossDomain && !isQR_PLUS ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
+     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
+     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
-     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS?'+':'')+'</label>'
+     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
      +spacer
