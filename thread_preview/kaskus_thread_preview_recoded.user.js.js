@@ -60,7 +60,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug| 
+gvar.__DEBUG__ = false; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
