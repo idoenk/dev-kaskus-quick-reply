@@ -5,8 +5,8 @@
 // @include       http://*.imageshack.us/*
 // @include       http://localhost/test-kaskus/*
 // @version       3.1.3
-// @dtversion     110212313
-// @timestamp     1297454022633
+// @dtversion     110213313
+// @timestamp     1297557533150
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.3 - 2011-12-05
+// v3.1.3 - 2011-02-13
+//   Fix toCharRef ignore encoding [\.\,\*]
 //   Silent on oExist performed
 //   Fix minor CSS imageshack on iframe 
 //   reorder uploader nav
@@ -69,7 +70,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.3';
 gvar.scriptMeta = {
-  timestamp: 1297454022633 // version.timestamp
+  timestamp: 1297557533150 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -2418,7 +2419,7 @@ function toCharRef(text){
     var charRefs = [], codePoint, i;
     for(i = 0; i < text.length; ++i) {
         codePoint = text.charCodeAt(i);
-        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
+        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\*\.\,\!\~\}\{\|\/\r\n]/)){
          if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
             i++;
             codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
@@ -2771,6 +2772,9 @@ var vB_textarea = {
   setValue : function(text, ptpos){
     var start=this.cursorPos[0];
     var end=this.cursorPos[1];
+	
+	show_alert(start+','+end+' - '+ptpos);
+	
     if(isUndefined(ptpos)) ptpos=[text.length,text.length];
     if(start!=end) {
       this.replaceSelected(text,ptpos);
