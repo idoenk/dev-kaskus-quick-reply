@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Kaskus Fix-ObfuscatorII
 // @namespace     http://userscripts.org/scripts/show/90164
-// @description   De-obfuscates words 'censored' by kaskus
+// @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
 // @version       0.7.2
 // @include       http://www.kaskus.us/showthread.php?*
@@ -14,9 +14,7 @@
 /*
 Kaskus Fix-ObfuscatorII 
 Created by Pandu E Poluan {http://userscripts.org/users/71414/}
-Edited 1 by Chaox
-Edited 2 by D3v1love
-Edited 3 by hermawanadhis (from 0.6.x)
+Credit: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/)
 
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
