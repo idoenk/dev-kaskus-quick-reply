@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.16
-// @dtversion     11021316
-// @timestamp     1297357047234
+// @version       1.17
+// @dtversion     11021517
+// @timestamp     1297769669841
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,12 +15,16 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.16 : 2011-02-13
-// Fix some regex parseIt()
-// Fix failed get reputation rank title
+// mod.R.17 : 2011-02-15
+// rebuild subfolder subscription
+// missed destroy_column(el_sender) -KaskusDonat.
 //
 // ==/UserScript==
 /*
+// 
+// mod.R.16 : 2011-02-13
+// Fix some regex parseIt()
+// Fix failed get reputation rank title
 // 
 // mod.R.15 : 2011-01-17
 // Fix missing reputation rank title
@@ -34,19 +38,18 @@
 // Fix prefer to define 'var' on global namespace (major issue Opera-11)
 // 
 // mod.R.2 : 2010-01-08
-*/
-/*
+// 
  :: About this script ::
   ~ .foobar.
 */
 (function () {
  
 // Global Variables
-var gvar=function() {}
+var gvar=function(){};
 
-gvar.sversion = 'R' + '16';
+gvar.sversion = 'R' + '17';
 gvar.scriptMeta = {
-  timestamp: 1297357047234 // version.timestamp
+  timestamp: 1297769669841 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -75,38 +78,49 @@ const GMSTORAGE_PATH      = 'GM_';
  
 // utk add - remove element
 var Dom = {
-  get: function(el) {
+  g: function(el) {
    if(!el) return false;
-   if (typeof el === 'string')
-     return document.getElementById(el);
-   else
-     return el;
+   return (typeof el === 'string'? document.getElementById(el) : el);
   },
   add: function(el, dest) {    
-    var el = this.get(el);
-    var dest = this.get(dest);
+    var el = this.g(el), dest = this.g(dest);
     dest.appendChild(el);
   },
   remove: function(el) {
-    var el = this.get(el);
+    var el = this.g(el);
     el.parentNode.removeChild(el);
   },
   Ev: function() {
     if (window.addEventListener) {
       return function(el, type, fn) {
-        this.get(el).addEventListener(type, function(e){fn(e);}, false);
+        this.g(el).addEventListener(type, function(e){fn(e);}, false);
       };      
     }else if (window.attachEvent) {
       return function(el, type, fn) {
-        var f = function() { fn.call(this.get(el), window.event); };
-        this.get(el).attachEvent('on' + type, f);
+        var f = function() { fn.call(this.g(el), window.event); };
+        this.g(el).attachEvent('on' + type, f);
       };
     }
   }()
 };
+var $D=function (q, root, single) {
+  if (root && typeof root == 'string') {
+      root = $D(root, null, true);
+      if (!root) { return null; }
+  }
+  if( !q ) return false;
+  if ( typeof q == 'object') return q;
+  root = root || document;
+  if (q[0]=='/' || (q[0]=='.' && q[1]=='/')) {
+      if (single) { return document.evaluate(q, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; }
+      return document.evaluate(q, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+  }
+  else if (q[0]=='.') { return root.getElementsByClassName(q.substr(1)); }
+  else if (q[0]=='<') { return root.getElementsByTagName(q.substr(1)); }
+  else { return root.getElementById( (q[0]=='#' ? q.substr(1):q.substr(0)) ); }
+};
 //--
- 
- 
+
 // del all old.value
 function delOldVal(all){
   var todel = ['IDENTITY','USER_COUNT'];
@@ -174,9 +188,7 @@ function init(){
   // let's roll----
   start_Main();  
 }
- 
- 
- 
+
 // == ==== ==
 // == MAIN ==
 // =====Page manipulation====
@@ -198,12 +210,12 @@ function start_Main() {
       mass_append(trTable, [td,div]);
       
       Dom.Ev(div, 'mouseover', function(){
-        if(Dom.get('fetcher') && Dom.get('fetcher').style.display!='none') return;
-        var ch = Dom.get('spanClear');
+        if($D('fetcher') && $D('fetcher').style.display!='none') return;
+        var ch = $D('spanClear');
         if(ch) ch.style.display ='';
       });
       Dom.Ev(div, 'mouseout', function(){
-        var ch = Dom.get('spanClear');
+        var ch = $D('spanClear');
         if(ch) ch.style.display ='none';
       });
       Attr = {'style':'display:none;',id:'spanClear'};
@@ -231,7 +243,7 @@ function start_Main() {
      for(var i=0;i<tdTable.snapshotLength;i++)
         tdTable.snapshotItem(i).width="25%";
     else
-     show_alert('E.002: Node tdTable not found', 0);    
+     show_alert('E.002: Node tdTable not found', 0);
     
     var dstr, repID = [];    
     if( gvar._SIMULATE_ ){
@@ -255,7 +267,7 @@ function start_Main() {
       }
     }
     
-    var trs = getTag('tr', Dom.get('collapseobj_usercp_reputation'));
+    var trs = getTag('tr', $D('collapseobj_usercp_reputation'));
     if(trs && gvar.user.isDonatur)     
      for(var baris in trs){
         if(typeof(trs[baris])!='object') continue;
@@ -301,7 +313,7 @@ function start_Main() {
  
       } // end for
     } // end tdTable
-    else show_alert('E.003: Node tdTable not found', 0);    
+    else show_alert('E.003: Node tdTable not found', 0);
     
     // chk is re-fetch  user detail needed
     if( !gvar._SIMULATE_ && noneed_upd() ) {
@@ -309,12 +321,36 @@ function start_Main() {
      }else{
         startDetail(gvar.userID, 0); // reload detail again
     }
-    if(gvar.user.isDonatur && false)
+    if(gvar.user.isDonatur)
       destroy_column(gvar.el_senders);
+	
+	// rebuild subfolder subscription
+	var el = $D('nav_subsfolders_menu');
+	if(el) rebuild_subscription(el);	
 }
 // end retransform_table
- 
- 
+
+function rebuild_subscription(src){    
+	if(src){
+	   var el, Attr, nmnu=src.innerHTML, par=$D('.//td[@class="tcat" and contains(@colspan,"6")]', null, true);
+	   Attr={id:'nav_subsfolders_clone',style:'cursor:pointer;font-weight:normal;'};
+	   el = createEl('span',Attr,'::&nbsp;[Folders]');
+	   Dom.add(el, par);
+	   Attr={'class':'vbmenu_popup',id:'nav_subsfolders_clone_menu',style:'display:none;'};
+	   el = createEl('div', Attr, nmnu.toString());
+	   Dom.add(el, par);
+	   GM_addGlobalScript('function reg_submenu(){vbmenu_register("nav_subsfolders_clone")}','script_subfolder',true);
+	   remote_click('btn_subsfolders_clone','reg_submenu()');
+	}
+}
+// remote click trigger localscript
+function remote_click(id, func){
+  var Attr={id:'remote_'+id,type:'button','onclick':func},el = createEl('input',Attr,'l');
+  Dom.add(el,document.body);
+  SimulateMouse($D('remote_'+id),'click',true);
+  window.setTimeout(function(){Dom.remove(el)},100);
+}
+
 function destroy_column(els){
    if(isUndefined(els)) return;
    var par;
@@ -348,7 +384,7 @@ function setTitle(tbody){
 	  if(epar && epar.length > 0){
 	    Attr = {id:"sc_subtitle",title:'Home '+gvar.titleName+' - '+gvar.sversion};
 		inner = ' '+ HtmlUnicodeDecode('&#8212;') + ' <b>'+gvar.codeName+'</b> '+HtmlUnicodeDecode('&#183;')+' <a href="'+gvar.home+'" target="_blank" style="text-decoration:underline;">'+gvar.sversion+'</a>';
-		el = createEl('span', Attr, inner);		
+		el = createEl('span', Attr, inner);
 		Dom.add(el, epar[0]);
 	  }
 	}
@@ -426,7 +462,7 @@ function loadstorage(){
 /* draw loader button */
 function drawLoaderImg(noneed){
   if(noneed) return;
-  var parentpostby = Dom.get('psby');  
+  var parentpostby = $D('psby');  
   Attr = {id:'fetcher',
           style:'height:19px;float:right;position:relative;cursor:pointer;margin:-2px;',
           title:'Fetch user detail'
@@ -440,10 +476,9 @@ function drawLoaderImg(noneed){
  
 function hideLoader(){
     option_turn(false);
-    try{Dom.get('fetcher').style.display = 'none';}catch(e){}
+    try{$D('fetcher').style.display = 'none';}catch(e){}
 }
-// --
- 
+// -- 
  
 function startDetail(userSets, x){
  GM_xmlhttpRequest({
@@ -584,7 +619,7 @@ function createSender(data, x){
     ret = toCharRef(ret); // filter unicode chars
     return ret;
   };
-  if(!Dom.get("_ucnd"+x)) return;
+  if(!$D("_ucnd"+x)) return;
   
   var is_donat = ( data["tag_id"] && data["tag_id"].match(/Kaskus\s*Donator/i) ? '&nbsp;<b style="color:red;">[$]</b>':'');
   data["kaskus_id"] = filterChar( data["kaskus_id"] );
@@ -601,7 +636,7 @@ function createSender(data, x){
   +'</div>';
 
   // last act, attaching..  
-  var tgt = Dom.get("_ucnd"+x);
+  var tgt = $D("_ucnd"+x);
   tgt.innerHTML = inner + '<a class="smallfont" href="' + gvar.uri['user_link'] + data["uid"] +'"><b>'
     + ( data["kaskus_id"] ) + '</b></a>'+(is_donat)+'<div style="clear:left;"></div><div style="float:right;padding-top:2px;margin-bottom:-5px;">'
     + ucendol(data) +'</div>';
@@ -610,11 +645,11 @@ function createSender(data, x){
   Dom.Ev(par, 'mouseout', function(e){
       if(gvar.stillOnIt) return;
       e = e.target || e;      
-      Dom.get('_ucnddiv'+x).style.display = 'none';
+      $D('_ucnddiv'+x).style.display = 'none';
   });
   Dom.Ev(par, 'mouseover', function(e){
       e = e.target || e;
-      var imgObj = Dom.get('img_cont'+x);
+      var imgObj = $D('img_cont'+x);
       var img = getTag('img', imgObj);
       if(!img && imgObj.innerHTML!='[no-avatar]'){
         var parts = imgObj.innerHTML.split('||');
@@ -626,7 +661,7 @@ function createSender(data, x){
          imgObj.innerHTML = '[no-avatar]';
         }           
       }
-      Dom.get('_ucnddiv'+x).style.display = '';
+      $D('_ucnddiv'+x).style.display = '';
   });
 }
 // end createSender()
@@ -688,9 +723,9 @@ function getUserId(type){
 }
  
 // --- needed tool
-function isDefined(x)   { return !(x == null && x !== null); }
-function isUndefined(x) { return x == null && x !== null;    }
-function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
+function isDefined(x){ return !(x == null && x !== null);}
+function isUndefined(x){ return x == null && x !== null;}
+function isString(x){return (typeof(x)!='object' && typeof(x)!='function'); }
 function basename(path, suffix) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -716,17 +751,27 @@ function toCharRef(text){
     }
     return charRefs.join('');
 };
-function delValue(key) {
+function delValue(key){
   //try{GM_deleteValue('KEY_SAVE_'+key);}catch(e){}
   try{GM_deleteValue(key);}catch(e){}
 }
-function getValue(key) {
+function getValue(key){
   var data=OPTIONS_BOX[key];
   return (!data ? '': GM_getValue(key,data[0]));
 }
 function setValue(key, value) {
   var data=OPTIONS_BOX[key];
   return (!data ? '': GM_setValue(key,value));
+}
+function SimulateMouse(elem,event,preventDef) {
+  if(typeof(elem)!='object') return;
+  var evObj = document.createEvent('MouseEvents');
+  preventDef=(isDefined(preventDef) && preventDef ? true : false);
+  evObj.initEvent(event, preventDef, true);
+  try{elem.dispatchEvent(evObj);}
+   catch(e){
+         //clog('Error. elem.dispatchEvent is not function.')
+   }
 }
 function createEl(type, attrArray, html){
  var node = document.createElement(type);
@@ -735,6 +780,9 @@ function createEl(type, attrArray, html){
     node.setAttribute(attr, attrArray[attr]);
  if(html) node.innerHTML = html;
    return node;
+}
+function createTextEl(txt){
+  return document.createTextNode(txt);
 }
 function getByXPath_containing(xp, par, contain){
   if(!par) par = document;
@@ -847,7 +895,7 @@ function draw_Button(angle,buttonCtx) {
   buttonCtx.restore();
   return(angle);
 }
- function HtmlUnicodeDecode(a){
+function HtmlUnicodeDecode(a){
  var b="";if(a==null){return(b)}
  var l=a.length;
  for(var i=0;i<l;i++){
@@ -925,10 +973,27 @@ function ApiBrowserCheck() {
   GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); };
 }
 // end ApiBrowserCheck
- 
+var GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
+  var sel=createEl('script',{type:'text/javascript'});
+  if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
+  if(script.match(/^https?:\/\/.+/))
+    sel.setAttribute('src', script);
+  else
+    sel.appendChild(createTextEl(script));
+  if(isDefined(tobody) && tobody){
+    document.body.insertBefore(sel,document.body.firstChild);
+  }else{
+    var hds = getTag('head');
+    if( isDefined(hds[0]) && hds[0].nodeName=='HEAD' )
+     window.setTimeout(function() { hds[0].appendChild(sel);}, 100);
+    else
+     document.body.insertBefore(sel, document.body.firstChild);
+  }
+  return sel;
+};
+
 // -- -- -- -- 
 init();
 // -- -- -- -- 
- 
 })();
 /* Mod By Idx. */
