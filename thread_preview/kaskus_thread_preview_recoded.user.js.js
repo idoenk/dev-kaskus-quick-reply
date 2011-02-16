@@ -436,6 +436,7 @@ var tTRIT = {
 	if(typeof(e)=='object'){
 	  var maxJump= 5, i= 0;
 	  par = e.parentNode;
+     if(gvar.isKaskus && par.nodeName=='LI') return false;
 	  while(i < maxJump && par.nodeName!='TR'){
 	    par = par.parentNode; i++;
 	  }
