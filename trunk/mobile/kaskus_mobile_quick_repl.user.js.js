@@ -3,14 +3,21 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        0.3.1
-// @dtversion      110215031
-// @timestamp      1297717712042
+// @version        0.3.2
+// @dtversion      110216032
+// @timestamp      1297872757873
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
+//
+// v0.3.2 - 2011-02-16
+//  Fix adapting capcay-sys (kaskusDonat)
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v0.3.1 - 2011-02-15
 //  Fix provide capcay
@@ -18,10 +25,6 @@
 //  Improve some do_Parse RegEx
 //  Convert main images to base64String
 //  Deprecate resizer
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v0.3.0 - 2010-12-19
 //  Fix Login check on subdomain (opera)
@@ -50,9 +53,9 @@
 
 var gvar=function(){};
 
-gvar.sversion = 'v' + '0.3.1';
+gvar.sversion = 'v' + '0.3.2';
 gvar.scriptMeta = {
-  timestamp: 1297717712042 // version.timestamp
+  timestamp: 1297872757873 // version.timestamp
 
  ,scriptID: 91051 // script-Id
 };
@@ -249,7 +252,7 @@ function getTPL(){
      +'<div id="main_content" class="fade">\n'
        +'<form id="frmQR" method="post" action="/'+(gvar.mode=='qr' ? gvar.mode_qr.action : gvar.mode_qe.action)+'/'+THREAD.id+'">'
        +'<div class="spacer"></div>'
-       +'<div id="login_as">Logged in as <a href="/user/profile/'+THREAD.user.id+'" target="_blank"><b>'+THREAD.user.name+'</b></a></div>'
+       +'<div id="login_as">Logged in as <a href="/user/profile/'+THREAD.user.id+'" target="_blank"><b id="login_username">'+THREAD.user.name+'</b></a></div>'
        +'<a id="title_add" href="javascript:;">[+] Title</a>:'
 	   +'<div id="title_cont" style="display:none;">'
        +  '<div class="spacer"></div><input id="title" name="title" class="field" value="" type="text" /><div class="spacer"></div>'
@@ -257,10 +260,10 @@ function getTPL(){
        +'&nbsp;Message:&nbsp;<a id="message_clear" href="javascript:;" title="Clear Message">reset</a>'
        +'<div id="message_container"><textarea id="'+gvar.msgID+'" name="message" class="field"></textarea></div>'
        
-	   +'<div id="submit_cont">'
-        + '<div id="capcay_cont" style="float:left;margin-left:10px;">'
-		+   'capcay:<div id="capcay_img" style="display:inline;vertical-align:middle;"></div>' + HtmlUnicodeDecode('&#187;')
-		+   '<input id="captcha" name="captcha" maxlength="2" size="3" type="text" class="field" style="width:50px;" autocomplete="off" />&nbsp;'
+	   +'<div id="submit_cont" style="padding:1px 0 8px 0;">'
+        + '<div id="capcay_cont" style="float:left;margin:0 0 0 10px;">'
+		+   'capcay:<div id="capcay_img" style="display:inline-block;vertical-align:middle;"></div>' + HtmlUnicodeDecode('&#187;')
+		+   '<input id="captcha" name="captcha" maxlength="2" size="3" type="text" class="field rb" style="width:50px;" autocomplete="off" />&nbsp;'
 		+ '</div>'
         + '<input name="reply" value="Submit Reply" type="submit" style="position:absolute;left:-999999px;display:none;" />'
         + '<input id="btnsubmit" class="button" value="Submit Reply" type="button" style="margin-left:-100px;"/>'
@@ -374,6 +377,7 @@ function getCSS(additional){
 	+'.transp_me{color:transparent;}'	
 	+'#fetching_quote{display:inline; padding:0; margin-left:3px; line-height:22px;}'
     +'.left a{font-weight:bold;color:#FFB56A;}'
+    +'.rb{font-weight:bold;color:red;}'
     
     +'.post blockquote, .post .code {border-style: solid !important; border-width:2px 1px 1px 3px !important; '
       +'border-color: #CCFFBB #99DD99 #99DD99 #CCFFBB !important; max-width:none !important; overflow-x:auto !important; '
@@ -657,10 +661,19 @@ var QR = {
     ,msg: {
       addMsg: function(x){ $D(gvar.msgID).value+= x + (x!='' ? '\r\n'+'\r\n' : ''); }
      ,updCapcay: function(x){
-	    var el,par=$D('capcay_img');
-		if(par){
-		   par.innerHTML = ''; el = createEl('img', {src:x,border:"0"});
-		   Dom.add(el,par);
+	    var el,un,pr;
+		if(THREAD.user.isDonatur) {
+		  un=$D('login_username');
+		  if(un && un.innerHTML.indexOf('[$]')==-1)
+		    $D('login_username').innerHTML+='&nbsp;<b class="rb">[$]</b>';
+		  if($D('capcay_cont')) $D('capcay_cont').innerHTML='';
+		  if($D('btnsubmit')) $D('btnsubmit').style.setProperty('margin','0','');
+		  return;
+		}
+		pr=$D('capcay_img');
+		if(pr){
+		   pr.innerHTML = ''; el = createEl('img', {src:x,border:"0",width:'50px'});
+		   Dom.add(el,pr);
 		   if($D('captcha')) $D('captcha').value='';
 		}
 	  }
@@ -749,7 +762,7 @@ var QR = {
 	 
 	 // form submission
 	 var validateCapcay = function(){ 
-	   var tgt,msg='',ret=($D('captcha') && $D('captcha').value.length==2);
+	   var tgt,msg='',ret=($D('captcha') && $D('captcha').value.length==2 || THREAD.user.isDonatur);
 	   if(!ret){ msg='Belum mengisi capcay..';tgt='captcha'}
 	   if($D(gvar.msgID) && $D(gvar.msgID).value.length==0){
 	     msg+=(msg.length>0?'\n':'')+'Message is too short.';tgt=gvar.msgID
@@ -815,7 +828,7 @@ var QR = {
  
 var THREAD = {
    user:function(){}
-  ,init: function (){
+  ,init: function (){    
     THREAD.user = THREAD.getUser();
 	THREAD.id = THREAD.getThreadId();
 	// reFormat post
@@ -852,7 +865,7 @@ var THREAD = {
 	   var node = $D('.//div[@id="menu"]', null, true);
        var html = node.innerHTML;
        var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/(?:\w+)\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
-       return (match ? {id:match[1], name:match[2]} : false);
+       return (match ? {id:match[1], name:match[2], isDonatur:false} : false);
      }
    }
   ,reFormat: function(){
@@ -1040,7 +1053,7 @@ var THREAD = {
      var ret = THREAD.do_Parse(html.responseText);
 	 showhide($D('qrfixed_thumb'), false);
 	 
-	 QR.msg.addMsg(ret[0]);
+	 QR.msg.addMsg(ret[0]);	 
 	 QR.msg.updCapcay(ret[ret.length-2]);
 	 $D('hash').value = gvar.mode_qr.hash = ret[ret.length-1];
 	 QR.check_mode(gvar.mode);
@@ -1060,8 +1073,9 @@ var THREAD = {
 	 ret[1] = (match ? (match[1]?match[1]:''):'');
 	 match = /name=[\'\"]postid[\'\"]\s*(?:(?:class|type)=[\'\"][^\'\"]+.\s*)*value=[\'\"]([^\"\']+)*/i.exec(page);
 	 ret[2] = (match ? (match[1]?match[1]:''):'');
-	 match = /Verification\:\s*<img\s*src=[\'\"]([^\'\"]+)/i.exec(page);
+	 match = /Verification\:\s*<img\s*src=[\'\"]([^\'\"]+)/i.exec(page);	 
 	 ret[3] = (match ? (match[1]?match[1]:''):'');
+	 THREAD.user.isDonatur=(!match?true:false);
 	 
 	 // last match as the key
 	 match = /name=\"hash\".+value=\"([^\"]+)\"/i.exec(page);
