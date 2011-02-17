@@ -15,6 +15,7 @@
 // -!--latestupdate
 //
 // v3.1.3 - 2011-02-13
+//   Fix parseUrl (spaced prefix b4 {message})
 //   Fix toCharRef ignore encoding [\.\,\*]
 //   Silent on oExist performed
 //   Fix minor CSS imageshack on iframe 
@@ -685,7 +686,7 @@ function template_wrapper(txt){
    var tmsg=retTx;
    var tpl = decodeURIComponent(gvar.settings.userLayout.template);
    if(gvar.settings.userLayout.config[1] == 1 && tpl.match(/\{message\}/i) ) {
-      tmsg = tpl.replace(/\{message\}/i, retTx);
+      tmsg = tpl.replace(/\{message\}/i, " "+retTx); // spaced preffix to success parseUrl (^https?\:\/\/)
    }
    
    if(gvar.settings.userLayout.config[0] == 1){
@@ -712,7 +713,7 @@ function buildQuery(){
   if( el && el.value!='' && el.value!=gvar.silahken ){
     var msg = trimStr(el.value);
     msg = template_wrapper();
-    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent(toCharRef(msg) + '{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}' )  + q;
+    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent(toCharRef(msg) +"\n"+'{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}' )  + q;
   }
   el = Dom.g(adtnl[1]);
   if( el && el.value!='' )
