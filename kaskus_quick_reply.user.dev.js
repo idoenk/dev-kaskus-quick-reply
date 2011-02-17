@@ -4,8 +4,8 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://*.imageshack.us/*
 // @version       3.1.3
-// @dtversion     110213313
-// @timestamp     1297632946979
+// @dtversion     110217313
+// @timestamp     1297942516851
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,13 +14,15 @@
 //
 // -!--latestupdate
 //
-// v3.1.3 - 2011-02-13
+// v3.1.3 - 2011-02-17
+//   Add missing kaskus smilie-besar ( Malu )
+//   Fix clear disabled field, kill absolute layer (imageshack.us)
 //   Fix parseUrl (spaced prefix b4 {message})
 //   Fix toCharRef ignore encoding [\.\,\*]
 //   Silent on oExist performed
 //   Fix minor CSS imageshack on iframe 
-//   reorder uploader nav
-//   Add Uploader (beta-2)
+//   Improve reorder uploader nav
+//   Add Uploader (beta-3)
 //   Fix failed update checker
 //   Fix AutoLoad Smiley container
 //   Improve autogrow on Edit(Sigi & Layout)
@@ -70,7 +72,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.3';
 gvar.scriptMeta = {
-  timestamp: 1297632946979 // version.timestamp
+  timestamp: 1297942516851 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -192,32 +194,39 @@ function init(){
 // outside forum like u.kaskus.us || imageshack.us
 function outSideForumTreat(){
   var loc = location.href,el=$D('//input[@wrap="off"]',null,true),par,lb,m=20;
-  // do pre-check hostname on location just to make sure
-  // should try avoid security notice error
+  /* 
+    #do pre-check hostname on location just to make sure
+    #avoid security notice error perform check with try{}
+  */  
   try{if(top===self)return;}catch(e){};
-  if(loc.indexOf('.imageshack.us')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
+  if(loc.indexOf('.imageshack.us')==-1&&loc.indexOf('u.kaskus.us')==-1) return;  
   if(el){
-    gvar.sITryKill = window.setInterval(function() {      
+    gvar.sITryKill = window.setInterval(function() {
 	  if ($D('#done-popup-close')) {
 	    clearInterval(gvar.sITryKill);
 		SimulateMouse( $D('#done-popup-close'), 'click', true );
+		// just make sure, we kill absolute div layer
+		lb=$D('//div[contains(@style,"absolute") and contains(@style,"opacity")]',null, true);
+		if(lb) Dom.remove(lb);
+		GM_addGlobalStyle('h1,#top,.reducetop{display:none;}');
 		window.setTimeout(function(){
-		    el.removeAttribute('disabled');
-		    par=el.parentNode.parentNode;
+			el.removeAttribute('disabled');			
+			//el.removeAttribute('onclick');
+		    var par=el.parentNode.parentNode;
 		    lb=$D('.tooltip',par);
 			if(lb){
 			 lb[0].innerHTML=lb[1].innerHTML='';
 			 Dom.add(el,par);
 			}
-			GM_addGlobalStyle('h1,#top,.reducetop{display:none;}');
+			try{el.focus();selectAll(el)}catch(e){}
 		}, 500);
 	  }else{
-	    if(max>0)
+		if(max>0)
 		  m=m-1;
 		else
 		  clearInterval(gvar.sITryKill);
 	  }
-	},  1);
+	},  50);
   }
 }
 
@@ -2772,9 +2781,6 @@ var vB_textarea = {
   setValue : function(text, ptpos){
     var start=this.cursorPos[0];
     var end=this.cursorPos[1];
-	
-	show_alert(start+','+end+' - '+ptpos);
-	
     if(isUndefined(ptpos)) ptpos=[text.length,text.length];
     if(start!=end) {
       this.replaceSelected(text,ptpos);
@@ -3952,6 +3958,8 @@ var UPL = {
 	UPL.parent=tgId;
 	if(tgt.innerHTML!='') return;
 	UPL.prop=gvar.uploader;
+	if(isDefined(gvar.uploaded))
+	   delete(gvar.uploaded);
 	// create form DOM upload
 	UPL.attach_form();
 	
@@ -4056,6 +4064,7 @@ var UPL = {
 	el=$D('#fld_title');
 	if(el) el.innerHTML='Uploading '+gg+(Dom.g("userfile")?' ['+fn+']':'')+' '+gg+' '+host.substring(0,(host.indexOf('/')!=-1 ? host.indexOf('/'):host.length));
 	
+	gvar.uploaded = 1;
 	Dom.remove(inputElm);
 	
 	UPL.rebuild_inputfile();
@@ -4084,11 +4093,11 @@ var UPL = {
    }
  }
  ,toogle_iframe: function(visb,chksub){
-    var ifrm=$D("#target_upload"),src=UPL.prop[gvar.upload_tipe]['src'];
+    var ifrm=$D("#target_upload"),src=UPL.prop[gvar.upload_tipe]['src'].replace(/\/\?no_multi.+/i,'');
 	chksub = (isUndefined(chksub)?false:chksub);
     if(isUndefined(visb)) visb = (ifrm.style.display=="none");
     if(visb){
-		if(ifrm.src!='http://'+src+'/' && !chksub ){
+		if(!gvar.uploaded && !chksub ){
 		   ifrm.src='about:blank';
 		   window.setTimeout(function(){$D("#target_upload").src='http://'+src+'/'},50);
 		}
@@ -4121,7 +4130,7 @@ var UPL = {
 	
 	var Attr,iner,el,sel=createEl('select',{id:'sel_host',title:'Image Host',style:'font-weight:bold;color:#0000FF'});
 	var ret=createEl('div',{id:'par_sel_host',style:'display:inline-block;margin-right:5px;border:1px solid #BBC7CE;padding-left:3px;',});
-	el=createEl('div',{style:'float:left;font-weight:bold;margin-top:4px;color:#0000FF'},'<a id="host_link" href="http://'+UPL.prop[gvar.upload_tipe]['src']+'">Host</a> :&nbsp;');
+	el=createEl('div',{style:'float:left;font-weight:bold;margin-top:4px;color:#0000FF'},'<a id="host_link" href="http://'+UPL.prop[gvar.upload_tipe]['src'].replace(/\?no_multi.+/i,'')+'">Host</a> :&nbsp;');
 	Dom.add(el,ret);
 	on('change',sel,function(e){
 	  e=e.target||e;
@@ -4909,53 +4918,54 @@ Format will be valid like this:
 ,'504': [H+'marah.gif', ':marah', 'Marah']
 ,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
 ,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
-,'507': [H+'sorry.gif', ':sorry', 'Sorry']
 
+,'507': [H+'sorry.gif', ':sorry', 'Sorry']
 ,'508': [H+'capede.gif', ':cd', 'Cape d...']
 ,'509': [H+'nohope.gif', ':nohope', 'No Hope']
 ,'510': [H+'bingung.gif', ':bingung', 'Bingung']
+,'511': [H+'malu.gif', ':malu', 'Malu']
 
-,'511': [H+'hammer.gif', ':hammer', 'Hammer2']
-,'512': [H+'dp.gif', ':dp', 'DP']
-,'513': [H+'takut.gif', ':takut', 'Takut']
-,'514': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'513': [H+'dp.gif', ':dp', 'DP']
+,'514': [H+'takut.gif', ':takut', 'Takut']
+,'515': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
 
-,'515': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
-,'516': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
-,'517': [H+'toastcendol.gif', ':toast', 'Toast']
-,'518': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
-,'519': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,'516': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'517': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'518': [H+'toastcendol.gif', ':toast', 'Toast']
+,'519': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
+,'520': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
 
-,'520': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+,'521': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
 
-,'521': [H+'mewek.gif', ':mewek', 'Mewek']
-,'522': [H+'sundul.gif', ':sup2:', 'Sundul']
-,'523': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+,'522': [H+'mewek.gif', ':mewek', 'Mewek']
+,'523': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'524': [H+'ngakak.gif', ':ngakak', 'Ngakak']
 
-,'524': [H+'recseller.gif', ':recsel', 'Recommended Seller']
-,'525': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
-,'526': [H+'jempol1.gif', ':thumbup', 'Jempol']
-,'527': [H+'selamat.gif', ':selamat', 'Selamat']
+,'525': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'526': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'527': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'528': [H+'selamat.gif', ':selamat', 'Selamat']
 
-,'528': [H+'ultah.gif', ':ultah', 'Ultah']
-,'529': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
-,'530': [H+'request.gif', ':request', 'Request']
-,'531': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'529': [H+'ultah.gif', ':ultah', 'Ultah']
+,'530': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'531': [H+'request.gif', ':request', 'Request']
+,'532': [H+'cekpm.gif', ':cekpm', 'Cek PM']
 
-,'532': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
-,'533': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
-,'534': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
-,'535': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
-,'536': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
-,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'538': [H+'traveller.gif', ':travel', 'Traveller']
+,'533': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'534': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'535': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'536': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'537': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'538': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'539': [H+'traveller.gif', ':travel', 'Traveller']
 
 /* 2010Dec,:kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
-,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'540': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
 
 /* 2011Jan,:cool,:bola*/
-,'540': [H+'cool2.gif', ':cool', 'Cool']
-,'541': [H+'bola.gif', ':bola', 'Bola']
+,'541': [H+'cool2.gif', ':cool', 'Cool']
+,'542': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
