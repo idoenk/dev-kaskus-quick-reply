@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.17
-// @dtversion     11021517
-// @timestamp     1297769669841
+// @dtversion     11021817
+// @timestamp     1297962163240
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,7 +15,8 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.17 : 2011-02-15
+// mod.R.17 : 2011-02-18
+// Fix some RegEx parseIt
 // rebuild subfolder subscription
 // missed destroy_column(el_sender) -KaskusDonat.
 //
@@ -49,7 +50,7 @@ var gvar=function(){};
 
 gvar.sversion = 'R' + '17';
 gvar.scriptMeta = {
-  timestamp: 1297769669841 // version.timestamp
+  timestamp: 1297962163240 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -58,7 +59,7 @@ javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //========-=-=-=-=--=========
-gvar.__DEBUG__  = false; // development debug
+gvar.__DEBUG__  = true; // development debug
 gvar._SIMULATE_ = false; // debug simulate sender
 //========-=-=-=-=--=========
 const OPTIONS_BOX = {
@@ -537,44 +538,48 @@ function pushData(dat){
  
 function parseIt(page){
   var dpage; var result = {};
- 
-  ret = page.match(/\?do=addlist[^\d]+(\d+)/im); // uid
+  
+  ret = page.match(/\?do=addlist[^\d]+(\d+)/i); // uid
   if(ret) result[gvar.f[0]] = ret[1];
     
-  ret = page.match(/View\s*Profile\:\s*([^\<]+)/im); // kaskus_id
+  ret = page.match(/View\s*Profile\:\s*([^\<]+)/i); // kaskus_id
   if(ret) result[gvar.f[1]] = ret[1];  
   
-  ret = page.match(/h2>([^\<]+)/im); // tag_id
+  ret = page.match(/h2>([^\<]+)/i); // tag_id
   if(ret) result[gvar.f[2]] = ret[1];  
   
-  if(page.indexOf('Location')!=-1){
-    dpage = page.split('Location</dt>')[1].split('</dd>')[0]; //location
-    if(ret = getBetween(dpage, '<dd>(.+)')) result[gvar.f[3]] = ret; 
-  }else{
+  ret = page.match(/ocation<\/[^>]+..[^>]+.([^<]+)/i); // location
+  if(ret) 
+    result[gvar.f[3]] = ret[1];
+  else
     result[gvar.f[3]] = 'N/A';
-  }
   
-  ret=page.match(/Join\s*Date\:[^\d]+([^<]+)/im);
+  ret=page.match(/Join\s*Date\:[^\d]+([^<]+)/i);
   if(ret) result[gvar.f[4]] = ret[1]; // join_date
   
-  dpage = page.split('Total Posts:')[1].split('</li>')[0];
-  if(ret = getBetween(dpage, '>\\s(.+)')) result[gvar.f[5]] = ret; // total_post
+  ret=page.match(/Total\s*Posts\:<\/[^>]+.\s*([^<]+)/);
+  if(ret) result[gvar.f[5]] = ret[1]; // total_post
   
+  result[gvar.f[6]]='';
   if(page.indexOf('user_avatar')!=-1){
-    dpage = page.split('user_avatar')[0];
-    dpage = dpage.substring(parseInt(dpage.length)-200); // assumed we mundur 200 char
-    if(ret = getBetween(dpage, '<img\\ssrc=\\"([^\\"]+)')){
-      result[gvar.f[6]] = basename(ret); // avatar_url
-      gvar.uri['avatar'] = ret.replace(result[gvar.f[6]], ""); // update to make sure
-      if(gvar.uri['avatar'].substr(-1) == '/')
-        gvar.uri['avatar'] = gvar.uri['avatar'].substr(0, gvar.uri['avatar'].length-1);
-    }
-  }else{
-    result[gvar.f[6]]='';
+    dpage = page.split('user_avatar');
+	if(dpage = dpage[0]){
+	   dpage = dpage.substring(parseInt(dpage.length)-200); // assumed we mundur 200 char
+       if(ret = dpage.toString().match(/img\s*src=[\'\"]([^\'\"]+)/i) ){
+	      result[gvar.f[6]] = basename(ret[1]); // avatar_url
+          gvar.uri['avatar'] = ret[1].replace(result[gvar.f[6]], ""); // update to make sure
+          if(gvar.uri['avatar'].substr(-1) == '/')
+            gvar.uri['avatar'] = gvar.uri['avatar'].substr(0, gvar.uri['avatar'].length-1);
+       }
+	}
   }
-  dpage = page.split('<div id="reputation">')[1];
-  var cnt = dpage.split('images/reputation/').length;
-  result[gvar.f[7]] = parseInt(cnt-1); // rep_count
+  
+  result[gvar.f[7]]=0;
+  dpage = page.split('<div id="reputation">');
+  if(dpage = dpage[1]){
+    var cnt = dpage.split('images/reputation/').length;
+    result[gvar.f[7]] = parseInt(cnt-1); // rep_count
+  }
   
   var rep_fn = [gvar.uri['rep_img0'], gvar.uri['rep_offimg'], gvar.uri['rep_img'], gvar.uri['rep_img2'], gvar.uri['rep_redimg'], gvar.uri['rep_redimg2']];
   result[gvar.f[8]] = '';
@@ -585,7 +590,7 @@ function parseIt(page){
     }
   }
   //rep_rank_title
-  var re = new RegExp('<img\\\s*(?:(?:title|class|src)=[\\\'\\\"][^\\\'\\\"]+.\\\s*)*alt=[\\\'\\\"]([^\\\'\\\"]+)',  'im');
+  var re = new RegExp('<img\\\s*(?:(?:title|class|src)=[\\\'\\\"][^\\\'\\\"]+.\\\s*)*alt=[\\\'\\\"]([^\\\'\\\"]+)', 'i');
   var cucok = dpage.match(re);
   result[gvar.f[9]] = (cucok ? cucok[1].replace(/\s{2,}/g,' ') : result[gvar.f[1]] + '\'s reputation rank');  
   
