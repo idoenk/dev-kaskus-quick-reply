@@ -3,21 +3,25 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        0.3.2
-// @dtversion      110216032
-// @timestamp      1297872757873
+// @version        0.3.3
+// @dtversion      110218033
+// @timestamp      1298037211101
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v0.3.2 - 2011-02-16
-//  Fix adapting capcay-sys (kaskusDonat)
+// v0.3.3 - 2011-02-18
+//  Fix dump-redirect after editpost
+//  Fix edit no-need capcay
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v0.3.2 - 2011-02-16
+//  Fix adapting capcay-sys (kaskusDonat)
 //
 // v0.3.1 - 2011-02-15
 //  Fix provide capcay
@@ -25,15 +29,6 @@
 //  Improve some do_Parse RegEx
 //  Convert main images to base64String
 //  Deprecate resizer
-//
-// v0.3.0 - 2010-12-19
-//  Fix Login check on subdomain (opera)
-//  Deprecate included subdomain (wap, blackberry)
-//  Add Logged in as
-//  Add Quick-Edit - beta
-//
-// v0.2 - 2010-11-28
-//  Fix Hover-Preview
 //
 // more...
 //
@@ -53,9 +48,9 @@
 
 var gvar=function(){};
 
-gvar.sversion = 'v' + '0.3.2';
+gvar.sversion = 'v' + '0.3.3';
 gvar.scriptMeta = {
-  timestamp: 1297872757873 // version.timestamp
+  timestamp: 1298037211101 // version.timestamp
 
  ,scriptID: 91051 // script-Id
 };
@@ -69,7 +64,7 @@ gvar.__DEBUG__ = false; // development debug
 
 const OPTIONS_BOX = {
   KEY_SAVE_DelayPopupPicsTimeout:  ['500'] // Delay before popup show up
- ,KEY_SAVE_msgheight:             ['90'] // last height of textarea
+ ,KEY_SAVE_CallBackUri:           [''] // temporary referer uri
 };
 
 const GMSTORAGE_PATH = 'GM_';
@@ -113,9 +108,11 @@ function init(){
   // inject CSS
   GM_addGlobalStyle( getCSS() );
   
+  if( nogoLoc(location.href) ) return;
+  
   // init load div layer for popup
   GM_addGlobalStyle( loadStyle() );
-  loadPopup();
+  loadPopup();  
   
   // -- let's roll --
   start_Main();
@@ -132,23 +129,39 @@ function getPreferences(){
   };
 }
 
-function start_Main(){
-    
-   THREAD.init();
-   if(THREAD.user===false) {
-     if(location.hash=='#login'){
-       var tgtusername = $D('.//input[@name="username"]', null, true);
-       tgtusername.focus();
-     }
-     show_alert('User not logged in', 0); 
-	 return; // dead end
-   }
-   
-   // di dalem thread ato bukan?
-   if( !THREAD.inside() ) return; 
+function nogoLoc(loc){
+    var ret=false;
+	if(loc.indexOf('/visitormessage/')!=-1) // meet visitormessage
+      ret = true;
+    else if(loc.indexOf('/editpost/')!=-1){ // in or after editing
+	  var el = $D('//META[contains(@http-equiv, "refresh")]', null, true), cbUri=getValue(KS+'CallBackUri');
+	  if(el && cbUri.length){
+		THREAD.window_stop();
+	    Dom.remove(el);
+		setValue(KS+'CallBackUri','');
+		document.body.innerHTML = '<div id="wrapper"><p align="center" style="font-size:15px">You are now being taken to the post or <a href="'+cbUri+'"><b>click here</b></a></p></div>';
+		ret=location.href=cbUri;
+	  }
+    }
+	return ret;
+}
 
-   // initialize QR
-   QR.init();
+function start_Main(){
+    THREAD.init();
+    if(THREAD.user===false) {
+      if(location.hash=='#login'){
+        var tgtusername = $D('.//input[@name="username"]', null, true);
+        tgtusername.focus();
+      }
+      show_alert('User not logged in', 0); 
+ 	 return; // dead end
+    }
+    
+    // di dalem thread ato bukan?
+    if( !THREAD.isInside ) return; 
+ 
+    // initialize QR
+    QR.init();
 }
 
 // clean-up fetched post
@@ -260,6 +273,7 @@ function getTPL(){
        +'&nbsp;Message:&nbsp;<a id="message_clear" href="javascript:;" title="Clear Message">reset</a>'
        +'<div id="message_container"><textarea id="'+gvar.msgID+'" name="message" class="field"></textarea></div>'
        
+	   +'<div id="reason_edit" title="Reason for Editing"></div>'
 	   +'<div id="submit_cont" style="padding:1px 0 8px 0;">'
         + '<div id="capcay_cont" style="float:left;margin:0 0 0 10px;">'
 		+   'capcay:<div id="capcay_img" style="display:inline-block;vertical-align:middle;"></div>' + HtmlUnicodeDecode('&#187;')
@@ -268,9 +282,10 @@ function getTPL(){
         + '<input name="reply" value="Submit Reply" type="submit" style="position:absolute;left:-999999px;display:none;" />'
         + '<input id="btnsubmit" class="button" value="Submit Reply" type="button" style="margin-left:-100px;"/>'
 		
-		+ (gvar.__DEBUG__ ? '<br/><input type="text" style="width:60%;" id="thisAct" value="/'+(gvar.mode=='qr' ? gvar.mode_qr.action : gvar.mode_qe.action)+'/'+THREAD.id+'" />':'')
-        + '<input '+(gvar.__DEBUG__ ? 'type="text" style="width:60%;"':'type="hidden"')+' name="threadid" value="'+THREAD.id+'" />'
-        + '<input '+(gvar.__DEBUG__ ? 'type="text" style="width:60%;"':'type="hidden"')+' name="hash" id="hash" value="'+(gvar.mode=='qr' ? gvar.mode_qr.hash : gvar.mode_qe.hash)+'" />'
+		+ (gvar.__DEBUG__ ? '<div style="clear:both;"><input type="text" style="width:60%;" title="qr-action; Mode:'+gvar.mode+'" id="thisAct" value="/'+(gvar.mode=='qr' ? gvar.mode_qr.action : gvar.mode_qe.action)+'/'+THREAD.id+'" />':'')
+        + '<input '+(gvar.__DEBUG__ ? 'type="text" style="width:60%;"':'type="hidden"')+' name="threadid" title="threadid" value="'+THREAD.id+'" />'
+        + '<input '+(gvar.__DEBUG__ ? 'type="text" style="width:60%;"':'type="hidden"')+' name="hash" id="hash" title="hash" value="'+(gvar.mode=='qr' ? gvar.mode_qr.hash : gvar.mode_qe.hash)+'" />'
+		+ (gvar.__DEBUG__ ? '</div>':'')
 		
        +'</div>' // #submit_cont
        +'</form>\n'
@@ -450,7 +465,7 @@ function getCSS(additional){
 function isDefined(x) { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
-function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
+function trimStr(x) { return (typeof(x)=='string' && x ? x.replace(/^\s+|\s+$/g,"") : '') };
 function getAbsoluteTop(element) {
   var AbsTop=0;
   while (element) { AbsTop=AbsTop+element.offsetTop; element=element.offsetParent; }
@@ -762,10 +777,13 @@ var QR = {
 	 
 	 // form submission
 	 var validateCapcay = function(){ 
-	   var tgt,msg='',ret=($D('captcha') && $D('captcha').value.length==2 || THREAD.user.isDonatur);
+	   var tgt,msg='',ret=($D('captcha') && $D('captcha').value.length==2 || THREAD.user.isDonatur || gvar.mode=='qe');
 	   if(!ret){ msg='Belum mengisi capcay..';tgt='captcha'}
-	   if($D(gvar.msgID) && $D(gvar.msgID).value.length==0){
-	     msg+=(msg.length>0?'\n':'')+'Message is too short.';tgt=gvar.msgID
+	   if( $D(gvar.msgID) ){
+		 var nVal = trimStr ( $D(gvar.msgID).value );
+		 $D(gvar.msgID).value = nVal;
+		 if( $D(gvar.msgID).value.length==0 )
+		    msg+=(msg.length>0?'\n':'')+'Message is too short.'; tgt=gvar.msgID;
 	   }
 	   if(msg!=''){alert(msg); $D(tgt).focus()}
 	   return ret;
@@ -782,6 +800,16 @@ var QR = {
         });
     } // end event_tpl
 	
+    ,set_reason: function(vres){
+	  var par = $D('reason_edit'), el = createEl('input', {id:'reason','class':'field',name:'reason',value:vres,type:'text',style:'display:inline;width:90%'});
+	  if(!par) return;
+	  par.innerHTML = 'Reason: ';
+	  Dom.add(el, $D('reason_edit'));
+	}
+    ,set_referer_uri: function(pid){
+	  if(!pid) return '';
+	  setValue( KS+'CallBackUri', 'http://'+location.hostname+location.pathname+'#'+pid );
+	}
     ,chk_postID: function(pid, destroy){
 	  if(isDefined(destroy) && destroy){
 	    if( $D('postid') )
@@ -789,7 +817,7 @@ var QR = {
 		return;		  
 	  }
 	  if(isUndefined(pid)) return false;	  
-	  var el = createEl('input', {id:'postid',name:'postid',value:pid,type:'hidden'});	  
+	  var el = createEl('input', {id:'postid',name:'postid',value:pid,type:'hidden'});
 	  Dom.add(el, $D('submit_cont'));
 	}
     ,check_mode: function(mode){
@@ -805,8 +833,10 @@ var QR = {
 	  if(gvar.__DEBUG__) $D('thisAct').value = $D('frmQR').action;
 	}	
     ,cancel_edit: function(){
+	  setValue(KS+'CallBackUri','');
 	  $D('hash').value = gvar.mode_qr.hash
-	  QR.check_mode('qr');	  
+	  QR.check_mode('qr');
+	  if($D('reason_edit')) $D('reason_edit').innerHTML = '';
 	}
     ,close: function(){
 	  if(gvar.mode=='qe') {// closing from Quick Edit
@@ -829,16 +859,17 @@ var QR = {
 var THREAD = {
    user:function(){}
   ,init: function (){    
+	THREAD.isInside = THREAD.inside();
     THREAD.user = THREAD.getUser();
-	THREAD.id = THREAD.getThreadId();
+	
 	// reFormat post
-    THREAD.reFormat();
-	
-	if(THREAD.user===false) return;
-	
-	// do event on quote & Edit button (only  on logged in)
-    THREAD.eventQuote();
-    THREAD.add_footter_spacer();
+	if(THREAD.isInside){
+        THREAD.id = THREAD.getThreadId();
+	    THREAD.reFormat();
+	    // do event on quote & Edit button
+	    THREAD.eventQuote();
+	    THREAD.add_footter_spacer();
+	}    
   }
   ,getThreadId: function (){
     var match, hVal = getByXPath_containing('//a[@class="btn_link"]', false, 'REPLY');	
@@ -849,16 +880,11 @@ var THREAD = {
   }
   ,getUser: function (){
      var alogins = $D('//a[contains(@href, "#login")]', null);
-     if(alogins.snapshotLength > 0) {
-	   var tgtusername = $D('.//input[@name="username"]', null, true);
-	   var ogi = getAbsoluteTop( $D('login') );
+     if(alogins.snapshotLength > 0) {	   
 	   for(var i=0;i<alogins.snapshotLength; i++){
 			var el = alogins.snapshotItem(i);
 			el.setAttribute('onclick','return false');
-			Dom.Ev(el, 'click', function(){
-			  scrollTo(0,ogi);
-			  tgtusername.focus();
-			});
+			Dom.Ev(el, 'click', function(){ THREAD.scroll_to_login() });
 	   }
 	   return false;
      }else{
@@ -867,6 +893,11 @@ var THREAD = {
        var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/(?:\w+)\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
        return (match ? {id:match[1], name:match[2], isDonatur:false} : false);
      }
+   }
+  ,scroll_to_login: function(){
+      var ogi = getAbsoluteTop( $D('login') ), tgtusername = $D('.//input[@name="username"]', null, true);
+	  scrollTo(0,ogi);
+	  tgtusername.focus();  
    }
   ,reFormat: function(){
     var posts = $D('.//div[@class="post"]',null);
@@ -935,11 +966,13 @@ var THREAD = {
 	}
    }
   ,eventQuote: function(){
-	 var nodes,child, el;
+	 var nodes,child, el, par, Attr;
 	 nodes = getByXPath_containing('//a', false, 'edit');
 	 for(var i=0; i < nodes.length; i++){	    
-	    //child = '<img src="'+gvar.domainstatic + 'images/buttons/edit.gif' + '" border="0" alt="edit" />';
-	    child = '<img src="'+gvar.B.btn_edit+ '" border="0" alt="edit" />';
+	    if(THREAD.user===false) {
+		   Dom.remove(nodes[i]); continue;
+		}
+		child = '<img src="'+gvar.B.btn_edit+ '" border="0" alt="edit" />';
 		el = createEl('a', {href:nodes[i].href, 'onclick':'return false;', id:'edit_'+i}, child);
 		Dom.Ev(el, 'click', function(e){ 
 		  THREAD.doEdit(e); 
@@ -950,15 +983,34 @@ var THREAD = {
 	 }
 	 nodes = getByXPath_containing('//a', false, 'quote');
      for(var i=0; i < nodes.length; i++){
-	    var par = nodes[i].parentNode;		
-        //child = '<img src="'+gvar.domainstatic + 'images/buttons/quickreply.gif' + '" border="0" alt="quote" />';
+		par = nodes[i].parentNode;
+	    if(THREAD.user===false){
+		  Attr={href:'#login', 'onclick':'return false;', id:'quote_'+i,title:'Login to Reply'};
+		}else{
+		  Attr={href:nodes[i].href, 'onclick':'return false;', id:'quote_'+i};		
+		}
         child = '<img src="'+gvar.B.btn_qr+'" border="0" alt="quote" />';
-        el = createEl('a', {href:nodes[i].href, 'onclick':'return false;', id:'quote_'+i}, child);
-        Dom.Ev(el, 'click', function(e){ THREAD.doQuote(e); });
+        el = createEl('a', Attr, child);
+        if(THREAD.user) 
+		  Dom.Ev(el, 'click', function(e){ THREAD.doQuote(e) });
+		else
+		  Dom.Ev(el, 'click', function(){ THREAD.scroll_to_login() });
+		
         Dom.add(el, par);		
 		addClass('transp_me', par);
         Dom.remove(nodes[i]);
      }
+	 if(THREAD.user===false){
+	    nodes = $D('//a[contains(@href,"/reply/")]');
+		if(nodes.snapshotLength)
+          for(var i=0;i<nodes.snapshotLength;i++){
+		    var el=nodes.snapshotItem(i);
+		    el.setAttribute('href','javascript:;');
+		    Dom.Ev(el, 'click', function(){ THREAD.scroll_to_login(); return false; });
+		  }
+	 }
+	 
+	 
    }
    
   ,isProcessing: function(tgt){
@@ -1019,7 +1071,11 @@ var THREAD = {
 	 $D('frmQR').action = '/' + gvar.mode_qe.action + '/' + ret[2];
 	 $D('hash').value = gvar.mode_qe.hash = ret[ret.length-1];	 
 	 QR.check_mode(gvar.mode);
+	 
 	 QR.chk_postID(ret[2]); // create postid el
+	 QR.set_referer_uri(ret[2]); // set referer uri
+	 QR.set_reason(ret[4]); // set reason editing
+	 
 	 QR.toggle(true);
 	 $D('footer_spacer').setAttribute('style', 'height:'+THREAD.get_footerHeight()+'px');
   }
@@ -1054,7 +1110,7 @@ var THREAD = {
 	 showhide($D('qrfixed_thumb'), false);
 	 
 	 QR.msg.addMsg(ret[0]);	 
-	 QR.msg.updCapcay(ret[ret.length-2]);
+	 QR.msg.updCapcay(ret[3]);
 	 $D('hash').value = gvar.mode_qr.hash = ret[ret.length-1];
 	 QR.check_mode(gvar.mode);
 	 QR.toggle(true);
@@ -1076,16 +1132,21 @@ var THREAD = {
 	 match = /Verification\:\s*<img\s*src=[\'\"]([^\'\"]+)/i.exec(page);	 
 	 ret[3] = (match ? (match[1]?match[1]:''):'');
 	 THREAD.user.isDonatur=(!match?true:false);
+	 match = /name=[\'\"]reason[\'\"]\s*(?:(?:class|type)=[\'\"][^\'\"]+.\s*)*value=[\'\"]([^\"\']+)*/i.exec(page);
+	 ret[4] = (match ? (match[1]?match[1]:''):'');
 	 
 	 // last match as the key
 	 match = /name=\"hash\".+value=\"([^\"]+)\"/i.exec(page);
-	 ret[4] = (match ? match[1]:'');
-	 if(match) ret = [ 
-	     unescapeHtml(ret[0]) // msg
-	   , ret[1] // title
-	   , ret[2] // postid
-	   , ret[3] // capcay
-	   , ret[4] // hash
+	 ret[5] = (match ? match[1]:'');
+	 if(match) ret = [
+	     unescapeHtml(ret[0]) // #0 msg
+	   , ret[1] // #1 title
+	   , ret[2] // #2 postid
+	   , ret[3] // #3 capcay
+	   , ret[4] // #4 reason	   
+	   
+	   // keep hash at the last
+	   , ret[5] // #5 hash
 	   ];
      return ret;
    }
@@ -1097,6 +1158,10 @@ var THREAD = {
   }
   ,inside: function(){
     return ( /\/thread\/.*/.test(location.pathname) );
+  }
+  ,window_stop: function(){
+    if(window.stop !== undefined){window.stop();}
+	else if(document.execCommand !== undefined){document.execCommand("Stop", false);}
   }
   ,add_footter_spacer: function(flag){
      flag = (isUndefined(flag) ? true : flag);
