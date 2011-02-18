@@ -15,6 +15,7 @@
 // -!--latestupdate
 //
 // v3.1.3 - 2011-02-17
+//   Add Inc-Dec Size Editor Height
 //   Add missing kaskus smilie-besar ( Malu )
 //   Fix clear disabled field, kill absolute layer (imageshack.us)
 //   Fix parseUrl (spaced prefix b4 {message})
@@ -425,13 +426,11 @@ function start_Main(){
            vB_textarea.setElastic(); // retrigger autogrow now
        }else{ // disable|readonly textarea.
          vB_textarea.readonly();
-         //if(gvar.settings.textareaExpander[0])
          Dom.g(gvar.id_textarea).style.height=100+'px';
        }
        gvar.restart = false;
        if(gvar.user.isDonatur) 
          Dom.remove('qrform'); // destroy original QR
-       //SimulateMouse( $D('#remote_scustom_container'), 'click', true);
     }, 50);
 	window.setTimeout(function() {
 	   if($D('#quickreply')) $D('#quickreply').style.visibility = 'visible';
@@ -1084,7 +1083,8 @@ function initEventTpl(){
 }
 // - end initEventTpl()
 
-function controler_resizer(){
+function controler_resizer(){   
+   gvar.maxH_editor = parseInt(GetHeight())-170;
    var wtxa=Dom.g(gvar.id_textarea).clientWidth;
    window.setTimeout(function() {
      var el=$D('#input_title'),iwtxa=Dom.g(gvar.id_textarea).clientWidth;;
@@ -1096,10 +1096,12 @@ function controler_resizer(){
      el = $D('#dv_accessible');
      if(el && $D('#dv_accessible').style.display!='none')
        el.style.width=(iwtxa-80)+'px';
+	 else
+	   if(gvar.settings.textareaExpander[0]) vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor, 1);	   
 	 popupLayer_positioning(); // if there is a popup, repositioning it
    }, 100);
    var el = $D('#controller_wraper');
-   if(el) el.style.width=(wtxa)+'px';
+   if(el) el.style.width=(wtxa+50)+'px';
    el = $D('#scustom_container');
    if(el) el.style.setProperty('max-width',(wtxa-135)+'px','');
 }
@@ -1284,7 +1286,7 @@ function re_event_vbEditor(){
   
   // event textarea autogrowth  
   if(gvar.settings.textareaExpander[0])
-	vB_textarea.setElastic();
+	vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor);
   
   var vB01='vB_Editor_001';
   // general event buat more smile
@@ -1303,6 +1305,8 @@ function re_event_vbEditor(){
       break;
       case 'Insert Image': case 'Insert Link':
         on('click',el,function(e){do_btncustom(e)});
+      case 'Decrease Size': case 'Increase Size':
+        on('click',el,function(e){do_resize_editor(e)});
       break;
       default:
        if(alt && (alt.indexOf('[quote]')!=-1 || alt.indexOf('[code]')!=-1) )
@@ -1980,6 +1984,14 @@ function do_btncustom(e){
     vB_textarea.wrapValue( pTag[tag], (tagprop!='' ? tagprop:'') );
   }
 }
+function do_resize_editor(e){
+  e=e.target||e;
+  if(isUndefined(vB_textarea.Obj)) vB_textarea.init();
+  var o=vB_textarea.Obj, size_change = parseInt(60, 10);
+  var change_direction = e.getAttribute('alt') == "Increase Size" ? 1 : -1;
+  var newheight = parseInt(o.clientHeight) + (size_change*change_direction);
+  o.style.height = (newheight >= 99 ? newheight : 99 ) + "px";
+}
 
 function event_ckck(){
        //clog('in event_ckck');
@@ -2250,7 +2262,8 @@ function ajax_chk_newval(reply_html){
          deselect_it(); // clear selected quotes
 		 vB_textarea.lastfocus();
 		 if(gvar.settings.textareaExpander[0])
-           vB_textarea.setElastic(); // retrigger autogrow now
+           vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
+           //vB_textarea.setElastic(); // retrigger autogrow now
 	   }
 	}
 	if(re_event_btn){
@@ -2818,13 +2831,14 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
   },
-  setElastic: function(tid,max){
+  setElastic: function(tid,max,winrez){
     if(isUndefined(tid)) tid=gvar.id_textarea;
 	function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7)); setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString();b=b.replace(/\r?\n/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
 	var a=Dom.g(tid)||this.Obj;
 	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px;'+(max?'max-height:'+max+'px;':''));
-	on('keyup',a,function(){setCols_Elastic(max)});
+	if(!winrez)
+	  on('keyup',a,function(){setCols_Elastic(max)});
 	window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
 };
@@ -5192,16 +5206,21 @@ Format will be valid like this:
      +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>'
      +konst.__sep__ : '')    
      
-     +(gvar.settings.hidecontroll[9] != '1' ? ' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[9] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton" id="vB_Editor_001_cmd_wrap0_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
      :'')
      +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[9] == '1' ? '' : konst.__sep__)     
      
      +                '<td id="customed_control"></td>'
-     +( gvar.settings.hidecontroll[11] == '1' && gvar.settings.hidecontroll[13] == '1' 
-       && gvar.settings.hidecontroll[12] == '1' ? '' : '')
      +                '<td width="100%"></td>'
+
+	 (!gvar.settings.textareaExpander[0] ? 
+     +                '<td width="50px" style="padding-left:10px;">'
+	 +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_0" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_0.gif" width="21" height="9" alt="Decrease Size" title="Decrease Size"></div>'
+	 +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_1" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_1.gif" width="21" height="9" alt="Increase Size" title="Increase Size"></div>'
+	 +                '</td>'
+	 : '')
      +            '</tr>'
      +konst.tbo_
      +        '</div>' // end #vB_Editor_001_controls
