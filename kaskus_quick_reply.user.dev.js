@@ -2,28 +2,30 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
+// @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.3
-// @dtversion     110217313
-// @timestamp     1297942516851
+// @dtversion     110219313
+// @timestamp     1298052641662
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
-// @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, & all-kaskuser@t=3170414
+// @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
 //
-// v3.1.3 - 2011-02-17
-//   Add Inc-Dec Size Editor Height
+// v3.1.3 - 2011-02-19
+//   Fix minor CSS cleanUp imageshack
+//   Add Inc-Dec Size Editor's Height
 //   Add missing kaskus smilie-besar ( Malu )
-//   Fix clear disabled field, kill absolute layer (imageshack.us)
+//   Fix clear disabled field; kill absolute layer, after upload(imageshack.us)
 //   Fix parseUrl (spaced prefix b4 {message})
 //   Fix toCharRef ignore encoding [\.\,\*]
 //   Silent on oExist performed
 //   Fix minor CSS imageshack on iframe 
 //   Improve reorder uploader nav
-//   Add Uploader (beta-3)
+//   Add Uploader (beta-4)
 //   Fix failed update checker
 //   Fix AutoLoad Smiley container
 //   Improve autogrow on Edit(Sigi & Layout)
@@ -39,17 +41,6 @@
 //   Add Grouped customsmiley
 //   Fix autogrow (use Module by Sophia.B, -iGoogle)
 //   Fix auto SET(Sigi & Layout) before Save Setting
-//
-// v3.1.1 - 2011-01-19
-//   Fix minor normalize behaviour @general Setting
-//   Fix failed iterate in Array (FF 4.0b10)
-//   Fix Minor Typo @ Export-Import; UserAgent Nfo;
-//   Improved QR-Settings on Pop-up
-//   Fix ignore shortcut on active Popup (except Esc)
-//   Add Export-Import raw-data
-//   Fix failed find_parent (Obfuscated table id)
-//   Improve reorder smiley(besar), Add missing emote :bingung
-//   Lil fix on Updater.mparser(); Precheck '#upd_notify' element
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -73,8 +64,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.3';
 gvar.scriptMeta = {
-  timestamp: 1297942516851 // version.timestamp
+  timestamp: 1298052641662 // version.timestamp
 
+ ,dtversion: 110219313 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -196,30 +188,58 @@ function init(){
 function outSideForumTreat(){
   var loc = location.href,el=$D('//input[@wrap="off"]',null,true),par,lb,m=20;
   /* 
-    #do pre-check hostname on location just to make sure
-    #avoid security notice error perform check with try{}
+    # do pre-check hostname on location
   */  
   try{if(top===self)return;}catch(e){};
-  if(loc.indexOf('.imageshack.us')==-1&&loc.indexOf('u.kaskus.us')==-1) return;  
+  if(loc.indexOf('imageshack.us/')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
+  
+  if(loc.indexOf('imageshack.us/')!=-1)
+    GM_addGlobalStyle(''
+		 +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none!important;}'
+		 +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
+		 +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
+		);
+    
   if(el){
     gvar.sITryKill = window.setInterval(function() {
 	  if ($D('#done-popup-close')) {
 	    clearInterval(gvar.sITryKill);
+		
 		SimulateMouse( $D('#done-popup-close'), 'click', true );
-		// just make sure, we kill absolute div layer
+		
+		// just make sure, kill absolute div layer
 		lb=$D('//div[contains(@style,"absolute") and contains(@style,"opacity")]',null, true);
 		if(lb) Dom.remove(lb);
-		GM_addGlobalStyle('h1,#top,.reducetop{display:none;}');
+		if($D('#ad')) Dom.remove($D('#ad'));
+		
 		window.setTimeout(function(){
 			el.removeAttribute('disabled');			
-			//el.removeAttribute('onclick');
 		    var par=el.parentNode.parentNode;
 		    lb=$D('.tooltip',par);
 			if(lb){
 			 lb[0].innerHTML=lb[1].innerHTML='';
 			 Dom.add(el,par);
 			}
-			try{el.focus();selectAll(el)}catch(e){}
+			// right-col manipulator
+			var ei,et,rTitle=function(t){
+			   var e = createEl('div',{'class':'main-title'},t);
+			   return e;
+			}, BBCodeTh=function(A){
+			   var b=A.lastIndexOf('.'),c=A.substring(0,b)+'.th'+A.substring(b);
+			   return '[URL='+A+'][IMG]'+c+'[/IMG][/URL]';
+			};
+		    lb=$D('.right-col',null);
+		    if(lb){
+			   lb[0].innerHTML='';
+		       et=rTitle('Direct Link'); Dom.add(et, lb[0]);
+			   ei = createEl('input',{type:'text',value:el.value,readonly:'readonly'});
+			   on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+			   try{ei.focus();selectAll(ei)}catch(e){}
+			   
+			   et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
+			   ei = createEl('input',{type:'text',value:BBCodeTh(el.value),readonly:'readonly'});
+			   on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+		    }
 		}, 500);
 	  }else{
 		if(max>0)
@@ -228,7 +248,7 @@ function outSideForumTreat(){
 		  clearInterval(gvar.sITryKill);
 	  }
 	},  50);
-  }
+  } // end is el
 }
 
 // preprepre-Initialized
@@ -423,7 +443,11 @@ function start_Main(){
          gvar.tmp_text=null;
          
          if(gvar.settings.textareaExpander[0])
-           vB_textarea.setElastic(); // retrigger autogrow now
+           vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
+		 else if(gvar.lastHeight_textarea){
+           $D(gvar.id_textarea).style.height = gvar.lastHeight_textarea;
+       	   delete gvar.lastHeight_textarea;
+         }
        }else{ // disable|readonly textarea.
          vB_textarea.readonly();
          Dom.g(gvar.id_textarea).style.height=100+'px';
@@ -1417,12 +1441,12 @@ function create_smile_tab(caller){
     return;
   }
   var id,cont,el,el2,Attr,img,imgEl,prop;
-  var scontent = ['suploader_container','skecil_container','sbesar_container','scustom_container'];
+  var scontent = ['skecil_container','sbesar_container','scustom_container','suploader_container'];
   var mtab = {
-     'suploader_container' :'uploader' 
-    ,'skecil_container'  :'kecil' 
+     'skecil_container'  :'kecil' 
     ,'sbesar_container'  :'besar' 
     ,'scustom_container' :'custom'
+    ,'suploader_container' :'uploader' 
   };
   // create tabsmile
   cont = createEl('ul',{id:'tab_parent','class':'ul_tabsmile'});
@@ -1430,7 +1454,8 @@ function create_smile_tab(caller){
   for(tab in mtab){
     el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+tab},mtab[tab]);
 	on('click',el2,function(e){
-      var tt = (e.target||e).innerHTML, tgt='sTGT_container'.replace(/TGT/,tt),S=eval('gvar.smilie'+tt)||null;
+      var tt = (e.target||e).innerHTML, tgt='sTGT_container'.replace(/TGT/,tt),S=null;
+	  S=(tt=='besar' ? gvar.smiliebesar : (tt=='kecil' ? gvar.smiliekecil : (tt=='custom' ? gvar.smiliecustom : null) ));
 	  if(tt=='custom' && Dom.g(tgt) && Dom.g(tgt).innerHTML!=''){ // need to make sure about this, really
 	    rSRC.getSmileySet(true);
 		if(S) S=SML_LDR.smlset=gvar.smiliecustom;
@@ -1477,7 +1502,8 @@ function create_smile_tab(caller){
   // autoload thingie
   if(gvar.settings.autoload_smiley[0]=='1'){
     id=('s'+gvar.settings.autoload_smiley[1]+'_container');
-	insert_smile_content(id, eval('gvar.smilie'+gvar.settings.autoload_smiley[1]));
+	var tS=gvar.settings.autoload_smiley[1], S=(tS=='besar' ? gvar.smiliebesar : (tS=='kecil' ? gvar.smiliekecil : (tS=='custom' ? gvar.smiliecustom : null) ));
+	insert_smile_content(id, S);
     window.setTimeout(function() {
 	  SimulateMouse($D('#remote_'+id), 'click', true);
     }, 50);
@@ -1521,8 +1547,6 @@ function toggle_tabsmile(e){
      if($D('#wrap_'+cwrap[j]+'_container'))
 	   showhide($D('#wrap_'+cwrap[j]+'_container'), ( e.id.indexOf(cwrap[j])!=-1 )  ); // hide container wraper
    }
-   //showhide($D('#wrap_scustom_container'), ( $D('#wrap_'+e.id.replace('remote_','')) )  ); // hide container wraper (scustom)
-   //showhide($D('#wrap_suploader_container'), ( $D('#wrap_'+e.id.replace('remote_','')) )  ); // hide container wraper (suploader)
    tgt=e.id.replace('remote_',''); 
    showhide(Dom.g(tgt), true);
    addClass('current',$D('#remote_'+tgt));
@@ -3565,6 +3589,9 @@ var ST = {
     getSettings(); // redefine gvar
 	ST.close_setting()
     
+	if(!gvar.settings.textareaExpander[0] && $D(gvar.id_textarea))
+	   gvar.lastHeight_textarea = $D(gvar.id_textarea).style.height;
+	
     // destroy all qr, on !restart
     if(!gvar.restart)
       Dom.remove($D('#quickreply'));
@@ -3813,9 +3840,9 @@ var ST = {
 	window.setTimeout(function() {
 	  gvar.restart=true;
       // ==
-	  window.setTimeout(function() { ST.cold_boot_qr(); }, 350);
+	  window.setTimeout(function() { ST.cold_boot_qr(); }, 150);
       // ==
-	}, 300);    
+	}, (gvar.isOpera ? 50:300));    
 	
  } // end save_setting
  ,toggle_childs: function(e){
@@ -4445,7 +4472,7 @@ var rSRC = {
    +'{clear:both;height:2px;}'
   +'#wrap_suploader_container, #wrap_suploader_container .fieldset, #skecil_container, #sbesar_container, #scustom_container, #wrap_scustom_container'
    +'{border: 1px solid #BBC7CE;padding:2px;}'
-  +'#scustom_container{padding:3px 0px!important;word-wrap:break-word}'
+  +'#scustom_container{padding:2px 1px!important;word-wrap:break-word}'
   +'#skecil_container img, #sbesar_container img, #scustom_container img'
    +'{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'
   +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'
@@ -4511,7 +4538,8 @@ var rSRC = {
 	+'a.nostyle, a.nostyle:hover{color:#333;outline:none;}'
 
 	/* scustom container */
-	+'#right_scustom_container {padding-top:3px;}'
+	+'#custom_bottom {padding-top:2px;min-height:8px;}'
+	+'#content_scustom_container {padding:2px 6px;}'
 	+'#ul_group a.add_group{color:#0000E6;font-weight:bold;}'
 	+'#ul_group a.add_group:hover{color:#E6E6E6;}'
 	+'#ul_group{width:125px;}'
@@ -4559,18 +4587,8 @@ var rSRC = {
     +'#button_preview {'
     +  'padding:3px;text-align:center;'
     +'}'
-    +'*html .fade {'
-    +  'position: absolute;'
-    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop : document.body.scrollTop);'
-    +'}'
-    +'*html #popup_container, *html #popup_container_precap {'
-    +  'position: absolute;'
-    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'
-    +  '+((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop'
-    +  '+((document.body.clientHeight-this.clientHeight)/2));'
-    +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
-    +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
-    +'}'
+    +'*html .fade {position: absolute;}'
+    +'*html #popup_container, *html #popup_container_precap {position: absolute;}'
     +'');
  }
  ,getSCRIPT: function(){
@@ -5215,11 +5233,11 @@ Format will be valid like this:
      +                '<td id="customed_control"></td>'
      +                '<td width="100%"></td>'
 
-	 (!gvar.settings.textareaExpander[0] ? 
-     +                '<td width="50px" style="padding-left:10px;">'
-	 +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_0" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_0.gif" width="21" height="9" alt="Decrease Size" title="Decrease Size"></div>'
-	 +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_1" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_1.gif" width="21" height="9" alt="Increase Size" title="Increase Size"></div>'
-	 +                '</td>'
+	 +(!gvar.settings.textareaExpander[0] ? ''
+       +                '<td width="50px" style="padding-left:10px;">'
+	   +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_0" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_0.gif" width="21" height="9" alt="Decrease Size" title="Decrease Size"></div>'
+	   +'<div class="imagebutton cdefault" id="vB_Editor_001_cmd_qr_resize_1" style="padding:0"><img src="'+gvar.domainstatic+'images/editor/resize_1.gif" width="21" height="9" alt="Increase Size" title="Increase Size"></div>'
+	   +                '</td>'
 	 : '')
      +            '</tr>'
      +konst.tbo_
@@ -5366,7 +5384,7 @@ Format will be valid like this:
 	
 	return (''
 	 +'<div id="about_container" class="qrsmallfont" style="">'
-	 +'<b>'+gvar.fullname+' '+gvar.sversion+' '+(isQR_PLUS!==0?' &nbsp;&nbsp;(ADDON)':'')+'</b><br>'
+	 +'<b>'+gvar.fullname+' '+gvar.sversion+'</b> '+(isQR_PLUS!==0?' &nbsp;&nbsp;<b>(ADDONS)</b>':'')+' '+HtmlUnicodeDecode('&#8212;')+' <small>'+gvar.scriptMeta.dtversion+'</small>'+'<br>'
 	 +spacer
 	 +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">'+gvar.fullname+'</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
 	 +'<div style="height:10px;"></div>'
@@ -5379,7 +5397,7 @@ Format will be valid like this:
 	 +'<b>Modified By</b>: <a href="javascript:;" class="nostyle">Idx</a><br>'
 	 +'<b>Contributors:</b>'
 	 +'<div style="height:'+(gvar.isBuggedChrome ? '248':'220')+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
-	 +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
+	 +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>t0g3<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
 	 +QT
 	 +'</div>'
 	 +'</div>' // #about_container
@@ -5440,7 +5458,7 @@ Format will be valid like this:
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
-     +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoExpand</label>'
+     +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoGrow Textarea</label>'
      +spacer
      +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
      +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:0 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
