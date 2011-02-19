@@ -4,9 +4,9 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
-// @version       3.1.3
-// @dtversion     110219313
-// @timestamp     1298052641662
+// @version       3.1.4
+// @dtversion     110219314
+// @timestamp     1298152473809
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -14,6 +14,14 @@
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 //
 // -!--latestupdate
+//
+// v3.1.4 - 2011-02-20
+//   Fix avoid banned global object inArray
+//
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.1.3 - 2011-02-19
 //   Fix minor CSS cleanUp imageshack
@@ -29,11 +37,8 @@
 //   Fix failed update checker
 //   Fix AutoLoad Smiley container
 //   Improve autogrow on Edit(Sigi & Layout)
-//   Fix minor CSS, word-wrap custom_smiley; reorder navigation; 
+//   Fix minor CSS, word-wrap custom_smiley; reorder navigation;
 //
-// -/!latestupdate---
-// ==/UserScript==
-/*
 // v3.1.2 - 2011-02-01
 //   Add 2 New Kaskus Emotes(Cool, Bola)
 //   Notify collision w/ QR+
@@ -62,9 +67,9 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.3';
+gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298052641662 // version.timestamp
+  timestamp: 1298152473809 // version.timestamp
 
  ,dtversion: 110219313 // version.date
  ,scriptID: 80409 // script-Id
@@ -75,7 +80,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -2613,6 +2618,7 @@ function togelshow(obj, show){
   if(isDefined(show))
     obj.setAttribute('style', 'display:'+(show?'block':'none')+';' );
 }
+
 //=== BROWSER DETECTION / ADVANCED SETTING
 //=============snipet-authored-by:GI-Joe==//
 function ApiBrowserCheck() {
@@ -2674,6 +2680,9 @@ function clog(msg) {
 // -----------
 
 //========= Global Var Init ====
+var inArray = Array.prototype.indexOf ?
+  function(A,f){var p=A.indexOf(f);return(p!==-1?p:false)} :
+  function(A,f){for(var i=-1,j=A.length;++i<j;)if(A[i] === f) return i;return false};
 var GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
   var sel=createEl('script',{type:'text/javascript'});
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
@@ -4120,15 +4129,18 @@ var UPL = {
 	   inputElm = Dom.g(file_id);	
     var allowed_ext = ['jpg','jpeg','gif','png','zip','rar'], fn=inputElm.value;
     var ext = fn.substr(fn.lastIndexOf('.') + 1).toLowerCase();
-	if(allowed_ext.inArray(ext) != -1){
-	  UPL.toogle_iframe( 1, 1 );
-	} else {
-	    alert(fn=='' ? 'Belum memilih file':'forbidden file format');
+	clog(allowed_ext +'; '+ext);
+    var pos=inArray(allowed_ext,ext);
+	alert(pos);
+	if( pos !== false ){
+	   UPL.toogle_iframe( 1, 1 );	
+	}else{
+	   alert(fn=='' ? 'Belum memilih file':'forbidden file format');
 	}
-	return (allowed_ext.inArray(ext) != -1);
+	return pos;
   }
  ,prep_upload: function(){
-   if(UPL.check_submitform()){
+   if( UPL.check_submitform()!==false ){
     Dom.g("legend_subtitle").innerHTML='';
 	UPL.do_postBack("userfile");
    }
@@ -4258,7 +4270,6 @@ var ss = {
     }, 8);
     
   },
-
   scrollWindow: function(scramount,dest,anchor) {
     wascypos = ss.getCurrentYPos();
     isAbove = (wascypos < dest);
@@ -4280,7 +4291,6 @@ var ss = {
       return;
     }
   },
-
   getCurrentYPos: function() {
     if (document.body && document.body.scrollTop)
       return document.body.scrollTop;
@@ -5571,11 +5581,6 @@ return(''
   }
 };
 
-// Inititalize prototype
-Array.prototype.inArray = function(valeur, like) {
-    for (var i in this) { if(this[i] == valeur) return i; }
-    return -1;
-};
 // =============== /END Global Var ===
 // ------
 init();
