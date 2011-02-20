@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.2
+// @version       0.7.3
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
@@ -20,6 +20,8 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.3
+- fix anti-batman fail at spoiler with img inside 
 0.7.2
 - fix unescaped href required for GC
 0.7.1
@@ -184,11 +186,13 @@ dragon*adopters,dragonadopters
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
-            if(node.innerHTML.indexOf(' onclick="')!=-1 && !node.innerHTML.match(/<img\s*[^>]+/i) && isBatman(node.innerHTML)){
+            if(node.innerHTML.indexOf(' onclick="')!=-1 && !node.innerHTML.match(/^<img\s*[^>]+/i) && isBatman(node.innerHTML)){
                
 			   pnode.insertBefore(
 			    (function(href){
-					return createEl('div', {}, (href ? '<div style="font-size:11px;margin-bottom:2px;"><a href="'+href+'" target="_blank">Batman Trap..!</a></div><span style="margin-left:20px;background:#FFD7FF;font:11px/12px \'Courier New\',sans-serif!important;">'+href+'</span>':''));
+					var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) ), c=['','FFD7FF',''];
+					if(!isKaskus) c=['title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."','FFAEFF','text-decoration:overline'];
+					return createEl('div', {}, (href ? '<div style="font-size:11px;margin-bottom:-5px;font-weight:bold;"><a style="text-decoration:none" href="'+href+'" target="_blank" '+c[0]+'>[ <span style="color:red;text-decoration:blink">BETMEN-DETECTED</span> ]</a><span style="margin-left:20px;background:#'+c[1]+';font:12px/14px \'Courier New\',sans-serif!important;'+c[2]+'">'+href+'</span></div>':''));
 			    })(node.href) ,
 			   node.previousSibling);
 			   
