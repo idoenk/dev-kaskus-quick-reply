@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.17
-// @dtversion     11021817
-// @timestamp     1297962163240
+// @version       1.18
+// @dtversion     11022018
+// @timestamp     1298179389201
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,13 +15,16 @@
 //
 // ----CHANGE LOG-----
 //
+// mod.R.18 : 2011-02-20
+// Fix adapting FF4.0b12 (partial)
+//
+// ==/UserScript==
+/*
+// 
 // mod.R.17 : 2011-02-18
 // Fix some RegEx parseIt
 // rebuild subfolder subscription
 // missed destroy_column(el_sender) -KaskusDonat.
-//
-// ==/UserScript==
-/*
 // 
 // mod.R.16 : 2011-02-13
 // Fix some regex parseIt()
@@ -31,14 +34,6 @@
 // Fix missing reputation rank title
 // Try Fix failed load image "</a></span>" issue
 // 
-// mod.R.14 : 2011-01-14
-// Fix red/black sender
-// Fix minor CSS, kaskus-donat sender
-// 
-// mod.R.13 : 2011-01-03
-// Fix prefer to define 'var' on global namespace (major issue Opera-11)
-// 
-// mod.R.2 : 2010-01-08
 // 
  :: About this script ::
   ~ .foobar.
@@ -48,9 +43,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '17';
+gvar.sversion = 'R' + '18';
 gvar.scriptMeta = {
-  timestamp: 1297962163240 // version.timestamp
+  timestamp: 1298179389201 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -942,8 +937,11 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv=GM_setValue.toString();
-    if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    if(gsv.indexOf('staticArgs')>0) {
+ 	 gvar.isGreaseMonkey=true; gvar.isFF4=false;
+	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+	} // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
  
