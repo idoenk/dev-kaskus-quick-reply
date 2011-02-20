@@ -2416,7 +2416,7 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv=GM_setValue.toString();
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='staticArgs'; }
     if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
