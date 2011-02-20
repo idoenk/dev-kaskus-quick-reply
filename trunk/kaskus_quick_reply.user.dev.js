@@ -5,8 +5,8 @@
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
-// @dtversion     110219314
-// @timestamp     1298152473809
+// @dtversion     110220314
+// @timestamp     1298179389201
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,6 +16,8 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-20
+//   Fix adapting FF4.0b12 (partial)
+//   Improve BBCodeIMG (imageshack.us)
 //   Fix avoid banned global object inArray
 //
 //
@@ -69,9 +71,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298152473809 // version.timestamp
+  timestamp: 1298179389201 // version.timestamp
 
- ,dtversion: 110219313 // version.date
+ ,dtversion: 110220314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -229,9 +231,11 @@ function outSideForumTreat(){
 			var ei,et,rTitle=function(t){
 			   var e = createEl('div',{'class':'main-title'},t);
 			   return e;
+			}, BBCodeImg=function(A){
+			   return '[IMG]'+A+'[/IMG]';
 			}, BBCodeTh=function(A){
 			   var b=A.lastIndexOf('.'),c=A.substring(0,b)+'.th'+A.substring(b);
-			   return '[URL='+A+'][IMG]'+c+'[/IMG][/URL]';
+			   return '[URL='+A+']'+BBCodeImg(c)+'[/URL]';
 			};
 		    lb=$D('.right-col',null);
 		    if(lb){
@@ -241,6 +245,9 @@ function outSideForumTreat(){
 			   on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
 			   try{ei.focus();selectAll(ei)}catch(e){}
 			   
+			   et=rTitle('BBCode IMG'); Dom.add(et, lb[0]);
+			   ei = createEl('input',{type:'text',value:BBCodeImg(el.value),readonly:'readonly'});
+			   on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
 			   et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
 			   ei = createEl('input',{type:'text',value:BBCodeTh(el.value),readonly:'readonly'});
 			   on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
@@ -2631,8 +2638,11 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='staticArgs'; }
-    if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    if(gsv.indexOf('staticArgs')>0) {
+ 	 gvar.isGreaseMonkey=true; gvar.isFF4=false;
+	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+	} // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
 
@@ -4131,7 +4141,6 @@ var UPL = {
     var ext = fn.substr(fn.lastIndexOf('.') + 1).toLowerCase();
 	clog(allowed_ext +'; '+ext);
     var pos=inArray(allowed_ext,ext);
-	alert(pos);
 	if( pos !== false ){
 	   UPL.toogle_iframe( 1, 1 );	
 	}else{
