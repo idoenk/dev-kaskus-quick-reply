@@ -10,42 +10,31 @@
 // @include       http://www.kaskus.us/group.php?*
 // @include       http://www.kaskus.us/blog_post.php?*
 // @include       http://www.kaskus.us/newthread.php?*
-// @version       2.23
-// @dtversion     110113223
-// @timestamp     1294933194918
+// @version       2.24
+// @dtversion     110220224
+// @timestamp     1298179389201
 // @description   Integrate kaskus uploader; Show Mostly Used Smiley beside your vb_Textarea Editor; Integrate Custom Kaskus Smiley list; Set your fav image/smiley colection; Hover preview++
 // @author        idx (http://userscripts.org/users/idx)
 // --------------------------------------------------------
 // 
 // -!--latestupdate
 // 
-// v 2.24 - 2011-01-24
+// v 2.24 - 2011-02-20
+// : Fix adapting FF4.0b12 (partial)
 // : Fix minor CSS (blog_post.php)
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 // 
 // v 2.23 - 2011-01-13
 // : Fix CSS (Improve CSS3 Opera)
 // : Fix Uploader (deprecate some CSS; -Opera)
 // 
-// -/!latestupdate---
-// ==/UserScript==
-/*
-// 
 // v 2.22 - 2011-01-12
 // : Fix smiley (kecil) failed using IMG tag
 // : Fix smiley (besar) invalid path (using IMG tag)
 // : Lil improve Uploader
-// 
-// v 2.21 - 2011-01-10
-// : Improve reorder smiley(kecil;besar) sort based on QR's, Add missing emote :bingung
-// : Fix subdomain kaskus uploader
-// : Minor CSS fix
-// : Lil fix on Updater.mparser()
-// 
-// v 2.20 - 2010-12-27
-// : Deprecate unused GM_addGlobalScript
-// : Improve GM_addGlobalStyle
-// : Set static domain for all kaskus emotes
-// 
 //
 // v 0.1 - 2010-06-20
 // : Init
@@ -58,14 +47,14 @@
 var gvar=function() {}
 
 gvar.codename   = 'KERP'+HtmlUnicodeDecode('&#8482;');
-gvar.sversion   = 'v' + '2.23';
+gvar.sversion   = 'v' + '2.24';
 /* timestamp-GENERATOR
 javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 gvar.scriptMeta = {
-  timestamp: 1294933194918 // version.timestamp
- ,dtversion : 110112222 // script-Id
+  timestamp: 1298179389201 // version.timestamp
+ ,dtversion : 110220224 // script-Id
  
  ,titlename : gvar.codename
  ,scriptID : 79879 // script-Id
@@ -84,16 +73,10 @@ const GMSTORAGE_PATH      = 'GM_';
 var _LOADING = '';
 
 
-// prototype Inititalizing
-Array.prototype.inArray = function(valeur, like) {
-    for (var i in this) { if(this[i] == valeur) return i; }
-    return -1;
-};
-String.prototype.trim = function() {
-    return this.replace(/^\s+|\s+$/g,"");
-};
-
-GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with a better routine 
+var inArray = Array.prototype.indexOf ?
+  function(A,f){var p=A.indexOf(f);return(p!==-1?p:false)} :
+  function(A,f){for(var i=-1,j=A.length;++i<j;)if(A[i] === f) return i;return false};
+var GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with a better routine 
   var sel=document.createElement('style'); sel.setAttribute('type','text/css'); 
   if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
   sel.appendChild(createTextEl(css));
@@ -108,7 +91,7 @@ GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle with
   }
   return sel;
 };
-vB_textarea = {
+var vB_textarea = {
   init: function(id) {
     this.Obj = (isUndefined(id) ? getById(gvar.id_textarea) : getById(id));
     this.content = (this.Obj ? this.Obj.value : "");
@@ -222,7 +205,7 @@ vB_textarea = {
   
 };
 // utk add - remove element
-Dom = {
+var Dom = {
   get: function(el) {
    if(!el) return false;
    if (typeof el === 'string')
@@ -241,7 +224,7 @@ Dom = {
       el.parentNode.removeChild(el);
   }
 };
-Ev={
+var Ev={
   add: function() {
     if (window.addEventListener) {
       return function(el, type, fn) {
@@ -260,7 +243,7 @@ Ev={
 };
 
 // Fliper :: wordflip.net
-FlipWordsEngine = {    
+var FlipWordsEngine = {    
     flipTable: {
         a : '\u0250',
         b : 'q',
@@ -313,7 +296,7 @@ FlipWordsEngine = {
         }        
     }
 };
-GM_XHR = {
+var GM_XHR = {
   uri:null,
   returned:null,
   cached:null,
@@ -347,7 +330,7 @@ GM_XHR = {
 
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
-Updater = {
+var Updater = {
   caller:''
  ,check: function(forced){
     var intval = (1000*60*60*gvar.settings.updates_interval);
@@ -1527,7 +1510,7 @@ function judulSmiley(parent, title, target){
   // prep create checkbox for tag img mode |&| will not available on visitormessage.php
   var besarkecil = ['skecil_container','sbesar_container'];
   var Elm=false;
-  if(besarkecil.inArray(target)!=-1 && gvar.loc.indexOf('visitormessage.php')==-1){
+  if(inArray(besarkecil, target) && gvar.loc.indexOf('visitormessage.php')==-1){
     if(target.indexOf('kecil')==-1) parent.appendChild(document.createElement('br'));
 	var mix_id = 'imgmode_id_'+target;
 	var Attr = {id: mix_id,value:(target.indexOf('kecil')!=-1 ? '1' : '2'),type:'checkbox',name:'imgmode',style:'cursor:pointer'};
@@ -1721,7 +1704,7 @@ function preload_small_emote(parent){
 }
 
 function toogle_smile(target_id, show){
-  var idxtab = gvar.tabTitleId.inArray(target_id);
+  var idxtab = inArray(gvar.tabTitleId, target_id);
   if(idxtab==-1) return;
   var tgt = getById(target_id);  
   
@@ -1974,8 +1957,8 @@ function check_submitform() {
 	
     var allowed_ext = ['jpg','jpeg','gif','png','zip','rar'];
 	var filename = inputElm.value;
-    var ext = filename.substr(filename.lastIndexOf('.') + 1).toLowerCase();
-	if(allowed_ext.inArray(ext) != -1){
+    var ext = filename.substr(filename.lastIndexOf('.') + 1).toLowerCase(), pos=inArray(allowed_ext, ext);
+	if(pos){
 	  toogle_iframe( 1 );
       GM_setValue('iframe_preload', 1);
 	} else {
@@ -1984,7 +1967,7 @@ function check_submitform() {
 	  else
 	    alert('forbidden file format');
 	}
-	return (allowed_ext.inArray(ext) != -1);
+	return pos;
 }
 function trans_post(){
   if(check_submitform()){
@@ -2274,7 +2257,6 @@ function getSmilieSets(){
   gvar.smiliecustom = {
  '11001': [http+'img.kaskus.us/images/kaskusmobile_bb.gif', 'right', 'kaskusmobile_bb']
 ,'11002': [http+'img.kaskus.us/images/kaskusmobile_hp.gif', 'right', 'kaskusmobile_hp']
-,'11003': [http+'i38.tinypic.com/wbywxe.gif', '', 'mahobig']
   };  
  
 }
@@ -2416,7 +2398,7 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='staticArgs'; }
+    var gsv=GM_setValue.toString();
     if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }

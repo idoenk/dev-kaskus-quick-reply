@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.4
-// @dtversion     110213104
-// @timestamp     1297573325774
+// @version       1.0.5
+// @dtversion     110220105
+// @timestamp     1298179389201
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -17,6 +17,16 @@
 // @include       http://www.kaskus.us/index.php
 //
 // -!--latestupdate
+//
+//  v1.0.5 - 2011-02-20
+//    Fix adapting FF4.0b12 (partial)
+//    Improve remember LastScrollTop position
+//    Fix minor CSS
+//    Fix anti-batman fail at spoiler with img inside
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 //  v1.0.4 - 2011-02-13
 //    Fix autogrow not working
@@ -33,10 +43,7 @@
 //    Improve Invalid Thread callback
 //    Fix TS.name strip font color 
 //    Improve anti-batman-Trap; extract href batman-trap
-//    
-// -/!latestupdate---
-// ==/UserScript==
-/*
+//
 //  v1.0.3 - 2011-01-20
 //    Add simple anti-batman-Trap
 //    Fix edit @VM (collision with open window more smiley)
@@ -49,9 +56,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.4';
+gvar.sversion = 'v' + '1.0.5';
 gvar.scriptMeta = {
-  timestamp: 1297573325774 // version.timestamp
+  timestamp: 1298179389201 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -61,7 +68,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug| 
+gvar.__DEBUG__ = true; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -114,6 +121,7 @@ function init(){
   gvar.offsetMaxHeight= 160; // buat maxHeight adjust
    // min-height postbit assumed with OR w/o quote per singleline, [{adaQuote}, {ga_adaQuote}]
   gvar.offSet_SiGi= [5, 8];
+  gvar.LastScrollTop = 0;
   
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
@@ -286,9 +294,6 @@ var tTRIT = {
 		  if(areas[field].pos=='first'){
 		    par.insertBefore(el, par.firstChild);
 		  }else if(!isNaN(areas[field].pos) ){
-		    
-			clog('field='+field+'; '+'pos='+areas[field].pos);
-		    
 			par.insertBefore(el, par.childNodes[areas[field].pos] );
 		  }else{
 		    Dom.add(el, par);
@@ -311,7 +316,6 @@ var tTRIT = {
 	    // menubwhjb | retrigger even_node after ajax done fetch links
 	    par = $D('#menubwhjb');
 	    nodes = $D(".//div[contains(@onclick,'getJBData')]", par);
-	    clog(nodes.snapshotLength );
 	    if(par && nodes.snapshotLength > 0){
 	      for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
 	        node = nodes.snapshotItem(i);
@@ -398,6 +402,7 @@ var tTRIT = {
 	gvar.current.TRIT_isClosed = false;
 	isLast = gvar.current.isLastPost = (task=='lastpost');
     trInner = gvar.current.cRow = tTRIT.findCurrentRow(e);
+	if(!gvar.current.cRow) gvar.current.cRow = e.id;
 	if(!trInner) trInner = e.parentNode;
 	if(trInner.innerHTML.indexOf('member.php')==-1) trInner=trInner.parentNode;
 	trInner = trInner.innerHTML;
@@ -435,10 +440,13 @@ var tTRIT = {
     var par = null;
 	if(typeof(e)=='object'){
 	  var maxJump= 5, i= 0;
-	  par = e.parentNode;
-     if(gvar.isKaskus && par.nodeName=='LI') return false;
+	  par = e.parentNode;	  
+	  // abort find curent row object except on forumdisplay
+	  if( !(gvar.loc.indexOf('/forumdisplay.php?')>0 || gvar.loc.indexOf('/usercp.php')>0 || gvar.loc.indexOf('/subscription.php')>0)
+	      || par.nodeName!='DIV' )
+		return null;	  
 	  while(i < maxJump && par.nodeName!='TR'){
-	    par = par.parentNode; i++;
+		par = par.parentNode; i++;
 	  }
 	  par = (par.nodeName!='TR' ? null : par);
 	}
@@ -465,17 +473,20 @@ var tTRIT = {
   }
  ,is_closed_thread: function(text){ // text-mode
     // find first href with noquote    
-    //var anode = $D('.//a[contains(@href,"noquote")]', null, true);
-    //return (!anode ? false : (anode.innerHTML.indexOf('Closed Thread')==-1 ? anode.href : false) );
 	return (text.match(/[\'\"]\s*alt=[\'\"]Closed\s*Thread[\'\"]/i));
   }
  ,clickNode: function(e){
     e = e.target||e;	
 	if($D('#hideshow')) {
-	  if(gvar.current.cRow) removeClass('selected_row', gvar.current.cRow);
+	  gvar.LastScrollTop = getCurrentYPos();	  
+	  if( !isString(gvar.current.cRow) ) removeClass('selected_row', gvar.current.cRow);
 	  gvar.current = {};
 	  tPOP.closeLayerBox('hideshow');
 	  if($D('#prev_loader')) $D('#prev_loader').parentNode.innerHTML = '[+]';
+	}
+	if(gvar.sITryBlinkRow && isString(gvar.current.cRow) ){
+	    clearTimeout(gvar.sITryBlinkRow);
+		$D(gvar.current.cRow).innerHTML = '[+]';
 	}
 	tPOP.imediateStop(); // make sure blinking is stop at all
 	
@@ -487,7 +498,8 @@ var tTRIT = {
 	if($D('#meta_refresh')) Dom.remove($D('#meta_refresh'));
 	
 	tTRIT.collectRowInfo(e);
-	e.innerHTML = '<div id="prev_loader" class="ktp-loading" style="display:inline-block;'+(gvar.current.isLastPost ? (gvar.isOpera ? 'margin:-8px 2px 0 4px;':'margin:1px 2px 0 4px;'):'margin:2px 4px 1px 4px;')+'"></div>';
+
+	e.innerHTML = '<div id="prev_loader" class="ktp-loading" style="border:0px solid #000;display:inline-block;'+(gvar.current.isLastPost ? (gvar.isOpera ? 'margin:-8px 2px 0 4px;':'margin:1px 2px 0 4px;'):'margin:1px 1px '+(gvar.current.isLastPost?'2px':'4px')+' 4px!important;')+'"></div>';
 	
 	
 	// re-syncroning from storage avoid changed value when qr-click
@@ -546,7 +558,6 @@ var tTRIT = {
 	if( caller ) tTRIT.fetch_done(caller);	
 	
 	// ready to next step
-	clog(rets.newreply);
 	gvar.current.newreply = rets.newreply;
     gvar.current.content= rets.content;
 	
@@ -562,8 +573,7 @@ var tTRIT = {
 	if(caller){
 	 caller.innerHTML = '[+]';
 	 addClass('thread_preview-readed', caller);
-	 if(gvar.current.cRow) addClass('selected_row', gvar.current.cRow);
-	 //showhide($D('#hideshow'), true);
+	 if(!isString(gvar.current.cRow)) addClass('selected_row', gvar.current.cRow);
 	}
   }
 
@@ -573,7 +583,8 @@ var tTRIT = {
   var el, buff, aL, isClean, aTag = getTag('a', temp);
   if(!aTag) return text;  
   var newHref = function(inner, href){
-    var nel = createEl('div', {}, (href ? '<small class="btman-suspect">Batman Trap:</small><pre class="btman-href">'+href+'</pre>':'') + inner );
+    var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) );
+	var nel = createEl('div', {}, (href ? '<div class="btman-suspect"><a href="'+href+'" target="_blank" '+(isKaskus?'':'title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."')+'>[ <span>BETMEN-DETECTED</span> ]</a><span class="btman-href'+(isKaskus?'':' btman-strike')+'">'+href+'</span></div>':'') + inner );
 	return nel;
   }
   aL=aTag.length; isClean='';
@@ -646,7 +657,6 @@ var tTRIT = {
 		cucok = text.match(/newreply\.php\?do=newreply([^\"\']+)/im);
 		if(cucok) {
 		  cucok = cucok[1].replace(/\&amp;/gi,'&').replace(/\&noquote=1/gi,'').replace(/\&/,'.php?');
-		  clog(cucok);
 		  gvar.TS.pid = (cucok ? LINK.getPID( cucok ) : false);
 		}
 		// updating user.is & user.name
@@ -719,7 +729,10 @@ var tTRIT = {
 
 var tPOP = {
   init: function(rets){
-    tPOP.loadLayer();
+    gvar.LastScrollTop = getCurrentYPos();
+	gvar.isExpanded = true;
+	
+	tPOP.loadLayer();
 	showhide($D('#hideshow'), true);	
 	if(!$D('#hideshow')) return;	
 	tPOP.fillLayer(rets);
@@ -1182,6 +1195,7 @@ var tPOP = {
  ,toggleCollapse: function(partial){
     var el, show, tohide = ['vbform','thread_tools','threadpost_navi','thread_separator','tbl_separator'];
     show = ($D('#row_content').style.display!='none');
+	gvar.isExpanded = !show;
 	if(isUndefined(partial)){
 	    $D('#row_content').style.display = (show ? 'none' : '');
         for(var i=0; i<tohide.length; i++){
@@ -1206,19 +1220,19 @@ var tPOP = {
 
  ,imediateStop: function(){
     if(gvar.sITryBlinkRow) clearInterval(gvar.sITryBlinkRow);
-	if(gvar.current.cRow) removeClass('selected_row', gvar.current.cRow);
+	if(!isString(gvar.current.cRow)) removeClass('selected_row', gvar.current.cRow);
  }
- ,closeLayerBox: function(tgt, direct){
+ ,closeLayerBox: function(tgt){
 	if(window.stop !== undefined){window.stop();}
 	else if(document.execCommand !== undefined){document.execCommand("Stop", false);}
 
-	if(gvar.current.cRow){
+	gvar.blinkRow=0;
+	if(!isString(gvar.current.cRow)) {
 	  var lastRow = gvar.current.cRow;
 	  if(gvar.settings.thread_lastscroll && gvar.settings.fixed_preview){
 	    ss.STEPS = 21;
 	    ss.smoothScroll( lastRow, null );
-	  }
-	  gvar.blinkRow=0;
+	  }	  
 	  gvar.sITryBlinkRow = window.setInterval(function() {
 	    var iLastRow = gvar.current.cRow;
         if(gvar.blinkRow >= 7){
@@ -1236,6 +1250,17 @@ var tPOP = {
 		  iLastRow.setAttribute('class', 'selected_row');
 		}
       }, 250);
+	  
+	}else{	
+	  // blink the node
+	  var cNode = $D(gvar.current.cRow);
+	  if(cNode){
+	    cNode.innerHTML = '<div class="ktp-loading" style="display:inline-block;padding:0 0 2px 5px;"></div>';
+		gvar.sITryBlinkRow = window.setTimeout(function() {
+		  clearTimeout(gvar.sITryBlinkRow);
+		  cNode.innerHTML = '[+]';
+		}, 900);
+	  }
 	}
 	//restore the meta refresh
 	var head = getTag('head');
@@ -1243,7 +1268,8 @@ var tPOP = {
 	  //Dom.add(gvar.meta_refresh, head[0]);
 	  head[0].appendChild( gvar.meta_refresh.cloneNode(true) );
 	}
-	Dom.remove( Dom.g(tgt) );
+	Dom.remove( Dom.g(tgt) );	
+	if( gvar.isExpanded ) window.scrollTo(0,(isDefined(gvar.LastScrollTop) ? gvar.LastScrollTop:0) );
   }
 }; // end tPOP
 
@@ -1433,15 +1459,14 @@ var tQR = {
 	});
   }
  ,unescapeHtml: function(text){
-    // clean-up fetched post
     if(!text) return '';
     var temp = createEl('div',{},text);
-    var cleanRet='';  
-    for(var i in temp.childNodes){
-      if(typeof(temp.childNodes[i])!='object' || isUndefined(temp.childNodes[i].nodeValue)) continue;
-      cleanRet += temp.childNodes[i].nodeValue;
+    var cleanRet='', tL=temp.childNodes.length;
+    for(var i=0; i<tL; i++){
+       if(typeof(temp.childNodes[i])!='object') continue;
+       cleanRet += temp.childNodes[i].nodeValue;
     }
-    temp.removeChild(temp.firstChild);
+    try{temp.removeChild(temp.firstChild);}catch(e){}
     return cleanRet;
   }
  ,parse_fetch: function(text){
@@ -1637,7 +1662,6 @@ var tQR = {
 	reply_html = reply_html.responseText;
 	
 	var retpost = tQR.parse_post(reply_html);
-    //clog('error='+retpost.error+ '; msg='+retpost.msg);
 	
 	var notice = $D('#quoted_notice');
 	if(retpost.error != 0){
@@ -1699,7 +1723,6 @@ var tQR = {
 
 // smilies
  ,create_smile_tab: function(caller){
-  //clog('in create_smile_tab');
   var parent = $D('#smile_cont');
   if(parent.innerHTML!='') {
     parent.style.display=(parent.style.display=='none' ? '':'none');
@@ -1787,7 +1810,6 @@ var tQR = {
   
  }
  ,insert_smile_content: function(scontent_Id, smileyset){
-       //clog('in insert_smile_content');
   var target,dumycont,Attr,img,imgEl2,imgEl=false;
   var countSmiley=0;
   if(!scontent_Id || !smileyset) return;
@@ -1804,7 +1826,6 @@ var tQR = {
      img=smileyset[i];
      if( !isString(img) ){
        if(scontent_Id=='scustom_container'){
-             //clog('ekstrakting ['+typeof(img)+']='+img);
           Attr={href:encodeURI(img[0]),title:'[['+img[1]+'] '+HtmlUnicodeDecode('&#8212;')+img[0],
 		        src:img[0], alt:'_alt_'+img[1],'class':adclass };
           // gak pake thumbnail ?
@@ -1830,7 +1851,6 @@ var tQR = {
      }else { // this is string and do replace to suitable value
        var sep, retEl= tQR.sCustom.validTag(img, true, 'view');
        if(!retEl) continue;
-          //clog('sep='+retEl.nodeName);
        if(retEl.nodeName=='B'){
          if(realcont.innerHTML!='') {
           sep = createEl('br', {});
@@ -1844,7 +1864,6 @@ var tQR = {
        }
      }
     }
-       //clog('Inner=\n'+realcont.innerHTML)
 	// make a dummy last-img that, avoid bad img on last element
 	if( scontent_Id=='scustom_container' && !gvar.settings.scustom_alt) {
 	    imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
@@ -1875,7 +1894,6 @@ var tQR = {
         // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
         if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
         Dom.Ev(imgEl, 'load', function(){
-          //clog('all smiley has been loaded');
           showContent();
         });
         if(imgEl.height) // obj has beed loaded before this line executed
@@ -1945,12 +1963,10 @@ var tQR = {
            buff = tQR.sCustom.filter(imgtxta.value).toString();
         gvar.settings.scustom_alt = ($D('#scustom_alt').checked);
         gvar.settings.scustom_noparse = ($D('#scustom_noparse').checked);
-           //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
         if( (buff && lastsave!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse) {
           setValue(KEY_KTP+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
           setValue(KEY_KTP+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
           setValue(KEY_KTP+'CUSTOM_SMILEY', buff); //save custom smiley
-             //clog('sc saved..')
           rSRC.getSmileySet(true); // load only custom          
           // re attach
           window.setTimeout(function() {
@@ -1981,7 +1997,6 @@ var tQR = {
   } // end when it's scustom_container
  }
  ,toggle_tabsmile: function(e){
-   //clog('in toggle_tabsmile');
    e=e.target||e; 
    if(!e) return;
    var elem = getTag('a',$D('#tab_parent'));
@@ -2030,26 +2045,21 @@ var tQR = {
         };
         // step -1 to strip
         buf = buf.replace(/[\[\]\,]/g,"");
-             //clog('step-to single');
         for(var torep in tosingle){
           if(!isString(tosingle[torep])) continue;
           re = new RegExp(torep, "g");
           buf = buf.replace(re, tosingle[torep])
         }
-        //clog('before step-validate='+buf);
         // step -3 to validate per line    
         buf=(document.all ? buf.split("\r\n") : buf.split("\n")); // IE : FF/Chrome
         
         for(var line in buf){
            if(!isString(buf[line])) continue;
              buf[line] = trimStr ( buf[line] ); // trim perline
-              //clog('line='+line+'; val='+buf[line]);
              sml = /([^|]+)\|(http(?:[s|*])*\:\/\/.+$)/.exec( buf[line] );
            if(sml && isDefined(sml[1]) && isDefined(sml[2]) ){ // smiley thingie ?
-                //clog('sml[0]='+sml[0]+'; sml[1]='+sml[1]+'; sml[2]='+sml[2]);
              retbuf+=sml[1]+'|'+sml[2]+sepr; // new separator
            }else if(sml= tQR.sCustom.validTag( buf[line], false, 'saving' ) ){ // valid tag ?
-                //clog(sml);
              retbuf+=sml+sepr;
            }
            done=true;
@@ -2077,7 +2087,6 @@ var tQR = {
          if(ret.match(re)){
           do_it_again+='1';
           torep = re.exec(ret);      
-            //clog('replacing='+filter[idx]+'; torep='+torep[1]);
           if(torep && isDefined(torep[1]))
             ret=ret.replace(torep[1], '');
          }else{
@@ -2101,7 +2110,6 @@ var tQR = {
         re = new RegExp(torep, "");
         if(ret.match(re)){
           cucok=true;
-            //clog('cur torep='+torep)
           if(isDefined(doreplace) && doreplace){ // must be from view mode
             val=ret.replace(re, matches[torep][1]);
             val = tQR.sCustom.sanitize(val);
@@ -2112,7 +2120,6 @@ var tQR = {
             }else{
               // guess it should be a title
               var title = re.exec(txt);
-                //clog('mode='+mode+'; title; title='+title)
               if(re && isDefined(title[1])){
                 val = tQR.sCustom.sanitize(title[1]);            
                 ret='{title:'+val+'}\n'; 
@@ -2141,7 +2148,6 @@ var tQR = {
        while(!done){
          tag = /\[\[([^\]]+)/.exec(pmsg);      
          if( tag && isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lastTag ){
-                  //clog('parsing['+tag[1]+']...');
              re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
              re = new RegExp( re_W.toString() , "g"); // incase-sensitive and global, save the loop
              pmsg = pmsg.replace(re, '[IMG]'+paired['tag_'+tag[1]]+'[/IMG]');
@@ -2167,7 +2173,6 @@ var tQR = {
         # where :
         # idx= integer
         # gvar.smiliecustom[idx.toString()] = [link, tags, tags];       */
-         //clog(img.toString())
         paired['tag_'+img[1].toString()] = img[0].toString();
      }
      return paired;
@@ -2183,7 +2188,6 @@ var tQR = {
    
    if(gvar.settings.userLayout.config[0] == 1){
       var newLines = count_Char('\\n', tmsg);
-        //clog('pre sigi, ENTER=' + newLines+'; ' );
       var margin_sigi = (tmsg.indexOf('[QUOTE=')!=-1 ? (gvar.offSet_SiGi[0]-newLines) : (gvar.offSet_SiGi[1]-newLines) );      
       tmsg += gen_Char('\n', margin_sigi, ' ') + gvar.settings.userLayout.signature;
    }
@@ -2351,9 +2355,7 @@ function SimulateMouse(elem,event,preventDef) {
   preventDef=(isDefined(preventDef) && preventDef ? true : false);
   evObj.initEvent(event, preventDef, true);
   try{elem.dispatchEvent(evObj);}
-  catch(e){
-    //clog('Error. elem.dispatchEvent is not function.')
-  }
+  catch(e){}
 }
 function createEl(type, attrArray, html){
  var node = document.createElement(type);
@@ -2417,6 +2419,15 @@ function getScreenHeight(){
   }
   return y;
 }
+function getCurrentYPos() {
+  if (document.body && document.body.scrollTop)
+    return document.body.scrollTop;
+  if (document.documentElement && document.documentElement.scrollTop)
+    return document.documentElement.scrollTop;
+  if (window.pageYOffset)
+    return window.pageYOffset;
+  return 0;
+}
 
 // end static routine
 //=== BROWSER DETECTION / ADVANCED SETTING
@@ -2431,8 +2442,11 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='staticArgs'; }
-    if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    if(gsv.indexOf('staticArgs')>0) {
+ 	 gvar.isGreaseMonkey=true; gvar.isFF4=false;
+	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+	} // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
 
@@ -2522,12 +2536,12 @@ var $D=function (q, root, single) {
   if( !q ) return false;
   if ( typeof q == 'object') return q;
   root = root || document;
-  if (q[0]=='#') { return root.getElementById(q.substr(1)); }
-  else if (q[0]=='/' || (q[0]=='.' && q[1]=='/')) {
+  if (q[0]=='/' || (q[0]=='.' && q[1]=='/')) {
       if (single) { return document.evaluate(q, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; }
       return document.evaluate(q, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
   }
   else if (q[0]=='.') { return root.getElementsByClassName(q.substr(1)); }
+  else { return root.getElementById( (q[0]=='#' ? q.substr(1):q.substr(0)) ); }
   return root.getElementsByTagName(q);
 };
 // utk add - remove element
@@ -2786,14 +2800,12 @@ var vB_textarea = {
     this.Obj.setAttribute('disabled','disabled');
   },
   readonly: function(id){
-         //clog('txta readonly');
     this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     removeClass('txa_enable', this.Obj);
     addClass('txa_readonly', this.Obj);
     this.Obj.setAttribute('readonly',true);
   },
   enabled: function(id){
-         //clog('txta enabled');
     if(!this.Obj) this.Obj = (isUndefined(id) ? Dom.g(gvar.id_textarea) : Dom.g(id));
     this.Obj.removeAttribute('disabled');
 
@@ -3225,10 +3237,9 @@ Format will be valid like this:
     +'.cblue{color:#000080!important;}'
     +'.cred{color:#FF0000!important;}'
     +'.qrsmallfont, .qrsmallfont div, .g_notice{font-size:11px;}'
-    +'div.qrsmallfont a{text-decoration:none;}'
+    +'div.qrsmallfont a, .nodeco{text-decoration:none}'
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools input{margin-left:5px;display:none;}'
-    +'.nodeco{text-decoration:none;}'
     +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
@@ -3239,9 +3250,12 @@ Format will be valid like this:
 	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;outline:none;}'
     +'#collapseimg_quickreply{border:0;}'
     +'#atoggle{outline:none;}'
-    +'.btman-suspect{color:red;font-weight:bold;}'
-    +'.btman-href{padding:0;margin:0;font-size:11px;text-decoration:line-through;}'
-    +'.btman-href:hover{text-decoration:none;color:red;}'
+    +'.btman-suspect{font-size:11px;margin-bottom:-5px;font-weight:bold;}'
+    +'.btman-suspect a, .btman-suspect:hover .btman-href{text-decoration:none}'
+    +'.btman-suspect a span{color:red;text-decoration:blink}'
+    +'.btman-suspect:hover a span{color:red;text-decoration:underline}'
+    +'.btman-href{margin-left:20px;background:#FFD7FF;font:11px/12px \'Courier New\',sans-serif!important;font-size:11px}'
+    +'.btman-strike{text-decoration:line-through}'
 
 /* ==settings== */ 
     +'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;}'
@@ -3313,10 +3327,29 @@ Format will be valid like this:
     +'}'
     
 	/* twitter's button */
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;text-shadow:1px 1px 0 #B1B1B1;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn-primary{border-color:#3B3B3B;font-weight:bold;color:#F0F000;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;'
+	+'border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;'
+	+'border-radius:4px;color:#333;text-shadow:1px 1px 0 #B1B1B1;cursor:pointer;} '
+	+'.twbtn::-moz-focus-inner{padding:0;border:0;}'
+	+'.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;}'
+	+'.twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px;-moz-border-radius:5px;'
+	+'-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;}a.twbtn{text-decoration:none;}'
+	+'.twbtn-primary{border-color:#3B3B3B;font-weight:bold;color:#F0F000;background:#21759B;}'
+	+'.twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}'
+	+'.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+	
 	/* thumb image */
 	+'.imgthumb:hover {background-color:#80FF80 !important;}'
-	+'.imgthumb {line-height:20px;font-size:11px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVaNQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENGX5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOudiXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXzRSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAUBEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVkHAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
+	+'.imgthumb {line-height:20px;font-size:11px;padding:2px;padding-left:28px;background:#DDFFDD url(data:image/png;base64,'
+	+'iVBORw0KGgoAAAANSUhEUgAAABkAAAAUCAIAAAD3FQHqAAAABnRSTlMAAAAAAABupgeRAAAACXBIWXMAAAsTAAALEwEAmpwYAAADHUlEQVR42qWUW28bVRDH/'
+	+'7M+Xu+uL3VcJzGlkYAWmVZKZKkS5fLQJ5CQ+gnyGSueIvFAJSoI9KFKWglQSFpCoMjxJb6u1157d2Z4WKd2kpdWnPNw5vzn6HdmRnMOPfr20dbWFv732NnZMbVarbJWUdWr7qvisvLGVlVjTLVa'
+	+'NQCY+fsnvwz9MVHig6qqqojI+SLJ0HNjSbn9wfvffPUAgEnYx6/bJ/41iyiVUicTsegosKLYYhYWi0ViJpZkS8wLIxYh/JtA5ixjUoWsk0nrZjXYvO2xyN7B6MUf2VkEYWURFmUWFmURXlJENG'
+	+'X5F1mWlXXSldXxl7X19ZX70Djv7Xb7QbPjJZkwK4uKzHEii23KCi6wLAuunS7k4GUKBAMynpMr5ifB2BZRUT0vkLLI4PVeprCRyl2PWZgV0AVLVS1C1kmHYe60c2IbVxCfnjWiqJj3FixVFdFu'
+	+'/dCQtA8fv7f5MOsWAFhKRLQUF5Hn2oD9+0ur1TlURatTNpaXc1VUVZGwJsGwfvR07cN7k8DvnzyrfvoQgBlZl1iadWwQSEtnnRUFCMi5UMz7QxUx8/6T7/xh/+7q2p/AxG+XCi6AcHKJBXiOud'
+	+'iXi6mKKOLjg71W/S8ABjGAGxsfFbIZAFGKLMta1Kt51vu78xtAy12dhDOdRWEYxdHEb/6aya4BePbzY2Pn+mH+hx+fA7i1OiUiIprHEoZhN+zjTeMDzDKL4uksTt6KcDyaOZPAB9QYN2YzabXz'
+	+'RSIiub6Uo6oGQdDszpLCMAuzyNUXagqWa48G7TgY5ovrzdN/Op3WSvkmywoRQXXOGg79eiN6m/+A7DzEOmvVb94oG2LXIyeTbjQbjUZjnuMsigaDwTt8MZT5+kHts3t3p9PpYDDY3f3p6OilAU'
+	+'BEpLGDd2IhDEfhJOz3+91u1806dz65Q6+OX5VL5aHvC0tSQiICgUBLRqJe8D1/sTceTTrdjkmnPr//xf7+vhmPx/G12PPc8/soWS7HQZelXq/X7/XXK5Xqx9VSqbS9vT0/cXB4YKdtFn7LFEVk'
+	+'HAQrxZLjOHEcb2xsAPgPkT44D3rdTkkAAAAASUVORK5CYII=) no-repeat !important; color:#000 !important;}'
   );
  } 
 ,getCSS_fixed: function(fixed){
