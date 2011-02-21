@@ -16,6 +16,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-20
+//   Add posting with ajaxPost
 //   Fix adapting FF4.0b12 (partial)
 //   Improve BBCodeIMG (imageshack.us)
 //   Fix avoid banned global object inArray
@@ -177,6 +178,7 @@ function init(){
   gvar.ck.bbuserid_currentpage = gvar.ck.bbuserid = gvar.user.id;
   
   gvar.restart=false;  
+  gvar.AjaxPost=true;
   // get saved settings to gvar
   getSettings();
 
@@ -667,11 +669,15 @@ function qr_preview(reply_html){
     $D('#qr_do').setAttribute('value', prep[0]);
      // prep xhr request
     if(gvar.__DEBUG__) DOMTimer.start();
-    var spost = buildQuery();
+    var spost = gvar.lastPostQuery = buildQuery();
+	
+	clog(gvar.lastPostQuery);
+	
     if(spost===false) {
       SimulateMouse($D('#imghideshow'), 'click', true);
       return false;
     }
+	
 	if(gvar.__DEBUG__) {
 	    clog('buildQuery elapsed='+DOMTimer.get());
         DOMTimer.start();
@@ -680,7 +686,7 @@ function qr_preview(reply_html){
 	$D('#preview_presubmit').focus();
     GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
-    GM_XHR.request(spost.toString(),'post', qr_preview);    
+    GM_XHR.request(spost.toString(),'post', qr_preview);
   } else {
     if( !reply_html || !$D('#preview_content') ) return;
     reply_html = reply_html.responseText;
@@ -704,6 +710,84 @@ function qr_preview(reply_html){
 	   $D('#preview_presubmit').removeAttribute('disabled');
 	   $D('#preview_presubmit').value = (gvar.user.isDonatur ? '':'pre-') + 'Post';
 	}
+  }
+}
+
+function prep_ajax_post(e){
+   // locking ..
+   var lockFields = function(flag){
+    if(flag){
+	  var el=$D('recaptcha_container');
+	  if(!e) e = (el ? $D('#preview_presubmit') : $D('#qr_prepost_submit'));
+	  e=e.target||e; e.value='posting...';
+      e.setAttribute('disabled','disabled');
+	  if($D('#recaptcha_container')) {
+		//var toHid = ["recaptcha_reload_btn","recaptcha_switch_audio_btn"];
+		var toDisb = ["recaptcha_submit","preview_presubmit","recaptcha_response_field"];
+		for(var i=0;i<toDisb.length;i++)
+		  if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
+		  
+		//for(var i=0;i<toDisb.length;i++)
+		//  if($D(toHid[i])) $D(toHid[i]).style.display='none';
+		  
+	  }else{
+	    if(vB_textarea.Obj) vB_textarea.disabled();
+	  }
+	  
+	}else{
+	 // remove locking here
+	}
+    
+   };   
+   
+   var spost = buildQuery( true ); // isToPost
+ 
+   if(!gvar.user.isDonatur){
+     // grab 2 captcha field
+	 var ce,fld = ["recaptcha_challenge_field","recaptcha_response_field"];
+	 for(var i=0; i<fld.length; i++){
+	    ce=$D(fld[i]);
+	    if(ce) spost ='&'+ce.getAttribute('name')+'='+encodeURIComponent(ce.value) + spost;
+	 }
+   }
+   gvar.lastPostQuery = spost;
+   lockFields(true);
+   
+   clog(spost);
+   
+   qr_ajax_post();
+
+}
+
+function qr_ajax_post(reply_html){
+  if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
+  
+  	//$D('#preview_presubmit').value = 'working...';
+	//$D('#preview_presubmit').focus();
+	var prep = prep_preview(), spost=gvar.lastPostQuery;
+	clog(prep);
+     
+	GM_XHR.uri = prep[1];
+    GM_XHR.cached = true;
+    GM_XHR.request(spost.toString(),'post', qr_ajax_post);   
+  
+  }else{
+    if( !reply_html ) return;
+    reply_html = reply_html.responseText;	
+	var parse_ajax_post = function(html){
+	   clog('Done kah...');
+	   var r=false, cucok = html.match(/<p\s*class=["'][^"']+..<a\s*href=["']([^"']+).[^>]+.Click\shere\sif\syour\sbrowser/i);
+	   if( cucok && /<td\s*class=["']tcat['"].Redirecting\.{3}<\/t/.test(html) )
+	      r = cucok[1];
+	   return ret;
+	}, rets = parse_ajax_post(reply_html);
+	var tgt = $D('#recaptcha_container');
+    if(rets && tgt) {
+	   //Thank you for posting!
+	   tgt.innerHTML = 'Thank you for posting!, now redirecting...';
+	}
+	location.href = rets;
+	return;
   }
 }
 
@@ -744,20 +828,21 @@ function template_wrapper(txt){
    return tmsg;
 };
 
-function buildQuery(){
+function buildQuery(isToPost){
+  isToPost = isDefined(isToPost) && isToPost ? true : false; // instead of toPreview
   var hidden = getTag( 'input', $D('#submit_container') );
   var el, q='', hL=hidden.length;
   for(var h=0; h<hL; h++)
     if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
       q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
 
-  q+= '&preview=Preview+Post';
+  q+= (isToPost ? '&sbutton=sbutton' : '&preview=Preview+Post');
   var adtnl = [gvar.id_textarea, 'input_title']; // ids of textarea message and title
   el = Dom.g(adtnl[0]);
   if( el && el.value!='' && el.value!=gvar.silahken ){
     var msg = trimStr(el.value);
     msg = template_wrapper();
-    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent(toCharRef(msg) +"\n"+'{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}' )  + q;
+    q = '&' + el.getAttribute('name') + '=' + encodeURIComponent(toCharRef(msg) +"\n"+ (isToPost?'':'{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}')  )  + q;
   }
   el = Dom.g(adtnl[1]);
   if( el && el.value!='' )
@@ -779,6 +864,7 @@ function closeLayerBox(tgt){
     }
     Dom.remove( Dom.g(tgt) );
     try {
+	  delete gvar.lastPostQuery;
       Dom.g(gvar.id_textarea).focus(); 
 	  if(isPreviewMode && doLastFocus) vB_textarea.lastfocus(); 
     }catch(e){}
@@ -850,12 +936,15 @@ function loadLayer_reCaptcha(){
           e.preventDefault;
           return false;
         }
-        e=e.target||e;
-        e.value='posting...';      
-        e.setAttribute('disabled','disabled');
-        window.setTimeout(function() {
-            SimulateMouse($D('#qr_submit'), 'click', true); 
-        }, 200);
+
+		
+		if( !gvar.AjaxPost ){
+          window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
+		}else{
+		  e.preventDefault;
+		  prep_ajax_post(e);		  
+		}
+		
     } );
     
     // calibrate width/position container
@@ -880,13 +969,14 @@ function loadLayer_preview(){
            loadLayer_reCaptcha();
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
-         }else{
-           e=e.target||e;
-           e.value='posting...';
-           e.setAttribute('disabled','disabled');
-           window.setTimeout(function() {
-             SimulateMouse($D('#qr_submit'), 'click', true); 
-           }, 200);
+         }else{           
+		   if( !gvar.AjaxPost ){
+              window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
+			  return;
+		   }else{
+		      e.preventDefault;
+			  prep_ajax_post(e);
+		   }
          }
       });
 }
