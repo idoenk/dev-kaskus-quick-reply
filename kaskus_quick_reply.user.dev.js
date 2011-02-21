@@ -6,7 +6,7 @@
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
 // @dtversion     110220314
-// @timestamp     1298179389201
+// @timestamp     1298312228728
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,7 +16,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-20
-//   Add posting with ajaxPost
+//   Add posting with ajaxPost (beta-1)
 //   Fix adapting FF4.0b12 (partial)
 //   Improve BBCodeIMG (imageshack.us)
 //   Fix avoid banned global object inArray
@@ -72,7 +72,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298179389201 // version.timestamp
+  timestamp: 1298312228728 // version.timestamp
 
  ,dtversion: 110220314 // version.date
  ,scriptID: 80409 // script-Id
@@ -177,7 +177,7 @@ function init(){
   gvar.user= getUserId(); //will be [gvar.user.id, gvar.user.name, gvar.user.avatar, gvar.user.isDonatur ]
   gvar.ck.bbuserid_currentpage = gvar.ck.bbuserid = gvar.user.id;
   
-  gvar.restart=false;  
+  gvar.isPosting= gvar.restart= false;
   gvar.AjaxPost=true;
   // get saved settings to gvar
   getSettings();
@@ -692,7 +692,7 @@ function qr_preview(reply_html){
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
 	if(rets===null){
-	  $D('#preview_content').innerHTML = '<div class="p_notice g_notice-error" style="display:block;">Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.</div>';
+	  $D('#preview_content').innerHTML = '<div class="g_notice g_notice-error" style="display:block;">Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.</div>';
 	   on('click',$D('#upss_preview'),function(e){
 	    if($D('#preview_content'))
 		  $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>';
@@ -713,33 +713,58 @@ function qr_preview(reply_html){
   }
 }
 
-function prep_ajax_post(e){
-   // locking ..
-   var lockFields = function(flag){
-    if(flag){
-	  var el=$D('recaptcha_container');
-	  if(!e) e = (el ? $D('#preview_presubmit') : $D('#qr_prepost_submit'));
-	  e=e.target||e; e.value='posting...';
-      e.setAttribute('disabled','disabled');
-	  if($D('#recaptcha_container')) {
-		//var toHid = ["recaptcha_reload_btn","recaptcha_switch_audio_btn"];
-		var toDisb = ["recaptcha_submit","preview_presubmit","recaptcha_response_field"];
-		for(var i=0;i<toDisb.length;i++)
-		  if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
-		  
-		//for(var i=0;i<toDisb.length;i++)
-		//  if($D(toHid[i])) $D(toHid[i]).style.display='none';
-		  
-	  }else{
-	    if(vB_textarea.Obj) vB_textarea.disabled();
-	  }
+
+function lockFields_forSubmit(flag){
+  var toDisb = [
+       "recaptcha_submit","preview_presubmit", gvar.id_textarea
+      ,"qr_preview_ajx","qr_prepost_submit"
+  ], sml_par=$D('#smile_cont'), el=$D('#controller_wraper'), rsf=$D('recaptcha_response_field');
+  
+  if(flag) { // locking ..    
+  	  for(var i=0;i<toDisb.length;i++)
+  	    if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
+      
+	  if(rsf) rsf.setAttribute('readonly',true);
 	  
-	}else{
-	 // remove locking here
-	}
+	  if(sml_par.style.display!='none')
+	    window.setTimeout(function() {SimulateMouse($D('#tab_close'), 'click', true)}, 1);
+	  if(gvar.user.isDonatur){
+	    var adv=$D('qr_advanced'),par,ec;
+	    if(adv){
+	  	  par=adv.parentNode;
+	  	  ec = createEl('input', {type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Post'});
+	  	  on('click',ec,function(){ lockFields_forSubmit(false)});
+	  	  par.insertBefore(ec, adv);
+	    }
+	  }
     
-   };   
-   
+  }else{
+    // remove locking
+	for(var i=0;i<toDisb.length;i++)
+  	    if($D('#'+toDisb[i])) $D('#'+toDisb[i]).removeAttribute('disabled');
+	if(rsf) rsf.removeAttribute('readonly');
+	if($D('#recaptcha_submit')) $D('#recaptcha_submit').value='Post';
+
+  }
+  if(el) el.style.setProperty('display',(flag?'':'none'),'');
+}
+
+function do_posting(e){
+  e=e.target||e; e.value='posting...';
+  e.setAttribute('disabled','disabled');
+  if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';
+  if( !gvar.AjaxPost ){
+    window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
+  }else{
+    e.preventDefault;
+    prep_ajax_post(e);
+	return false;
+  }
+}
+
+// fase popup tampil dan query post (isDonatur isonly requre this query)
+function prep_ajax_post(e){   
+
    var spost = buildQuery( true ); // isToPost
  
    if(!gvar.user.isDonatur){
@@ -751,7 +776,7 @@ function prep_ajax_post(e){
 	 }
    }
    gvar.lastPostQuery = spost;
-   lockFields(true);
+   lockFields_forSubmit(true);
    
    clog(spost);
    
@@ -761,32 +786,55 @@ function prep_ajax_post(e){
 
 function qr_ajax_post(reply_html){
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
-  
-  	//$D('#preview_presubmit').value = 'working...';
-	//$D('#preview_presubmit').focus();
+
 	var prep = prep_preview(), spost=gvar.lastPostQuery;
+	
 	clog(prep);
      
 	GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
-    GM_XHR.request(spost.toString(),'post', qr_ajax_post);   
+    GM_XHR.request(spost.toString(),'post', qr_ajax_post);
+	
+	clog('Posting - (assumed - real)Done');
   
   }else{
     if( !reply_html ) return;
     reply_html = reply_html.responseText;	
-	var parse_ajax_post = function(html){
-	   clog('Done kah...');
-	   var r=false, cucok = html.match(/<p\s*class=["'][^"']+..<a\s*href=["']([^"']+).[^>]+.Click\shere\sif\syour\sbrowser/i);
-	   if( cucok && /<td\s*class=["']tcat['"].Redirecting\.{3}<\/t/.test(html) )
-	      r = cucok[1];
-	   return ret;
-	}, rets = parse_ajax_post(reply_html);
-	var tgt = $D('#recaptcha_container');
-    if(rets && tgt) {
-	   //Thank you for posting!
-	   tgt.innerHTML = 'Thank you for posting!, now redirecting...';
+	var parse_ajax_post = function(html){	   
+	   
+	    clog('Done kah...');
+		var r={err:1,msg:' Unknown-Error ',redirect:false},cucok,ErMsg;
+        if(html.indexOf('POSTERROR')!=-1){ // there's some error
+	      cucok = html.match(/<ol><li>([^\n]+)<\/ol/);
+		  if(cucok) ErMsg = cucok[1];
+		  if(cucok = ErMsg.match(/Please\s*try\s*again\s*in\s*([^.(]+)/i)){
+		    r = {err:1, msg:'Posting delayed, please try again in '+cucok[1]};
+		  }else{
+		    r = {err:1, msg:(/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': cucok[1])};
+		  }
+        }else if( cucok = html.match(/<meta\s*http\-equiv=[\"\']Refresh[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i) ){
+	      r = {err:0, msg:'', redirect:cucok[1]};
+        }
+		
+		if(r.err!=0) clog(html);
+		
+	   return r;
+	}, ret = parse_ajax_post(reply_html);
+    if(ret) {
+	   var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));
+	   if(ret.err==0){
+	     if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
+	     if(ret.redirect) location.href = ret.redirect;
+	   }else{
+	     if(tgt) {
+		   tgt.setAttribute('style','height:auto!important');
+		   tgt.innerHTML = '<div class="g_notice g_notice-error" style="display:block!important;">'+ret.msg+'</div>';
+		 }
+		 lockFields_forSubmit( false );
+		 // reload capcay
+		 SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+	   }
 	}
-	location.href = rets;
 	return;
   }
 }
@@ -862,6 +910,7 @@ function closeLayerBox(tgt){
 		doLastFocus = true;
 	 }
     }
+	lockFields_forSubmit(false); // open locked; just incase
     Dom.remove( Dom.g(tgt) );
     try {
 	  delete gvar.lastPostQuery;
@@ -936,15 +985,7 @@ function loadLayer_reCaptcha(){
           e.preventDefault;
           return false;
         }
-
-		
-		if( !gvar.AjaxPost ){
-          window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
-		}else{
-		  e.preventDefault;
-		  prep_ajax_post(e);		  
-		}
-		
+		do_posting(e);		
     } );
     
     // calibrate width/position container
@@ -969,14 +1010,8 @@ function loadLayer_preview(){
            loadLayer_reCaptcha();
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
-         }else{           
-		   if( !gvar.AjaxPost ){
-              window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
-			  return;
-		   }else{
-		      e.preventDefault;
-			  prep_ajax_post(e);
-		   }
+         }else{
+		   do_posting(e);
          }
       });
 }
@@ -1096,7 +1131,7 @@ function initEventTpl(){
         var chk=e.getAttribute('checked');        
         if(chk){
             $D('#css_fixups').innerHTML='';
-            e.removeAttribute('checked')
+            e.removeAttribute('checked');
           } else{
             Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
             e.setAttribute('checked','checked');
@@ -1120,8 +1155,7 @@ function initEventTpl(){
           }
         }
         var prp = prep_preview();
-        nxDo = prp[0];
-        uriact = prp[1];
+        nxDo = prp[0]; uriact = prp[1];
         var msg=template_wrapper();
         if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
         $D('#vbform').setAttribute('action', uriact);
@@ -1142,12 +1176,7 @@ function initEventTpl(){
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
          }else{
-           e=e.target||e;
-           e.value='posting...';
-           e.setAttribute('disabled','disabled');
-           window.setTimeout(function() {
-             SimulateMouse($D('#qr_submit'), 'click', true); 
-           }, 200);
+		   do_posting(e);
          }
       });
       // end of vb_Textarea submit Event ------
@@ -4458,113 +4487,59 @@ var rSRC = {
  ,getCSS: function(){
   // CSS for Quick Reply
   return (''
-  +'.qr_container'
-   +'{max-width:100%;width:auto !important;margin:5px;text-align:left;}'
-  +'.normal_notice'
-   +'{background:transparent !important;color:#949494;}'
-  +'.alt1'
-   +'{border-bottom:1px solid transparent;}'
-  +'.quoteselected'
-   +'{background:#DFC;border-bottom:1px solid #CDA;}'
-  +'.p_notice,.g_notice'
-   +'{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
-  +'.g_notice-error'
-   +'{background:#FFD7FF !important;}'
-  +'.avafetch'
-   +'{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'
-  +'#vbform .tborder'
-   +'{width:100%;}'
-  +'#atoggle'
-   +'{float:right;}'
+  +'.qr_container{max-width:100%;width:auto !important;margin:5px;text-align:left;}'
+  +'.normal_notice{background:transparent !important;color:#949494;}'
+  +'.alt1{border-bottom:1px solid transparent;}'
+  +'.quoteselected{background:#DFC;border-bottom:1px solid #CDA;}'
+  +'.g_notice{display:none;padding:.4em;margin-bottom:3px;font-size:11px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
+  +'.g_notice-error{background:#FFD7FF !important;}'
+  +'.avafetch{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'
+  +'#vbform .tborder{width:100%;}'
+  +'#atoggle{float:right;}'
    
-  +'.panelsurrounds .panel, .imagebutton'
-   +'{background:#DFDFE0;}'
-  +'.controlbar'
-   +'{text-align:left;}'
-  +'.popup_pickbutton'
-   +'{border-color:#C1D2EE;width:10px;}'
-  +'.ofont:hover, .ocolor:hover, .osize:hover, .cdefault:hover, .popup_pickbutton:hover'
-   +'{cursor:default !important;}'
-  +'.imagebutton:hover, .imagebutton_color:hover'
-   +'{cursor:pointer;}'
-  +'.imagebutton_color table'
-   +'{border:1px solid #fff;background-color:#DFDFE0;}'
-  +'.imagebutton_color:hover table, .ofont:hover, .osize:hover'
-   +'{border:1px solid #2085C1;background-color:#B0DAF2;}'
-  +'.imagebutton_color:hover .popup_feedback'
-   +'{border-right:1px solid #316AC5;}'  
-  +'#vB_Editor_001_font_out, #vB_Editor_001_size_out'
-   +'{font-size:8pt;padding:2px;}'
+  +'.panelsurrounds .panel, .imagebutton{background:#DFDFE0;}'
+  +'.controlbar{text-align:left;}'
+  +'.popup_pickbutton{border-color:#C1D2EE;width:10px;}'
+  +'.ofont:hover, .ocolor:hover, .osize:hover, .cdefault:hover, .popup_pickbutton:hover{cursor:default !important;}'
+  +'.imagebutton:hover, .imagebutton_color:hover{cursor:pointer;}'
+  +'.imagebutton_color table{border:1px solid #fff;background-color:#DFDFE0;}'
+  +'.imagebutton_color:hover table, .ofont:hover, .osize:hover{border:1px solid #2085C1;background-color:#B0DAF2;}'
+  +'.imagebutton_color:hover .popup_feedback{border-right:1px solid #316AC5;}'  
+  +'#vB_Editor_001_font_out, #vB_Editor_001_size_out{font-size:8pt;padding:2px;}'
    
-  +'.MYvBulletin_editor table, #vbform .tborder'
-   +'{min-width:100%;}'
-  +'.MYvBulletin_editor table td'
-   +'{vertical-align:top;}'
-  +'#qravatar_cont, #capcay_container, .qrsmallfont, .qrsmallfont div, #capcay_header span'
-   +'{font-size:11px;}'
-  +'#capcay_container'
-   +'{min-width:131px;width:305px;}'
-  +'#qravatar_cont'
-   +'{text-align:center;padding-right:5px;min-width:100px;max-width:120px;}'
-  +'.txta_cont'
-   +'{min-width:100%;width:100%;padding-right:5px;}'
-  +'#'+gvar.id_textarea
-   +'{min-width:100%;}'
-  +'.textarea'
-   +'{/* clear:both; */width:100%;min-height:95px;}'
+  +'.MYvBulletin_editor table, #vbform .tborder{min-width:100%;}'
+  +'.MYvBulletin_editor table td{vertical-align:top;}'
+  +'#qravatar_cont, #capcay_container, .qrsmallfont, .qrsmallfont div, #capcay_header span{font-size:11px;}'
+  +'#capcay_container{min-width:131px;width:305px;}'
+  +'#qravatar_cont{text-align:center;padding-right:5px;min-width:100px;max-width:120px;}'
+  +'.txta_cont{min-width:100%;width:100%;padding-right:5px;}'
+  +'#'+ gvar.id_textarea +'{min-width:100%;}'
+  +'.textarea{width:100%;min-height:95px;}'
   +'#dv_accessible'
    +'{cursor:default;text-align:center;border:1px solid #949494;position:absolute;padding:10px 50px 10px 10px;background:#FDECC8;width:auto;margin:20px 10px;}'
-  +'.icon-accessible'
-   +'{cursor:pointer;position:absolute;margin:-3px 0 0 5px;}'
-  +'.txa_enable, .txa_readonly'
-   +'{border:1px solid #949494;}'
-  +'.txa_enable'
-   +'{background-color:#FFF;color:#000;}'
-  +'.txa_readonly'
-   +'{background-color:#E8E8E8;color:#4F4F4F;}'   
+  +'.icon-accessible{cursor:pointer;position:absolute;margin:-3px 0 0 5px;}'
+  +'.txa_enable, .txa_readonly{border:1px solid #949494;}'
+  +'.txa_enable{background-color:#FFF;color:#000;}'
+  +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'   
    
-  +'.g_notice a, .qrsmallfont a, #capcay_header a'
-   +'{font-size:11px;text-decoration:none;}'
-  +'#home_link'
-   +'{text-decoration:underline;}'
-  +'.cleanlink'
-   +'{text-decoration:none;}'
-  +'.qravatar_refetch_hover_0'
-   +'{margin-top:0;}'
-  +'.qravatar_refetch_hover'
-   +'{margin-top:-15px;}'
-  +'#qravatar_refetch'
-   +'{background:#DFC;border:1px solid #CDA;font-size:9px;}'
-  +'.warn'
-   +'{color:#FF0000;font-size:9px;}'
-  +'.idleinput, .activeField'
-   +'{font-size:22px;border:1px solid #B1B1B1;text-align:center;padding:2px;}'
-  +'.idleinput'
-   +'{color:blue;background:#FEEB9E;}'
-  +'.activeField'
-   +'{background:#FFF;}'
-  +'.input_title, .textarea'
-   +'{border:1px solid #B1B1B1;}'
-  +'.input_title:focus, .textarea:focus, .activeField:focus'
-   +'{border:1px solid #275C7C;}'
-  +'#capcay_header'
-   +'{padding:0 2px;vertical-align:bottom;}'
-  +'.fieldset'
-   +'{margin:0;padding:0;}'
-  +'#fieldset_capcay .bginput, #nfolink'
-   +'{margin:0;padding:0;float:right;}'
-  +'#fieldset_capcay .bginput'
-   +'{margin:1px 2px 1px 0;}'
-  +'.reado'
-   +'{color:#808080;background:#E5E5E5;border:1px solid #8A8A8A;}'
-  +'.sub-bottom'
-   +'{min-width:200px;font-size:10px;color:#40404;}'
-  +'.sayapkiri'
-   +'{float:left;text-align:left;}'
-  +'.sayapkanan'
-   +'{float:right;text-align:right;}'
-  +'.sayapkanan a'
-   +'{text-decoration:none;float:right;margin-top:3px;}'
+  +'.g_notice a, .qrsmallfont a, #capcay_header a{font-size:11px;text-decoration:none;}'
+  +'#home_link{text-decoration:underline;}'
+  +'.cleanlink{text-decoration:none;}'
+  +'.qravatar_refetch_hover_0{margin-top:0;}'
+  +'.qravatar_refetch_hover{margin-top:-15px;}'
+  +'#qravatar_refetch{background:#DFC;border:1px solid #CDA;font-size:9px;}'
+  +'.warn{color:#FF0000;font-size:9px;}'
+  +'.input_title, .textarea{border:1px solid #B1B1B1;}'
+  +'.input_title:focus, .textarea:focus{border:1px solid #275C7C;}'
+  +'#capcay_header{padding:0 2px;vertical-align:bottom;}'
+  +'.fieldset{margin:0;padding:0;}'
+  +'#fieldset_capcay .bginput, #nfolink{margin:0;padding:0;float:right;}'
+  +'#fieldset_capcay .bginput{margin:1px 2px 1px 0;}'
+  +'.reado{color:#808080;background:#E5E5E5;border:1px solid #8A8A8A;}'
+  +'.sub-bottom{min-width:200px;font-size:10px;color:#40404;}'
+  +'.sayapkiri{float:left;text-align:left;}'
+  +'.sayapkanan{float:right;text-align:right;}'
+  +'.sayapkanan a{text-decoration:none;float:right;margin-top:3px;}'
    
   +'.popup_feedback{background-color:#fff;border-right:1px solid #fff;}'
   +'.vbmenu_popup {position:absolute;padding:3px;}'
@@ -4577,8 +4552,9 @@ var rSRC = {
    +'{color:#000;border:1px solid transparent;background-color:transparent;}'
   +'.customed_addcontroller img:hover, .imagebutton img:hover '
    +'{color:#000;border:1px solid #2085C1;background-color:#B0DAF2;}'
-  +'.spacer'
-   +'{clear:both;height:2px;}'
+  
+  +'.spacer{clear:both;height:2px;}'
+  
   +'#wrap_suploader_container, #wrap_suploader_container .fieldset, #skecil_container, #sbesar_container, #scustom_container, #wrap_scustom_container'
    +'{border: 1px solid #BBC7CE;padding:2px;}'
   +'#scustom_container{padding:2px 1px!important;word-wrap:break-word}'
@@ -4586,26 +4562,19 @@ var rSRC = {
    +'{margin:0 1px;border:1px solid transparent;max-width:120px; max-height:120px;}'
   +'#skecil_container img:hover, #sbesar_container img:hover, #scustom_container img:hover, #nfo_version:hover'
    +'{cursor:pointer;border:1px solid #2085C1;background-color:#B0DAF2;}'
-  +'#content_scustom_container .ofont'
-   +'{text-decoration:none;cursor:pointer;}'
-  +'#content_scustom_container .nothumb'
-   +'{padding:1px 3px;}'
-  +'#content_scustom_container .scustom-thumb'
-   +'{margin-left:2px;}'
+  +'#content_scustom_container .ofont{text-decoration:none;cursor:pointer}'
+  +'#content_scustom_container .nothumb{padding:1px 3px;}'
+  +'#content_scustom_container .scustom-thumb{margin-left:2px;}'
   +'.ul_tabsmile'
    +'{list-style:none;padding:0;height:1em;margin:'+(gvar.isOpera||gvar.isBuggedChrome?'5px 0 2px 2px':'2px 0 3px 2px')+';}'
-  +'.ul_tabsmile li'
-   +'{display:inline;margin-left:3px;}'
-  +'li.tab_close'
-   +'{float:right !important;}'
+  +'.ul_tabsmile li{display:inline;margin-left:3px;}'
+  +'li.tab_close{float:right !important;}'
   +'.ul_tabsmile a, #sel_host'
    +'{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;outline:none}'
-  +'.ul_tabsmile a:hover, #sel_host:hover'
-   +'{background-color:#B0DAF2;}'
-  +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover'
-   +'{background-color:#DDDDDD;}'
+  +'.ul_tabsmile a:hover, #sel_host:hover{background-color:#B0DAF2;}'
+  +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover{background-color:#DDDDDD;}'
   +'.qbutton'
-   +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7;color:#000;text-decoration:none;border-radius:3px;-moz-border-radius:3px;-khtml-border-radius:3px;-webkit-border-radius:3px;}'
+   +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7; color:#000; text-decoration:none; border-radius:3px; -moz-border-radius:3px; -khtml-border-radius:3px; -webkit-border-radius:3px;}'
   +'#hideshow textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
   +'.cancel_layout {float:right;margin:6px 5px 0 0!important;}'
   +'.cancel_layout-invi {display:none;}'
@@ -4656,48 +4625,27 @@ var rSRC = {
 	
 	/* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 10px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
-
   
   /* for preview popup */ 
-  	+'#hideshow, #hideshow_recaptcha {'
-    +  'position: absolute; min-width: 100%; min-height: 100%; top: 0; left: 0;'
+  	+'#hideshow, #hideshow_recaptcha{position:absolute; min-width:100%; min-height:100%; top:0; left:0;}'
+    +'.trfade, .fade{position:fixed; width:100%; height:100%; left:0;}'
+    +'.trfade {background:#000; z-index:99998;'
+    +  'filter:alpha(opacity=25); opacity: .25;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
     +'}'
-    +'.trfade, .fade {'
-    +  'position: fixed; width: 100%; height: 100%; left: 0;'
+    +'.fade {background: #000; z-index: 99990;'
+    +  'filter:alpha(opacity=60); opacity: .60;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
     +'}'
-    +'.trfade {'
-    +  'background: #000; z-index: 99998;'
-    +  'filter:alpha(opacity=25); opacity: .25;'
-    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
-    +'}'
-    +'.fade {'
-    +  'background: #000; z-index: 99990;'
-    +  'filter:alpha(opacity=60); opacity: .60;'
-    +  '-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
-    +'}'
-    +'#popup_container, #popup_container_precap  {'
-    +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
+    +'#popup_container, #popup_container_precap{background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
     +  'float: left; position: absolute; top: 10px;'
     +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
     +'}'
-    +'#popup_container {'
-    +  'width: 88%; left: 5%;'
-    +'}'
-    +'#popup_container_precap  {'
-    +  'width: 340px; left: 50%;'
-    +'}'
-    +'.popup_block .popup {'
-    +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
-    +  'padding: 0; border: 1px solid #bbb;'
-    +'}'
-    +'.popup img.cntrl {'
-    +  'position: absolute; right: -20px; top: -20px; border: 0px;'
-    +'}'
-    +'#button_preview {'
-    +  'padding:3px;text-align:center;'
-    +'}'
+    +'#popup_container {width:88%; left:5%}'
+    +'#popup_container_precap{width:340px; left:50%}'
+    +'.popup_block .popup {float:left; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
+    +'.popup img.cntrl {position:absolute; right:-20px; top:-20px; border:0px;}'
+    +'#button_preview {padding:3px;text-align:center;}'
     +'*html .fade {position: absolute;}'
-    +'*html #popup_container, *html #popup_container_precap {position: absolute;}'
+    +'*html #popup_container, *html #popup_container_precap {position:absolute;}'
     +'');
  }
  ,getSCRIPT: function(){
@@ -5171,6 +5119,7 @@ Format will be valid like this:
 
     // Quoted notice
     +'<div id="quoted_notice" class="g_notice"></div>'
+    +'<div id="posting_notify_donat" class="g_notice"></div>'
     
     // header_component
     +'<div class="MYvBulletin_editor">'
@@ -5420,7 +5369,7 @@ Format will be valid like this:
      +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
      +  '</span>'
      +   '</div>'
-     +   '<div class="spacer"></div>'
+     +   '<div class="spacer" id="posting_notify"></div>'
      +   '<div id="recaptcha_container" style="text-align:center;">'
      +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
      +   '</div>'
