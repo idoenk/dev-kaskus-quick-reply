@@ -2,7 +2,7 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.5
-// @dtversion     110220105
+// @dtversion     110221105
 // @timestamp     1298179389201
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
@@ -15,11 +15,12 @@
 // @include       */search_result.php?*
 // @include       http://www.kaskus.us/
 // @include       http://www.kaskus.us/index.php
+// @include       http://www.kaskus.us/come_inside.php
 //
 // -!--latestupdate
 //
-//  v1.0.5 - 2011-02-20
-//    Fix adapting FF4.0b12 (partial)
+//  v1.0.5 - 2011-02-21
+//    Add include come_inside.php
 //    Improve remember LastScrollTop position
 //    Fix minor CSS
 //    Fix anti-batman fail at spoiler with img inside
@@ -406,8 +407,6 @@ var tTRIT = {
 	if(!trInner) trInner = e.parentNode;
 	if(trInner.innerHTML.indexOf('member.php')==-1) trInner=trInner.parentNode;
 	trInner = trInner.innerHTML;
-    //trInner = (trInner ? trInner.innerHTML : e.parentNode.innerHTML);	
-	//if(trInner.indexOf('member.php')==-1) trInner=trInner.parent
 
     if(isLast){ // find its parent (TR)
 
@@ -439,17 +438,24 @@ var tTRIT = {
  ,findCurrentRow: function(e){
     var par = null;
 	if(typeof(e)=='object'){
-	  var maxJump= 5, i= 0;
+	  var maxJump= 5, i= 0, blinkArea=['forumdisplay','usercp','subscription'];
+	  var isBlinkArea = function(L){
+	    var r=false;
+		for(var i=0;i<blinkArea.length;i++){
+		  if(L.indexOf('/'+blinkArea[i]+'.php') != -1){ r=true; break;}
+		}
+		return r;
+	  };
 	  par = e.parentNode;	  
-	  // abort find curent row object except on forumdisplay
-	  if( !(gvar.loc.indexOf('/forumdisplay.php?')>0 || gvar.loc.indexOf('/usercp.php')>0 || gvar.loc.indexOf('/subscription.php')>0)
-	      || par.nodeName!='DIV' )
+	  // abort find curent row object on several conditions
+	  if( !isBlinkArea(gvar.loc) || par.nodeName=='LI' )
 		return null;	  
 	  while(i < maxJump && par.nodeName!='TR'){
 		par = par.parentNode; i++;
 	  }
 	  par = (par.nodeName!='TR' ? null : par);
 	}
+	clog('findCurrentRow='+par)
 	return par;
   }
  ,is_keydown_ondocument: function(e){
@@ -479,18 +485,18 @@ var tTRIT = {
     e = e.target||e;	
 	if($D('#hideshow')) {
 	  gvar.LastScrollTop = getCurrentYPos();	  
-	  if( !isString(gvar.current.cRow) ) removeClass('selected_row', gvar.current.cRow);
+	  if( typeof(gvar.current.cRow)!='string' ) removeClass('selected_row', gvar.current.cRow);
 	  gvar.current = {};
 	  tPOP.closeLayerBox('hideshow');
 	  if($D('#prev_loader')) $D('#prev_loader').parentNode.innerHTML = '[+]';
 	}
-	if(gvar.sITryBlinkRow && isString(gvar.current.cRow) ){
+	if(gvar.sITryBlinkRow && typeof(gvar.current.cRow)==='string' ){
 	    clearTimeout(gvar.sITryBlinkRow);
-		$D(gvar.current.cRow).innerHTML = '[+]';
+		if($D(gvar.current.cRow)) $D(gvar.current.cRow).innerHTML = '[+]';
 	}
 	tPOP.imediateStop(); // make sure blinking is stop at all
 	
-	// reset this gvar.
+	// reset this current
 	gvar.current= {};
 	
 	if( isUndefined(e.getAttribute('rel')) ) return;
@@ -1235,9 +1241,10 @@ var tPOP = {
 	  }	  
 	  gvar.sITryBlinkRow = window.setInterval(function() {
 	    var iLastRow = gvar.current.cRow;
-        if(gvar.blinkRow >= 7){
+        if(gvar.blinkRow >= 5){
 	      clearInterval(gvar.sITryBlinkRow);
-	  	  removeClass('selected_row', iLastRow);		  
+	  	  removeClass('selected_row', iLastRow);
+		  gvar.current = {};
 	  	  return;
 	    }
 	    gvar.blinkRow++;
@@ -1249,10 +1256,10 @@ var tPOP = {
 		}else{
 		  iLastRow.setAttribute('class', 'selected_row');
 		}
-      }, 250);
+      }, 300);
 	  
-	}else{	
-	  // blink the node
+	}else{
+	  // blink|after-load the node
 	  var cNode = $D(gvar.current.cRow);
 	  if(cNode){
 	    cNode.innerHTML = '<div class="ktp-loading" style="display:inline-block;padding:0 0 2px 5px;"></div>';
@@ -1269,7 +1276,8 @@ var tPOP = {
 	  head[0].appendChild( gvar.meta_refresh.cloneNode(true) );
 	}
 	Dom.remove( Dom.g(tgt) );	
-	if( gvar.isExpanded ) window.scrollTo(0,(isDefined(gvar.LastScrollTop) ? gvar.LastScrollTop:0) );
+	if( gvar.isExpanded && !gvar.settings.thread_lastscroll ) 
+	  window.scrollTo(0,(isDefined(gvar.LastScrollTop) ? gvar.LastScrollTop:0) );
   }
 }; // end tPOP
 
