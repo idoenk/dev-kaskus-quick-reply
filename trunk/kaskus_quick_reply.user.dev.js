@@ -6,7 +6,7 @@
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
 // @dtversion     110220314
-// @timestamp     1298312228728
+// @timestamp     1298368383689
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-02-20
+// v3.1.4 - 2011-02-22
+//   Add countdown afterSubmit
 //   Add posting with ajaxPost (beta-1)
 //   Fix adapting FF4.0b12 (partial)
 //   Improve BBCodeIMG (imageshack.us)
@@ -72,7 +73,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298312228728 // version.timestamp
+  timestamp: 1298368383689 // version.timestamp
 
  ,dtversion: 110220314 // version.date
  ,scriptID: 80409 // script-Id
@@ -115,6 +116,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
+ ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
 };
 const GMSTORAGE_PATH = 'GM_';
 const KS             = 'KEY_SAVE_';
@@ -475,6 +477,8 @@ function start_Main(){
        controler_resizer();
     }, 350);
     
+	if($D('#qr_delaycontainer')) QRdp.check($D('#qr_delaycontainer'));
+
     if(gvar.__DEBUG__){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
@@ -799,7 +803,7 @@ function qr_ajax_post(reply_html){
   
   }else{
     if( !reply_html ) return;
-    reply_html = reply_html.responseText;    
+    reply_html = reply_html.responseText;
     var parse_ajax_post = function(html){       
        
         clog('Done kah...');
@@ -817,7 +821,6 @@ function qr_ajax_post(reply_html){
         }else if( cucok = html.match(/<meta\s*http\-equiv=[\"\']Refresh[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i) ){
           r = {err:0, msg:'', redirect:cucok[1]};
         }
-        
         if(r.err!=0) clog(html);
         
        return r;
@@ -825,7 +828,10 @@ function qr_ajax_post(reply_html){
     if(ret) {
        var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));
        if(ret.err==0){
-         if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
+         
+		 QRdp.updLast(new Date().getTime()+'');
+		 
+		 if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
          if(ret.redirect) location.href = ret.redirect;
        }else{
          if(tgt) {
@@ -2154,7 +2160,10 @@ function event_ckck(){
        //clog('in event_ckck');
   if($D('#quickreply')) gvar.motion_target=$D('#quickreply');  
   on('mousemove',gvar.motion_target,function(){
-      var ck=document.cookie.toString().split(';');
+      
+	  QRdp.check($D('#qr_delaycontainer'));
+	  
+	  var ck=document.cookie.toString().split(';');
       gvar.ck.hotbb=-1;
       for(var i=0;i<ck.length;i++){
         var cv=ck[i].split('=');
@@ -3082,6 +3091,43 @@ var GM_XHR = {
         }
     } );
   }
+};
+// utk delay post (30sec) notify
+var QRdp = {
+  // QR delay post
+  getLast:function(){return getValue(KS+"QR_LASTPOST")}
+ ,updLast:function(x){return setValue(KS+"QR_LASTPOST",x)}
+ ,check:function(tgt,delay){    
+	delay=delay||35; // assumed 35 sec; fact is 30 sec
+	var lastP = parseInt( QRdp.getLast() );
+	
+	if(lastP > 0){
+	  QRdp.selisih = Math.floor( (new Date().getTime()-(lastP+(delay*1000)) ) / 1000 );
+	  if( isUndefined(QRdp.countDown) && tgt && tgt.style.display=='none' && QRdp.selisih <= 0 ){
+		 QRdp.tgt = tgt;
+		 tgt.style.display = '';
+		 QRdp.countDown = Math.abs(QRdp.selisih);
+		 window.setTimeout( function(){QRdp.showCounter()}, 1000);
+	  }
+	} 
+ }
+ ,writeTgt:function(tgt,val){
+    if(tgt) tgt.innerHTML = '[ <span class="qr-delaypost">'+val+'</span> ]';
+  }
+ ,showCounter:function(){
+	var tgt=QRdp.tgt;
+	QRdp.writeTgt(tgt,QRdp.countDown);
+	if(QRdp.countDown == 0){
+	  delete QRdp.countDown;
+	  if(tgt){
+	   tgt.innerHTML = '';
+	   tgt.style.display = 'none';
+	  }	  
+	}else{
+	  QRdp.countDown--;
+	  window.setTimeout( function(){QRdp.showCounter()}, 1000);
+	}
+ }
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
@@ -5109,7 +5155,7 @@ Format will be valid like this:
 
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
     +'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
