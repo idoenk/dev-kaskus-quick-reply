@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.5
 // @dtversion     110221105
-// @timestamp     1298179389201
+// @timestamp     1298389054267
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -59,7 +59,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.5';
 gvar.scriptMeta = {
-  timestamp: 1298179389201 // version.timestamp
+  timestamp: 1298389054267 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -69,7 +69,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug| 
+gvar.__DEBUG__ = false; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
