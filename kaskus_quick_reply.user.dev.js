@@ -5,8 +5,8 @@
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
-// @dtversion     110220314
-// @timestamp     1298368383689
+// @dtversion     110222314
+// @timestamp     1298386372662
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,6 +16,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-22
+//   Add strikethrough controller
 //   Add countdown afterSubmit
 //   Add posting with ajaxPost (beta-1)
 //   Fix adapting FF4.0b12 (partial)
@@ -73,9 +74,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298368383689 // version.timestamp
+  timestamp: 1298386372662 // version.timestamp
 
- ,dtversion: 110220314 // version.date
+ ,dtversion: 110222314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -84,7 +85,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -99,7 +100,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // settings update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // settings hide avatar
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // settings dynamic QR
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // settings serial hide [controller]
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // settings serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -342,12 +343,13 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'quote', 'code', 'spoiler', 'tranparent', 'noparse'];
+  gvar.labelControl = ['textformat', 'align', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
     /** banyak controler (14)
-    # [format,align,font,size,color,link,image,youtube,smile,quote,code,spoiler,tranparent,noparse]
+	# Ini utk label di Settings
+    # [format,align,font,size,color,link,image,youtube,smile,quote,code,spoiler,tranparent,noparse,strikethrough]
     **/
     var nController = gvar.labelControl.length; 
     for(var i=0; i<nController; i++)
@@ -1439,6 +1441,16 @@ function insert_custom_control(){
       on('click',el,function(e){return do_btncustom(e)});
       Dom.add(el,div1);
     }
+    idx++;
+    // tombol tstrike
+    if(gvar.settings.hidecontroll[idx] != '1'){
+      Attr={title:'Strikethrough text around selected text',
+            alt:'[strike]',style:'vertical-align:bottom',src:gvar.B.tstrike_gif
+           };
+      el = createEl('img',Attr);
+      on('click',el,function(){return do_TextStrike()});
+      Dom.add(el,div1);
+    }
 
 }
 
@@ -2147,6 +2159,21 @@ function do_btncustom(e){
     vB_textarea.wrapValue( pTag[tag], (tagprop!='' ? tagprop:'') );
   }
 }
+function do_TextStrike(){
+  vB_textarea.init();
+  var endFocus=function(){ vB_textarea.focus(); return false};
+  var strikeEm=function(t){var pr=t.split(''), r='';for(var i=0;i<pr.length;i++) r+=pr[i]+'\u0336'; return String(r)};
+  var selected = vB_textarea.getSelectedText(), text, ret='', realLen=0, prehead;  
+  text=(selected!= '' ? selected : prompt('Please enter Text to strikethrough:', 'strikethrough') );  
+  
+  if(text==null) return endFocus();
+  ret=strikeEm(text);
+  prehead = [0,(text.length*2)];
+  if(selected=='')
+    vB_textarea.setValue( ret, prehead );
+  else
+    vB_textarea.replaceSelected( ret, prehead );
+}
 function do_resize_editor(e){
   e=e.target||e;
   if(isUndefined(vB_textarea.Obj)) vB_textarea.init();
@@ -2685,6 +2712,7 @@ function setValue(key, value) {
   return (!data ? '': GM_setValue(key,value));
 
 }
+function delValue(key){try{GM_deleteValue(key);}catch(e){}}
 function showhide(obj, show){
   if(isUndefined(obj)) return;
   if(isUndefined(show)) show = (obj.style.display=='none'); // toggle mode
@@ -3094,13 +3122,14 @@ var GM_XHR = {
 };
 // utk delay post (30sec) notify
 var QRdp = {
-  // QR delay post
-  getLast:function(){return getValue(KS+"QR_LASTPOST")}
- ,updLast:function(x){return setValue(KS+"QR_LASTPOST",x)}
+  // QR delay post 
+  key: KS+"QR_LASTPOST"
+ ,defDelay: 32 // seconds; assumed 32 sec; fact is 30 sec
+ ,getLast:function(){return getValue(QRdp.key)}
+ ,updLast:function(x){return setValue(QRdp.key, x)}
  ,check:function(tgt,delay){    
-	delay=delay||35; // assumed 35 sec; fact is 30 sec
-	var lastP = parseInt( QRdp.getLast() );
-	
+	delay=delay || QRdp.defDelay;
+	var lastP = parseInt( QRdp.getLast() );	
 	if(lastP > 0){
 	  QRdp.selisih = Math.floor( (new Date().getTime()-(lastP+(delay*1000)) ) / 1000 );
 	  if( isUndefined(QRdp.countDown) && tgt && tgt.style.display=='none' && QRdp.selisih <= 0 ){
@@ -3119,6 +3148,7 @@ var QRdp = {
 	QRdp.writeTgt(tgt,QRdp.countDown);
 	if(QRdp.countDown == 0){
 	  delete QRdp.countDown;
+	  delValue(QRdp.key);
 	  if(tgt){
 	   tgt.innerHTML = '';
 	   tgt.style.display = 'none';
@@ -4626,6 +4656,9 @@ var rSRC = {
   +'#hideshow textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
   +'.cancel_layout {float:right;margin:6px 5px 0 0!important;}'
   +'.cancel_layout-invi {display:none;}'
+  /* for delay */
+  +'#qr_delaycontainer{padding-right:5px;color:#FFFF00}'
+  
   /* for updates */
   +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
   +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
@@ -4809,6 +4842,17 @@ var rSRC = {
         +"3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6"
         +"+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///yH5BAHoAwEALAAAAAAUABQAAAhNAAMIHEiwoMGDCBMq"
         +"XMiwoUIAEBlCBCAwYkOLFiVSDBBxYsaJFTdipNiRpMmQKEtyPLky5UmVLVuqhFnSpE2UMTWG3Pgwo8OfQIMCDQgAOw=="
+      ,tstrike_gif : ""
+        +"data:image/gif;base64,R0lGODlhFAATAPcAACQeJHx+fFRSVDQ2NLSytGxqbJSWlExGTKSipGRiZEQ+RHx6fDQuLDw+PHRydJyenIyKjFxaXDw2PGxudJyWnC"
+		+"QmJFRWVJza7GxubExKTKyqrGRmZDQuNIyOjDw6PJyanBbQIND2iGRJdHcBAABF4AAA63EAEgAAAAAYVQCI1QB0mQAAd3gApOYA63VxEgAAAPhY/omT/5Z0/wMA/wB"
+		+"oNAANAABJAAABAABFaAAAAAAAagAAAAAYYACIhQB0dAAAAAAAKAAAAgAAAAAAAAAjAgABAAAAAAAAAAAYAADoAHESAAAAAPhFaIkAAJYAAAMAAAAAAAAAAABxAAAA"
+		+"AHwYaOaIABJ0AAAAAAgYRADo6W8SEgAAABGFYAA0hQCddAB3AOouaMdnAGRpAHdmAcYARMRHOsQ0XFZ3AOAhcwKtZVFkcgB3c+AAU4kB35YAZAMAdwEAOgAAygAAx"
+		+"AAAVvCMAInnAJYSAAMAAHQ3AOY7ABKdAAB3AMc8yB87d52ddHd3APirAIlIcJY0dAN3AEkAVB8A6J0AEncAAAAAEQABAQAAAAAAAPAhsImt6JZkEgN3AIBkmufnkx"
+		+"ISawAAd7wA4sIq/WRxsncAIQA6/gDF/3HE/wBW/wC0UwDn3wASZAAAd/iRSYms2JZkZAN3dwAAyAAAdwAAdAAAAAAAPgEA0gAAZQAAd8vgesKzymSZxHd3VsznAOd"
+		+"IABI0AAB3APh5AInpAJYSAAMAAAwMAJ6hAHtPAHcAAAEgAAAAAAAAAAAAAwIAAX8AAAAAAAAAAHOUkC3n6G0SEmUAAG4MzXWhq1xPugAA3DxgYAD7+wASEgAAAABV"
+		+"mgDVkwCZawB3dwHX8gCl8AG7swAAITb+/iX//8f//1b//zjgPuez0hKZZQB3d5RbiAp/gcVnQnZ3AATcyOfodxISdAAAAA5rAAF/AABnAAB3AAWNeQCt6QBkEgB3A"
+		+"BAAMQAArQAAZAAAdwAwZgAAygAAxAAAVkQAMToArQAAZAAAd1QuagxncUlpSAFmACH5BAEAABcALAAAAAAUABMARwhnAC8IHEiwoMGBGCRAuIAhwgEHAgMkQHCwos"
+		+"WLGC8YAHAAAAYPDBJA/MChQYCMKA1aoIhxgMuXMGMOSEmzps2bFydouOngAcoOAhNc2LBQAYICBCo6yHChwgUBCy4ooNBAKM6rWAkGBAA7"
       ,youtube_gif : ""
         +"data:image/gif;base64,R0lGODlhFAAUAPcAAAQCBLySRGSKzKTG5PTmrHxKDPzOzPzy7PyytERmrNz6/OweBPyanPxWTPza3Oyq/Pz+/NSubJza7JxyFPzS1"
         +"Py6vNz+/PwiFKBsyBQM6XeLEgMBADioAOboABISAAAAABZqYND/AEUjAHUCAAAANwAAFh8A7QAA/wBF/wAA/wAA/wAA/6goHxStiHciNgMAdVAAybYAiHMfNgMA"
@@ -5155,7 +5199,7 @@ Format will be valid like this:
 
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
     +'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
