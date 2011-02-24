@@ -5,8 +5,8 @@
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
-// @dtversion     110222314
-// @timestamp     1298386372662
+// @dtversion     110225314
+// @timestamp     1298570552794
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,6 +16,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-22
+//   Fix lineHeight problem (Chrome)
 //   Add strikethrough controller
 //   Add countdown afterSubmit
 //   Add posting with ajaxPost (beta-1)
@@ -44,14 +45,6 @@
 //   Improve autogrow on Edit(Sigi & Layout)
 //   Fix minor CSS, word-wrap custom_smiley; reorder navigation;
 //
-// v3.1.2 - 2011-02-01
-//   Add 2 New Kaskus Emotes(Cool, Bola)
-//   Notify collision w/ QR+
-//   Fix on parsing bbcode custom smiley
-//   Add Grouped customsmiley
-//   Fix autogrow (use Module by Sophia.B, -iGoogle)
-//   Fix auto SET(Sigi & Layout) before Save Setting
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
@@ -74,9 +67,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298386372662 // version.timestamp
+  timestamp: 1298570552794 // version.timestamp
 
- ,dtversion: 110222314 // version.date
+ ,dtversion: 110225314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -701,7 +694,7 @@ function qr_preview(reply_html){
       $D('#preview_content').innerHTML = '<div class="g_notice g_notice-error" style="display:block;">Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.</div>';
        on('click',$D('#upss_preview'),function(e){
         if($D('#preview_content'))
-          $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>';
+          $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>';
          qr_preview();
        });
        on('click',$D('#upss_abort_preview'),function(e){SimulateMouse($D('#imghideshow'),'click',true)});
@@ -2414,7 +2407,7 @@ function ajax_chk_newval(reply_html){
   if(!reply_html){
     if($D('#imgcapcay') && capcay_notloaded())
        $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
-        +'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;Loading&nbsp;capcay<span id="imgcapcay_dots">...</span></div>';
+        +'<img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;Loading&nbsp;capcay<span id="imgcapcay_dots">...</span></div>';
     // prep xhr request  
     GM_XHR.uri = gvar.newreply;
     GM_XHR.cached = true;
@@ -3034,12 +3027,11 @@ var vB_textarea = {
   },
   setElastic: function(tid,max,winrez){
     if(isUndefined(tid)) tid=gvar.id_textarea;
-    function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7)); setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString();b=b.replace(/\r?\n/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px";a.style.setProperty('overflow',(max&&(d*14>max)? 'auto':'hidden'),'')}
-    var a=Dom.g(tid)||this.Obj;
-    a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px;'+(max?'max-height:'+max+'px;':''));
-    if(!winrez)
-      on('keyup',a,function(){setCols_Elastic(max)});
+    function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic(max)}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14)-4;a.setAttribute("rows",d);a.style.height=h+"pt";a.style.setProperty('overflow',(max&&(h>max)?'auto':'hidden'),'')}
+    var a=Dom.g(tid) || this.Obj;
+    a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'px;':''));
+    if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
 };
@@ -3240,7 +3232,7 @@ var Updater = {
   
  ,notify_progres: function(caller){
     if($D('#upd_notify'))
-      $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>';
+      $D('#upd_notify').innerHTML = '<img style="margin-left:10px;" id="fetch_update" src="'+gvar.B.throbber_gif+'" border="0"/>';
     if(Dom.g(caller)) {
       Updater.caller=caller;
       Dom.g(caller).innerHTML='checking..'; // OR check now
@@ -3282,8 +3274,12 @@ var SML_LDR = {
     SML_LDR.tgt_content='content_'+scID+(scID=='scustom_container' && gvar.smiliegroup ?'_'+gvar.smiliegroup[0]:'');
     SML_LDR.realcont=realcont = createEl('div',{id:SML_LDR.tgt_content,style:'display:none;'});
     
-    dumycont = createEl('div',{id:'loader_'+scID},'<img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small>');
-    Dom.add(dumycont,target);
+	if( !$D('#loader_'+SML_LDR.scID) ){
+     dumycont = createEl('div',{id:'loader_'+scID},'<img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small>');
+     Dom.add(dumycont,target);
+	}else{
+	 $D('#loader_'+SML_LDR.scID).style.display='';
+	}
     Dom.add(realcont,target);
     SML_LDR.load(smlset);
   }
@@ -3356,7 +3352,8 @@ var SML_LDR = {
     
     if(countSmiley<=0){
       var el = $D('#loader_'+SML_LDR.scID);
-      if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
+      //if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
+      if(el) el.style.display='none';
       RC.innerHTML = 'No Images found';
       RC.style.display='';
     } else {
@@ -4919,6 +4916,23 @@ var rSRC = {
         +"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
         +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
         +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
+      ,throbber_gif : ""
+        +"data:image/gif;base64,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"
 
      };
     break;
@@ -5257,7 +5271,7 @@ Format will be valid like this:
     +'<input type="hidden" name="styleid" value="0" />\n\n'
     
     +'<div class="sub-bottom sayapkiri">'
-     +'<div id="rate_thread" style="display:none;"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/></div>'
+     +'<div id="rate_thread" style="display:none;"><img src="'+gvar.B.throbber_gif+'" border="0"/></div>'
     +'&nbsp;</div>\n'
 
     +'<div class="sub-bottom sayapkanan">'
@@ -5403,7 +5417,7 @@ Format will be valid like this:
      +(gvar.settings.hotkeykey[0]=='1'?'Ctrl+':'')+(gvar.settings.hotkeykey[1]=='1'?'Shift+':'')+(gvar.settings.hotkeykey[2]=='1'?'Alt+':'')
      +''+gvar.settings.hotkeychar+'</b>' : '')
      +'</div>'
-     +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
+     +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" cols="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
      +            '</td>'
      +        '</tr>'
      +        '</table>'
@@ -5463,7 +5477,7 @@ Format will be valid like this:
      +   '</div>'
      +   '<div class="spacer" id="posting_notify"></div>'
      +   '<div id="recaptcha_container" style="text-align:center;">'
-     +    '<div><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div>'
+     +    '<div><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>'
      +   '</div>'
      +  '</td></tr>'
      +  '<tbody></table>'
@@ -5492,7 +5506,7 @@ Format will be valid like this:
      +  '<table class="tborder" align="center" border="0" width="100%" '+(tipe=='preview' ? 'cellpadding="6" cellspacing="1"':'cellpadding="0" cellspacing="0" ')+'>'
      +  '<tbody><tr><td class="tcat" style="padding:6px;">'+prop[tipe]+'</td></tr>'
      +  '<tr><td'+(tipe=='preview' ? ' class="alt1"':'')+'>'
-     +   '<div id="preview_content"><div id="preview_loading"><img src="'+gvar.domainstatic+'images/misc/11x11progress.gif" border="0"/>&nbsp;<small>loading...</small></div></div>'
+     +   '<div id="preview_content"><div id="preview_loading"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div></div>'
      +  '</td></tr>'
      +  '<tbody></table>'
      +   '<div id="button_preview" >'     
