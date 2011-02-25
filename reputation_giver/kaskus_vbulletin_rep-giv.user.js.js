@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.18
 // @dtversion     11025015
-// @timestamp     1298606433703
+// @timestamp     1298609704559
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -16,7 +16,7 @@
 // ----CHANGE LOG-----
 //
 // mod.R.19 : 2011-02-25
-// Fix failed get (entut-tag) tag_id 
+// Fix failed get (entut;donat-tag) tag_id 
 //
 // ==/UserScript==
 /*
@@ -46,9 +46,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '18';
+gvar.sversion = 'R' + '19';
 gvar.scriptMeta = {
-  timestamp: 1298606433703 // version.timestamp
+  timestamp: 1298609704559 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -537,16 +537,17 @@ function pushData(dat){
 function parseIt(page){
   var dpage; var result = {};
   
-  ret = page.match(/\?do=addlist[^\d]+(\d+)/i); // uid
+  ret = page.match(/\?do=addlist[^\d]+(\d+)/i); // uid (number)
   if(ret) result[gvar.f[0]] = ret[1];
     
-  ret = page.match(/View\s*Profile\:\s*([^\<]+)/i); // kaskus_id
-  if(ret) result[gvar.f[1]] = ret[1];  
+  ret = page.match(/<h1>([^<]+)([^i]+)/i); // kaskus_id (string)  
+  if(ret) result[gvar.f[1]] = ret[1] + (ret[2].indexOf('[$]')!=-1?'[$]':'');
+  clog('kid='+result[gvar.f[1]]);
   
-  ret = page.match(/<h2>(?:<b\s?[^>]*.)*([^<]+)/i); // tag_id
+  ret = page.match(/<h2>(?:<b\s?[^>]*.)*([^<]+)/i); // tag_id (string)
   if(ret) result[gvar.f[2]] = ret[1];
   
-  ret = page.match(/ocation<\/[^>]+..[^>]+.([^<]+)/i); // location
+  ret = page.match(/ocation<\/[^>]+..[^>]+.([^<]+)/i); // location (string | null)
   if(ret) 
     result[gvar.f[3]] = ret[1];
   else
@@ -624,8 +625,9 @@ function createSender(data, x){
   };
   if(!$D("_ucnd"+x)) return;
   
-  var is_donat = ( data["tag_id"] && data["tag_id"].match(/Kaskus\s*Donator/i) ? '&nbsp;<b style="color:red;">[$]</b>':'');
   data["kaskus_id"] = filterChar( data["kaskus_id"] );
+  var is_donat = ( /\[\$\]$/.test(data["kaskus_id"]) ? '&nbsp;<b style="color:red;">[$]</b>':'');
+  if(is_donat.length>0) data["kaskus_id"]=data["kaskus_id"].replace(/(\[\$\])$/,'');
   
   //overflow:wrap;  //Kaskus Donator
   var inner = ''
