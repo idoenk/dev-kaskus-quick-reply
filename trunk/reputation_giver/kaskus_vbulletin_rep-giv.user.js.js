@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.18
-// @dtversion     11022018
-// @timestamp     1298179389201
+// @dtversion     11025015
+// @timestamp     1298606433703
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,12 +15,15 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.18 : 2011-02-20
-// Fix adapting FF4.0b12 (partial)
+// mod.R.19 : 2011-02-25
+// Fix failed get (entut-tag) tag_id 
 //
 // ==/UserScript==
 /*
 // 
+// mod.R.18 : 2011-02-20
+// Fix adapting FF4.0b12 (partial)
+//
 // mod.R.17 : 2011-02-18
 // Fix some RegEx parseIt
 // rebuild subfolder subscription
@@ -45,7 +48,7 @@ var gvar=function(){};
 
 gvar.sversion = 'R' + '18';
 gvar.scriptMeta = {
-  timestamp: 1298179389201 // version.timestamp
+  timestamp: 1298606433703 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -54,7 +57,7 @@ javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //========-=-=-=-=--=========
-gvar.__DEBUG__  = true; // development debug
+gvar.__DEBUG__  = false; // development debug
 gvar._SIMULATE_ = false; // debug simulate sender
 //========-=-=-=-=--=========
 const OPTIONS_BOX = {
@@ -540,8 +543,8 @@ function parseIt(page){
   ret = page.match(/View\s*Profile\:\s*([^\<]+)/i); // kaskus_id
   if(ret) result[gvar.f[1]] = ret[1];  
   
-  ret = page.match(/h2>([^\<]+)/i); // tag_id
-  if(ret) result[gvar.f[2]] = ret[1];  
+  ret = page.match(/<h2>(?:<b\s?[^>]*.)*([^<]+)/i); // tag_id
+  if(ret) result[gvar.f[2]] = ret[1];
   
   ret = page.match(/ocation<\/[^>]+..[^>]+.([^<]+)/i); // location
   if(ret) 
