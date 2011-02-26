@@ -3,8 +3,8 @@
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
 // @version       1.18
-// @dtversion     11025015
-// @timestamp     1298609704559
+// @dtversion     11022718
+// @timestamp     1298741675719
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,14 +15,12 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.19 : 2011-02-25
+// mod.R.18 : 2011-02-27
 // Fix failed get (entut;donat-tag) tag_id 
+// Fix adapting FF4.0b12 (partial)
 //
 // ==/UserScript==
 /*
-// 
-// mod.R.18 : 2011-02-20
-// Fix adapting FF4.0b12 (partial)
 //
 // mod.R.17 : 2011-02-18
 // Fix some RegEx parseIt
@@ -46,9 +44,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '19';
+gvar.sversion = 'R' + '18';
 gvar.scriptMeta = {
-  timestamp: 1298609704559 // version.timestamp
+  timestamp: 1298741675719 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
