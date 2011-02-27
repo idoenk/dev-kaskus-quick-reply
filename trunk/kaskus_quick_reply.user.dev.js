@@ -4,6 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
+// @include       http://imgur.com/*
 // @version       3.1.4
 // @dtversion     110228314
 // @timestamp     1298836806524
@@ -16,6 +17,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-28
+//   Add 3rd-party additional host-uploader
 //   Fix failed Go Advanced
 //   Fix do_an_e() deprecating classic form submit (Opera)
 //   Fix setElastic, height decreased when set Link or Image tags
@@ -200,15 +202,15 @@ function outSideForumTreat(){
     # do pre-check hostname on location
   */  
   try{if(top===self)return;}catch(e){};
-  if(loc.indexOf('imageshack.us/')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
+  //if(loc.indexOf('imageshack.us/')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
   
   if(loc.indexOf('imageshack.us/')!=-1)
+    // imageshack.us CSS hack
     GM_addGlobalStyle(''
-         +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none!important;}'
+		 +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none!important;}'
          +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
          +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
         );
-    
   if(el){
     gvar.sITryKill = window.setInterval(function() {
       if ($D('#done-popup-close')) {
@@ -263,6 +265,14 @@ function outSideForumTreat(){
       }
     },  50);
   } // end is el
+  
+  if(loc.indexOf('imgur.com/')!=-1)
+    // imgur.com CSS hack
+	GM_addGlobalStyle(''
+	  +'div#logo,.right .panel{display:none!important;}'
+	  +'#content{margin-top:15px}'
+	);
+
 }
 
 // preprepre-Initialized
@@ -361,6 +371,7 @@ function getSettings(){
   gvar.upload_sel={
      kaskus:'u.kaskus.us'
     ,kodok:'imageshack.us/?no_multi=1'
+    ,imgur:'imgur.com/?noFlash'
   };
   gvar.uploader={
      kaskus:{
@@ -380,6 +391,10 @@ function getSettings(){
          ,uploadtype:'on'
        }
      }
+	,imgur:{
+	    src:'imgur.com'
+	   ,noCross:'1' 
+	 }
   };
 }
 // end getSettings
@@ -4254,7 +4269,7 @@ var UPL = {
   }
  ,reset_onloadIframe: function(){
     var g=function(i){return Dom.g(i)},el=g("btn_upload");
-    el.value="Upload"; el.removeAttribute("disabled"); 
+    if(el){el.value="Upload"; el.removeAttribute("disabled")}
     el=g("userfile");if(el)el.style.display="inline";
     
     el=g("fld_title");if(el)el.innerHTML="Upload Images";
@@ -4267,27 +4282,34 @@ var UPL = {
       // select host
       el=UPL.rebuild_selectHost();
       Dom.add(el,par);
-      
-      Attr={id:'label_file','class':'cabinet'}; el=createEl('label',Attr);      
-      Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
-      el2=createEl('input',Attr);
-      on('change',el2,function(e){
-        e=e.target||e;
-        if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
-      });
-      Dom.add(el2,el); Dom.add(el,par);
-      Attr={id:'btn_upload',value:'Upload','class':'twbtn twbtn-m',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
-      el=createEl('input',Attr);
-      on('click',el,function(){UPL.prep_upload()});
-      Dom.add(el,par);
-      
-
-      
-      Attr={id:'cancel_upload',value:'Cancel','class':'twbtn twbtn-m',type:'button',style:'margin:1px 0 0 20px;display:none;'}
-      el=createEl('input',Attr);
-      //on('click',el,function(){UPL.panic_stop()});
-      on('click',el,function(){UPL.cancel_upload()});
-      Dom.add(el,par);
+	  
+	  // is this host allow cross-site in submit?
+      if( isUndefined(UPL.prop[gvar.upload_tipe]['noCross']) ) {
+	  
+        Attr={id:'label_file','class':'cabinet'}; el=createEl('label',Attr);
+        Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
+        el2=createEl('input',Attr);
+        on('change',el2,function(e){
+          e=e.target||e;
+          if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
+        });
+        Dom.add(el2,el); Dom.add(el,par);
+        Attr={id:'btn_upload',value:'Upload','class':'twbtn twbtn-m',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
+        el=createEl('input',Attr);
+        on('click',el,function(){UPL.prep_upload()});
+        Dom.add(el,par);
+        
+        Attr={id:'cancel_upload',value:'Cancel','class':'twbtn twbtn-m',type:'button',style:'margin:1px 0 0 20px;display:none;'}
+        el=createEl('input',Attr);
+        on('click',el,function(){UPL.cancel_upload()});
+        Dom.add(el,par);
+	  
+	  }else{
+	  
+	    Attr={'class':'g_notice-error qrsmallfont',style:'width:65%; display:inline; position:absolute;margin-top:-3px;'};
+		el=createEl('div',Attr,'Sorry, this site is not allowing cross-site-submit, click <b>Toggle IFrame</b> to load it then do things inside the iframe');
+		Dom.add(el,par);
+	  }
       
       Attr={style:'margin-top:7px;float:right;font-weight:bold;font-size:10px;'}; el=createEl('div',Attr);
       Attr={href:'javascript:;'}; el2=createEl('a',Attr,'Toogle IFrame');
@@ -4321,7 +4343,7 @@ var UPL = {
        url='http://'+UPL.prop[gvar.upload_tipe]['post'];
     
     frmAct.action = url;
-    frmAct.submit();    
+    frmAct.submit();
     
     el=$D('#cancel_upload');
     if(el) el.style.display='inline';
@@ -4368,7 +4390,8 @@ var UPL = {
  }
  ,toogle_iframe: function(visb,chksub){
     var ifrm=$D("#target_upload"),src=UPL.prop[gvar.upload_tipe]['src'].replace(/\/\?no_multi.+/i,'');
-    chksub = (isUndefined(chksub)?false:chksub);
+	var nocross = isDefined(UPL.prop[gvar.upload_tipe]['noCross']);
+    chksub = (isUndefined(chksub) ? false : (!nocross && chksub) );
     if(isUndefined(visb)) visb = (ifrm.style.display=="none");
     if(visb){
         if(!gvar.uploaded && !chksub ){
@@ -4378,7 +4401,7 @@ var UPL = {
     }else{
         if(chksub) ifrm.src='about:blank';
     }
-    ifrm.style.display=(visb ? "" : "none");    
+    ifrm.style.display=(visb ? "" : "none");
   }
  ,getNativeId: function(id,par,typEl){
     if(isUndefined(par)) return;
