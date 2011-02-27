@@ -6,7 +6,7 @@
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
 // @dtversion     110228314
-// @timestamp     1298833157971
+// @timestamp     1298836806524
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,6 +16,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-28
+//   Fix failed Go Advanced
 //   Fix do_an_e() deprecating classic form submit (Opera)
 //   Fix setElastic, height decreased when set Link or Image tags
 //   Improve give icon editpost
@@ -70,7 +71,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298833157971 // version.timestamp
+  timestamp: 1298836806524 // version.timestamp
 
  ,dtversion: 110228314 // version.date
  ,scriptID: 80409 // script-Id
@@ -81,7 +82,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -1158,10 +1159,19 @@ function initEventTpl(){
       });
       
       on('submit',$D('#vbform'),function(e){
-		if(gvar.AjaxPost){
+		if(gvar.AjaxPost && $D('#clicker').value != 'Go Advanced'){
           clog('here and aborted');
 		  e.preventDefault(); // return false;
 		  return false;
+		}else{
+          // here is must be $D('#clicker').value == 'Go Advanced'
+		  var uriact,nxDo;
+          var prp = prep_preview();
+          nxDo = prp[0]; uriact = prp[1];
+          var msg=template_wrapper();
+          if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
+          $D('#vbform').setAttribute('action', uriact);
+          $D('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
 		}
       });
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
