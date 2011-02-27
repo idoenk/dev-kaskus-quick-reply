@@ -5,8 +5,8 @@
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
-// @dtversion     110225314
-// @timestamp     1298570552794
+// @dtversion     110227314
+// @timestamp     1298824052045
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,9 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-02-22
+// v3.1.4 - 2011-02-27
+//   Fix setElastic, height decreased when set Link or Image tags
+//   Improve give icon editpost
 //   Fix lineHeight problem (Chrome)
 //   Add strikethrough controller
 //   Add countdown afterSubmit
@@ -67,9 +69,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298570552794 // version.timestamp
+  timestamp: 1298824052045 // version.timestamp
 
- ,dtversion: 110225314 // version.date
+ ,dtversion: 110227314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -420,6 +422,12 @@ function start_Main(){
       if(gvar.user.isDonatur) Dom.remove('qr_'+hr[1]);
       Dom.add(el, nodes[i].parentNode);
      }
+	 nodes = getByXPath_containing('//a', false, 'EDIT');
+	 for(var i=0; i<nodes.length; i++){
+		hr = nodes[i].href.split("&p=");
+		//nodes[i].setAttribute('onclick', 'return false');
+		nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
+	 }
     }
     
     // insert customed controler
@@ -1467,18 +1475,18 @@ function re_event_vbEditor(){
    for(var i=0;i<iL;i++){
     var el=imgs[i], alt=el.alt;
     switch(alt){
-      case 'Align Left': case 'Align Center': case 'Align Right':
-      case 'Bold': case 'Italic': case 'Underline':
+      case 'Align Left': case 'Align Center': case 'Align Right': case 'Bold': case 'Italic': case 'Underline':
         on('click',el,function(e){do_align_BIU(e)});
       break;
       case 'Insert Image': case 'Insert Link':
-        on('click',el,function(e){do_btncustom(e)});
+        on('click',el,function(e){ return do_btncustom(e) });
+	  break;
       case 'Decrease Size': case 'Increase Size':
         on('click',el,function(e){do_resize_editor(e)});
       break;
       default:
        if(alt && (alt.indexOf('[quote]')!=-1 || alt.indexOf('[code]')!=-1) )
-        on('click',el,function(e){do_btncustom(e)});
+        on('click',el,function(e){return do_btncustom(e)});
       break;
     }
    }
@@ -2068,11 +2076,11 @@ function do_btncustom(e){
     ,'link' :'URL',  'image':'IMG'
     ,'spoiler' :'SPOILER','transparent':'COLOR','noparse' :'NOPARSE','youtube' :'YOUTUBE'
   };
-  var endFocus=function(){ vB_textarea.focus(); return false; };
+  var endFocus=function(){ vB_textarea.focus(); return};
   if(isUndefined(pTag[tag])) return endFocus();;
   vB_textarea.init();
   
-  if(tag=='quote' || tag=='code'){  
+  if(tag=='quote' || tag=='code'){
     vB_textarea.wrapValue( tag );  
   }else if(tag=='spoiler'){
   
@@ -2084,10 +2092,10 @@ function do_btncustom(e){
     vB_textarea.wrapValue( 'spoiler', title );
 
   }else{
-    var text, selected = vB_textarea.getSelectedText();
+	var text, selected = vB_textarea.getSelectedText();
     var is_youtube_link = function(text){
         text = trimStr ( text ); //trim
-        if(text.match(/youtube\.com\/watch\?v=\w+/i)){
+        if(text.match(/youtube\.com\/watch\?v=[\w\d-]+/i)){
          var rx = /youtube\.com\/watch\?v=([^&]+)/i.exec(text);
          text = ( rx ? rx[1] : '');
         }else if(!/^[\d\w-]+$/.test(text))
@@ -2124,7 +2132,7 @@ function do_btncustom(e){
       else{
         var prehead = [('['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']').length, 0];
         prehead[1] = (prehead[0]+text.length);        
-        vB_textarea.setValue( '['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']'+text+'[/'+pTag[tag]+']', prehead );
+		vB_textarea.setValue( '['+pTag[tag]+(tagprop!=''?'='+tagprop:'')+']'+text+'[/'+pTag[tag]+']', prehead );
       }
       return endFocus();
     } // end selected==''
@@ -2169,6 +2177,9 @@ function do_TextStrike(){
 }
 function do_resize_editor(e){
   e=e.target||e;
+  
+  alert(e);
+  
   if(isUndefined(vB_textarea.Obj)) vB_textarea.init();
   var o=vB_textarea.Obj, size_change = parseInt(60, 10);
   var change_direction = e.getAttribute('alt') == "Increase Size" ? 1 : -1;
@@ -2997,23 +3008,22 @@ var vB_textarea = {
     this.set(bufValue);
     // fix chrome weird
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
-    this.Obj.scrollTop = (this.last_scrollTop+1);
+    if(vB_textarea.overflow!='hidden') this.Obj.scrollTop = (this.last_scrollTop+1);
     return bufValue; 
   },
   wrapValue : function(tag, title){
-    var start=this.cursorPos[0];
-    var end=this.cursorPos[1];
+    var start=this.cursorPos[0], end=this.cursorPos[1],bufValue;
     tag = tag.toUpperCase();
-    {
-      var bufValue = this.subStr(0, start) + 
+    
+    bufValue = this.subStr(0, start) + 
        '['+tag+(title?'='+title:'')+']' + 
         (start==end ? '' : this.subStr(start, end)) + 
        '[/'+tag+']' + this.subStr(end, this.content.length);
-    }
+    
     this.set(bufValue);
     var st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
     this.setCaretPos( st2, st2+this.subStr(start, end).length );    
-    this.Obj.scrollTop = (this.last_scrollTop+1);
+    if(vB_textarea.overflow!='hidden') this.Obj.scrollTop = (this.last_scrollTop+1);
     return bufValue; 
   },
   replaceSelected : function(text, ptpos){
@@ -3023,14 +3033,15 @@ var vB_textarea = {
     var bufValue = this.subStr(0, start) + text + this.subStr(end, this.content.length);
     this.set(bufValue);
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
-    this.Obj.scrollTop = (this.last_scrollTop+1);
+    if(vB_textarea.overflow!='hidden') this.Obj.scrollTop = (this.last_scrollTop+1);
   },
   setElastic: function(tid,max,winrez){
     if(isUndefined(tid)) tid=gvar.id_textarea;
     function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14)-4;a.setAttribute("rows",d);a.style.height=h+"pt";a.style.setProperty('overflow',(max&&(h>max)?'auto':'hidden'),'')}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=1,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(h>(max-134))?'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}
     var a=Dom.g(tid) || this.Obj;
-    a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'px;':''));
+	vB_textarea.oflow='hidden';
+    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'px;':''));
     if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
@@ -5376,9 +5387,9 @@ Format will be valid like this:
      +'</div></td>'
      +konst.__sep__ : '')
      
-     +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" title="Insert Link" /></div></td>'
+     +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" title="Insert Link" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" title="Insert Image" /></div></td>'
+     +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" title="Insert Image" /></div></td>'
      :'')
      +(gvar.settings.hidecontroll[7] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>'
      :'')
