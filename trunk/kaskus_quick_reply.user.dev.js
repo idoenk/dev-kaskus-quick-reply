@@ -5,8 +5,8 @@
 // @include       http://imageshack.us/*
 // @include       http://*.imageshack.us/*
 // @version       3.1.4
-// @dtversion     110227314
-// @timestamp     1298824052045
+// @dtversion     110228314
+// @timestamp     1298833157971
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -15,7 +15,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-02-27
+// v3.1.4 - 2011-02-28
+//   Fix do_an_e() deprecating classic form submit (Opera)
 //   Fix setElastic, height decreased when set Link or Image tags
 //   Improve give icon editpost
 //   Fix lineHeight problem (Chrome)
@@ -69,9 +70,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298824052045 // version.timestamp
+  timestamp: 1298833157971 // version.timestamp
 
- ,dtversion: 110227314 // version.date
+ ,dtversion: 110228314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -80,7 +81,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -725,11 +726,12 @@ function lockFields_forSubmit(flag){
   var toDisb = [
        "recaptcha_submit","preview_presubmit", gvar.id_textarea
       ,"qr_preview_ajx","qr_prepost_submit"
-  ], sml_par=$D('#smile_cont'), el=$D('#controller_wraper'), rsf=$D('recaptcha_response_field');
+  ], sml_par=$D('#smile_cont'), el=$D('#controller_wraper')
+  , rsf=$D('recaptcha_response_field'), rsl=$D('#recaptcha_submit_load');
   
   if(flag) { // locking ..    
-        for(var i=0;i<toDisb.length;i++)
-          if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
+      for(var i=0;i<toDisb.length;i++)
+        if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
       
       if(rsf) rsf.setAttribute('readonly',true);
       
@@ -739,12 +741,12 @@ function lockFields_forSubmit(flag){
         var adv=$D('qr_advanced'),par,ec;
         if(adv){
             par=adv.parentNode;
-            ec = createEl('input', {type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Post'});
+			if($D('#cancel_post')) Dom.remove($D('#cancel_post'));
+            ec = createEl('input', {id:'cancel_post',type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Post'});
             on('click',ec,function(){ lockFields_forSubmit(false)});
             par.insertBefore(ec, adv);
         }
-      }
-    
+      }    
   }else{
     // remove locking
     for(var i=0;i<toDisb.length;i++)
@@ -753,20 +755,21 @@ function lockFields_forSubmit(flag){
     if($D('#recaptcha_submit')) $D('#recaptcha_submit').value='Post';
 
   }
+  if(rsl) rsl.style.setProperty('display',(flag?'':'none'),'');
   if(el) el.style.setProperty('display',(flag?'':'none'),'');
 }
 
 function do_posting(e){
   e=e.target||e; e.value='posting...';
   e.setAttribute('disabled','disabled');
+  
   if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';
   if( !gvar.AjaxPost ){
     window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
   }else{
-    e.preventDefault;
-    prep_ajax_post(e);
-    return false;
+    prep_ajax_post(e);    
   }
+  return false;
 }
 
 // fase popup tampil dan query post (isDonatur isonly requre this query)
@@ -785,31 +788,24 @@ function prep_ajax_post(e){
    gvar.lastPostQuery = spost;
    lockFields_forSubmit(true);
    
-   clog(spost);
-   
+   clog(spost);   
    qr_ajax_post();
-
 }
 
 function qr_ajax_post(reply_html){
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
 
     var prep = prep_preview(), spost=gvar.lastPostQuery;
-    
-    clog(prep);
-     
+    clog(prep);     
     GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
-    
-    clog('Posting - (assumed - real)Done');
-  
+	
   }else{
     if( !reply_html ) return;
     reply_html = reply_html.responseText;
-    var parse_ajax_post = function(html){       
+    var parse_ajax_post = function(html){
        
-        clog('Done kah...');
         var r={err:1,msg:' Unknown-Error ',redirect:false},cucok,ErMsg;
         if(html.indexOf('POSTERROR')!=-1){ // there's some error
           cucok = html.match(/<ol><li>([^\n]+)<\/ol/);
@@ -842,6 +838,8 @@ function qr_ajax_post(reply_html){
            tgt.innerHTML = '<div class="g_notice g_notice-error" style="display:block!important;">'+ret.msg+'</div>';
          }
          lockFields_forSubmit( false );
+		 if($D('#botgreet_text'))
+		    $D('#botgreet_text').innerHTML = rSRC.getBOT_greet(0, 10);
          // reload capcay
          SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
        }
@@ -941,15 +939,18 @@ function loadLayer_reCaptcha(){
       if ($D('#recaptcha_response_field')) {
         clearInterval(gvar.sITryFocusOnLoad);
         on('keydown',$D('#recaptcha_response_field'),function(e){
-            var C = (!e ? window.event : e );
+            var C = (!e ? window.event : e ), ab=false;
             var A = C.keyCode ? C.keyCode : C.charCode;
             if( A===13 ){ // mijit enter
-                C = do_an_e(C);
                 SimulateMouse($D('#recaptcha_submit'), 'click', true);
+				ab=true;
             }else if( (C.altKey && A===82) || (A===33||A===34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
-                C = do_an_e(C);
                 SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+				ab=true;
             }
+			if(ab){
+			 C = do_an_e(C); return false;
+			}
         });
         // order tabindex
         var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
@@ -996,7 +997,8 @@ function loadLayer_reCaptcha(){
           e.preventDefault;
           return false;
         }
-        do_posting(e);        
+	    do_an_e(e);
+        return do_posting(e);
     } );
     
     // calibrate width/position container
@@ -1022,7 +1024,8 @@ function loadLayer_preview(){
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
          }else{
-           do_posting(e);
+           do_an_e(e);
+		   return do_posting(e);
          }
       });
 }
@@ -1125,7 +1128,6 @@ function initEventTpl(){
           $D('#input_title').value='';
         }, 100);
     });
-
     
     // do not re-event this when restarted after save setting
     // node destroyed from qr_maincontainer and all nodes inside
@@ -1135,7 +1137,11 @@ function initEventTpl(){
       on('click',$D('#qr_setting_btn'),function(){
         ST.init_setting();
       });
-      on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});      
+      on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
+      on('keydown',$D('#input_title'),function(e){
+	    var C = (!e ? window.event : e), A = C.keyCode ? C.keyCode : C.charCode;;
+		if(C.ctrlKey && A===13) SimulateMouse($D('#qr_prepost_submit'), 'click', true);		
+	  });
       
       on('click',$D('#chk_fixups'),function(e) {
         e=e.target||e;
@@ -1152,25 +1158,11 @@ function initEventTpl(){
       });
       
       on('submit',$D('#vbform'),function(e){
-        var uriact,nxDo;            
-        if($D('#clicker').value!='Go Advanced'){
-          // post quickreply
-          
-          var hi=($D('#recaptcha_response_field') ? $D('#recaptcha_response_field') : null);
-          if(hi && hi.value==''){
-            if(hi.getAttribute('disabled')=='disabled') 
-              e.preventDefault(); // return false;
-            alert('Belum Isi Image Verification'); hi.focus();
-            e.preventDefault(); // return false;
-            return false;
-          }
-        }
-        var prp = prep_preview();
-        nxDo = prp[0]; uriact = prp[1];
-        var msg=template_wrapper();
-        if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
-        $D('#vbform').setAttribute('action', uriact);
-        $D('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
+		if(gvar.AjaxPost){
+          clog('here and aborted');
+		  e.preventDefault(); // return false;
+		  return false;
+		}
       });
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
       on('click',$D('#qr_prepost_submit'),function(e){
@@ -1187,7 +1179,8 @@ function initEventTpl(){
            toogleLayerDiv('hideshow');
            toogleLayerDiv('hideshow_recaptcha');
          }else{
-           do_posting(e);
+           do_an_e(e);
+		   return do_posting(e);
          }
       });
       // end of vb_Textarea submit Event ------
@@ -2650,10 +2643,16 @@ function toCharRef(text){
     return charRefs.join('');
 };
 function do_an_e(A) {
-  A.stopPropagation();
-  A.preventDefault();
-  return A;
-};
+  if (!A) {
+      window.event.returnValue = false;
+      window.event.cancelBubble = true;
+      return window.event
+  } else {
+      A.stopPropagation();
+      A.preventDefault();
+      return A
+  }
+}
 function GetHeight(){
   var y = 0;
   if (self.innerHeight){ // FF; Opera; Chrome
@@ -2747,9 +2746,7 @@ function SimulateMouse(elem,event,preventDef) {
   preventDef=(isDefined(preventDef) && preventDef ? true : false);
   evObj.initEvent(event, preventDef, true);
   try{elem.dispatchEvent(evObj);}
-   catch(e){
-         //clog('Error. elem.dispatchEvent is not function.')
-   }
+   catch(e){ clog('Error. elem.dispatchEvent is not function.'+e)}
 }
 function createEl(type, attrArray, html){
  var node = document.createElement(type);
@@ -5443,8 +5440,7 @@ Format will be valid like this:
  ,getTPL_layer_Only: function(){
    return ('<div class="trfade"></div><div class="fade"></div>');
  }
- ,getTPL_prompt_reCAPTCHA: function(){
-  var get_botgreet = function(min, max){
+ ,getBOT_greet: function(min, max){
     var c = [
       'Are you a robot? :o'
      ,'It is really a fact this captcha is annoying. :nohope:'
@@ -5469,7 +5465,8 @@ Format will be valid like this:
     // avoid repetitive greet, store last index greet .
     cK.s('last_greet', String(lastgreet), '/', 'www.kaskus.us');
     return c[lastgreet];
-  };
+  }
+ ,getTPL_prompt_reCAPTCHA: function(){
   return (''
      +'<div id="popup_container_precap" class="popup_block"> '
      + '<div class="popup">'
@@ -5480,7 +5477,7 @@ Format will be valid like this:
      +  '</tr><tr>'
      +  '<td class="alt1">'
      +   '<div id="recaptcha_container_header">'
-     +   '<span class="qrsmallfont"><span style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+get_botgreet(0, 10)+'</span>'
+     +   '<span class="qrsmallfont"><span id="botgreet_text" style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+rSRC.getBOT_greet(0, 10)+'</span>'
      +   '<span style="float:right;padding:auto 0;">'
      +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
      +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
@@ -5494,7 +5491,7 @@ Format will be valid like this:
      +  '<tbody></table>'
      +   '<div id="button_preview" style="display:none;">'
      +    '<span id="remote_capcay"></span>'
-     +    '<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+     +    '<img id="recaptcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
      +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      +   '</div>'
      + '</div>'
@@ -5744,7 +5741,7 @@ return(''
  ,getTPL_sUploader: function(tab_id){
    return('<div id="'+tab_id+'" style="display:none;"></div>'); // #suploader_container
   }
-};
+}; // end rSRC
 
 // =============== /END Global Var ===
 // ------
