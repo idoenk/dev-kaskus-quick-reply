@@ -7,7 +7,7 @@
 // @include       http://imgur.com/*
 // @version       3.1.4
 // @dtversion     110228314
-// @timestamp     1298836806524
+// @timestamp     1298900021121
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -17,6 +17,8 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-02-28
+//   Add settings ajaxpost/autoredirect
+//   Fix failed parse with ajaxpost
 //   Add 3rd-party additional host-uploader
 //   Fix failed Go Advanced
 //   Fix do_an_e() deprecating classic form submit (Opera)
@@ -73,7 +75,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298836806524 // version.timestamp
+  timestamp: 1298900021121 // version.timestamp
 
  ,dtversion: 110228314 // version.date
  ,scriptID: 80409 // script-Id
@@ -95,11 +97,12 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_LAST_SIZE:     [''] // last used size
  ,KEY_SAVE_LAST_SPTITLE:  ['title'] // last used spoiler-title
  
- ,KEY_SAVE_UPDATES:          ['1'] // settings check update
- ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // settings update interval, default: 1 day
- ,KEY_SAVE_HIDE_AVATAR:      ['0'] // settings hide avatar
- ,KEY_SAVE_DYNAMIC_QR:       ['1'] // settings dynamic QR
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // settings serial hide [controller]
+ ,KEY_SAVE_UPDATES:          ['1'] // check update
+ ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
+ ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
+ ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
+ ,KEY_SAVE_AJAXPOST:         ['0'] // ajaxPost
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -180,7 +183,8 @@ function init(){
   gvar.ck.bbuserid_currentpage = gvar.ck.bbuserid = gvar.user.id;
   
   gvar.isPosting= gvar.restart= false;
-  gvar.AjaxPost=true;
+  //gvar.AjaxPost=true;
+  
   // get saved settings to gvar
   getSettings();
 
@@ -286,7 +290,7 @@ function oExist(P){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.updates_interval
+  eg. gvar.settings.ajaxpost
   */
   var hVal,hdc;
   gvar.settings = {
@@ -308,6 +312,7 @@ function getSettings(){
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
+    ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
     scustom_noparse: (getValue(KS+'SCUSTOM_NOPARSE')=='1'), // dont parse?
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),
@@ -780,39 +785,29 @@ function do_posting(e){
   e.setAttribute('disabled','disabled');
   
   if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';
-  if( !gvar.AjaxPost ){
+  if( !gvar.settings.ajaxpost ){
     window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
   }else{
-    prep_ajax_post(e);    
+    qr_ajax_post();    
   }
   return false;
-}
-
-// fase popup tampil dan query post (isDonatur isonly requre this query)
-function prep_ajax_post(e){   
-
-   var spost = buildQuery( true ); // isToPost
- 
-   if(!gvar.user.isDonatur){
-     // grab 2 captcha field
-     var ce,fld = ["recaptcha_challenge_field","recaptcha_response_field"];
-     for(var i=0; i<fld.length; i++){
-        ce=$D(fld[i]);
-        if(ce) spost ='&'+ce.getAttribute('name')+'='+encodeURIComponent(ce.value) + spost;
-     }
-   }
-   gvar.lastPostQuery = spost;
-   lockFields_forSubmit(true);
-   
-   clog(spost);   
-   qr_ajax_post();
 }
 
 function qr_ajax_post(reply_html){
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
 
-    var prep = prep_preview(), spost=gvar.lastPostQuery;
-    clog(prep);     
+    var prep = prep_preview(), spost=buildQuery( true ); // isToPost
+	if(!gvar.user.isDonatur){
+      // grab 2 captcha field
+      var ce,fld = ["recaptcha_challenge_field","recaptcha_response_field"];
+      for(var i=0; i<fld.length; i++){
+         ce=$D(fld[i]);
+         if(ce) spost ='&'+ce.getAttribute('name')+'='+encodeURIComponent(ce.value) + spost;
+      }
+    }
+    clog(spost); clog(prep);
+	lockFields_forSubmit(true);
+	
     GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
@@ -1155,8 +1150,12 @@ function initEventTpl(){
       });
       on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
       on('keydown',$D('#input_title'),function(e){
-	    var C = (!e ? window.event : e), A = C.keyCode ? C.keyCode : C.charCode;;
-		if(C.ctrlKey && A===13) SimulateMouse($D('#qr_prepost_submit'), 'click', true);		
+	    var C = window.event||e, A = C.keyCode ? C.keyCode : C.charCode;
+		if(A===13){
+		  if(C.ctrlKey) SimulateMouse($D('#qr_prepost_submit'), 'click', true);		  
+		  e.preventDefault(); // return false;
+		  return false;
+		}
 	  });
       
       on('click',$D('#chk_fixups'),function(e) {
@@ -1174,19 +1173,27 @@ function initEventTpl(){
       });
       
       on('submit',$D('#vbform'),function(e){
-		if(gvar.AjaxPost && $D('#clicker').value != 'Go Advanced'){
+	    
+		if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced') {
           clog('here and aborted');
 		  e.preventDefault(); // return false;
 		  return false;
 		}else{
-          // here is must be $D('#clicker').value == 'Go Advanced'
-		  var uriact,nxDo;
-          var prp = prep_preview();
-          nxDo = prp[0]; uriact = prp[1];
-          var msg=template_wrapper();
+		
+          if( !gvar.user.isDonatur && $D('#clicker').value != 'Go Advanced' ){
+		    var hi=($D('#recaptcha_response_field') ? $D('#recaptcha_response_field') : null);
+            if(hi && hi.value==''){
+              if(hi.getAttribute('disabled')=='disabled') 
+                e.preventDefault(); // return false;
+              alert('Belum Isi Image Verification'); hi.focus();
+              e.preventDefault(); // return false;
+              return false;
+            }
+		  }	  
+		  var prp = prep_preview(), msg=template_wrapper();
           if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
-          $D('#vbform').setAttribute('action', uriact);
-          $D('#qr_do').setAttribute('value', nxDo); // change default of qr_do (postreply)
+          $D('#qr_do').setAttribute('value', prp[0]); // nxDo; change default of qr_do (postreply)
+          $D('#vbform').setAttribute('action', prp[1]); //uriact
 		}
       });
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
@@ -4034,6 +4041,7 @@ var ST = {
        'misc_updates':KS+'UPDATES'
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
+      ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
       if(!isString(misc[id])) continue;
@@ -5662,6 +5670,8 @@ Format will be valid like this:
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
+     +spacer
+     +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost=='1' ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
      +spacer
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoGrow Textarea</label>'
      +spacer
