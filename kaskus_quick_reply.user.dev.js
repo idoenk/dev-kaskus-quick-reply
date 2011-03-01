@@ -6,8 +6,8 @@
 // @include       http://*.imageshack.us/*
 // @include       http://imgur.com/*
 // @version       3.1.4
-// @dtversion     110228314
-// @timestamp     1298900021121
+// @dtversion     110301314
+// @timestamp     1298970177218
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -16,21 +16,25 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-02-28
-//   Add settings ajaxpost/autoredirect
-//   Fix failed parse with ajaxpost
-//   Add 3rd-party additional host-uploader
+// v3.1.4 - 2011-03-01
+//   Fix minor toggle-iframe
+//   Fix failed send rating (ajaxPost) . Thanks=[yovicool]
+//   Fix post-timer enabled w/o ajaxPost
+//   Fix void(increase/decrease-textarea) . Thanks=[t0g3]
+//   Add settings ajaxPost/autoredirect . Thanks=[slifer2006]
+//   Fix failed parse smiley-custom BBCode (ajaxPost) . Thanks=[slifer2006]
+//   Add 3rd-party additional uploader (imgur.com)
 //   Fix failed Go Advanced
-//   Fix do_an_e() deprecating classic form submit (Opera)
-//   Fix setElastic, height decreased when set Link or Image tags
-//   Improve give icon editpost
-//   Fix lineHeight problem (Chrome)
+//   Fix do_an_e() avoid form submit when ajaxPost . Thanks=[silentroar]
+//   Fix setElastic, height decreased when add Link/Image tags . Thanks=[slifer2006]
+//   Improve give icon on editpost . Thanks=[Drupalorg]
+//   Fix lineHeight problem (Chrome) . Thanks=[BukanDewa]
 //   Add strikethrough controller
-//   Add countdown afterSubmit
-//   Add posting with ajaxPost (beta-1)
-//   Fix adapting FF4.0b12 (partial)
+//   Add post-timer afterSubmit
+//   Add posting with ajaxPost (beta-2)
+//   Fix adapting FF4.0b12 (partial) . Thanks=[hermawan64]
 //   Improve BBCodeIMG (imageshack.us)
-//   Fix avoid banned global object inArray
+//   Fix avoid banned global object inArray . Thanks=[Piluze]
 //
 //
 // -/!latestupdate---
@@ -75,9 +79,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298900021121 // version.timestamp
+  timestamp: 1298970177218 // version.timestamp
 
- ,dtversion: 110228314 // version.date
+ ,dtversion: 110301314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -86,7 +90,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -565,7 +569,7 @@ function buildRate(){
   var el,par,sel;
   var rates = { '5':'5: Excellent', '4':'4: Good', '3':'3: Average', '2':'2: Bad', '1':'1: Terrible' };
   par = createEl('div', {style:'float:left'}, 'Rating:&nbsp;');
-  sel = createEl('select', {name:'rating',tabindex:'6'});
+  sel = createEl('select', {id:'sel_rating',name:'rating',tabindex:'6'});
    Dom.add(sel, par);
   el=createEl('option', {value:0},'Choose a rating');
    Dom.add(el, sel);
@@ -763,7 +767,7 @@ function lockFields_forSubmit(flag){
         if(adv){
             par=adv.parentNode;
 			if($D('#cancel_post')) Dom.remove($D('#cancel_post'));
-            ec = createEl('input', {id:'cancel_post',type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Post'});
+            ec = createEl('input', {id:'cancel_post',type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Posting'});
             on('click',ec,function(){ lockFields_forSubmit(false)});
             par.insertBefore(ec, adv);
         }
@@ -774,7 +778,7 @@ function lockFields_forSubmit(flag){
           if($D('#'+toDisb[i])) $D('#'+toDisb[i]).removeAttribute('disabled');
     if(rsf) rsf.removeAttribute('readonly');
     if($D('#recaptcha_submit')) $D('#recaptcha_submit').value='Post';
-
+    if($D('#qr_prepost_submit')) $D('#qr_prepost_submit').value=(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply';
   }
   if(rsl) rsl.style.setProperty('display',(flag?'':'none'),'');
   if(el) el.style.setProperty('display',(flag?'':'none'),'');
@@ -839,6 +843,7 @@ function qr_ajax_post(reply_html){
        var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));
        if(ret.err==0){
          
+		 // set lastPost timestamp here
 		 QRdp.updLast(new Date().getTime()+'');
 		 
 		 if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
@@ -905,6 +910,8 @@ function buildQuery(isToPost){
       q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
 
   q+= (isToPost ? '&sbutton=sbutton' : '&preview=Preview+Post');
+  q+= (isToPost && $D('sel_rating') ? '&rating='+$D('sel_rating').selectedIndex : '');
+  
   var adtnl = [gvar.id_textarea, 'input_title']; // ids of textarea message and title
   el = Dom.g(adtnl[0]);
   if( el && el.value!='' && el.value!=gvar.silahken ){
@@ -1194,6 +1201,11 @@ function initEventTpl(){
           if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
           $D('#qr_do').setAttribute('value', prp[0]); // nxDo; change default of qr_do (postreply)
           $D('#vbform').setAttribute('action', prp[1]); //uriact
+		  
+		  if($D('#clicker').value != 'Go Advanced' && prp[0]=='postreply' ){
+		    // set lastPost timestamp here
+		    QRdp.updLast(new Date().getTime()+'');
+		  }
 		}
       });
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
@@ -2202,9 +2214,6 @@ function do_TextStrike(){
 }
 function do_resize_editor(e){
   e=e.target||e;
-  
-  alert(e);
-  
   if(isUndefined(vB_textarea.Obj)) vB_textarea.init();
   var o=vB_textarea.Obj, size_change = parseInt(60, 10);
   var change_direction = e.getAttribute('alt') == "Increase Size" ? 1 : -1;
@@ -4253,8 +4262,9 @@ var UPL = {
     UPL.parent=tgId;
     if(tgt.innerHTML!='') return;
     UPL.prop=gvar.uploader;
-    if(isDefined(gvar.uploaded))
-       delete(gvar.uploaded);
+    if( isDefined(gvar.iframeLoaded) )
+       delete(gvar.iframeLoaded);
+	   
     // create form DOM upload
     UPL.attach_form();
     
@@ -4366,7 +4376,6 @@ var UPL = {
     el=$D('#fld_title');
     if(el) el.innerHTML='Uploading '+gg+(Dom.g("userfile")?' ['+fn+']':'')+' '+gg+' '+host.substring(0,(host.indexOf('/')!=-1 ? host.indexOf('/'):host.length));
     
-    gvar.uploaded = 1;
     Dom.remove(inputElm);
     
     UPL.rebuild_inputfile();
@@ -4384,7 +4393,7 @@ var UPL = {
     clog(allowed_ext +'; '+ext);
     var pos=inArray(allowed_ext,ext);
     if( pos !== false ){
-       UPL.toogle_iframe( 1, 1 );    
+       UPL.toogle_iframe( 1 );
     }else{
        alert(fn=='' ? 'Belum memilih file':'forbidden file format');
     }
@@ -4396,19 +4405,13 @@ var UPL = {
     UPL.do_postBack("userfile");
    }
  }
- ,toogle_iframe: function(visb,chksub){
+ ,toogle_iframe: function(visb){
     var ifrm=$D("#target_upload"),src=UPL.prop[gvar.upload_tipe]['src'].replace(/\/\?no_multi.+/i,'');
-	var nocross = isDefined(UPL.prop[gvar.upload_tipe]['noCross']);
-    chksub = (isUndefined(chksub) ? false : (!nocross && chksub) );
     if(isUndefined(visb)) visb = (ifrm.style.display=="none");
-    if(visb){
-        if(!gvar.uploaded && !chksub ){
-           ifrm.src='about:blank';
-           window.setTimeout(function(){$D("#target_upload").src='http://'+src+'/'},50);
-        }
-    }else{
-        if(chksub) ifrm.src='about:blank';
-    }
+	if(!gvar.iframeLoaded){
+	    ifrm.src='http://'+src;
+		gvar.iframeLoaded=true;
+	}
     ifrm.style.display=(visb ? "" : "none");
   }
  ,getNativeId: function(id,par,typEl){
