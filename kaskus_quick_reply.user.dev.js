@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.4
 // @dtversion     110303314
-// @timestamp     1299090791604
+// @timestamp     1299095246768
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-03-03
+//   Add controller button for uploader . Thanks=[p1nky]
 //   Fix strict find threadid . Thanks=[ZacKBeeR]
 //   Fix minor toggle-iframe
 //   Fix failed send rating (ajaxPost)
@@ -81,7 +82,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1299090791604 // version.timestamp
+  timestamp: 1299095246768 // version.timestamp
 
  ,dtversion: 110303314 // version.date
  ,scriptID: 80409 // script-Id
@@ -108,7 +109,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -387,7 +388,7 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
+  gvar.labelControl = ['textformat', 'align', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
@@ -1484,7 +1485,7 @@ function insert_custom_control(){
       on('click',el,function(e){return do_btncustom(e)});
       Dom.add(el,$D('#vB_Editor_001_cmd_insertyoutube'));
     }
-    idx=11;
+    idx=12;
     // tombol spoiler
     if(gvar.settings.hidecontroll[idx] != '1'){
       Attr={title:'Wrap [SPOILER] tags around selected text',
@@ -1653,12 +1654,27 @@ function re_event_vbEditor(){
         }, 10);
      });     
    }
-
+  // event buat button uploader
+   par = $D(vB01+'_cmd_uploader');
+   if(par) on('click',par,function(e){
+     var p = $D('#smile_cont');
+	 if(p.innerHTML=='') {
+	   create_smile_tab(e);
+	 }else{
+	   var uc=$D('suploader_container');
+	   if(uc && uc.style.display=='none'){
+	     SimulateMouse($D('#remote_suploader_container'), 'click', true);
+	   }else{
+	     p.style.display=(p.style.display=='none' ? '':'none');
+	   }
+	 }
+   });
 }
 // end re_event_vbEditor
 
 function create_smile_tab(caller){
   var parent = $D('#smile_cont');
+  caller=caller.target||caller;
   if(parent.innerHTML!='') {
     parent.style.display=(parent.style.display=='none' ? '':'none');
     force_focus(10);
@@ -1728,18 +1744,19 @@ function create_smile_tab(caller){
     id=('s'+gvar.settings.autoload_smiley[1]+'_container');
     var tS=gvar.settings.autoload_smiley[1], S=(tS=='besar' ? gvar.smiliebesar : (tS=='kecil' ? gvar.smiliekecil : (tS=='custom' ? gvar.smiliecustom : null) ));
     insert_smile_content(id, S);
-    window.setTimeout(function() {
-      SimulateMouse($D('#remote_'+id), 'click', true);
-    }, 50);
-  }else{ // first tab: uploader no need load smileyset
-    id=(scontent[0]);
-    window.setTimeout(function() {
-      SimulateMouse($D('#remote_'+scontent[0]), 'click', true); // trigger click tab to first tab
-      force_focus(10);
-    }, 50);
+  }else if(caller && caller.id.indexOf('_cmd_uploader')!=-1 ){
+    id=scontent[scontent.length-1]; // last idx, assumed uploader
+  }
+  else{ // first tab: uploader no need load smileyset
+    id=scontent[0];
   }
   toggle_tabsmile(Dom.g(id));
   parent.style.display='';
+  
+  window.setTimeout(function() {
+    SimulateMouse($D('#remote_'+id), 'click', true); // trigger click tab to first tab
+    if(id==scontent[0]) force_focus(10);
+  }, 50);
 }
 // end create_smile_tab
 
@@ -4898,6 +4915,12 @@ var rSRC = {
         +"4N5BhKxpMS0RFRjs6kCIkTk9QT0ZDPDKCLi6EMRtKTVhaWVc9LSNhsbGwsUlgxVZCMCkSvyVbsrE0LmBeX11gLx0ZYMzOvzTRXFtVQFMoGA4c3M80zlRSPzYn"
         +"FxAKCOq/W85RSDUmFg0MEhxQFyufiyM0SlRosCCBgQK/XLBzYdDFg4sYMcJiV/HBgAABCIAUGSCixIouCAgIORIksG/5nMVSKaCmTYnQKjp7wLKnxGjAKMq82D"
         +"LAT6AxZYaJkPFBIAA7"
+      ,upld_png : ""
+        +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAAYFBMVEX8/vyFzyR7xieO1xqJ0RusqrBjszRxvSyJvGvw8PDm5Obb29"
+		+"r0/uTs+9ik51ma4Eip7Wfh98G0tLSx7Xe55YGQ2CaU2zfU9rC8vryo2IzA8JC04ozM8qDMzsycwoS87oQpvMJ/AAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQ"
+		+"BlSsOGwAAAMVJREFUeF4FwIWRHEEMAMCWNLB0DI+288/SBcDpBgAA1+sBAMD3qx4AAG6XqvcHAMC5qup8AgD+VVVVPQDAx7tVVdXrFwDHuVXVq17tcgLg0aK1Fi1a"
+		+"uwL4fUdERERExDfgdGkREREREe1yAxyHZ2ZmZh7HAYBnZmZmAgDPzMzMBAB+5pxzzgkA/Mw555wTAPgaY4wxBgDwNcYYYwwAYF+WZVmWvwCf93vvvffee++9936/f"
+		+"/6xruu2bdu+7/u+b9u2revqPzsQBuTq26DvAAAAAElFTkSuQmCC"
       ,spoiler_png : ""
         +"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAABnRSTlMA4QDhAOKdNtA9AAAACXBIWXMAAAsTAAALEwEAmpwYAAABg"
         +"0lEQVR42tVUPUsDQRB9M7dBQi4iypWJhgQsU1lIUtklIgg2tmJhK3b+gLT+AtHaP2AqtUmwslGMTSJcUgaSKEc+bu/DYmGJMR+glVs8HrO8fTOzs0u23cRvF+MP"
@@ -5473,14 +5496,16 @@ Format will be valid like this:
      +(gvar.settings.hidecontroll[5] == '1' && gvar.settings.hidecontroll[6] == '1' && gvar.settings.hidecontroll[7] == '1' ? '' : konst.__sep__)
      
      +(gvar.settings.hidecontroll[8] != '1' ? ''
-     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>'
-     +konst.__sep__ : '')    
+     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>' :'')
+     +(gvar.settings.hidecontroll[9] != '1' ? ''
+     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_uploader"><img id="vB_Editor_001_cmd_uploader_img" src="'+gvar.B.upld_png+'" alt="Uploader" title="Uploader" /></div></td>' :'')
+	 +(gvar.settings.hidecontroll[8] == '1' && gvar.settings.hidecontroll[9] == '1' ? '' : konst.__sep__)
      
-     +(gvar.settings.hidecontroll[9] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[11] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[9] == '1' ? '' : konst.__sep__)     
+     +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[11] == '1' ? '' : konst.__sep__)     
      
      +                '<td id="customed_control"></td>'
      +                '<td width="100%"></td>'
