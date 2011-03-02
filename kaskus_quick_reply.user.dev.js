@@ -2,39 +2,41 @@
 // @name          Kaskus Quick Reply
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @include       http://imageshack.us/*
-// @include       http://*.imageshack.us/*
-// @include       http://imgur.com/*
 // @version       3.1.4
-// @dtversion     110301314
-// @timestamp     1298970177218
+// @dtversion     110303314
+// @timestamp     1299090791604
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
+// @include       http://imageshack.us/*
+// @include       http://*.imageshack.us/*
+// @include       http://imgur.com/*
+// @include       http://photoserver.ws/*
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-03-01
+// v3.1.4 - 2011-03-03
+//   Fix strict find threadid . Thanks=[ZacKBeeR]
 //   Fix minor toggle-iframe
-//   Fix failed send rating (ajaxPost) . Thanks=[yovicool]
+//   Fix failed send rating (ajaxPost)
 //   Fix post-timer enabled w/o ajaxPost
-//   Fix void(increase/decrease-textarea) . Thanks=[t0g3]
-//   Add settings ajaxPost/autoredirect . Thanks=[slifer2006]
-//   Fix failed parse smiley-custom BBCode (ajaxPost) . Thanks=[slifer2006]
-//   Add 3rd-party additional uploader (imgur.com)
+//   Fix void(increase/decrease-textarea)
+//   Add settings ajaxPost/autoredirect
+//   Fix failed parse smiley-custom BBCode (ajaxPost)
+//   Add 3rd-party additional uploader (imgur.com; photoserver.ws)
 //   Fix failed Go Advanced
-//   Fix do_an_e() avoid form submit when ajaxPost . Thanks=[silentroar]
-//   Fix setElastic, height decreased when add Link/Image tags . Thanks=[slifer2006]
-//   Improve give icon on editpost . Thanks=[Drupalorg]
-//   Fix lineHeight problem (Chrome) . Thanks=[BukanDewa]
+//   Fix do_an_e() avoid form submit when ajaxPost
+//   Fix setElastic, height decreased when add Link/Image tags
+//   Improve give icon on editpost
+//   Fix lineHeight problem (Chrome)
 //   Add strikethrough controller
 //   Add post-timer afterSubmit
 //   Add posting with ajaxPost (beta-2)
-//   Fix adapting FF4.0b12 (partial) . Thanks=[hermawan64]
+//   Fix adapting FF4.0b12 (partial)
 //   Improve BBCodeIMG (imageshack.us)
-//   Fix avoid banned global object inArray . Thanks=[Piluze]
+//   Fix avoid banned global object inArray
 //
 //
 // -/!latestupdate---
@@ -79,9 +81,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1298970177218 // version.timestamp
+  timestamp: 1299090791604 // version.timestamp
 
- ,dtversion: 110301314 // version.date
+ ,dtversion: 110303314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -90,7 +92,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -105,7 +107,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
- ,KEY_SAVE_AJAXPOST:         ['0'] // ajaxPost
+ ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
@@ -142,10 +144,9 @@ function init(){
   // initialize gvar..
   gvar.domain= 'http://'+'www.kaskus.us/';  
   gvar.isNotForum = (!location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/));
-  if(gvar.isNotForum) {
-    outSideForumTreat();
-    return;
-  }
+  if(gvar.isNotForum)
+    return outSideForumTreat();
+	
   gvar.reCAPTCHA_domain= 'http://'+'api.recaptcha.net';
   gvar.reCAPTCHA_google_domain= 'http://'+'www.google.com/recaptcha/api';
   
@@ -205,21 +206,54 @@ function init(){
 
 // outside forum like u.kaskus.us || imageshack.us
 function outSideForumTreat(){
-  var loc = location.href,el=$D('//input[@wrap="off"]',null,true),par,lb,m=20;
-  /* 
+  
+  var whereAmId=function(){
+    var ret,src;
+	getUploaderSetting();
+	for(var host in gvar.uploader){
+	  src=gvar.uploader[host]['src']||null;
+	  if(src && self.location.href.indexOf(src)!=-1){
+	    ret= String(host); break;
+	  }
+	}
+	return ret;
+  };
+  var el,par,lb,m=20,loc=whereAmId(),CSS="",i="!important";
+  /*
     # do pre-check hostname on location
   */  
   try{if(top===self)return;}catch(e){};
-  //if(loc.indexOf('imageshack.us/')==-1&&loc.indexOf('u.kaskus.us')==-1) return;
   
-  if(loc.indexOf('imageshack.us/')!=-1)
-    // imageshack.us CSS hack
-    GM_addGlobalStyle(''
-		 +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none!important;}'
+  switch(loc){
+    case "kodok":
+	  CSS=''
+		 +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
          +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
          +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
-        );
-  if(el){
+	  ;
+	break;
+    case "imgur":
+	  CSS=''
+	  +'div#logo,.right .panel{display:none'+i+'}'
+	  +'#content{margin-top:15px}'
+	  ;
+	break;
+    case "ps":
+	  CSS=''
+      +'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
+      +'body>img,#topbar{top:0'+i+'}'
+      +'body{background-color:#fff}'
+      +'#loginbar{top:38px'+i+';display:block}'
+      +'#footer{padding:0}'
+      +'#overlay .content{top:3px'+i+'}'
+      +'#overlay{position:absolute'+i+'}'
+	  ;	
+	break;
+  }; // end switch loc
+  if(CSS) GM_addGlobalStyle( CSS );
+
+  el=$D('//input[@wrap="off"]',null,true);
+  if(loc=='kodok' && el){
     gvar.sITryKill = window.setInterval(function() {
       if ($D('#done-popup-close')) {
         clearInterval(gvar.sITryKill);
@@ -274,13 +308,7 @@ function outSideForumTreat(){
     },  50);
   } // end is el
   
-  if(loc.indexOf('imgur.com/')!=-1)
-    // imgur.com CSS hack
-	GM_addGlobalStyle(''
-	  +'div#logo,.right .panel{display:none!important;}'
-	  +'#content{margin-top:15px}'
-	);
-
+  return false;
 }
 
 // preprepre-Initialized
@@ -374,13 +402,18 @@ function getSettings(){
   // is there any saved text
   gvar.tmp_text=getValue(KS+'TMP_TEXT');
   if(gvar.tmp_text!='') setValue(KS+'TMP_TEXT', ''); //set blank to nulled it
-  
+
+  getUploaderSetting();
+}
+
+function getUploaderSetting(){
   // uploader properties  
   gvar.upload_tipe='kaskus';
   gvar.upload_sel={
      kaskus:'u.kaskus.us'
-    ,kodok:'imageshack.us/?no_multi=1'
-    ,imgur:'imgur.com/?noFlash'
+    ,kodok:'imageshack.us'
+    ,imgur:'imgur.com'
+    ,ps:'photoserver.ws'
   };
   gvar.uploader={
      kaskus:{
@@ -392,7 +425,7 @@ function getSettings(){
        }
      }
     ,kodok:{
-        src:'imageshack.us/?no_multi=1'
+        src:'imageshack.us'
        ,post:'post.imageshack.us/'
        ,ifile:'fileupload'
        ,hids:{
@@ -401,8 +434,10 @@ function getSettings(){
        }
      }
 	,imgur:{
-	    src:'imgur.com'
-	   ,noCross:'1' 
+	    src:'imgur.com',noCross:'1' 
+	 }
+	,ps:{
+	    src:'photoserver.ws',noCross:'1' 
 	 }
   };
 }
@@ -2564,9 +2599,9 @@ function fetch_property(){
    if(!gvar.securitytoken) return;
    gvar.securitytoken = gvar.securitytoken.value;
    
-   gvar.threadid = $D('//a[contains(@href,"nextoldest")]', null, true).href;
-   match= /\Wt=(\d+)/.exec(gvar.threadid);
-   if(match) gvar.threadid = match[1];
+   gvar.threadid = $D('//a[contains(@href,"showthread.php?t=")]', null, true);
+   match= (gvar.threadid ? /\Wt=(\d+)/.exec(gvar.threadid.href) : false);
+   gvar.threadid = (match ? match[1] : "");
    
    // find first element postid
    gvar.newreply = is_opened_thread();
@@ -3878,7 +3913,7 @@ var ST = {
     var keykomeng = {
       'LAST_FONT':'Last Used Font'
      ,'LAST_COLOR':'Last Used Color'
-     ,'LAST_SIZE':'Last Used Size; validValue=[1,0]'
+     ,'LAST_SIZE':'Last Used Size'
      ,'LAST_SPTITLE':'Last Used Spoiler Title'
      ,'UPDATES':'Check Update enabled? validValue=[1,0]'
      ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
@@ -4158,8 +4193,9 @@ var ST = {
   var el_cancel = Dom.g(task+'_cancel');  
   var genTxta = function(_task, value){
     var tgt = Dom.g(_task+'_Editor'); tgt.innerHTML='';
-    var el = createEl('textarea',{id:_task+'_txta',style:'margin-top:3px;'}, value);
-    Dom.add(el, tgt); tgt.style.display='';
+	//,style:'margin-top:15px;'
+    var el = createEl('textarea',{id:_task+'_txta'}, value);
+    Dom.add(el, tgt); tgt.setAttribute('style','display:;margin-top:3px;');
     vB_textarea.setElastic(_task+'_txta',75);
     window.setTimeout(function(e) { try{Dom.g(_task+'_txta').focus();}catch(e){} }, 100);
   };  
@@ -4703,7 +4739,7 @@ var rSRC = {
   +'.qbutton'
    +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7; color:#000; text-decoration:none; border-radius:3px; -moz-border-radius:3px; -khtml-border-radius:3px; -webkit-border-radius:3px;}'
   +'#hideshow textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
-  +'.cancel_layout {float:right;margin:6px 5px 0 0!important;}'
+  +'.cancel_layout {margin-left:10px}'
   +'.cancel_layout-invi {display:none;}'
   /* for delay */
   +'#qr_delaycontainer{padding-right:5px;color:#FFFF00}'
@@ -5686,11 +5722,11 @@ Format will be valid like this:
      +'</div>'
      +spacer
      +'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/><label for="misc_autolayout_sigi">AutoSignature</label>&nbsp;'
-     +'<a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> X </a>'
+     +'<a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> cancel </a>'
      +'<div id="edit_sigi_Editor" style="display:none;"></div>'
      +spacer
      +'<input id="misc_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1' ? 'checked':'')+'/><label for="misc_autolayout_tpl">AutoLayout</label>&nbsp;'
-     +'<a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> X </a>'
+     +'<a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> cancel </a>'
      +'<div id="edit_tpl_Editor" style="display:none;"></div>'
      +spacer     
      +'<input id="misc_hotkey" type="checkbox" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/><label for="misc_hotkey">QR-Hotkey</label>'
