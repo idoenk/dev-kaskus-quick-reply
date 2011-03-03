@@ -4,7 +4,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.4
 // @dtversion     110303314
-// @timestamp     1299095246768
+// @timestamp     1299138125133
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-03-03
+//   Fix avoid doubled event on textformat,align controllers (Donatur)
 //   Add controller button for uploader . Thanks=[p1nky]
 //   Fix strict find threadid . Thanks=[ZacKBeeR]
 //   Fix minor toggle-iframe
@@ -82,7 +83,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1299095246768 // version.timestamp
+  timestamp: 1299138125133 // version.timestamp
 
  ,dtversion: 110303314 // version.date
  ,scriptID: 80409 // script-Id
@@ -5436,15 +5437,15 @@ Format will be valid like this:
      +'<tr>'
     
      +(gvar.settings.hidecontroll[0] != '1' ? ''
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
-     +' <td><div class="imagebutton" id="vB_Editor_001_cmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_qrcmd_bold"><img src="'+gvar.domainstatic+'images/editor/bold.gif" alt="Bold" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_qrcmd_italic"><img src="'+gvar.domainstatic+'images/editor/italic.gif" alt="Italic" /></div></td>'
+     +' <td><div class="imagebutton" id="vB_Editor_001_qrcmd_underline"><img src="'+gvar.domainstatic+'images/editor/underline.gif" alt="Underline" /></div></td>'
      +konst.__sep__ : '')
 
      +(gvar.settings.hidecontroll[1] != '1' ? ''
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifycenter"><img src="'+gvar.domainstatic+'images/editor/justifycenter.gif" alt="Align Center" /></div></td>'
-     +'<td><div class="imagebutton" id="vB_Editor_001_cmd_justifyright"><img src="'+gvar.domainstatic+'images/editor/justifyright.gif" alt="Align Right" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_justifyleft"><img src="'+gvar.domainstatic+'images/editor/justifyleft.gif" alt="Align Left" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_justifycenter"><img src="'+gvar.domainstatic+'images/editor/justifycenter.gif" alt="Align Center" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_justifyright"><img src="'+gvar.domainstatic+'images/editor/justifyright.gif" alt="Align Right" /></div></td>'
      +konst.__sep__ : '')
      
      // --Font 
