@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name          Kaskus Quick Reply
+// @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.4
