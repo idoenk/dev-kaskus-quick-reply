@@ -498,7 +498,7 @@ function start_Main(){
       Dom.add(createTextEl(' '), nodes[i].parentNode);
       
       // qqr
-      child='<img src="http://photoserver.ws/images/FdzE4d76f8dabf39c.gif" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
+      child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
       Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':'display:none'};
       el = createEl('a',Attr,child);
       on('click',el,function(e){do_click_qqr(e)});
