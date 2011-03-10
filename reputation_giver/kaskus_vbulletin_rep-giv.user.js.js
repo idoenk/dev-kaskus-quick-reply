@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.18
-// @dtversion     11022718
-// @timestamp     1298741675719
+// @version       1.19
+// @dtversion     11031019
+// @timestamp     1299728787319
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,14 +15,17 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.18 : 2011-02-27
-// Fix failed get (entut;donat-tag) tag_id 
-// Fix adapting FF4.0b12 (partial)
+// mod.R.19 : 2011-03-10
+// Fix break longtext location
 //
 // ==/UserScript==
 /*
 //
-// mod.R.17 : 2011-02-18
+/// mod.R.18 : 2011-02-27
+// Fix failed get (entut;donat-tag) tag_id 
+// Fix adapting FF4.0b12 (partial)
+//
+/ mod.R.17 : 2011-02-18
 // Fix some RegEx parseIt
 // rebuild subfolder subscription
 // missed destroy_column(el_sender) -KaskusDonat.
@@ -44,9 +47,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '18';
+gvar.sversion = 'R' + '19';
 gvar.scriptMeta = {
-  timestamp: 1298741675719 // version.timestamp
+  timestamp: 1299728787319 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -616,6 +619,10 @@ function createSender(data, x){
     }
     return ret;
   };
+  var dashPoison = function(text){
+    var ret = text.split("");ret = ret.join("&shy;");
+    return ret;
+  };
   var filterChar = function(text){
     var ret = text.replace(/[<]/g,'&lt;').replace(/[>]/g,'&gt;').replace(/[\"]/g,'&quot;').replace(/[\']/g,'&apos;');
     ret = toCharRef(ret); // filter unicode chars
@@ -633,7 +640,7 @@ function createSender(data, x){
   +'<div id="img_cont'+x+'">'+(data["avatar_url"].length > 0 ? gvar.uri['avatar'] + '/'+ data["avatar_url"]+'||[avatar'+data["uid"]+']' : '||')+'</div>'
   +'<div><b>'+( data["kaskus_id"] )+'</b>'+(is_donat)+'</div>'
   +'<div>'+data["tag_id"]+'</div>'
-  +'<div>'+filterChar( replacer(data["location"]) )+'</div>'
+  +'<div style="width:100px!important;"><p style="padding:0;margin:0;font-size:9px">'+dashPoison(filterChar( replacer(data["location"]) ))+'</p></div>'
   +'<div>'+data["join_date"]+'</div>'
   +'<div>Post: '+data["total_post"]+'</div>'
   +'</div>';
