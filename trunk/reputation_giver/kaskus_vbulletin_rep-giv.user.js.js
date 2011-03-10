@@ -750,7 +750,7 @@ function toCharRef(text){
     var charRefs = [], codePoint, i;
     for(i = 0; i < text.length; ++i) {
         codePoint = text.charCodeAt(i);
-        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
+        if(!text[i].match(/[\w\[\]\<\>\.\,\s\?\'\"\;\:\=\+\-\_\)\(\&\^\%\$\#\@\!\~\}\{\|\/\r\n]/)){
          if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
             i++;
             codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
