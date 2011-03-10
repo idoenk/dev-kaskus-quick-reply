@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.4
-// @dtversion     110309314
-// @timestamp     1299677083156
+// @dtversion     110310314
+// @timestamp     1299724630128
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,8 +18,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-03-09
-//   Add quick-quote (beta)
+// v3.1.4 - 2011-03-10
+//   Add quick-quote (beta-2)
 //   Fix missing emote besar (repost2,cystg,kiss,peluk)
 //   Fix avoid doubled event on textformat,align controllers (Donatur)
 //   Add controller button for uploader
@@ -85,9 +85,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1299677083156 // version.timestamp
+  timestamp: 1299724630128 // version.timestamp
 
- ,dtversion: 110309314 // version.date
+ ,dtversion: 110310314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -591,6 +591,56 @@ function do_click_qqr(e){
   var parseMSG=function(x){
     var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
 	var pCon,els,el,el2,el3,el4,eIner,eIner3,cucok,LT={'font':"",'div':""};
+	var parseSerials=function(S,$1,$2){
+      var mct,parts;
+      // parse BIU
+      if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
+        return '[' +($1?'/':'')+$2.toUpperCase()+ ']';
+      
+      }else if( /font\s*/i.test($2) ){
+	    // parse font;size
+        mct=$2.match(/font(?:\s([^=]+).['"]([^'"]+))?/i);
+        if(isDefined(mct[1]))
+          LT.font=mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
+        return '[' +( isDefined(mct[2]) && mct[2] ? mct[1].toUpperCase()+ '="'+mct[2]+'"' : '/'+LT.font.toUpperCase()) +']';
+      
+      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+		if($2.indexOf('rel=')==-1){
+          // parse align
+		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
+          if(isDefined(mct[1])) LT.div=mct[1];
+		}else{
+		  // parse code | spoiler
+		  mct=$2.match(/\/?div(?:\srel=['"]([^'"]+))?/i);
+          if(isDefined(mct[1])) {
+			if(mct[1].indexOf('spoiler')!=-1) {
+			  LT.div='SPOILER';
+			  parts = mct[1].split('-');
+			  mct[1]=LT.div+'='+(isDefined(parts[1])?parts[1]:'');
+			}else{
+			  LT.div=mct[1];
+			}
+		  }else{
+		    mct[1]=false;
+		  }
+		}
+		return (LT.div ? '[' +(mct && mct[1] ? mct[1] : '/'+LT.div).toUpperCase() + ']' : '');
+
+      }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
+        // parse linkify
+        mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
+        return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
+      
+      }else if( /\ssrc=/i.test($2)  ){
+	    // parse img
+        mct=$2.match(/\ssrc=['"]([^'"]+)/i);
+        if(isDefined(mct[1]))
+          return '[IMG]' + mct[1] + '[/IMG]';
+        
+      }else{
+        return S;
+      }      
+    };
 	
     x=x.substring(pos+contentsep.length);
     // clean message separator
@@ -627,7 +677,11 @@ function do_click_qqr(e){
 			  }
 			}
 		  }
-		  el.innerHTML = clearTag(el.innerHTML);
+
+		  // the rest on spoiler repost this ..
+		  eIner= trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
+		  el.innerHTML = clearTag(eIner);
+		  //el.innerHTML = clearTag(el.innerHTML);
 		  el.setAttribute('rel','spoiler-'+(isDefined(cucok[1]) ? cucok[1]||'':'') );
 		
 		}else if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
@@ -653,56 +707,7 @@ function do_click_qqr(e){
 	clog(x);
 
 	// serials parse
-	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, function(S,$1,$2){
-      var mct,parts;
-      // parse BIU
-      if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
-        return '[' +($1?'/':'')+$2.toUpperCase()+ ']';
-      
-      }else if( /font\s*/i.test($2) ){
-	    // parse font;size
-        mct=$2.match(/font(?:\s([^=]+).['"]([^'"]+))?/i);
-        if(isDefined(mct[1]))
-          LT.font=mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
-        return '[' +( isDefined(mct[2]) && mct[2] ? mct[1].toUpperCase()+ '="'+mct[2]+'"' : '/'+LT.font.toUpperCase()) +']';
-      
-      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
-		if($2.indexOf('rel=')==-1){
-          // parse align
-		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) LT.div=mct[1];
-		}else{
-		  // parse code | spoiler
-		  mct=$2.match(/\/?div(?:\srel=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) {
-			if(mct[1].indexOf('spoiler')!=-1) {
-			  LT.div='SPOILER';
-			  parts = mct[1].split('-');
-			  mct[1]=LT.div+'='+(isDefined(parts[1])?parts[1]:'');
-			}else{
-			  LT.div=mct[1];
-			}
-		  }else{
-		    mct[1]=false;
-		  }
-		}
-		return '[' +(mct && mct[1] ? mct[1] : '/'+LT.div).toUpperCase() + ']';
-
-      }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
-        // parse linkify
-        mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
-        return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
-      
-      }else if( /\ssrc=/i.test($2)  ){
-	    // parse img
-        mct=$2.match(/\ssrc=['"]([^'"]+)/i);
-        if(isDefined(mct[1]))
-          return '[IMG]' + mct[1] + '[/IMG]';
-        
-      }else{
-        return S;
-      }      
-    } ));
+	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
     
     // clean rest (unparsed tags)
     return unescapeHtml(clearTag( ret ) );
@@ -5205,6 +5210,11 @@ var rSRC = {
         +"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
         +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
         +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
+      ,qquote_gif : ""
+        +"data:image/gif;base64,R0lGODdhGQAWAPMAAINhK9Syf/zfqaqKVOjJlL+eaPz7yJh2Qd+9iPztuLWUX/bTnotpM8moc6CATPz+2iwAAAAAGQAWAAAE//AZYpK4i2i9Vnp"
+		+"gggiJISFgqqpCCDRB0Bpog9zo+rQCMAaNwulxkyEai8AiRRAwmkdFQzI1WK86xQEaKBRaCocuZQUdRgSg45BIhEEXjGBxSRQahIFjwFcgFm87c3MGcQgKCRkBUgVShwM8cXRLB"
+		+"pACBAgDjAoFiwMEO21xFAUEiZkDdw0KA6sDATt0JG0LDYkBe6quq5xjDwpJHg5eDUFhvAMgVhYCQQVLv17SxwpvzCQCfh8gi9IFAwe8YoWzxTcLKAupjWEO4hKz2Q0CJikO1Xw"
+		+"HDoeB2Ob1KQ7wWSMwT6ASBp5tU+GA4AEGCgTkW5iGno4GBx4CeFEJHCgJMiYA7sDIgMHGjaAGmJwioQ2BBg5MngRQUmY9AUcSLKrGyZtPLy0iAAA7"
       ,throbber_gif : ""
         +"data:image/gif;base64,R0lGODlhEAAQALMPADZmn6XF642oyHCp7V6DsEWE0Pn6/dvk7+Ls95W/8VWa7HKby8DS6ezy+U2V6////yH/C05FVFNDQVBFMi4wAwEAAAAh+"
         +"QQJAAAPACwAAAAAEAAQAAAEPvDJ2Qgg4sw9EShOUQQcxySDoy5GyR2pk7icESP0doBkPi2OgW8iKCiGkuIRSSgIh43PDApQ4JCGBnLL9UUAACH5BAkAAA8ALAAAAAAQABAAA"
