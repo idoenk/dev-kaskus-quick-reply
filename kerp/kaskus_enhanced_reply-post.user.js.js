@@ -10,22 +10,30 @@
 // @include       http://www.kaskus.us/group.php?*
 // @include       http://www.kaskus.us/blog_post.php?*
 // @include       http://www.kaskus.us/newthread.php?*
-// @version       2.24
-// @dtversion     110220224
-// @timestamp     1298179389201
+// @version       2.25
+// @dtversion     110313225
+// @timestamp     1300038721379
 // @description   Integrate kaskus uploader; Show Mostly Used Smiley beside your vb_Textarea Editor; Integrate Custom Kaskus Smiley list; Set your fav image/smiley colection; Hover preview++
 // @author        idx (http://userscripts.org/users/idx)
+// @include       http://imageshack.us/*
+// @include       http://*.imageshack.us/*
+// @include       http://imgur.com/*
+// @include       http://photoserver.ws/*
 // --------------------------------------------------------
 // 
 // -!--latestupdate
 // 
-// v 2.24 - 2011-02-20
-// : Fix adapting FF4.0b12 (partial)
-// : Fix minor CSS (blog_post.php)
+// v 2.25 - 2011-03-13
+// : Fix adapting FF4.0
+// : Improve Uploader
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+// 
+// v 2.24 - 2011-02-20
+// : Fix adapting FF4.0b12 (partial)
+// : Fix minor CSS (blog_post.php)
 // 
 // v 2.23 - 2011-01-13
 // : Fix CSS (Improve CSS3 Opera)
@@ -47,14 +55,14 @@
 var gvar=function() {}
 
 gvar.codename   = 'KERP'+HtmlUnicodeDecode('&#8482;');
-gvar.sversion   = 'v' + '2.24';
+gvar.sversion   = 'v' + '2.25';
 /* timestamp-GENERATOR
 javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 gvar.scriptMeta = {
-  timestamp: 1298179389201 // version.timestamp
- ,dtversion : 110220224 // script-Id
+  timestamp: 1300038721379 // version.timestamp
+ ,dtversion : 110313225 // script-Id
  
  ,titlename : gvar.codename
  ,scriptID : 79879 // script-Id
@@ -62,6 +70,7 @@ gvar.scriptMeta = {
 const OPTIONS_BOX = {  
   KEY_SAVE_SMILEY_BOX:    ['1'] // default state of show/hide smiley_box 
 , KEY_SAVE_TABS:          ['0,1,0,1'] // default state of show/hide tabs (small/big/custom/mysmile)
+, KEY_SAVE_LAST_UPLOADER: [''] // last used host-uploader
 
 , KEY_SAVE_MYSMILE_COUNT: ['0'] // count saved image link 
 , KEY_SAVE_MYSMILE_DATA:  [''] // raw data image
@@ -70,6 +79,7 @@ const OPTIONS_BOX = {
 
 };
 const GMSTORAGE_PATH      = 'GM_';
+const KS = 'KEY_SAVE_';
 var _LOADING = '';
 
 
@@ -240,6 +250,23 @@ var Ev={
       };
     }
   }()
+};
+// Get Elements
+var $D=function (q, root, single) {
+  if (root && typeof root == 'string') {
+      root = $D(root, null, true);
+      if (!root) { return null; }
+  }
+  if( !q ) return false;
+  if ( typeof q == 'object') return q;
+  root = root || document;
+  if (q[0]=='/' || (q[0]=='.' && q[1]=='/')) {
+      if (single) { return document.evaluate(q, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; }
+      return document.evaluate(q, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+  }
+  else if (q[0]=='.') { return root.getElementsByClassName(q.substr(1)); }
+  else { return root.getElementById( (q[0]=='#' ? q.substr(1):q.substr(0)) ); }
+  return root.getElementsByTagName(q);
 };
 
 // Fliper :: wordflip.net
@@ -483,8 +510,7 @@ function init(){
   
   // icon resource
   gvar.B = getSetOf('button');
-  _LOADING = '<img src="'+gvar.B.loading_gif+'" border="0"/>&nbsp;<small>loading...</small>';
-  
+  _LOADING = '<img src="'+gvar.B.loading_gif+'" border="0"/>&nbsp;<small>loading...</small>';  
   
   // id tab
   gvar.tabTitleId = ['skecil_container', 'sbesar_container', 'scustom_container', 'mysmiley_container']; 
@@ -494,10 +520,7 @@ function init(){
   var isPm = (gvar.loc.indexOf('private.php')!=-1);
   gvar.imgTagMode = (isPm ? ['1','1']:['0','0']); // toogle between mode imgtagor bbcode :: 'skecil_container','sbesar_container'
   
-  gvar.settings = {
-     autochkUpdates: true // enable update-check ?
-    ,updates_interval: 3 // 1 day(s)
-  };  
+  getSettings();
   
   gvar.tabIndex_order = [];
   
@@ -505,54 +528,167 @@ function init(){
   gvar.xOffset = 20;
   gvar.yOffset = 20;
   
-  // do check whether uploader or editor
-  precheck_location();
   
+  // do check whether uploader or editor
+  //precheck_location();
+  if( !location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/) ) 
+    return outSideForumTreat();
+  else{
+    getUploaderSetting();
+	start_routine();	
+  }
 }
-function precheck_location() {
-    // = pre-check location is it uploader or forum =
-    if(gvar.isUploader != null){
-      // chk the identity before hiding elements  
-      if(GM_getValue('iframe_preload', 0) == 0){
-        show_alert('iframe_preload=0; returning..',0);
-  	  return;
-  	  }
-      try{
-        var h2 = getTag('h2');
-        h2[0].style.display='none';
-        getById('pt6').style.display='none';
-        getById('pt4').style.display='none';
-        getById('theform').setAttribute('style', 'width:37.5em;');
-        getById('pt5').setAttribute('style', 'width:36.7em; padding:0.7em;');    
-        // replace a href link
-  	    var pt5 = getById('pt5');
-  	    if(pt5){
-  	      neoInner = pt5.innerHTML.replace(/\/view\/\w+\//ig, '\/').replace(/(href=\"(?:[^>]+))/ig, '$1 target="_blank"');
-  	      getById('pt5').innerHTML = neoInner;
-  	    }
-        // clean it up
-        window.setTimeout(function() {
-          GM_setValue("iframe_preload", 0);
-        }, 0);
-  	
-      } catch(e) {}	
-  	  show_alert('Done manipulate Uploader; returning..',0);
-  	  return;   
-    }
-   
-    if(!getById(gvar.id_textarea)) {
-      show_alert('vbTextarea notfound, failed create smilebox; returning', 0);
-      return;
-    }else{	
-	  
-      start_routine(); 
-    }
+
+function getUploaderSetting(){
+  // uploader properties
+  gvar.upload_sel={
+     kaskus:'u.kaskus.us'
+    ,kodok:'imageshack.us'
+    ,imgur:'imgur.com'
+    ,ps:'photoserver.ws'
+  };
+  gvar.uploader={
+     kaskus:{
+        src:'u.kaskus.us'
+       ,post:'u.kaskus.us/upload/do_upload'
+       ,ifile:'userfile'
+       ,hids:{
+         referer:'http://'+'u.kaskus.us'
+       }
+     }
+    ,kodok:{
+        src:'imageshack.us'
+       ,post:'post.imageshack.us/'
+       ,ifile:'fileupload'
+       ,hids:{
+          refer:'http://'+'imageshack.us/?no_multi=1'
+         ,uploadtype:'on'
+       }
+     }
+    ,imgur:{
+        src:'imgur.com',noCross:'1' 
+	 }
+
+    ,ps:{
+        src:'photoserver.ws',noCross:'1' 
+	 }
+  };
+  // set last-used host
+  try{
+    if( gvar.lastused_uploader )
+    gvar.upload_tipe= gvar.lastused_uploader;
+	if(isUndefined( gvar.upload_sel[gvar.upload_tipe] )) 
+    gvar.upload_tipe='kaskus';
+  }catch(e){gvar.upload_tipe='kaskus';}
 }
+// outside forum like u.kaskus.us || imageshack.us
+function outSideForumTreat(){
+  var whereAmId=function(){
+    var ret=false,src;
+    getUploaderSetting();
+    for(var host in gvar.uploader){
+      src=gvar.uploader[host]['src']||null;
+      if(src && self.location.href.indexOf(src)!=-1){
+        ret= String(host); break;
+	  }
+    }
+    return ret;
+  };
+  
+  var el,par,lb,m=20,loc=whereAmId(),CSS="",i="!important";
+  /*
+    # do pre-check hostname on location
+  */
+  try{if(top===self)return;}catch(e){};
+  switch(loc){
+    case "kodok":
+      CSS=''
+         +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
+         +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
+         +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
+	  ;break;
+    case "imgur":
+      CSS=''
+      +'div#logo,.right .panel{display:none'+i+'}'
+      +'#content{margin-top:15px}'
+	  ;break;
+    case "ps":
+      CSS=''
+      +'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
+      +'body>img,#topbar{top:0'+i+'}'
+      +'body{background-color:#fff}'
+      +'#loginbar{top:38px'+i+';display:block}'
+      +'#footer{padding:0}'
+      +'#overlay .content{top:3px'+i+'}'
+      +'#overlay{position:absolute'+i+'}'
+	  ;break;
+  }; // end switch loc
+  if(CSS!="") 
+    GM_addGlobalStyle(CSS,'inject_host_css', true);
+
+  el=$D('//input[@wrap="off"]',null,true);
+  if(loc=='kodok' && el){
+    gvar.sITryKill = window.setInterval(function() {
+      if ($D('#done-popup-close')) {
+        clearInterval(gvar.sITryKill);
+        
+        SimulateMouse( $D('#done-popup-close'), 'click', true );
+        
+        // just make sure, kill absolute div layer
+        lb=$D('//div[contains(@style,"absolute") and contains(@style,"opacity")]',null, true);
+        if(lb) Dom.remove(lb);
+        if($D('#ad')) Dom.remove($D('#ad'));
+        
+        window.setTimeout(function(){
+            el.removeAttribute('disabled');            
+            var par=el.parentNode.parentNode;
+            lb=$D('.tooltip',par);
+            if(lb){
+             lb[0].innerHTML=lb[1].innerHTML='';
+             Dom.add(el,par);
+            }
+            // right-col manipulator
+            var ei,et,rTitle=function(t){
+               var e = createEl('div',{'class':'main-title'},t);
+               return e;
+            }, BBCodeImg=function(A){
+               return '[IMG]'+A+'[/IMG]';
+            }, BBCodeTh=function(A){
+               var b=A.lastIndexOf('.'),c=A.substring(0,b)+'.th'+A.substring(b);
+               return '[URL='+A+']'+BBCodeImg(c)+'[/URL]';
+            };
+            lb=$D('.right-col',null);
+            if(lb){
+               lb[0].innerHTML='';
+               et=rTitle('Direct Link'); Dom.add(et, lb[0]);
+               ei = createEl('input',{type:'text',value:el.value,readonly:'readonly'});
+               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+               try{ei.focus();selectAll(ei)}catch(e){}
+               
+               et=rTitle('BBCode IMG'); Dom.add(et, lb[0]);
+               ei = createEl('input',{type:'text',value:BBCodeImg(el.value),readonly:'readonly'});
+               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+               et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
+               ei = createEl('input',{type:'text',value:BBCodeTh(el.value),readonly:'readonly'});
+               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+            }
+        }, 500);
+      }else{
+        if(max>0)
+          m=m-1;
+        else
+          clearInterval(gvar.sITryKill);
+      }
+    },  50);
+  } // end is el
+  
+  return false;
+}
+
 function start_routine(){
 
   // place global style 
-  GM_addGlobalStyle(getCSS());
-  
+  GM_addGlobalStyle(getCSS());  
   
   // reorder tabIndex & stuff on newreply  
   if( gvar.loc.match(/^https?\:\/\/w{3}\.kaskus\.us\/newreply\.php\?.*/i) ){
@@ -612,10 +748,9 @@ function start_routine(){
 		Dom.add(el, legend);
 	  }
 	  // create form DOM upload
-      attach_form();
       Dom.remove(getTag('a', fldset_upload)[0]);      
       // load iframe and upload button
-      fldset_upload.appendChild( get_tpl() );
+	  UPL.init_uploader(fldset_upload);
 	}	
   } else {
     show_alert('tag legend "fieldset" not found; Failed create uploader...',0);
@@ -729,9 +864,8 @@ function manage_smiley(e){
         if(imgtxta) 
 		  buff = do_filter_scustom(imgtxta.value);
 		  
-		var ks = 'KEY_SAVE_';
-		setValue( ks + 'MYSMILE_COUNT', buff['count'] );
-        setValue( ks + 'MYSMILE_DATA', buff['ret'] );
+		setValue( KS + 'MYSMILE_COUNT', buff['count'] );
+        setValue( KS + 'MYSMILE_DATA', buff['ret'] );
 		getOptions();
 		// re attach
         window.setTimeout(function() { reload_mysmiley() }, 200);
@@ -933,20 +1067,19 @@ function validTag(txt, doreplace, mode){
 function getOptions(){
 
   // getValue will try get from GM_getValue, if not available it will take from const OPTIONS_BOX
-  var ks = 'KEY_SAVE_';
-  var tabs = getValue(ks+'TABS').toString().split(',');
+  var tabs = getValue(KS+'TABS').toString().split(',');
   
   for(var i in tabs){
       if(typeof(tabs[i])!='function') // ignore inArray element
     /*>>*/ gvar.tabSmiley[i] = tabs[i];
   }
   
-  /*>>*/ gvar.smiley_box = getValue(ks+'SMILEY_BOX'); // get visibility smiley_box  
-  /*>>*/ gvar.mysmile_count = getValue(ks+'MYSMILE_COUNT'); // get how any imglink
+  /*>>*/ gvar.smiley_box = getValue(KS+'SMILEY_BOX'); // get visibility smiley_box  
+  /*>>*/ gvar.mysmile_count = getValue(KS+'MYSMILE_COUNT'); // get how any imglink
   
   var raw_str, raws, row, dumy;
   gvar.mysmilies = {};
-  raw_str = getValue(ks+'MYSMILE_DATA');  
+  raw_str = getValue(KS+'MYSMILE_DATA');  
   if(raw_str!=''){
     raws = raw_str.split('||');
 	var raws_l = raws.length;
@@ -969,6 +1102,16 @@ function getOptions(){
 	}
   }
   return gvar.mysmile_count;
+}
+
+function getSettings(){  
+  gvar.settings = {
+     autochkUpdates: true // enable update-check ?
+    ,updates_interval: 3 // 1 day(s)
+  };
+  // get last used host
+  gvar.lastused_uploader = getValue(KS+'LAST_UPLOADER');
+  
 }
 
 // add some event on element
@@ -1894,6 +2037,14 @@ function getCSS() {
     +'.qrdialog-child'
     +'{background:#BFFFBF; border:1px solid #9F9F9F; height:30px;width:400px;margin-left:3px;padding:.2em .5em;font-size:8pt;border-radius:5px;border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px; box-shadow:3px 3px 15px #888;-moz-box-shadow:3px 3px 15px #888;-khtml-box-shadow:3px 3px 15px #888;-webkit-box-shadow:3px 3px 15px #888;}'
 	
+	  /* for uploader */ 
+    +'label.cabinet{display:inline-block;padding-top:3px}'
+    +'#uparent_container{position:relative;padding:1px 0 6px 3px;width:99%;}'
+    +'#target_upload{margin-top:2px;width:100%;height:318px;border: 2px outset;clear:left;display:block;}'
+	+'#sel_host{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;outline:none}'
+    +'#sel_host:hover{background-color:#B0DAF2;}'
+
+	
 	+'.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;}'
 	/* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888; border-radius:4px; -moz-border-radius:4px; -khtml-border-radius:4px;-webkit-border-radius:4px;color:#333;text-shadow:1px 1px 0 #B1B1B1;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 8px; border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn-primary{border-color:#3B3B3B;font-weight:bold;color:#F0F000;background:#21759B;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
@@ -1907,159 +2058,255 @@ function getCSS() {
 
 // kaskus uploader Area
 // =====================
-function do_postBack(name, url) {
-	var Elm;
-	var frmAct = getById('frmPageAction');
-	var inputElm = getById(name, frmAct);
-	if(typeof(inputElm)=='object'){
-	    Dom.remove(inputElm);
-	}
-	else{
-	   inputElm = getById(name);
-	}
-    frmAct.appendChild(inputElm);
+// global var for uploader
+var UPL = {
+  uploader:{}
+ ,parent:''
+ ,init_uploader:function(tgId){
+    var tgt=(typeof(fldset_upload)=='string' ? $D('#'+tgId) : tgId);
+    UPL.parent=tgId;
+	//if(tgt.innerHTML!='') return;
+    UPL.prop=gvar.uploader;
+    if( isDefined(gvar.iframeLoaded) )
+       delete(gvar.iframeLoaded);	   
 
-	var hiddenElm = getById('referer', frmAct);
-	if(typeof(hiddenElm)=='object'){
-	   Dom.remove(hiddenElm);
-	}
-	else{
-	    var Attr = {value:'http://'+gvar.dmUploader,type:'hidden',name:'referer',id:'referer'};
-	    Elm = mycreateElement('input', Attr);
-	}	
-    frmAct.appendChild(Elm);
-	
-	// recreate new input file for the original place
-	getById('label_file').appendChild(inputElm.cloneNode(true));
-  
-	if (url == null) {
-	   url = 'http://'+gvar.dmUploader+'/upload/do_upload';
-	}
-	frmAct.action = url;
-	frmAct.submit();
-	Dom.remove(inputElm);
-	inputElm = getById(name);
-	if(inputElm) Ev.add(inputElm, 'change', function(e){
-	  e=e.target||e;
-	  if(getById("legend_subtitle"))
-	    getById("legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
-	});
-}
-function check_submitform() {
-    var file_id = 'userfile';	
-    var inputElm = getById(file_id, getById('frmPageAction'));
-	if(isDefined(inputElm) && typeof(inputElm)=='object'){
-	   Dom.remove(inputElm);
-	}
-	else{
-	   inputElm = getById(file_id);
-	}	
-	
-    var allowed_ext = ['jpg','jpeg','gif','png','zip','rar'];
-	var filename = inputElm.value;
-    var ext = filename.substr(filename.lastIndexOf('.') + 1).toLowerCase(), pos=inArray(allowed_ext, ext);
-	if(pos){
-	  toogle_iframe( 1 );
-      GM_setValue('iframe_preload', 1);
-	} else {
-	  if(filename=='')
-	    alert('Belum memilih file');
-	  else
-	    alert('forbidden file format');
-	}
-	return pos;
-}
-function trans_post(){
-  if(check_submitform()){
-    do_postBack("userfile");
-	getById("userfile").value='';
-	getById("legend_subtitle").innerHTML='';
+    // create form DOM upload
+    UPL.attach_form();
+    
+    //tgt.innerHTML = rSRC.getTPL_inerUploader();
+    tgt.innerHTML = get_tpl();
+    UPL.event_uploader();
   }
-}
-function toogle_iframe(visb){
-   var ifrm=getById("target_upload");
-   if(isUndefined(visb)) visb = (ifrm.style.display=="none");
-   if(visb=='none'){
-	    //ifrm.src = 'about:blank';
-   } else {
-       // preload identity for u.kaskus.us 
-	   window.setTimeout(function() {
-         GM_setValue("iframe_preload", 1);
-       }, 0);	   
-	   if(ifrm.src!='http://'+gvar.dmUploader+'/')
-	       ifrm.src = 'http://'+gvar.dmUploader+'/';
-   }     
-   ifrm.style.display=(visb ? "" : "none");
-}
-// Building Upload Images HTML
+ ,panic_stop: function(){
+    if(window.stop !== undefined){window.stop();}
+    else if(document.execCommand !== undefined){document.execCommand("Stop", false);}
+  }
+ ,cold_boot: function(){
+    var tgt=$D('#'+UPL.parent);
+    if($D('#'+UPL.parent)) $D('#'+UPL.parent).innerHTML='';
+    if($D('#frmPageAction')) Dom.remove($D('#frmPageAction'));    
+    window.setTimeout(function(){UPL.init_uploader(UPL.parent)},50);
+  }
+ ,cancel_upload: function(){
+    UPL.panic_stop();
+    window.setTimeout(function(){UPL.reset_onloadIframe()},50);    
+  }
+ ,reset_onloadIframe: function(){
+    var g=function(i){return $D(i)},el=g("btn_upload");
+    if(el){el.value="Upload"; el.removeAttribute("disabled")}
+    el=g("userfile");if(el)el.style.display="inline";
+    
+    el=g("fld_title");if(el)el.innerHTML="Upload Images";
+    el=g("par_sel_host");if(el)el.style.display="inline-block";
+    el=g("cancel_upload");if(el)el.style.display="none";
+  }
+ ,event_uploader: function(){
+    var Attr,el,el2,src,par = $D('#upload_container'), allow_cross=isUndefined(UPL.prop[gvar.upload_tipe]['noCross']);
+    if(par){ // create additional nodes
+      // select host
+      el=UPL.rebuild_selectHost();
+      Dom.add(el,par);	  
+
+	  // is this host allow cross-site in submit?
+      if( allow_cross ) {
+
+        Attr={id:'label_file','class':'cabinet'}; el=mycreateElement('label',Attr);
+        Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
+        el2=mycreateElement('input',Attr);
+        on('change',el2,function(e){
+          e=e.target||e;
+          if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
+        });
+        Dom.add(el2,el); Dom.add(el,par);
+        Attr={id:'btn_upload',value:'Upload','class':'twbtn twbtn-m',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
+        el=mycreateElement('input',Attr);
+        on('click',el,function(){UPL.prep_upload()});
+        Dom.add(el,par);
+        
+        Attr={id:'cancel_upload',value:'Cancel','class':'twbtn twbtn-m',type:'button',style:'margin:1px 0 0 20px;display:none;'}
+        el=mycreateElement('input',Attr);
+        on('click',el,function(){UPL.cancel_upload()});
+        Dom.add(el,par);
+      }
+      
+      Attr={style:'margin-top:5px;font-weight:bold;font-size:10px;'+(allow_cross ? 'float:right;':'display:inline-block')}; el=mycreateElement('div',Attr);
+      Attr={href:'javascript:;','class':'twbtn twbtn-m','onclick':'this.blur()',style:''}; el2=mycreateElement('a',Attr,'','Toogle IFrame');
+      on('click',el2,function(){return UPL.toogle_iframe()});
+      Dom.add(el2,el); Dom.add(el,par);
+	  
+	  if(!allow_cross){
+	    Attr={'class':'g_notice-error qrsmallfont',style:'width:60%; display:inline; position:absolute;margin:-3px 0  0 10px;'};
+        el=mycreateElement('div',Attr,'','Sorry, this site is not allowing cross-domain submission, click <b>Toggle IFrame</b> to load it then do things inside the iframe');
+        Dom.add(el,par);
+	  }
+      
+      Attr={style:'margin-top:10px;display:none;',src:'about:blank',name:'target_upload',scrolling:'auto',id:'target_upload'};
+      el=mycreateElement('iframe',Attr);
+      on('load',el,function(){UPL.reset_onloadIframe()});
+      Dom.add(el,par);
+    }
+  }
+ ,do_postBack: function(name, url){
+    var Attr,el,frmAct=$D('frmPageAction');
+    var hdEl=UPL.getNativeId('hid_cont',frmAct,'input'),fn,gg=HtmlUnicodeDecode('&#187;');
+    var inputElm=UPL.getNativeId(name,frmAct,'input'),host=UPL.prop[gvar.upload_tipe]['src'];
+    if(typeof(inputElm)=='object')
+        Dom.remove(inputElm);
+    inputElm = $D(name);
+    fn=basename(inputElm.value);
+    Dom.add(inputElm,frmAct);
+    
+    if(typeof(hdEl)=='object')
+       Dom.remove(hdEl);
+    hdEl = UPL.rebuild_hidden();
+    Dom.add(hdEl,frmAct);    
+    
+    // recreate new input file for the original place
+    Dom.add(inputElm.cloneNode(true), $D('#label_file'));  
+    if(url==null)
+       url='http://'+UPL.prop[gvar.upload_tipe]['post'];
+    
+    frmAct.action = url;
+    frmAct.submit();
+    
+    el=$D('#cancel_upload');
+    if(el) el.style.display='inline';
+    el=$D('#par_sel_host');
+    if(el) el.style.display='none';    
+    el=$D('#btn_upload');
+    if(el){
+        el.disabled='disabled';
+      el.value='Uploading ..';
+      el.blur();
+    }
+    el=$D('#fld_title');
+    if(el) el.innerHTML='Uploading '+gg+($D("userfile")?' ['+fn+']':'')+' '+gg+' '+host.substring(0,(host.indexOf('/')!=-1 ? host.indexOf('/'):host.length));
+    
+    Dom.remove(inputElm);
+    
+    UPL.rebuild_inputfile();
+    el=$D('#userfile');
+    el.style.display='none';    
+  }
+ ,check_submitform: function(){
+    var file_id='userfile', par=$D('frmPageAction'), inputElm = (par ? UPL.getNativeId(file_id,par,'input') : null);
+    if(inputElm && typeof(inputElm)=='object')
+       Dom.remove(inputElm);
+    else
+       inputElm = $D(file_id);    
+    var allowed_ext = ['jpg','jpeg','gif','png','zip','rar'], fn=inputElm.value;
+    var ext = fn.substr(fn.lastIndexOf('.') + 1).toLowerCase();
+    //clog(allowed_ext +'; '+ext);
+    var pos=inArray(allowed_ext,ext);
+    if( pos !== false ){
+       UPL.toogle_iframe( 1 );
+    }else{
+       alert(fn=='' ? 'Belum memilih file':'forbidden file format');
+    }
+    return pos;
+  }
+ ,prep_upload: function(){
+   if( UPL.check_submitform()!==false ){
+    $D("legend_subtitle").innerHTML='';
+    UPL.do_postBack("userfile");
+   }
+ }
+ ,toogle_iframe: function(visb){
+    var ifrm=$D("#target_upload"),src=UPL.prop[gvar.upload_tipe]['src'].replace(/\/\?no_multi.+/i,'');
+    if(isUndefined(visb)) visb = (ifrm.style.display=="none");
+    if(!gvar.iframeLoaded){
+        ifrm.src='http://'+src;
+        gvar.iframeLoaded=true;
+    }
+    ifrm.style.display=(visb ? "" : "none");
+  }
+ ,getNativeId: function(id,par,typEl){
+    if(isUndefined(par)) return;
+    var node=(isUndefined(typEl) ? '*':typEl),els=getTag(node,par);
+    if(els.length==0) return false;
+    for(var i=0; i<els.length;i++)
+      if(els[i].id==id){return els[i];break}    
+  }
+ ,rebuild_inputfile: function(){
+    var Attr,el,par=$D('#label_file'),tgt=getTag('input',par);
+    if(tgt.length>0){
+      el=tgt[0]; Dom.remove(tgt[0]);
+      Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
+      el=mycreateElement('input',Attr);
+      on('change',el,function(e){
+        e=e.target||e;
+        if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
+      });
+      Dom.add(el,par);
+    }
+  }
+ ,rebuild_selectHost: function(els){
+    
+    var Attr,iner,el,sel=mycreateElement('select',{id:'sel_host',title:'Image Host',style:'font-weight:bold;color:#0000FF'});
+    var ret=mycreateElement('div',{id:'par_sel_host',style:'display:inline-block;float:left;margin-right:5px;border:1px solid #BBC7CE;padding-left:3px;',});
+    el=mycreateElement('div',{style:'float:left;font-weight:bold;margin-top:4px;color:#0000FF'},'','<a id="host_link" href="http://'+UPL.prop[gvar.upload_tipe]['src'].replace(/\?no_multi.+/i,'')+'">Host</a> :&nbsp;');
+    Dom.add(el,ret);
+    on('change',sel,function(e){
+      e=e.target||e;
+      var hl = $D('#host_link'),href=e.options[e.selectedIndex].value;
+        if(hl) hl.setAttribute('href','http://'+href);
+      var sels = gvar.upload_sel;
+      if(sels) for(var tipe in sels){
+        if(!isString(sels[tipe])) continue;
+        if(href.indexOf(sels[tipe])!=-1){
+          gvar.upload_tipe=tipe;
+		  setValue(KS+'LAST_UPLOADER', tipe);
+          UPL.cold_boot();
+          break;
+        }
+      }
+    });
+    // build selects node
+    if(isUndefined(els)) els = gvar.upload_sel;
+    if(els) for(var tipe in els){
+      if(!isString(els[tipe])) continue;
+      Attr={value:els[tipe],name:tipe};
+      if(gvar.upload_tipe==tipe) Attr.selected='selected';
+      iner=els[tipe].toString(); 
+      iner=iner.substring(0,(iner.indexOf('/')!=-1 ? iner.indexOf('/'):iner.length));
+      el=mycreateElement('option',Attr,'',iner);
+      Dom.add(el,sel);
+    }
+    Dom.add(sel,ret);
+    return ret;
+  }
+ ,rebuild_hidden: function(els){
+    if(isUndefined(els))
+      els = UPL.prop[gvar.upload_tipe]['hids'];
+    var Attr,el,ret=mycreateElement('div',{id:'hid_cont'});
+    if(els) for(var nm in els){
+      if(!isString(els[nm])) continue;
+      Attr={type:'hidden',name:nm,value:els[nm]};
+      el=mycreateElement('input', Attr);
+      Dom.add(el,ret);
+    }
+    return ret;
+  }
+ ,attach_form: function(){
+    var el,dv,frm,Attr={enctype:'multipart/form-data',action:'',target:'target_upload',method:'post',id:'frmPageAction',name:'frmPageAction'};
+    frm = mycreateElement('form', Attr);    
+    el = UPL.rebuild_hidden();
+    Attr={type:'submit',id:'fake_submit_btn',value:'',style:'border:0;background:transparent;position:absolute;left:-100000;top:-9999;visibility:hidden'};
+    el=mycreateElement('input', Attr); Dom.add(el,frm); 
+    Dom.add(frm,getTag('body')[0]);    
+  }
+};
+//end UPL
+// uploader TPL
 function get_tpl(){
-
-  var Attr;
-  var Div0= document.createElement('div');
-    Div0.id = 'uparent_container';
-  var Div1= document.createElement('div');
-	Div1.id = 'upload_container';
-	
-  var Lbl= document.createElement('label');
-	Lbl.setAttribute('class', 'cabinet');
-	Lbl.id = 'label_file';
-
-	Attr = {type:'file','class':'file',name:'userfile',id:'userfile'};	 
-  var Elm = mycreateElement('input', Attr);
-    Ev.add(Elm, 'change', function(e){
-	  e=e.target||e;
-	  if(getById("legend_subtitle"))
-	    getById("legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
-	});
-  //
-	Lbl.appendChild(Elm);
-	Div1.appendChild(Lbl);	
-
-	Attr = {type:'button','class':'button greenButton',title:'Upload now ..',value:'Upload'};
-	Elm = mycreateElement('input', Attr);
-	Ev.add(Elm, 'click', function(){trans_post()});
-	Div1.appendChild(Elm);
-	
-  var Div2= document.createElement('div');	
-	Div2.setAttribute('style', 'float:left;font-weight:bold;margin-left:20px;');
-	
-	var upldr = 'http://'+gvar.dmUploader+'/';
-	Attr = {href:upldr,target:'_blank',title:'Go to '+upldr};
-  var a0 = mycreateElement('a', Attr, false, gvar.dmUploader);	
-	Div2.appendChild(a0);
-	Div1.appendChild(Div2);
-	
-	Div2= document.createElement('div');	
-	Div2.setAttribute('style', 'float:right;font-weight:bold;font-size:10px;');
-
-	Attr = { href: 'javascript:;' };	
-	a0 = mycreateElement('a', Attr, false, 'Toogle Iframe');
-	// prevent unsafeWindow access violation we're doing event with this
-	Ev.add(a0, 'click', function(){toogle_iframe();});
-	Div2.appendChild(a0);
-	
-	Div1.appendChild(Div2);
-	Div0.appendChild(Div1);
-	
-	  // initialize iframe with about:blank instead of gvar.dmUploader
-	Attr = {style:'display:none;',src:'about:blank',name:'target_upload',scrolling:'auto',id:'target_upload'};	
-  var ifrm = mycreateElement('iframe', Attr);	
-	Div0.appendChild(ifrm);
-	
-  return Div0;
-}
-// building fake form outside form
-function attach_form(){
-	var Attr;
-	Attr = {
-	 enctype:'multipart/form-data',action:'http://'+gvar.dmUploader+'/upload/do_upload',
-	 target:'target_upload',method:'post', name:'frmPageAction',id:'frmPageAction'
-	};	 
-	var Obj = mycreateElement('form', Attr);
-	Attr = {type:'hidden',name:'referer',value:''};
-	var Elm = mycreateElement('input', Attr);
-	Obj.appendChild(Elm);	
-    getTag('body')[0].insertBefore(Obj, document.body.firstChild);
+return(''
++'<fieldset class="fieldset" style="margin-top:6px;">'
++'<legend><span id="fld_title">Upload Images</span><span style="font-weight:bold;" id="legend_subtitle">&nbsp;</span></legend>'
++'<div id="uparent_container">'
+  +'<div id="upload_container"></div>'
++'</div>' // #uparent_container
++'</fieldset>'
+);
 }
 // /End kaskus uploader Area
 // =====================
@@ -2262,7 +2509,6 @@ function getSmilieSets(){
 }
 // end getSmilieSets
 
-
 // =======================
 // my recent use - routine
 
@@ -2270,6 +2516,8 @@ function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
+
+function on(m,e,f){Ev.add(e,m,function(e){typeof(f)=='function'?f(e):void(0)});}
 function getValue(key) {
   var data=OPTIONS_BOX[key];
   return (!data ? '': GM_getValue(key,data[0]));
@@ -2387,41 +2635,44 @@ function getCurrentYPos(){
       return window.pageYOffset;
     return 0;
 }
-//=========================== BROWSER DETECTION / ADVANCED SETTING ===========================================//
+//=== BROWSER DETECTION / ADVANCED SETTING
+//=============snipet-authored-by:GI-Joe==//
 function ApiBrowserCheck() {
   //delete GM_log; delete GM_getValue; delete GM_setValue; delete GM_deleteValue; delete GM_xmlhttpRequest; delete GM_openInTab; delete GM_registerMenuCommand;
   if(typeof(unsafeWindow)=='undefined') { unsafeWindow=window; }
   if(typeof(GM_log)=='undefined') { GM_log=function(msg) { try { unsafeWindow.console.log('GM_log: '+msg); } catch(e) {} }; }
   
-  var needApiUpgrade=false; gvar.notSafe = needApiUpgrade;
+  var needApiUpgrade=false;
   if(window.navigator.appName.match(/^opera/i) && typeof(window.opera)!='undefined') {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv=GM_setValue.toString();
-    if(gsv.indexOf('staticArgs')>0) { gvar.isGreaseMonkey=true; show_alert('GreaseMonkey Api detected...',0); } // test GM_hitch
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    if(gsv.indexOf('staticArgs')>0) {
+      gvar.isGreaseMonkey=true; gvar.isFF4=false;
+     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+    } // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
 
   gvar.noCrossDomain = (gvar.isOpera || gvar.isBuggedChrome);
   if(needApiUpgrade) {
-    gvar.notSafe=needApiUpgrade;
     GM_isAddon=true; show_alert('Try to recreate needed GM Api...',0);
     //OPTIONS_BOX['FLASH_PLAYER_WMODE'][3]=2; OPTIONS_BOX['FLASH_PLAYER_WMODE_BCHAN'][3]=2; // Change Default wmode if there no greasemonkey installed
     var ws=null; try { ws=typeof(unsafeWindow.localStorage) } catch(e) { ws=null; } // Catch Security error
     if(ws=='object') {
       show_alert('Using localStorage for GM Api.',0);
-      GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; }
-      GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } }
-      GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); }
+      GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; };
+      GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } };
+      GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); };
     } else if(!gvar.isOpera || typeof(GM_setValue)=='undefined') {
       show_alert('Using temporarilyStorage for GM Api.',0); gvar.temporarilyStorage=new Array();
-      GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } }
-      GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } }
+      GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } };
+      GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } };
       GM_deleteValue=function(name) { delete gvar.temporarilyStorage[GMSTORAGE_PATH+name]; };
     }
-    if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); } }
-    if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); } } // Dummy
+    if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); }; }
+    if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); }; } // Dummy
     if(!gvar.isOpera || typeof(GM_xmlhttpRequest)=='undefined') {
       show_alert('Using XMLHttpRequest for GM Api.',0);
       GM_xmlhttpRequest=function(obj) {
@@ -2431,10 +2682,9 @@ function ApiBrowserCheck() {
         try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
         if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
         request.send(obj.data); return request;
-  } } } // end needApiUpgrade
-  GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); }
+  }; } } // end needApiUpgrade
+  GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); };
 }
-
 // ======================
 // my ge-debug
 function show_alert(msg, force) {
