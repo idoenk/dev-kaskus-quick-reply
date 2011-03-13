@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.4
-// @dtversion     110310314
-// @timestamp     1299724630128
+// @dtversion     110313314
+// @timestamp     1300026283121
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,8 +18,9 @@
 //
 // -!--latestupdate
 //
-// v3.1.4 - 2011-03-10
-//   Add quick-quote (beta-2)
+// v3.1.4 - 2011-03-13
+//   Add & AutoSwitch to LastUsed-Uploader
+//   Split Smiley & Uploader Container
 //   Fix missing emote besar (repost2,cystg,kiss,peluk)
 //   Fix avoid doubled event on textformat,align controllers (Donatur)
 //   Add controller button for uploader
@@ -46,29 +47,11 @@
 // -/!latestupdate---
 // ==/UserScript==
 /*
-//
-// v3.1.3 - 2011-02-19
-//   Fix minor CSS cleanUp imageshack
-//   Add Inc-Dec Size Editor's Height
-//   Add missing kaskus smilie-besar ( Malu )
-//   Fix clear disabled field; kill absolute layer, after upload(imageshack.us)
-//   Fix parseUrl (spaced prefix b4 {message})
-//   Fix toCharRef ignore encoding [\.\,\*]
-//   Silent on oExist performed
-//   Fix minor CSS imageshack on iframe 
-//   Improve reorder uploader nav
-//   Add Uploader (beta-4)
-//   Fix failed update checker
-//   Fix AutoLoad Smiley container
-//   Improve autogrow on Edit(Sigi & Layout)
-//   Fix minor CSS, word-wrap custom_smiley; reorder navigation;
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
 // Init
 // ----
-//
 // Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
 // http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
 // --------------------------------------------------------
@@ -85,9 +68,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.4';
 gvar.scriptMeta = {
-  timestamp: 1299724630128 // version.timestamp
+  timestamp: 1300026283121 // version.timestamp
 
- ,dtversion: 110310314 // version.date
+ ,dtversion: 110309314 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -106,11 +89,11 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_LAST_COLOR:    ['Black'] // last used color
  ,KEY_SAVE_LAST_SIZE:     [''] // last used size
  ,KEY_SAVE_LAST_SPTITLE:  ['title'] // last used spoiler-title
+ ,KEY_SAVE_LAST_UPLOADER: [''] // last used host-uploader
  
  ,KEY_SAVE_UPDATES:          ['1'] // check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
- ,KEY_SAVE_QUICK_QUOTE:      ['0'] // quick quote
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
@@ -149,8 +132,7 @@ function init(){
   // initialize gvar..
   gvar.domain= 'http://'+'www.kaskus.us/';  
   gvar.isNotForum = (!location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/));
-  if(gvar.isNotForum)
-    return outSideForumTreat();
+  if(gvar.isNotForum) return outSideForumTreat();
 	
 
   gvar.reCAPTCHA_domain= 'http://'+'api.recaptcha.net';
@@ -185,7 +167,6 @@ function init(){
   // place global style
   GM_addGlobalStyle( rSRC.getCSS() );
   GM_addGlobalStyle('','css_fixups', true); // blank style tag for kaskus fixups, should be on body instead of head
-  GM_addGlobalStyle('','css_qqr', true); // blank style tag for qqr toggle
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
   GM_addGlobalScript( rSRC.getSCRIPT() );
@@ -212,41 +193,35 @@ function init(){
 
 // outside forum like u.kaskus.us || imageshack.us
 function outSideForumTreat(){
-  
   var whereAmId=function(){
-    var ret,src;
+    var ret=false,src;
     getUploaderSetting();
     for(var host in gvar.uploader){
       src=gvar.uploader[host]['src']||null;
       if(src && self.location.href.indexOf(src)!=-1){
         ret= String(host); break;
 	  }
-
     }
     return ret;
   };
+  
   var el,par,lb,m=20,loc=whereAmId(),CSS="",i="!important";
   /*
     # do pre-check hostname on location
-  */  
+  */
   try{if(top===self)return;}catch(e){};
-  
   switch(loc){
     case "kodok":
       CSS=''
          +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
          +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
          +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
-	  ;
-
-    break;
+	  ;break;
     case "imgur":
       CSS=''
       +'div#logo,.right .panel{display:none'+i+'}'
       +'#content{margin-top:15px}'
-	  ;
-
-    break;
+	  ;break;
     case "ps":
       CSS=''
       +'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
@@ -256,11 +231,10 @@ function outSideForumTreat(){
       +'#footer{padding:0}'
       +'#overlay .content{top:3px'+i+'}'
       +'#overlay{position:absolute'+i+'}'
-	  ;	
-
-    break;
+	  ;break;
   }; // end switch loc
-  if(CSS) GM_addGlobalStyle( CSS );
+  if(CSS!="") 
+    GM_addGlobalStyle(CSS,'inject_host_css', true);
 
   el=$D('//input[@wrap="off"]',null,true);
   if(loc=='kodok' && el){
@@ -332,7 +306,7 @@ function oExist(P){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.quick_quote
+  eg. gvar.settings.
   */
   var hVal,hdc;
   gvar.settings = {
@@ -341,6 +315,7 @@ function getSettings(){
        color:getValue(KS+'LAST_COLOR'),
        size: getValue(KS+'LAST_SIZE'),
        sptitle: getValue(KS+'LAST_SPTITLE'),
+       uploader: getValue(KS+'LAST_UPLOADER'),
     },
     userLayout: {
        config: [],
@@ -353,7 +328,6 @@ function getSettings(){
     hideavatar: (getValue(KS+'HIDE_AVATAR')=='1'),
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
-    quick_quote: (getValue(KS+'QUICK_QUOTE')!='0'),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
@@ -418,8 +392,7 @@ function getSettings(){
 }
 
 function getUploaderSetting(){
-  // uploader properties  
-  gvar.upload_tipe='kaskus';
+  // uploader properties
   gvar.upload_sel={
      kaskus:'u.kaskus.us'
     ,kodok:'imageshack.us'
@@ -451,8 +424,14 @@ function getUploaderSetting(){
     ,ps:{
         src:'photoserver.ws',noCross:'1' 
 	 }
-
   };
+  // set last-used host
+  try{
+    if( gvar.settings.lastused.uploader )
+    gvar.upload_tipe= gvar.settings.lastused.uploader;
+	if(isUndefined( gvar.upload_sel[gvar.upload_tipe] )) 
+    gvar.upload_tipe='kaskus';
+  }catch(e){gvar.upload_tipe='kaskus';}
 }
 // end getSettings
 
@@ -498,12 +477,6 @@ function start_Main(){
 
       Dom.add(createTextEl(' '), nodes[i].parentNode);
       
-      // qqr
-      child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
-      Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':'display:none'};
-      el = createEl('a',Attr,child);
-      on('click',el,function(e){do_click_qqr(e)});
-      Dom.add(el, nodes[i].parentNode);
      }
      nodes = getByXPath_containing('//a', false, 'EDIT');
      for(var i=0; i<nodes.length; i++){
@@ -513,7 +486,6 @@ function start_Main(){
 	 }
 
     }
-	Dom.add( createTextEl( '.btn_qqr{display:'+(gvar.settings.quick_quote?'inline':'none')+'!important;}' ), $D('#css_qqr') );
     
     // insert customed controler
     insert_custom_control();    
@@ -573,182 +545,6 @@ function start_Main(){
     
 }
 // end start_Main()
-
-
-// (quick-quote) qqr clicked
-function do_click_qqr(e){
-  e = e.target || e;
-  
-  // we keep find the parent
-  var qr = $D('#quickreply'), parent_postbit = find_parent(e), apr;
-  if(!qr) return;
-  if(e && parent_postbit && gvar.settings.dynamic) // is dynamic QR enabled
-     Dom.add(qr,parent_postbit);
-  apr = e.parentNode;
-  var elpm,el,did,msg;
-  
-  var clearTag=function(h){ return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||'';};
-  var parseMSG=function(x){
-    var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
-	var pCon,els,el,el2,el3,el4,eIner,eIner3,cucok,LT={'font':"",'div':""};
-	var parseSerials=function(S,$1,$2){
-      var mct,parts;
-      // parse BIU
-      if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
-        return '[' +($1?'/':'')+$2.toUpperCase()+ ']';
-      
-      }else if( /font\s*/i.test($2) ){
-	    // parse font;size
-        mct=$2.match(/font(?:\s([^=]+).['"]([^'"]+))?/i);
-        if(isDefined(mct[1]))
-          LT.font=mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
-        return '[' +( isDefined(mct[2]) && mct[2] ? mct[1].toUpperCase()+ '="'+mct[2]+'"' : '/'+LT.font.toUpperCase()) +']';
-      
-      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
-		if($2.indexOf('rel=')==-1){
-          // parse align
-		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) LT.div=mct[1];
-		}else{
-		  // parse code | spoiler
-		  mct=$2.match(/\/?div(?:\srel=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) {
-			if(mct[1].indexOf('spoiler')!=-1) {
-			  LT.div='SPOILER';
-			  parts = mct[1].split('-');
-			  mct[1]=LT.div+'='+(isDefined(parts[1])?parts[1]:'');
-			}else{
-			  LT.div=mct[1];
-			}
-		  }else{
-		    mct[1]=false;
-		  }
-		}
-		return (LT.div ? '[' +(mct && mct[1] ? mct[1] : '/'+LT.div).toUpperCase() + ']' : '');
-
-      }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
-        // parse linkify
-        mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
-        return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
-      
-      }else if( /\ssrc=/i.test($2)  ){
-	    // parse img
-        mct=$2.match(/\ssrc=['"]([^'"]+)/i);
-        if(isDefined(mct[1]))
-          return '[IMG]' + mct[1] + '[/IMG]';
-        
-      }else{
-        return S;
-      }      
-    };
-	
-    x=x.substring(pos+contentsep.length);
-    // clean message separator
-    ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
-	
-	// clean all previous quote
-	pCon=createEl('div',{},x);
-	els=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', pCon);
-	if(els) for(var i=0;i<els.snapshotLength; i++){
-        el = els.snapshotItem(i); eIner=el.innerHTML;
-		if( cucok=eIner.match(/<div\sclass=['"]smallfont['"][^>]+.<[^>]+.Spoiler[^i]+..([^<]+)?/i) ){
-		  // tag spoiler pre-process
-		  el2=getTag( 'div', el );
-		  if(el2.length>0) Dom.remove(el2[0]);		  
-		  // clear quote inside spoiler
-		  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
-			el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
-			if(el2) for(var j=0;j<el2.snapshotLength; j++){
-			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
-			  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner3) )
-			    Dom.remove(el3);
-			}
-			eIner=el.innerHTML;
-		  }
-		  // clear code inside spoiler
-		  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
-		    el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
-			if(el2) for(var j=0;j<el2.snapshotLength; j++){
-			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
-			  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner3) ){
-			    el4=$D('.//div[@class="smallfont"]',el,true);
-				if(el4) Dom.remove(el4);
-			    el3.innerHTML = '[CODE]'+clearTag(eIner3).replace(/Code\:[^\t]+./im,'')+'[/CODE]';
-			  }
-			}
-		  }
-
-		  // the rest on spoiler repost this ..
-		  eIner= trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
-		  el.innerHTML = clearTag(eIner);
-		  //el.innerHTML = clearTag(el.innerHTML);
-		  el.setAttribute('rel','spoiler-'+(isDefined(cucok[1]) ? cucok[1]||'':'') );
-		
-		}else if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
-		  // tag code pre-process
-		  Dom.remove(el);
-		
-		}else if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
-		  // tag code pre-process
-		  el2=$D('.//div[@class="smallfont"]',el,true);
-		  if(el2) Dom.remove(el2);
-		  el.innerHTML = clearTag(eIner).replace(/Code\:[^\t]+./im,'');
-		  el.removeAttribute('style');
-		  el.setAttribute('rel','code');
-		}
-	}
- 
-	// cleanup lastedit
-	el=$D('.//div[@class="smallfont"]',pCon,true);
-	if(el) Dom.remove(el);	
-	
-	x=pCon.innerHTML; delete pCon;
-	
-	clog(x);
-
-	// serials parse
-	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
-    
-    // clean rest (unparsed tags)
-    return unescapeHtml(clearTag( ret ) );
-  };
-  // end parseMSG
-  var parseQQ=function(){
-    if( !$D('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
-    if( $D('#quoted_notice').style.display!='none' && $D('#current_fetch_post') ){ // theres a fetching progres
-        //clog('theres a fetch progres, txta still readonly')
-        vB_textarea.readonly();
-        return;
-    }
-    toogle_quickreply(true); // show it again to save state and load capcay if any    
-    vB_textarea.init();
-    if(vB_textarea.content==gvar.silahken)
-       vB_textarea.clear();
-    vB_textarea.enabled();
-
-    // get quote nfo
-    if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
-    elpm=$D('#postmenu_'+did);
-    if(elpm) el=$D(".//a[starts-with(@href,'member.php')]", elpm, true);
-    // get inner post
-    elpm=$D('#td_post_'+did, null, true);
-    if(elpm) {
-      msg= '[QUOTE='+(el?el.innerHTML:'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]'+'\r\n\r\n';
-	  if(Dom.g(gvar.id_textarea).value != msg)
-         vB_textarea.add(msg);
-      vB_textarea.lastfocus();
-      if(gvar.settings.textareaExpander[0])
-        vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
-    }
-  };
-  
-  var cSml = gvar.settings.autoload_smiley;
-  gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
-  ss.STEPS = 5; // scroll speed; smaller is faster          
-  ss.smoothScroll( Dom.g(gvar.id_textarea), function(){parseQQ()} );
-  return false; 
-}
-
 
 // qr clicked
 function do_click_qr(e){
@@ -1042,14 +838,12 @@ function qr_ajax_post(reply_html){
          if(ce) spost ='&'+ce.getAttribute('name')+'='+encodeURIComponent(ce.value) + spost;
       }
     }
-    clog(spost); clog(prep);
+    //clog(spost); clog(prep);
     lockFields_forSubmit(true);
-	
 
     GM_XHR.uri = prep[1];
     GM_XHR.cached = true;
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
-	
 
   }else{
     if( !reply_html ) return;
@@ -1320,8 +1114,6 @@ function scustom_parser(msg){
   // trim content and/or parse it
   msg = trimStr(Dom.g(gvar.id_textarea).value);
   if(!gvar.settings.scustom_noparse){
-  
-   clog('in scustom_parser');
    
     pmsg = do_parse_scustom(msg);
     Dom.g(gvar.id_textarea).value=pmsg;
@@ -1413,19 +1205,17 @@ function initEventTpl(){
             Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
             e.setAttribute('checked','checked');
           }
-          setValue(KS+'WIDE_THREAD', (chk ? 0:1));        
+          setValue(KS+'WIDE_THREAD', (chk ? 0:1));
         controler_resizer(); // resize elements width
       });
       
-      on('submit',$D('#vbform'),function(e){
-	    
+      on('submit',$D('#vbform'),function(e){	    
 
         if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced') {
           clog('here and aborted');
           e.preventDefault(); // return false;
           return false;
-		}else{
-		
+		}else{		
 
           if( !gvar.user.isDonatur && $D('#clicker').value != 'Go Advanced' ){
             var hi=($D('#recaptcha_response_field') ? $D('#recaptcha_response_field') : null);
@@ -1441,16 +1231,13 @@ function initEventTpl(){
           var prp = prep_preview(), msg=template_wrapper();
           if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
           $D('#qr_do').setAttribute('value', prp[0]); // nxDo; change default of qr_do (postreply)
-          $D('#vbform').setAttribute('action', prp[1]); //uriact
-		  
+          $D('#vbform').setAttribute('action', prp[1]); //uriact		  
 
           if($D('#clicker').value != 'Go Advanced' && prp[0]=='postreply' ){
             // set lastPost timestamp here
             QRdp.updLast(new Date().getTime()+'');
 		  }
 		}
-
-
       });
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
       on('click',$D('#qr_prepost_submit'),function(e){
@@ -1645,7 +1432,6 @@ function is_keydown_pressed(e){
    }else
    if(C.altKey){ // mijit + Alt
     var B='', A = C.keyCode ? C.keyCode : C.charCode;
-      //clog('Alt+'+A);
     switch(A){
       case 83: // [S] Submit post
         B = 'qr_prepost_submit';
@@ -1837,66 +1623,114 @@ function re_event_vbEditor(){
      SimulateMouse($D('#pick_size'), 'click', true);     
     });  
   
+  var mouseEv = function(par,cmd,evt){
+    window.setTimeout(function() {
+      if(isUndefined(vB01)) vB01 = 'vB_Editor_001';
+	  obj = $D(vB01+cmd);
+      if($D('#'+par) && $D('#'+par).style.display!='') {
+        obj.style.backgroundColor=(evt=='mouseout' ? 'transparent' : '#B0DAF2');
+        obj.style.border='1px solid '+(evt=='mouseout' ? 'transparent' : '#2085C1');
+      }
+    }, 10);
+  };
   // event buat smile  
    par = $D(vB01+'_cmd_insertsmile');   
    if(par) {
-     on('click',par,function(e){create_smile_tab(e)});
-     on('mouseout',par,function(e){
-        e.target||e;
-        window.setTimeout(function() {
-          obj = $D(vB01+'_cmd_insertsmile_img');
-          if($D('#smile_cont').style.display!=''){
-            obj.style.backgroundColor='transparent';
-            obj.style.border='1px solid transparent';
-          }
-        }, 10);
-     });     
-     on('mouseover',par,function(e){
-        e.target||e;
-        window.setTimeout(function() {
-          obj = $D(vB01+'_cmd_insertsmile_img');
-          if($D('#smile_cont').style.display!=''){
-            obj.style.backgroundColor='#B0DAF2';
-            obj.style.border='1px solid #2085C1';
-          }
-        }, 10);
-     });     
+     on('click',par,function(e){switch_upl_smiley(e)});
+     on('mouseout',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseout')});
+     on('mouseover',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseover')});
    }
   // event buat button uploader
    par = $D(vB01+'_cmd_uploader');
-   if(par) on('click',par,function(e){
-     var p = $D('#smile_cont');
-     if(p.innerHTML=='') {
-       create_smile_tab(e);
-     }else{
-       var uc=$D('suploader_container');
-       if(uc && uc.style.display=='none'){
-         SimulateMouse($D('#remote_suploader_container'), 'click', true);
-       }else{
-         p.style.display=(p.style.display=='none' ? '':'none');
-	   }
-	 }
-
-
-   });
+   if(par) {
+     on('click',par,function(e){switch_upl_smiley(e)});
+	 on('mouseout',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseout')});
+     on('mouseover',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseover')});   
+   }
 }
 // end re_event_vbEditor
 
-function create_smile_tab(caller){
+function switch_upl_smiley(e){
+   var tohide;
+   e=e.target||e;
+   var clearActive = function(tohide){
+     var cmd=(tohide=='smile_cont' ? '_cmd_insertsmile_img':'_cmd_uploader_img'),obj = $D('vB_Editor_001'+cmd);   
+	 if(obj){
+	  obj.style.backgroundColor='transparent';
+      obj.style.border='1px solid transparent';
+	 }
+   };
+   if(e.id && e.id.indexOf('_cmd_uploader') !=-1 ){     
+     tohide = 'smile_cont';
+   }else if(e.id && e.id.indexOf('_cmd_insertsmile') !=-1 ){
+     tohide = 'upl_cont';
+   }
+   clearActive(tohide);
+   if($D('#'+tohide)) {
+     showhide($D('#'+tohide), false);
+	 if(tohide == 'smile_cont')
+	    create_upoader_tab();
+	 else
+	    create_smile_tab(e);
+   }
+}
+
+
+function create_upoader_tab(){
+  var parent = $D('#upl_cont');
+  if(parent.innerHTML!='') {
+    parent.style.display=(parent.style.display=='none' ? '':'none');
+    force_focus(10); return;
+  }
+  var id,cont,el,el2,Attr,img,imgEl,prop,tgt_id='suploader_container';
+  
+  // create tabuploader
+  cont = createEl('ul',{id:'tab_parent_upl','class':'ul_tabsmile'});
+  Dom.add(cont,parent);
+  el = createEl('li',{'class':'li_tabsmile'});
+  el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+tgt_id},'uploader');
+  Dom.add(el2,el); Dom.add(el,cont);  
+  
+  Attr={id:'wrap_'+tgt_id,'class':'smallfont',style:'display:none;'};
+  el = createEl('div',Attr,rSRC.getTPL_sUploader());
+  Dom.add(el,parent);
+  
+  // tab close
+  el2 = createEl('a',{href:'javascript:;',id:'tab_close_uploader',title:'Close Uploader'},'&nbsp;<b>X</b>&nbsp;');
+  on('click',el2,function(){
+    $D('#upl_cont').style.display='none';
+    force_focus(10); 
+    var obj = $D('#vB_Editor_001_cmd_uploader_img');
+    if(obj){
+      obj.style.backgroundColor='transparent';
+      obj.style.border='1px solid transparent';
+    }
+    return; 
+  });
+  el = createEl('li',{'class':'li_tabsmile tab_close'});
+  Dom.add(el2,el); Dom.add(el,cont);
+  
+  if($D('wrap_'+tgt_id)) showhide($D('wrap_'+tgt_id), true);
+  addClass('current',$D('#remote_'+tgt_id));
+  
+  UPL.init_uploader(tgt_id);
+  parent.style.display='';
+}
+
+// ----------------------------------
+function create_smile_tab(){
   var parent = $D('#smile_cont');
-  caller=caller.target||caller;
   if(parent.innerHTML!='') {
     parent.style.display=(parent.style.display=='none' ? '':'none');
     force_focus(10);
     return;
   }
   var id,cont,el,el2,Attr,img,imgEl,prop;
-  var scontent = ['skecil_container','sbesar_container','scustom_container','suploader_container'];
+  var scontent = ['skecil_container','sbesar_container','scustom_container'];
   var mtab = {
      'skecil_container'  :'kecil' 
     ,'sbesar_container'  :'besar' 
     ,'scustom_container' :'custom'
-    ,'suploader_container' :'uploader' 
   };
   // create tabsmile
   cont = createEl('ul',{id:'tab_parent','class':'ul_tabsmile'});
@@ -1911,7 +1745,7 @@ function create_smile_tab(caller){
         if(S) S=SML_LDR.smlset=gvar.smiliecustom;
         if($D('#manage_cancel') && $D('#manage_cancel').style.display!='none')
           SML_LDR.custom.close_edit();
-      }else if(tt=='uploader'){S=1}
+      }
       SML_LDR.scID=tab;
       toggle_tabsmile(e);
       if(Dom.g(tgt) && Dom.g(tgt).innerHTML=='') insert_smile_content(tgt,S);
@@ -1920,8 +1754,8 @@ function create_smile_tab(caller){
     Dom.add(el2,el); Dom.add(el,cont);
     
     //(blank) container for smiley contents
-    Attr={id:(tab!='scustom_container'&&tab!='suploader_container'? '' : 'wrap_')+tab,'class':'smallfont',style:'display:none;'};
-    var iner = (tab=='scustom_container'? rSRC.getTPL_sCustom(tab):(tab=='suploader_container' ? rSRC.getTPL_sUploader(tab) : ''));
+    Attr={id:(tab!='scustom_container' ? '' : 'wrap_')+tab,'class':'smallfont',style:'display:none;'};
+    var iner = (tab=='scustom_container'? rSRC.getTPL_sCustom(tab) : '');
     el = createEl('div',Attr,iner);
     Dom.add(el,parent);
   } // end for
@@ -1946,18 +1780,14 @@ function create_smile_tab(caller){
   
   // --- end tab creation ---
   // populate smiley set | custom smiley will also loaded from here
-  window.setTimeout(function(){rSRC.getSmileySet()},1);
-  
+  window.setTimeout(function(){rSRC.getSmileySet()},1);  
   
   // autoload thingie
   if(gvar.settings.autoload_smiley[0]=='1'){
     id=('s'+gvar.settings.autoload_smiley[1]+'_container');
     var tS=gvar.settings.autoload_smiley[1], S=(tS=='besar' ? gvar.smiliebesar : (tS=='kecil' ? gvar.smiliekecil : (tS=='custom' ? gvar.smiliecustom : null) ));
     insert_smile_content(id, S);
-  }else if(caller && caller.id.indexOf('_cmd_uploader')!=-1 ){
-    id=scontent[scontent.length-1]; // last idx, assumed uploader
-  }
-  else{ // first tab: uploader no need load smileyset
+  }else{ // first tab: uploader no need load smileyset
     id=scontent[0];
   }
   toggle_tabsmile(Dom.g(id));
@@ -1974,10 +1804,7 @@ function insert_smile_content(scontent_Id, smileyset){
   
   if(!scontent_Id || !smileyset) return;
   //clog(scontent_Id);
-  if(scontent_Id!='suploader_container')
-    SML_LDR.init(scontent_Id, smileyset);
-  else
-    UPL.init_uploader(scontent_Id);
+  SML_LDR.init(scontent_Id, smileyset);
 }
 // end insert_smile_content()
 
@@ -1993,7 +1820,7 @@ function toggle_tabsmile(e){
        removeClass('current', elem[i]); // reset tab class
      }
    }
-   var cwrap=['scustom','suploader'];
+   var cwrap=['scustom'];
    for(var j=0;j<cwrap.length;j++){
      if($D('#wrap_'+cwrap[j]+'_container'))
        showhide($D('#wrap_'+cwrap[j]+'_container'), ( e.id.indexOf(cwrap[j])!=-1 )  ); // hide container wraper
@@ -2238,7 +2065,7 @@ function do_filter_scustom(text){
       buf = buf.replace(re, tosingle[torep])
     }
          //clog('before step-validate='+buf);    
-    // step -3 to validate per line    
+    // step -3 to validate per line
     buf=(document.all ? buf.split("\r\n") : buf.split("\n")); // IE : FF/Chrome
     
     var sml,retbuf='', bL=buf.length;
@@ -3650,7 +3477,8 @@ var SML_LDR = {
     // make a dummy last-img that, avoid bad img on last element
     if( SML_LDR.scID=='scustom_container' && !gvar.settings.scustom_alt) {
         imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
-        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
+        //Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif' + '?'+String( Math.random() ).replace('0.','')};
+        Attr = {alt:'dummy_last_img', src:gvar.domainstatic + 'images/editor/separator.gif'};
         imgEl2 = createEl('img',Attr);
         Dom.add(imgEl2,imgEl);
         Dom.add(imgEl,RC);
@@ -3660,7 +3488,6 @@ var SML_LDR = {
     
     if(countSmiley<=0){
       var el = $D('#loader_'+SML_LDR.scID);
-      //if(el) try{ Dom.remove(el); } catch(e){el.style.display='none';};
       if(el) el.style.display='none';
       RC.innerHTML = 'No Images found';
       RC.style.display='';
@@ -3706,6 +3533,9 @@ var SML_LDR = {
       el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
       Dom.add(el,cont);
       on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
+	  el = createEl('span',{id:'title_group',style:'margin-left:8px;font-weight:bold'},(gvar.smiliegroup ? gvar.smiliegroup[0]:'') );
+      Dom.add(el,cont);
+	  
       el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
       Dom.add(el,cont);
       on('click',el,function(){
@@ -3730,6 +3560,8 @@ var SML_LDR = {
       Dom.add(el,$D('#right_'+SML_LDR.scID));
       if($D('#right_'+SML_LDR.scID))
         $D('#right_'+SML_LDR.scID).insertBefore(cont,$D('#right_'+SML_LDR.scID).firstChild);
+	  
+	  
     }
    ,tab_menu_left: function(){
       cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
@@ -3802,6 +3634,7 @@ var SML_LDR = {
           }else{
             addClass('current', lis[j]);
             if(dvC) dvC.style.display='block';
+			if($D('#title_group')) $D('#title_group').innerHTML = ch.title.replace(/_/g,'&nbsp;');
           }
         } // end for
       }
@@ -3826,13 +3659,14 @@ var SML_LDR = {
         if($D('#dv_menu_disabler')) $D('#dv_menu_disabler').style.display=(flag?'':'none');
         /*to hide*/
         if($D('#scustom_container')) $D('#scustom_container').style.display=(flag?'none':'');
+        if($D('#title_group')) $D('#title_group').style.display=(flag?'none':'');		
         if(!flag && $D('#current_grup') && $D('#current_grup').value==''){ // cancel from add grup
            var L = (gvar.lastpost_grupmnu?gvar.lastpost_grupmnu:'0');
            if($D('#tbgrup_'+L)) SimulateMouse($D('#tbgrup_'+L), 'click', true);
         }
     }
    ,delete_group: function(){
-      var cGrp=$D('#current_grup').value, yadeh=confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nAffirmative, proceed delete group?\n');
+      var cGrp=$D('#current_grup').value, yadeh=confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nAffirmative, proceed delete this group?\n');
       if(yadeh){
         SML_LDR.custom.manage_save(cGrp);
       }
@@ -4110,7 +3944,7 @@ var ST = {
  }
  ,load_rawsetting: function(){
     // collect all settings from storage,. 
-    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','AJAXPOST'
+    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','AJAXPOST'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
@@ -4123,10 +3957,10 @@ var ST = {
      ,'LAST_COLOR':'Last Used Color'
      ,'LAST_SIZE':'Last Used Size'
      ,'LAST_SPTITLE':'Last Used Spoiler Title'
+     ,'LAST_UPLOADER':'Last Used Host Uploader'
      ,'UPDATES':'Check Update enabled? validValue=[1,0]'
      ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
-     ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
      ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
@@ -4230,8 +4064,8 @@ var ST = {
      '\n\n'+HtmlUnicodeDecode('&#187;')+' Continue with Reset?';
     var yakin = confirm(msg);
     if(yakin) {
-      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
-	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
+      var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
+	              ,'AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
@@ -4293,7 +4127,6 @@ var ST = {
        'misc_updates':KS+'UPDATES'
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
-      ,'misc_quickquote':KS+'QUICK_QUOTE'
       ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
@@ -4502,7 +4335,7 @@ var UPL = {
  ,init_uploader:function(tgId){
     var tgt=$D('#'+tgId);
     UPL.parent=tgId;
-    if(tgt.innerHTML!='') return;
+	if(tgt.innerHTML!='') return;
     UPL.prop=gvar.uploader;
     if( isDefined(gvar.iframeLoaded) )
        delete(gvar.iframeLoaded);	   
@@ -4537,14 +4370,14 @@ var UPL = {
     el=g("cancel_upload");if(el)el.style.display="none";
   }
  ,event_uploader: function(){
-    var Attr,el,el2,src,par = $D('#upload_container');
-    if(par){ // create additional nodes      
+    var Attr,el,el2,src,par = $D('#upload_container'), allow_cross=isUndefined(UPL.prop[gvar.upload_tipe]['noCross']);
+    if(par){ // create additional nodes
       // select host
       el=UPL.rebuild_selectHost();
       Dom.add(el,par);	  
 
 	  // is this host allow cross-site in submit?
-      if( isUndefined(UPL.prop[gvar.upload_tipe]['noCross']) ) {	  
+      if( allow_cross ) {
 
         Attr={id:'label_file','class':'cabinet'}; el=createEl('label',Attr);
         Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
@@ -4563,19 +4396,18 @@ var UPL = {
         el=createEl('input',Attr);
         on('click',el,function(){UPL.cancel_upload()});
         Dom.add(el,par);
-
-      }else{	  
-
-        Attr={'class':'g_notice-error qrsmallfont',style:'width:65%; display:inline; position:absolute;margin-top:-3px;'};
+      }
+      
+      Attr={style:'margin-top:7px;font-weight:bold;font-size:10px;'+(allow_cross ? 'float:right;':'display:inline')}; el=createEl('div',Attr);
+      Attr={href:'javascript:;','class':'twbtn twbtn-m','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
+      on('click',el2,function(){return UPL.toogle_iframe()});
+      Dom.add(el2,el); Dom.add(el,par);
+	  
+	  if(!allow_cross){
+	    Attr={'class':'g_notice-error qrsmallfont',style:'width:60%; display:inline; position:absolute;margin:-3px 0  0 10px;'};
         el=createEl('div',Attr,'Sorry, this site is not allowing cross-domain submission, click <b>Toggle IFrame</b> to load it then do things inside the iframe');
         Dom.add(el,par);
 	  }
-
-      
-      Attr={style:'margin-top:7px;float:right;font-weight:bold;font-size:10px;'}; el=createEl('div',Attr);
-      Attr={href:'javascript:;'}; el2=createEl('a',Attr,'Toogle IFrame');
-      on('click',el2,function(){return UPL.toogle_iframe()});
-      Dom.add(el2,el); Dom.add(el,par);
       
       Attr={style:'display:none;',src:'about:blank',name:'target_upload',scrolling:'auto',id:'target_upload'};
       el=createEl('iframe',Attr);
@@ -4692,6 +4524,7 @@ var UPL = {
         if(!isString(sels[tipe])) continue;
         if(href.indexOf(sels[tipe])!=-1){
           gvar.upload_tipe=tipe;
+		  setValue(KS+'LAST_UPLOADER', tipe);
           UPL.cold_boot();
           break;
         }
@@ -5210,11 +5043,6 @@ var rSRC = {
         +"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
         +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
         +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
-      ,qquote_gif : ""
-        +"data:image/gif;base64,R0lGODdhGQAWAPMAAINhK9Syf/zfqaqKVOjJlL+eaPz7yJh2Qd+9iPztuLWUX/bTnotpM8moc6CATPz+2iwAAAAAGQAWAAAE//AZYpK4i2i9Vnp"
-		+"gggiJISFgqqpCCDRB0Bpog9zo+rQCMAaNwulxkyEai8AiRRAwmkdFQzI1WK86xQEaKBRaCocuZQUdRgSg45BIhEEXjGBxSRQahIFjwFcgFm87c3MGcQgKCRkBUgVShwM8cXRLB"
-		+"pACBAgDjAoFiwMEO21xFAUEiZkDdw0KA6sDATt0JG0LDYkBe6quq5xjDwpJHg5eDUFhvAMgVhYCQQVLv17SxwpvzCQCfh8gi9IFAwe8YoWzxTcLKAupjWEO4hKz2Q0CJikO1Xw"
-		+"HDoeB2Ob1KQ7wWSMwT6ASBp5tU+GA4AEGCgTkW5iGno4GBx4CeFEJHCgJMiYA7sDIgMHGjaAGmJwioQ2BBg5MngRQUmY9AUcSLKrGyZtPLy0iAAA7"
       ,throbber_gif : ""
         +"data:image/gif;base64,R0lGODlhEAAQALMPADZmn6XF642oyHCp7V6DsEWE0Pn6/dvk7+Ls95W/8VWa7HKby8DS6ezy+U2V6////yH/C05FVFNDQVBFMi4wAwEAAAAh+"
         +"QQJAAAPACwAAAAAEAAQAAAEPvDJ2Qgg4sw9EShOUQQcxySDoy5GyR2pk7icESP0doBkPi2OgW8iKCiGkuIRSSgIh43PDApQ4JCGBnLL9UUAACH5BAkAAA8ALAAAAAAQABAAA"
@@ -5716,6 +5544,7 @@ Format will be valid like this:
      +        '</tr>'
      +        '</table>'
      +'<div id="smile_cont" style="display:none;"></div>'
+     +'<div id="upl_cont" style="display:none;"></div>'
      +    '</td>'
      +'</tr>'
      +'</table>'
@@ -5914,8 +5743,6 @@ Format will be valid like this:
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
-     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote=='1' ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Directly Quick Quote from post-bit. Result may not well-parsed on complicated sources!" style="cursor:help">Experimental</b>)</label>'
-     +spacer
      +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost=='1' ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
      +spacer
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoGrow Textarea</label>'
@@ -6026,8 +5853,8 @@ return(''
 +'</fieldset>'
 ); 
   }
- ,getTPL_sUploader: function(tab_id){
-   return('<div id="'+tab_id+'" style="display:none;"></div>'); // #suploader_container
+ ,getTPL_sUploader: function(){
+   return('<div id="suploader_container" style=""></div>');
   }
 }; // end rSRC
 
