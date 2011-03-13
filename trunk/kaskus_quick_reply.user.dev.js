@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 // v3.1.4 - 2011-03-13
+//   Fix minor (setElastic) onkeyup &#13 ;
 //   Add & AutoSwitch to LastUsed-Uploader
 //   Split Smiley & Uploader Container
 //   Fix missing emote besar (repost2,cystg,kiss,peluk)
@@ -47,11 +48,29 @@
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.1.3 - 2011-02-19
+//   Fix minor CSS cleanUp imageshack
+//   Add Inc-Dec Size Editor's Height
+//   Add missing kaskus smilie-besar ( Malu )
+//   Fix clear disabled field; kill absolute layer, after upload(imageshack.us)
+//   Fix parseUrl (spaced prefix b4 {message})
+//   Fix toCharRef ignore encoding [\.\,\*]
+//   Silent on oExist performed
+//   Fix minor CSS imageshack on iframe 
+//   Improve reorder uploader nav
+//   Add Uploader (beta-4)
+//   Fix failed update checker
+//   Fix AutoLoad Smiley container
+//   Improve autogrow on Edit(Sigi & Layout)
+//   Fix minor CSS, word-wrap custom_smiley; reorder navigation;
+//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
 // Init
 // ----
+//
 // Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
 // http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
 // --------------------------------------------------------
@@ -3158,13 +3177,14 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     if(vB_textarea.overflow!='hidden') this.Obj.scrollTop = (this.last_scrollTop+1);
   },
+
   setElastic: function(tid,max,winrez){
     if(isUndefined(tid)) tid=gvar.id_textarea;
     function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=1,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(h>(max-134))?'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(d*14>max)? 'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}/*134*/
     var a=Dom.g(tid) || this.Obj;
     vB_textarea.oflow='hidden';
-    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'px;':''));
+    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'pt;':''));
     if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
