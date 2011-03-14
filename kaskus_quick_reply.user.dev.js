@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
-// @version       3.1.4
-// @dtversion     110313314
-// @timestamp     1300026283121
+// @version       3.1.5
+// @dtversion     110314315
+// @timestamp     1300096220124
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -17,6 +17,13 @@
 // @include       http://photoserver.ws/*
 //
 // -!--latestupdate
+//
+// v3.1.5 - 2011-03-14
+//   Add quick-quote (beta-3)
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.1.4 - 2011-03-13
 //   Fix minor (setElastic) onkeyup &#13 ;
@@ -41,13 +48,9 @@
 //   Add strikethrough controller
 //   Add post-timer afterSubmit
 //   Add posting with ajaxPost (beta-2)
-//   Fix adapting FF4.0b12 (partial)
+//   Fix adapting FF4.0b12/RC (partial)
 //   Improve BBCodeIMG (imageshack.us)
 //   Fix avoid banned global object inArray
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.1.3 - 2011-02-19
 //   Fix minor CSS cleanUp imageshack
@@ -85,11 +88,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.4';
+gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300026283121 // version.timestamp
+  timestamp: 1300096220124 // version.timestamp
 
- ,dtversion: 110309314 // version.date
+ ,dtversion: 110314315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -98,7 +101,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -496,6 +499,12 @@ function start_Main(){
 
       Dom.add(createTextEl(' '), nodes[i].parentNode);
       
+      // qqr
+      child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
+      Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
+      el = createEl('a',Attr,child);
+      on('click',el,function(e){do_click_qqr(e)});
+      Dom.add(el, nodes[i].parentNode);
      }
      nodes = getByXPath_containing('//a', false, 'EDIT');
      for(var i=0; i<nodes.length; i++){
@@ -564,6 +573,198 @@ function start_Main(){
     
 }
 // end start_Main()
+
+// (quick-quote) qqr clicked
+function do_click_qqr(e){
+  e = e.target || e;
+  
+  // we keep find the parent
+  var qr = $D('#quickreply'), parent_postbit = find_parent(e), apr;
+  if(!qr) return;
+  if(e && parent_postbit && gvar.settings.dynamic) // is dynamic QR enabled
+     Dom.add(qr,parent_postbit);
+  apr = e.parentNode;
+  var elpm,el,did,msg;
+  
+  var clearTag=function(h){ return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||'';};
+  var parseMSG=function(x){
+    var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
+	var pCon,els,el,el2,el3,el4,eIner,eIner3,cucok,openTag,LT={'font':[],'div':[]};
+	var parseSerials=function(S,$1,$2){
+      var mct,parts,pRet,lastIdx;
+	  //
+      // parse BIU
+      if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
+        return '[' +($1?'/':'')+$2.toLowerCase()+ ']';
+      
+      }else if( /\bfont\s{1,}/i.test($2) || $2.toUpperCase()=='FONT' ){
+	    // parse font;size;color
+        mct=$2.match(/\bfont(?:\s{1,}([^=]+).['"]([^'"]+))?/i); // $$1:type; $$2:value
+        if(isDefined(mct[1])){
+		   mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
+		   LT.font.push(mct[1]);
+		}
+		openTag= (isDefined(mct[2]) && mct[2]);
+		lastIdx=LT.font.length-1;
+		
+		pRet='[' +( openTag ? mct[1].toLowerCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toLowerCase():'???') ) +']';
+		if(!openTag) LT.font.splice(lastIdx,1);
+        return pRet;
+      
+      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+		if($2.indexOf('rel=')==-1){
+          // parse align
+		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
+          if(isDefined(mct[1])) 
+		    LT.div.push(mct[1]);
+		}else{
+		  // parse code | spoiler
+		  mct=$2.match(/\/?div(?:\srel=['"]([^'"]+))?/i);
+          if(isDefined(mct[1])) {
+			if(mct[1].indexOf('spoiler')!=-1) {
+			  LT.div.push('SPOILER');
+			  parts = mct[1].split('-');
+			  mct[1]='SPOILER='+(isDefined(parts[1]) ? parts[1] : '');
+			}else{
+			  LT.div.push(mct[1]);
+			}			
+		  }else{
+		    mct[1]=false;
+		  }
+		}
+		openTag= (mct && mct[1]);
+		if(openTag && mct[1].indexOf('=')==-1) 
+		  mct[1]=mct[1].toUpperCase();
+		lastIdx=LT.div.length-1;
+
+		pRet= '[' +(openTag ? mct[1] : '/'+(isDefined(LT.div[lastIdx]) ? LT.div[lastIdx].toUpperCase() : '???') ) + ']';
+		
+		if(!openTag) LT.div.splice(lastIdx,1);
+        return pRet;
+
+      }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
+        // parse linkify
+        mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
+        return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
+      
+      }else if( /\ssrc=/i.test($2)  ){
+	    // parse img
+        mct=$2.match(/\ssrc=['"]([^'"]+)/i);
+        if(isDefined(mct[1]))
+          return '[IMG]' + mct[1] + '[/IMG]';
+        
+      }else{
+        return S;
+      }      
+    };
+	
+    x=x.substring(pos+contentsep.length);
+    // clean message separator
+    ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
+	
+	// clean all previous quote
+	pCon=createEl('div',{},x);
+	els=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', pCon);
+	if(els) for(var i=0;i<els.snapshotLength; i++){
+        el = els.snapshotItem(i); eIner=el.innerHTML;
+		if( cucok=eIner.match(/<div\sclass=['"]smallfont['"][^>]+.<[^>]+.Spoiler[^i]+..([^<]+)?/i) ){
+		  // tag spoiler pre-process
+		  el2=getTag( 'div', el );
+		  if(el2.length>0) Dom.remove(el2[0]);		  
+		  // clear quote inside spoiler
+		  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
+			el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
+			if(el2) for(var j=0;j<el2.snapshotLength; j++){
+			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
+			  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner3) )
+			    Dom.remove(el3);
+			}
+			eIner=el.innerHTML;
+		  }
+		  // clear code inside spoiler
+		  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
+		    el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
+			if(el2) for(var j=0;j<el2.snapshotLength; j++){
+			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
+			  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner3) ){
+			    el4=$D('.//div[@class="smallfont"]',el,true);
+				if(el4) Dom.remove(el4);
+			    el3.innerHTML = '[CODE]'+clearTag(eIner3).replace(/Code\:[^\t]+./im,'')+'[/CODE]';
+			  }
+			}
+		  }
+
+		  // the rest on spoiler repost this ..
+		  eIner= trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
+		  el.innerHTML = clearTag(eIner);
+		  //el.innerHTML = clearTag(el.innerHTML);
+		  el.setAttribute('rel','spoiler-'+(isDefined(cucok[1]) ? cucok[1]||'':'') );
+		
+		}else if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
+		  // tag code pre-process
+		  Dom.remove(el);
+		
+		}else if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
+		  // tag code pre-process
+		  el2=$D('.//div[@class="smallfont"]',el,true);
+		  if(el2) Dom.remove(el2);
+		  el.innerHTML = clearTag(eIner).replace(/Code\:[^\t]+./im,'');
+		  el.removeAttribute('style');
+		  el.setAttribute('rel','code');
+		}
+	}
+ 
+	// cleanup lastedit
+	el=$D('.//div[@class="smallfont"]',pCon,true);
+	if(el) Dom.remove(el);	
+	
+	x=pCon.innerHTML; delete pCon;
+	
+	clog(x);
+
+	// serials parse
+	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
+    
+    // clean rest (unparsed tags)
+    return unescapeHtml(clearTag( ret ) );
+  };
+  // end parseMSG
+  var parseQQ=function(){
+    if( !$D('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
+    if( $D('#quoted_notice').style.display!='none' && $D('#current_fetch_post') ){ // theres a fetching progres
+        //clog('theres a fetch progres, txta still readonly')
+        vB_textarea.readonly();
+        return;
+    }
+    toogle_quickreply(true); // show it again to save state and load capcay if any    
+    vB_textarea.init();
+    if(vB_textarea.content==gvar.silahken)
+       vB_textarea.clear();
+    vB_textarea.enabled();
+
+    // get quote nfo
+    if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
+    elpm=$D('#postmenu_'+did);
+    if(elpm) el=$D(".//a[starts-with(@href,'member.php')]", elpm, true);
+    // get inner post
+    elpm=$D('#td_post_'+did, null, true);
+    if(elpm) {
+      msg= '[QUOTE='+(el?el.innerHTML:'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]'+'\r\n\r\n';
+	  if(Dom.g(gvar.id_textarea).value != msg)
+         vB_textarea.add(msg);
+      vB_textarea.lastfocus();
+      if(gvar.settings.textareaExpander[0])
+        vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
+    }
+  };
+  
+  var cSml = gvar.settings.autoload_smiley;
+  gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
+  ss.STEPS = 5; // scroll speed; smaller is faster          
+  ss.smoothScroll( Dom.g(gvar.id_textarea), function(){parseQQ()} );
+  return false; 
+}
+
 
 // qr clicked
 function do_click_qr(e){
@@ -5063,6 +5264,11 @@ var rSRC = {
         +"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
         +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
         +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
+      ,qquote_gif : ""
+        +"data:image/gif;base64,R0lGODdhGQAWAPMAAINhK9Syf/zfqaqKVOjJlL+eaPz7yJh2Qd+9iPztuLWUX/bTnotpM8moc6CATPz+2iwAAAAAGQAWAAAE//AZYpK4i2i9Vnp"
+		+"gggiJISFgqqpCCDRB0Bpog9zo+rQCMAaNwulxkyEai8AiRRAwmkdFQzI1WK86xQEaKBRaCocuZQUdRgSg45BIhEEXjGBxSRQahIFjwFcgFm87c3MGcQgKCRkBUgVShwM8cXRLB"
+		+"pACBAgDjAoFiwMEO21xFAUEiZkDdw0KA6sDATt0JG0LDYkBe6quq5xjDwpJHg5eDUFhvAMgVhYCQQVLv17SxwpvzCQCfh8gi9IFAwe8YoWzxTcLKAupjWEO4hKz2Q0CJikO1Xw"
+		+"HDoeB2Ob1KQ7wWSMwT6ASBp5tU+GA4AEGCgTkW5iGno4GBx4CeFEJHCgJMiYA7sDIgMHGjaAGmJwioQ2BBg5MngRQUmY9AUcSLKrGyZtPLy0iAAA7"
       ,throbber_gif : ""
         +"data:image/gif;base64,R0lGODlhEAAQALMPADZmn6XF642oyHCp7V6DsEWE0Pn6/dvk7+Ls95W/8VWa7HKby8DS6ezy+U2V6////yH/C05FVFNDQVBFMi4wAwEAAAAh+"
         +"QQJAAAPACwAAAAAEAAQAAAEPvDJ2Qgg4sw9EShOUQQcxySDoy5GyR2pk7icESP0doBkPi2OgW8iKCiGkuIRSSgIh43PDApQ4JCGBnLL9UUAACH5BAkAAA8ALAAAAAAQABAAA"
