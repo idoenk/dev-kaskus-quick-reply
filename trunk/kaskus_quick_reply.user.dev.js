@@ -5,7 +5,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110314315
-// @timestamp     1300133369216
+// @timestamp     1300134078199
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -93,7 +93,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300133369216 // version.timestamp
+  timestamp: 1300134078199 // version.timestamp
 
  ,dtversion: 110314315 // version.date
  ,scriptID: 80409 // script-Id
@@ -708,18 +708,18 @@ function do_click_qqr(e){
 	  els=$D(XPathStr, pCon);
 	  if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 	     el=els.snapshotItem(i);
-	     if(el.innerHTML === 'Quote:'){
+	     if(el.innerHTML.match(/Quote:/)){
 	       el=el.parentNode; 
 		   el2 = createTextEl('\n'); el.parentNode.replaceChild(el2,el);
 	     } else 
-	     if(el.innerHTML === 'Code:'){
+	     if(el.innerHTML.match(/Code:/)){
 	       el2=el.parentNode; Dom.remove(el);
-		   el=createTextEl('\n[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
+		   el=createTextEl('[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
 		   el2.parentNode.replaceChild(el,el2);
 	     } else 
-	     if(el.innerHTML === 'HTML Code:'){
+	     if(el.innerHTML.match(/HTML Code:/)){
 	       el2=el.parentNode; Dom.remove(el);
-		   el=createTextEl('\n[HTML]'+unescapeHtml(clearTag(el2.innerHTML))+'[/HTML]\n');
+		   el=createTextEl('[HTML]'+unescapeHtml(clearTag(el2.innerHTML))+'[/HTML]\n');
 		   el2.parentNode.replaceChild(el,el2);
 	     }
 	  }
@@ -770,7 +770,7 @@ function do_click_qqr(e){
 		  case "lower-alpha": ltag+= 'a'; break;
 		} // switch		
 		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
-	    el2 = createTextEl('\n'+ltag+']' + el.innerHTML + '[/LIST]\n');
+	    el2 = createTextEl('\n'+ltag+']' + el.innerHTML + '[/LIST]\n\n');
 		el.parentNode.replaceChild(el2,el);
 	  }
 	}
@@ -779,7 +779,7 @@ function do_click_qqr(e){
 	if(els) for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
 	  el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
-	  el2 = createTextEl('\n[LIST]' + el.innerHTML + '[/LIST]');
+	  el2 = createTextEl('\n[LIST]' + el.innerHTML + '[/LIST]\n\n');
 	  el.parentNode.replaceChild(el2,el);
 	}
 	
