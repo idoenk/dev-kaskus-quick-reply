@@ -5,7 +5,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110314315
-// @timestamp     1300096220124
+// @timestamp     1300125313756
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,9 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-14
+//   Fix posterror on maxlength . Thanks=[t0g3]
+//   Fix input_title maxlength=85 . Thanks=[t0g3]
+//   Fix minor (setElastic) offset max-height
 //   Add quick-quote (beta-3)
 //
 // -/!latestupdate---
@@ -90,7 +93,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300096220124 // version.timestamp
+  timestamp: 1300125313756 // version.timestamp
 
  ,dtversion: 110314315 // version.date
  ,scriptID: 80409 // script-Id
@@ -101,7 +104,7 @@ javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substr
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -116,6 +119,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES:          ['1'] // check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
+ ,KEY_SAVE_QUICK_QUOTE:      ['0'] // quick quote
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
@@ -189,6 +193,7 @@ function init(){
   // place global style
   GM_addGlobalStyle( rSRC.getCSS() );
   GM_addGlobalStyle('','css_fixups', true); // blank style tag for kaskus fixups, should be on body instead of head
+  GM_addGlobalStyle('','css_qqr', true); // blank style tag for qqr toggle
   
   GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
   GM_addGlobalScript( rSRC.getSCRIPT() );
@@ -350,6 +355,7 @@ function getSettings(){
     hideavatar: (getValue(KS+'HIDE_AVATAR')=='1'),
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
+    quick_quote: (getValue(KS+'QUICK_QUOTE')!='0'),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
@@ -509,11 +515,10 @@ function start_Main(){
      nodes = getByXPath_containing('//a', false, 'EDIT');
      for(var i=0; i<nodes.length; i++){
         hr = nodes[i].href.split("&p=");
-        //nodes[i].setAttribute('onclick', 'return false');
         nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
 	 }
-
     }
+	Dom.add( createTextEl( '.btn_qqr{display:'+(gvar.settings.quick_quote?'inline':'none')+'!important;}' ), $D('#css_qqr') );
     
     // insert customed controler
     insert_custom_control();    
@@ -586,12 +591,19 @@ function do_click_qqr(e){
   apr = e.parentNode;
   var elpm,el,did,msg;
   
-  var clearTag=function(h){ return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||'';};
+  var clearTag=function(h,tag){
+	if(isUndefined(tag)){
+      return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||'';
+	}else{
+	  re = new RegExp('[\\r\\n\\t]?<\\\/?(?:'+tag+')(?:[^>]+)?.[\\r\\n\\t]?', "gim"); 
+	  return h.replace(re,'');
+	}	
+  };
   var parseMSG=function(x){
     var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
-	var pCon,els,el,el2,el3,el4,eIner,eIner3,cucok,openTag,LT={'font':[],'div':[]};
+	var pCon,els,el,el2,eIner,cucok,openTag,LT={'font':[],'div':[]},pairedEmote=false;
 	var parseSerials=function(S,$1,$2){
-      var mct,parts,pRet,lastIdx;
+      var mct,parts,pRet,lastIdx,tag;
 	  //
       // parse BIU
       if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
@@ -647,16 +659,25 @@ function do_click_qqr(e){
         mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
         return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
       
-      }else if( /\ssrc=/i.test($2)  ){
+      }else if( /\ssrc=/i.test($2) ){
 	    // parse img
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
-        if(isDefined(mct[1]))
-          return '[IMG]' + mct[1] + '[/IMG]';
-        
+        if(isDefined(mct[1])){
+          // is kaskus emotes?
+		  if( cucok=$2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
+			if(cucok){
+		      tag= mct[1].replace(/[^\w]/g,'').toString();
+		      if(!pairedEmote) pairedEmote = prep_paired_emotes();
+			  return ( isDefined(pairedEmote[tag]) ? pairedEmote[tag] : '[IMG]' + mct[1] + '[/IMG]' );
+			}
+		  }else{
+		    return '[IMG]' + mct[1] + '[/IMG]';
+		  }
+		}        
       }else{
         return S;
       }      
-    };
+    }; // end parseSerials
 	
     x=x.substring(pos+contentsep.length);
     // clean message separator
@@ -664,63 +685,62 @@ function do_click_qqr(e){
 	
 	// clean all previous quote
 	pCon=createEl('div',{},x);
-	els=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', pCon);
+	// reveal quote
+	var revealQuoteCode=function(html){
+	  var els,el,el2, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
+	  if(isDefined(html))
+	    rvCon=createEl('div',{},html);
+	  els=$D(XPathStr, pCon);
+	  if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
+	     el=els.snapshotItem(i);
+	     if(el.innerHTML === 'Quote:'){
+	       el=el.parentNode; 
+		   el2 = createTextEl('\n'); el.parentNode.replaceChild(el2,el);
+	     } else 
+	     if(el.innerHTML === 'Code:'){
+	       el2=el.parentNode; Dom.remove(el);
+		   el=createTextEl('[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
+		   el2.parentNode.replaceChild(el,el2);
+	     }
+	  }
+	  return rvCon.innerHTML;
+	};
+	pCon.innerHTML = revealQuoteCode();
+	
+	clog('previous Quote&Code=\n'+pCon.innerHTML);
+	
+	// reveal spoiler inside
+	els=$D('.//div[@class="smallfont"]', pCon);
+	var cucok,bSp,iSp;
 	if(els) for(var i=0;i<els.snapshotLength; i++){
-        el = els.snapshotItem(i); eIner=el.innerHTML;
-		if( cucok=eIner.match(/<div\sclass=['"]smallfont['"][^>]+.<[^>]+.Spoiler[^i]+..([^<]+)?/i) ){
-		  // tag spoiler pre-process
-		  el2=getTag( 'div', el );
-		  if(el2.length>0) Dom.remove(el2[0]);		  
-		  // clear quote inside spoiler
-		  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
-			el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
-			if(el2) for(var j=0;j<el2.snapshotLength; j++){
-			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
-			  if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner3) )
-			    Dom.remove(el3);
-			}
-			eIner=el.innerHTML;
-		  }
-		  // clear code inside spoiler
-		  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
-		    el2=$D('.//div[contains(@style,"margin:") and not(contains(@style,"border"))]', el);
-			if(el2) for(var j=0;j<el2.snapshotLength; j++){
-			  el3 = el2.snapshotItem(j); eIner3=el3.innerHTML;
-			  if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner3) ){
-			    el4=$D('.//div[@class="smallfont"]',el,true);
-				if(el4) Dom.remove(el4);
-			    el3.innerHTML = '[CODE]'+clearTag(eIner3).replace(/Code\:[^\t]+./im,'')+'[/CODE]';
-			  }
-			}
-		  }
-
-		  // the rest on spoiler repost this ..
-		  eIner= trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
-		  el.innerHTML = clearTag(eIner);
-		  //el.innerHTML = clearTag(el.innerHTML);
-		  el.setAttribute('rel','spoiler-'+(isDefined(cucok[1]) ? cucok[1]||'':'') );
+	  el=els.snapshotItem(i);
+	  bSp = getTag('b',el); 
+	  if( bSp.length ){
+		iSp= getTag('i',el); // title spoiler
+		if(iSp.length)
+		  iSp=iSp[0].innerHTML.toString();
 		
-		}else if( /<div\sclass=['"]smallfont['"][^>]+.Quote\:/i.test(eIner) ){
-		  // tag code pre-process
-		  Dom.remove(el);
+		el2=els.snapshotItem(i).parentNode;
+		Dom.remove(el);
 		
-		}else if( /<div\sclass=['"]smallfont['"][^>]+.Code\:/i.test(eIner) ){
-		  // tag code pre-process
-		  el2=$D('.//div[@class="smallfont"]',el,true);
-		  if(el2) Dom.remove(el2);
-		  el.innerHTML = clearTag(eIner).replace(/Code\:[^\t]+./im,'');
-		  el.removeAttribute('style');
-		  el.setAttribute('rel','code');
-		}
+		el2.innerHTML = clearTag ( revealQuoteCode(el2.innerHTML), 'div' );
+		// kill newline after spoiler
+		el = el2.childNodes[0];
+		el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');
+		
+		el2.removeAttribute('style');
+		el2.setAttribute('rel','spoiler-'+iSp );
+	  }
 	}
- 
+	clog('after spoiler done=\n'+pCon.innerHTML);
+
 	// cleanup lastedit
-	el=$D('.//div[@class="smallfont"]',pCon,true);
-	if(el) Dom.remove(el);	
-	
+	els=$D('.//div[@class="smallfont"]',pCon);
+	for(var i=0;i<els.snapshotLength; i++){
+	  el=els.snapshotItem(i);
+	  Dom.remove(el);
+	}	
 	x=pCon.innerHTML; delete pCon;
-	
-	clog(x);
 
 	// serials parse
 	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
@@ -935,7 +955,7 @@ function ajax_additional_opt(reply_html){
 }
 
 function parse_preview(text){
-  if(text.indexOf('vbform')==-1) return null;
+  if(text.indexOf('vbform')==-1 || text.indexOf('<!--POSTERROR ')!=-1) return null;
   var ret = text.split('vbform');
   ret = ret[0];
   var wraper = ['<td class="alt1">', '{[end-of-QR-'+gvar.sversion+'-'+gvar.scriptId+']}' ];
@@ -974,7 +994,14 @@ function qr_preview(reply_html){
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
     if(rets===null){
-      $D('#preview_content').innerHTML = '<div class="g_notice g_notice-error" style="display:block;">Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.</div>';
+	  var msg, cucok,erMsg;
+	  if(reply_html.indexOf('<!--POSTERROR ')!=-1){
+	    cucok=reply_html.match(/<ol><li>([^\n]+)<\/ol/);
+		erMsg=(cucok ? cucok[1] : 'Unknown Error Occurs');
+		if($D('#preview_presubmit')) showhide($D('#preview_presubmit'),false);
+	  }
+	  msg='<div class="g_notice g_notice-error" style="display:block;">' + (reply_html.indexOf('<!--POSTERROR ')!=-1 ? erMsg : 'Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.' ) + '</div>';
+      $D('#preview_content').innerHTML = msg;
        on('click',$D('#upss_preview'),function(e){
         if($D('#preview_content'))
           $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>';
@@ -2346,6 +2373,22 @@ function do_parse_scustom(msg){
 }
 
 
+// load and prep paired kaskus smiley to do quick-quote parsing 
+function prep_paired_emotes(){
+  // '1' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
+  var sml,paired={};
+  if(!gvar.smiliekecil || !gvar.smiliebesar) rSRC.getSmileySet();
+  for(var idx in gvar.smiliekecil){
+    sml=gvar.smiliekecil[idx];
+	paired[sml[0].replace(/[^\w]/g,'').toString()] = sml[1].toString();
+  }
+  for(var idx in gvar.smiliebesar){
+    sml=gvar.smiliebesar[idx];
+	paired[sml[0].replace(/[^\w]/g,'').toString()] = sml[1].toString();
+  }
+  return paired;
+}
+
 // here we load and prep paired custom smiley to do parsing purpose
 // make it compatible for old structure, which no containing <!!>
 function prep_paired_scustom(){
@@ -3146,10 +3189,10 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
     if(gsv.indexOf('staticArgs')>0) {
       gvar.isGreaseMonkey=true; gvar.isFF4=false;
-     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' on FF4.0':'' )+'...',0); 
     } // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
@@ -3382,10 +3425,10 @@ var vB_textarea = {
   setElastic: function(tid,max,winrez){
     if(isUndefined(tid)) tid=gvar.id_textarea;
     function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic(max)}
-    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(d*14>max)? 'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}/*134*/
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(d*14>(max-130))? 'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}/*134*/
     var a=Dom.g(tid) || this.Obj;
     vB_textarea.oflow='hidden';
-    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+max+'pt;':''));
+    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
     if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   }
@@ -4165,7 +4208,7 @@ var ST = {
  }
  ,load_rawsetting: function(){
     // collect all settings from storage,. 
-    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','AJAXPOST'
+    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','AJAXPOST'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
@@ -4182,7 +4225,7 @@ var ST = {
      ,'UPDATES':'Check Update enabled? validValue=[1,0]'
      ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
-     ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
+     ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'     ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
      ,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
@@ -4286,7 +4329,7 @@ var ST = {
     var yakin = confirm(msg);
     if(yakin) {
       var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
-	              ,'AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
+	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
@@ -4348,6 +4391,7 @@ var ST = {
        'misc_updates':KS+'UPDATES'
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
+      ,'misc_quickquote':KS+'QUICK_QUOTE'
       ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
@@ -5534,7 +5578,7 @@ Format will be valid like this:
     +'<table cellpadding="0" cellspacing="0"><tr>'
     +'<td id="avatar_header"></td>'
     +'<td><div class="qrsmallfont">'
-    +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
+    +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" maxlength="85" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
     +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
     +'</div></td>'
     +'</tr><tr>'    
@@ -5968,6 +6012,8 @@ Format will be valid like this:
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
+     +spacer
+     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote=='1' ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Directly Quick Quote from post-bit. Result may not well-parsed on complicated sources!" style="cursor:help">Experimental</b>)</label>'
      +spacer
      +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost=='1' ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
      +spacer
