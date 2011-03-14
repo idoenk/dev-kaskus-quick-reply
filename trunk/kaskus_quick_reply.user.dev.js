@@ -5,7 +5,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110314315
-// @timestamp     1300125313756
+// @timestamp     1300133369216
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -22,7 +22,7 @@
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-3)
+//   Add quick-quote (beta-4)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -93,7 +93,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300125313756 // version.timestamp
+  timestamp: 1300133369216 // version.timestamp
 
  ,dtversion: 110314315 // version.date
  ,scriptID: 80409 // script-Id
@@ -599,12 +599,10 @@ function do_click_qqr(e){
 	  return h.replace(re,'');
 	}	
   };
-  var parseMSG=function(x){
-    var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
-	var pCon,els,el,el2,eIner,cucok,openTag,LT={'font':[],'div':[]},pairedEmote=false;
+  var parseMSG=function(x){    
+	var pCon,els,el,el2,eIner,cucok,openTag,LT={'font':[],'div':[],'a':[]},pairedEmote=false;
 	var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
-	  //
       // parse BIU
       if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
         return '[' +($1?'/':'')+$2.toLowerCase()+ ']';
@@ -657,8 +655,23 @@ function do_click_qqr(e){
       }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
         // parse linkify
         mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
-        return '[' +(mct && mct[1] ? 'URL='+mct[1] : '/URL' ) + ']';
+		if(isDefined(mct[1])) {
+		   tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
+		   LT.a.push(tag);
+		}else{
+		   mct[1]=false;
+		}
+		openTag=(mct && mct[1]);
+		lastIdx=LT.a.length-1;
+        pRet= '[' +(mct && mct[1] ? LT.a[lastIdx].toUpperCase()+'='+mct[1] : '/'+LT.a[lastIdx].toUpperCase() ) + ']';
+		
+		if(!openTag) LT.a.splice(lastIdx,1);
+        return pRet;
       
+      }else if( /blockquote/i.test($2) ){
+	    // parse INDENT
+	    return '[' + ($1 ? '/':'') + 'INDENT]';
+
       }else if( /\ssrc=/i.test($2) ){
 	    // parse img
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
@@ -673,12 +686,14 @@ function do_click_qqr(e){
 		  }else{
 		    return '[IMG]' + mct[1] + '[/IMG]';
 		  }
-		}        
+		}
       }else{
         return S;
       }      
-    }; // end parseSerials
+    };
+	// end parseSerials
 	
+	var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
     x=x.substring(pos+contentsep.length);
     // clean message separator
     ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
@@ -699,19 +714,25 @@ function do_click_qqr(e){
 	     } else 
 	     if(el.innerHTML === 'Code:'){
 	       el2=el.parentNode; Dom.remove(el);
-		   el=createTextEl('[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
+		   el=createTextEl('\n[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
+		   el2.parentNode.replaceChild(el,el2);
+	     } else 
+	     if(el.innerHTML === 'HTML Code:'){
+	       el2=el.parentNode; Dom.remove(el);
+		   el=createTextEl('\n[HTML]'+unescapeHtml(clearTag(el2.innerHTML))+'[/HTML]\n');
 		   el2.parentNode.replaceChild(el,el2);
 	     }
 	  }
 	  return rvCon.innerHTML;
 	};
+	// reveal simple quote
 	pCon.innerHTML = revealQuoteCode();
 	
 	clog('previous Quote&Code=\n'+pCon.innerHTML);
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
-	var cucok,bSp,iSp;
+	var bSp,iSp;
 	if(els) for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
 	  bSp = getTag('b',el); 
@@ -733,6 +754,37 @@ function do_click_qqr(e){
 	  }
 	}
 	clog('after spoiler done=\n'+pCon.innerHTML);
+	
+	// reveal ol
+	els=$D('.//ol', pCon);
+	var sty,typ,ltag='[LIST=';
+	if(els) for(var i=0;i<els.snapshotLength; i++){
+	  el=els.snapshotItem(i);
+	  sty=el.getAttribute('style');
+	  if( cucok = sty.match(/:\s*(\w+)/i) ){
+	    typ=(cucok ? cucok[1] : '');
+		// parse list (ol) |number|upper-alpha|lower-alpha
+		switch(typ){
+		  case "decimal": ltag+= '1'; break;
+		  case "upper-alpha": ltag+= 'A'; break;
+		  case "lower-alpha": ltag+= 'a'; break;
+		} // switch		
+		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
+	    el2 = createTextEl('\n'+ltag+']' + el.innerHTML + '[/LIST]\n');
+		el.parentNode.replaceChild(el2,el);
+	  }
+	}
+	// reveal ol
+	els=$D('.//ul', pCon);
+	if(els) for(var i=0;i<els.snapshotLength; i++){
+	  el=els.snapshotItem(i);
+	  el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
+	  el2 = createTextEl('\n[LIST]' + el.innerHTML + '[/LIST]');
+	  el.parentNode.replaceChild(el2,el);
+	}
+	
+	clog('after ol-ul done=\n'+pCon.innerHTML);
+	
 
 	// cleanup lastedit
 	els=$D('.//div[@class="smallfont"]',pCon);
