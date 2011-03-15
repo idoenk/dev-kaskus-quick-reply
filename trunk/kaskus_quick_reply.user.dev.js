@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110315315
-// @timestamp     1300161973145
+// @dtversion     110316315
+// @timestamp     1300210521250
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,11 +18,14 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-15
+// v3.1.5 - 2011-03-16
+//   Improve using with Multifox (some features not available)
+//   Fix remove missing emote (f*ck, ta*)
+//   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-5)
+//   Add quick-quote (beta-6)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -93,9 +96,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300161973145 // version.timestamp
+  timestamp: 1300210521250 // version.timestamp
 
- ,dtversion: 110315315 // version.date
+ ,dtversion: 110316315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -120,6 +123,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
  ,KEY_SAVE_QUICK_QUOTE:      ['0'] // quick quote
+ ,KEY_SAVE_MULTIFOX:         ['0'] // used with multifox
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
@@ -206,7 +210,7 @@ function init(){
   
   // get saved settings to gvar
   getSettings();
-
+  
   if(gvar.settings.widethread)
     Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
     
@@ -356,6 +360,7 @@ function getSettings(){
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
     quick_quote: (getValue(KS+'QUICK_QUOTE')!='0'),
+    with_multiFox: (getValue(KS+'MULTIFOX')!='0' && !gvar.noCrossDomain),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
@@ -817,7 +822,7 @@ function do_click_qqr(e){
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
     if(elpm) {
-      msg= '[QUOTE='+(el?el.innerHTML:'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]'+'\r\n\r\n';
+      msg= '[QUOTE='+(el ? clearTag(el.innerHTML):'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]'+'\r\n\r\n';
 	  if(Dom.g(gvar.id_textarea).value != msg)
          vB_textarea.add(msg);
       vB_textarea.lastfocus();
@@ -1112,8 +1117,8 @@ function do_posting(e){
   e=e.target||e; e.value='posting...';
   e.setAttribute('disabled','disabled');
   
-  if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';
-  if( !gvar.settings.ajaxpost ){
+  if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';  
+  if( !gvar.settings.ajaxpost || gvar.settings.with_multiFox ){
     window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
   }else{
     qr_ajax_post();    
@@ -1506,7 +1511,7 @@ function initEventTpl(){
       
       on('submit',$D('#vbform'),function(e){	    
 
-        if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced') {
+        if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced' && !gvar.settings.with_multiFox ) {
           clog('here and aborted');
           e.preventDefault(); // return false;
           return false;
@@ -1554,7 +1559,7 @@ function initEventTpl(){
          }
       });
       // end of vb_Textarea submit Event ------
-    
+      
       on('click',$D('#qr_preview_ajx'),function(e){
         if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
         e=e.target||e;
@@ -1580,7 +1585,7 @@ function initEventTpl(){
         on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
       
       // new version multi-quote (cookie based)
-      var ck_mquote = cK.g('vbulletin_multiquote');
+      var ck_mquote = cK.g(gvar.vbul_multiquote);
       chk_newval(ck_mquote ? ck_mquote:'');
       
       var nodes = $D('//img[contains(@id,"mq_")]');
@@ -1595,20 +1600,21 @@ function initEventTpl(){
             var node = nodes.snapshotItem(i);
             nid=node.id.replace(/mq_(\d+)/, 'td_post_$1');
             colorize_td(node.src, nid);
-            on('click',node,function(e){
+			if( !gvar.settings.with_multiFox )
+             on('click',node,function(e){
               e=e.target||e;
-              var ck_mquote = cK.g('vbulletin_multiquote');
+              var ck_mquote = cK.g(gvar.vbul_multiquote);
               chk_newval( ck_mquote ? ck_mquote :'' );
 
               nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
               colorize_td(e.src, nid);
-            });
+             });
         }      
       }
     } // end not restart mode
     
-    // event monitor cookie change
-    event_ckck();
+    // event monitor cookie change    
+	if( !gvar.settings.with_multiFox ) event_ckck();
 }
 // - end initEventTpl()
 
@@ -1740,6 +1746,7 @@ function is_keydown_pressed(e){
       default:
         return;
     }
+	if( gvar.settings.with_multiFox && A==80 ) return;
     C = do_an_e(C);
     if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
 
@@ -2622,7 +2629,7 @@ function do_resize_editor(e){
 }
 
 function event_ckck(){
-       //clog('in event_ckck');
+  //clog('in event_ckck');
   if($D('#quickreply')) gvar.motion_target=$D('#quickreply');  
   on('mousemove',gvar.motion_target,function(){
       
@@ -2854,6 +2861,7 @@ function ajax_chk_newval(reply_html){
     if($D('#imgcapcay') && capcay_notloaded())
        $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
         +'<img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;Loading&nbsp;capcay<span id="imgcapcay_dots">...</span></div>';
+	
     // prep xhr request  
     GM_XHR.uri = gvar.newreply;
     GM_XHR.cached = true;
@@ -4201,7 +4209,10 @@ var ST = {
     
     // customable_btn jmp to #tab_general
     if($D('#customable_btn')) on('click',$D('#customable_btn'),function(){
-     var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
+      var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
+    });
+	if($D('#misc_multifox')) on('click',$D('#misc_multifox'),function(e){
+      e=e.target||e;var t=$D('#misc_ajaxpost_cont'); t.style.display = (e.checked ? 'none' : '');
     });
     // ex-imp        
     if($D('#textarea_rawdata')) {
@@ -4244,19 +4255,22 @@ var ST = {
     
     if(!gvar.settings.textareaExpander[0] && $D(gvar.id_textarea))
        gvar.lastHeight_textarea = $D(gvar.id_textarea).style.height;
-    
+	   
+	if($D('#qr_preview_ajx')) $D('#qr_preview_ajx').style.display= (gvar.settings.with_multiFox?'none':'');
+	
     // destroy all qr, on !restart
     if(!gvar.restart)
       Dom.remove($D('#quickreply'));
     // -- Restart Main with new settings--
     if($D('#qr_maincontainer'))
        $D('#qr_maincontainer').innerHTML = '';
-    start_Main();
+    start_Main();	
+	
     // --
  }
  ,load_rawsetting: function(){
     // collect all settings from storage,. 
-    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','AJAXPOST'
+    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','MULTIFOX','AJAXPOST'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
@@ -4273,7 +4287,9 @@ var ST = {
      ,'UPDATES':'Check Update enabled? validValue=[1,0]'
      ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
-     ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'     ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
+     ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
+     ,'MULTIFOX':'Mode use with MultiFox; validValue=[1,0]'
+     ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
      ,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
@@ -4377,7 +4393,7 @@ var ST = {
     var yakin = confirm(msg);
     if(yakin) {
       var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
-	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
+	              ,'QUICK_QUOTE','MULTIFOX','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
@@ -4440,6 +4456,7 @@ var ST = {
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
       ,'misc_quickquote':KS+'QUICK_QUOTE'
+      ,'misc_multifox':KS+'MULTIFOX'
       ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
@@ -5471,7 +5488,7 @@ Format will be valid like this:
 
 ,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
 ,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
-,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+//,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
 
 ,'32': [H+s+'7.gif', ':confused:', 'Confused']
 ,'33': [H+s+'34.gif', ':rose:', 'rose']
@@ -5486,7 +5503,7 @@ Format will be valid like this:
 ,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
 ,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
 ,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
-,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
+//,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
 ,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
 ,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
 ,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
@@ -5728,8 +5745,9 @@ Format will be valid like this:
      +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
      +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
-     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
+     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" '+(gvar.settings.with_multiFox?'style="display:none"':'')+'/>'
      +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
+     
      +'</div>'
     +'</div>' // end center    
     
@@ -6059,12 +6077,18 @@ Format will be valid like this:
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
-     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic=='1' ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
+     +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
-     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote=='1' ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Directly Quick Quote from post-bit. Result may not well-parsed on complicated sources!" style="cursor:help">Experimental</b>)</label>'
+     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Directly Quick Quote from post-bit. Result may not well-parsed on complicated sources!" style="cursor:help">Experimental</b>)</label>'
      +spacer
-     +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost=='1' ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
+	 +'<div style="display:'+(gvar.noCrossDomain ? 'none':'')+'">'
+      +'<input id="misc_multifox" type="checkbox" '+(gvar.settings.with_multiFox ? 'checked':'')+'/><label for="misc_multifox">Use with MultiFox (<b class="opr" title="Some features will not available. AjaxPost, MultiQuote, Preview." style="cursor:help">Experimental</b>)</label>'
+	 +'</div>'
      +spacer
+	 +'<div id="misc_ajaxpost_cont" style="display:'+(gvar.settings.with_multiFox ? 'none':'')+'">'
+      +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
+     +spacer
+	 +'</div>'
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoGrow Textarea</label>'
      +spacer
      +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
