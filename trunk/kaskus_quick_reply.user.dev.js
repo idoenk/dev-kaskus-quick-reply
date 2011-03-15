@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110314315
-// @timestamp     1300134291435
+// @dtversion     110315315
+// @timestamp     1300161973145
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,11 +18,11 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-14
+// v3.1.5 - 2011-03-15
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-4)
+//   Add quick-quote (beta-5)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -93,9 +93,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300134291435 // version.timestamp
+  timestamp: 1300161973145 // version.timestamp
 
- ,dtversion: 110314315 // version.date
+ ,dtversion: 110315315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -605,7 +605,7 @@ function do_click_qqr(e){
       var mct,parts,pRet,lastIdx,tag;
       // parse BIU
       if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
-        return '[' +($1?'/':'')+$2.toLowerCase()+ ']';
+        return '[' +($1?'/':'')+$2.toUpperCase()+ ']';
       
       }else if( /\bfont\s{1,}/i.test($2) || $2.toUpperCase()=='FONT' ){
 	    // parse font;size;color
@@ -617,7 +617,7 @@ function do_click_qqr(e){
 		openTag= (isDefined(mct[2]) && mct[2]);
 		lastIdx=LT.font.length-1;
 		
-		pRet='[' +( openTag ? mct[1].toLowerCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toLowerCase():'???') ) +']';
+		pRet='[' +( openTag ? mct[1].toUpperCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toUpperCase():'???') ) +']';
 		if(!openTag) LT.font.splice(lastIdx,1);
         return pRet;
       
@@ -702,26 +702,22 @@ function do_click_qqr(e){
 	pCon=createEl('div',{},x);
 	// reveal quote
 	var revealQuoteCode=function(html){
-	  var els,el,el2, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
+	  var els,el,el2,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
 	  if(isDefined(html))
 	    rvCon=createEl('div',{},html);
-	  els=$D(XPathStr, pCon);
+	  els=$D(XPathStr, rvCon);
 	  if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 	     el=els.snapshotItem(i);
 	     if(el.innerHTML.match(/Quote:/)){
 	       el=el.parentNode; 
-		   el2 = createTextEl('\n'); el.parentNode.replaceChild(el2,el);
+		   el2= createTextEl('\n'); el.parentNode.replaceChild(el2,el);
 	     } else 
-	     if(el.innerHTML.match(/HTML Code:/)){
-	       el2=el.parentNode; Dom.remove(el);
-		   el=createTextEl('[HTML]'+unescapeHtml(clearTag(el2.innerHTML))+'[/HTML]\n');
+	     if(cucok=el.innerHTML.match(/(?:(HTML|PHP)\s{1})*Code:/)){
+		   el2=el.parentNode; Dom.remove(el);
+		   tag=(cucok && cucok[1] ? cucok[1] : 'CODE');
+		   el=createTextEl('['+tag+']'+unescapeHtml(clearTag(el2.innerHTML))+'[/'+tag+']\n');
 		   el2.parentNode.replaceChild(el,el2);
-	     } else 
-	     if(el.innerHTML.match(/Code:/)){
-	       el2=el.parentNode; Dom.remove(el);
-		   el=createTextEl('[CODE]'+clearTag(el2.innerHTML)+'[/CODE]\n');
-		   el2.parentNode.replaceChild(el,el2);
-		 }
+	     }
 	  }
 	  return rvCon.innerHTML;
 	};
@@ -774,7 +770,7 @@ function do_click_qqr(e){
 		el.parentNode.replaceChild(el2,el);
 	  }
 	}
-	// reveal ol
+	// reveal ul
 	els=$D('.//ul', pCon);
 	if(els) for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
