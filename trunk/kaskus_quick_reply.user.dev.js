@@ -5,7 +5,7 @@
 // @include       http://*.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110316315
-// @timestamp     1300210521250
+// @timestamp     1300264517453
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-16
+//   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
 //   Improve using with Multifox (some features not available)
 //   Fix remove missing emote (f*ck, ta*)
 //   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
@@ -96,7 +97,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300210521250 // version.timestamp
+  timestamp: 1300264517453 // version.timestamp
 
  ,dtversion: 110316315 // version.date
  ,scriptID: 80409 // script-Id
@@ -585,16 +586,19 @@ function start_Main(){
 // end start_Main()
 
 // (quick-quote) qqr clicked
-function do_click_qqr(e){
-  e = e.target || e;
+function do_click_qqr(e, multi){
   
+  multi = (isDefined(multi) && multi);
   // we keep find the parent
-  var qr = $D('#quickreply'), parent_postbit = find_parent(e), apr;
-  if(!qr) return;
-  if(e && parent_postbit && gvar.settings.dynamic) // is dynamic QR enabled
+  if(!multi){
+    e = e.target || e;
+    var qr = $D('#quickreply'), parent_postbit = find_parent(e);
+    if(!qr) return;
+    if(e && parent_postbit && gvar.settings.dynamic) // is dynamic QR enabled
      Dom.add(qr,parent_postbit);
-  apr = e.parentNode;
-  var elpm,el,did,msg;
+  }
+  var apr,elpm,el,did,msg;
+  if(e.nodeName != 'A') apr = e.parentNode;
   
   var clearTag=function(h,tag){
 	if(isUndefined(tag)){
@@ -604,7 +608,7 @@ function do_click_qqr(e){
 	  return h.replace(re,'');
 	}	
   };
-  var parseMSG=function(x){    
+  var parseMSG=function(x){
 	var pCon,els,el,el2,eIner,cucok,openTag,LT={'font':[],'div':[],'a':[]},pairedEmote=false;
 	var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
@@ -804,11 +808,7 @@ function do_click_qqr(e){
   // end parseMSG
   var parseQQ=function(){
     if( !$D('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
-    if( $D('#quoted_notice').style.display!='none' && $D('#current_fetch_post') ){ // theres a fetching progres
-        //clog('theres a fetch progres, txta still readonly')
-        vB_textarea.readonly();
-        return;
-    }
+	
     toogle_quickreply(true); // show it again to save state and load capcay if any    
     vB_textarea.init();
     if(vB_textarea.content==gvar.silahken)
@@ -828,14 +828,21 @@ function do_click_qqr(e){
       vB_textarea.lastfocus();
       if(gvar.settings.textareaExpander[0])
         vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
+	  
+	  // disable mq if on
+	  if(/quoteselected/i.test(elpm.className) && $D('#mq_'+did))
+	     SimulateMouse($D('#mq_'+did), 'click', true);
     }
   };
-  
-  var cSml = gvar.settings.autoload_smiley;
-  gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
-  ss.STEPS = 5; // scroll speed; smaller is faster          
-  ss.smoothScroll( Dom.g(gvar.id_textarea), function(){parseQQ()} );
-  return false; 
+  if( !multi ){
+     var cSml = gvar.settings.autoload_smiley;
+     gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
+     ss.STEPS = 5; // scroll speed; smaller is faster          
+     ss.smoothScroll( Dom.g(gvar.id_textarea), function(){parseQQ()} );
+  }else{
+	 parseQQ();
+  }
+  return false;
 }
 
 
@@ -873,9 +880,9 @@ function do_click_qr(e){
 }
 
 function find_parent(obj){
-  var par = null, dumyobj=obj;
+  var par = null, dumyobj=obj||false;
   var found=false;
-  while(dumyobj.parentNode && !found){
+  if(dumyobj) while(dumyobj.parentNode && !found){
     par = dumyobj.parentNode;
     if( par.nodeName=='TABLE' && par.className=='tborder' ){ // this is enough :p
       par = par.parentNode;
@@ -1588,9 +1595,10 @@ function initEventTpl(){
       var ck_mquote = cK.g(gvar.vbul_multiquote);
       chk_newval(ck_mquote ? ck_mquote:'');
       
-      var nodes = $D('//img[contains(@id,"mq_")]');
-      if(nodes){
-        var colorize_td = function(t,td){
+      var nodes = $D('//img[contains(@id,"mq_")]');	  
+      if(nodes.snapshotLength > 0){
+	    
+		var colorize_td = function(t,td){
           if( /multiquote_on\..+/.test(basename(t)) )
             addClass('quoteselected', Dom.g(td));
           else
@@ -1609,7 +1617,7 @@ function initEventTpl(){
               nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
               colorize_td(e.src, nid);
              });
-        }      
+        }
       }
     } // end not restart mode
     
@@ -2922,12 +2930,38 @@ function ajax_chk_newval(reply_html){
   }
 }
 
+function proc_mquickquote(){
+   var nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]'), notice= $D('#quoted_notice');
+   for(var i=0;i<nodes.snapshotLength; i++){
+     var node = nodes.snapshotItem(i), parts, nod;
+	 nid=node.id.replace(/mq_(\d+)/, 'qqr_$1');
+	 if(parts=getTag('IMG', $D(nid))) nod = parts[0];
+	 do_click_qqr(nod, true);
+   }
+   if(notice) showhide(notice, false); // hide notice
+   deselect_it();
+}
+
+function chk_newQQ(){
+    var notice;
+
+    if($D('#qq_now_cont')) {
+	   $D('#qq_now_cont').innerHTML = ' or <a href="javascript:;" id="quickquote_now" title="Quick Quoted Post [Ctrl+Shift+???]">[QuickQuote]</a>';
+	   notice=$D('#qq_now_cont').parentNode;
+	}
+    on('click',$D('#quickquote_now'),function(){
+      if(notice) notice.innerHTML = '<span>Parsing...</span>';
+      proc_mquickquote();
+    });
+
+}
 // routine for fetching quoted post
 function chk_newval(val){
   var tgt, notice = $D('#quoted_notice');
   if(val.length>1){
     removeClass('g_notice-error', notice);
     notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>'
+      + '<span id="qq_now_cont"></span>'
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
     on('click',$D('#quote_now'),function(){
@@ -2937,6 +2971,7 @@ function chk_newval(val){
       ajax_chk_newval();
     });
     on('click',$D('#deselect_them'),function(){deselect_it();});
+	chk_newQQ();
   }else{
     showhide(notice, false); // hide notice
     return;
