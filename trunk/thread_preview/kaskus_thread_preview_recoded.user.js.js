@@ -20,6 +20,7 @@
 // -!--latestupdate
 //
 //  v1.0.6 - 2011-03-17
+//    Fix come_inside area
 //    Fix 3rd-party ktpKaskus provider (idkaskus.com)
 //    Improve addEventListener onload window (Recaptcha Object)
 //    Fix lineHeight problem (Chrome)
@@ -314,7 +315,7 @@ var tTRIT = {
 	var curpage = '/' + basename(gvar.loc, null, "\\?");
 	clog('curpage='+curpage);
 	switch(curpage){
-	  case "/": case "/index.php":
+	  case "/": case "/index.php": case "/come_inside.php":
 	    clog('home');		
 	     // Kaskus Home --
 	    for(var field in areas_home)
