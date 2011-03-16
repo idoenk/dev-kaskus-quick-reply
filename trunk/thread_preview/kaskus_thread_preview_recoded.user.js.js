@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.5
-// @dtversion     110221105
-// @timestamp     1298389054267
+// @version       1.0.6
+// @dtversion     110317106
+// @timestamp     1300301286949
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,15 +19,21 @@
 //
 // -!--latestupdate
 //
+//  v1.0.6 - 2011-03-17
+//    Fix 3rd-party ktpKaskus provider (idkaskus.com)
+//    Improve addEventListener onload window (Recaptcha Object)
+//    Fix lineHeight problem (Chrome)
+//    Fix remove missing emote (f*ck, ta*)
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 //  v1.0.5 - 2011-02-21
 //    Add include come_inside.php
 //    Improve remember LastScrollTop position
 //    Fix minor CSS
 //    Fix anti-batman fail at spoiler with img inside
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 //  v1.0.4 - 2011-02-13
 //    Fix autogrow not working
@@ -57,9 +63,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.5';
+gvar.sversion = 'v' + '1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1298389054267 // version.timestamp
+  timestamp: 1300301286949 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -111,7 +117,7 @@ function init(){
   //------------
   gvar.domain= 'http://'+'www.kaskus.us/';
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
-  gvar.ngaskus = 'http://'+'www.ngaskus.us/'
+  gvar.ktpKaskus = 'http://'+'www.idkaskus.com/'
   
   gvar.codename= 'Kaskus Thread Preview';
   gvar.id_textarea= 'vB_Editor_001_textarea';
@@ -300,7 +306,7 @@ var tTRIT = {
 		    Dom.add(el, par);
 		  }
 		  // attach event-click
-	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	      on('click',el,function(e){ tTRIT.clickNode(e); }); // end click event
 	     }
 	    }
 	}; // end even_node
@@ -321,7 +327,7 @@ var tTRIT = {
 	      for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
 	        node = nodes.snapshotItem(i);
 	   	    // attach event-click
-	        Dom.Ev(node, 'click', function(e){ 
+	        on('click', node, function(e){ 
 	   	      gvar.sTryWaitLoader = window.setInterval(function() {
 	   	        var loader = $D('#loaderani');
 	   	    	if(loader && loader.style.display=='none'){
@@ -344,7 +350,7 @@ var tTRIT = {
 	    	el = createEl('span',Attr,'[+]');
 	    	Dom.add(el, lnodes.parentNode);
 		  // attach event-click
-	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	      on('click', el, function(e){ tTRIT.clickNode(e); }); // end click event
 	    }
 	  break;
 	  
@@ -368,7 +374,7 @@ var tTRIT = {
 	      par = node.parentNode; // parent of cont (DIV)
 	      par.insertBefore(el, par.firstChild);
 	      // attach event-click
-	      Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	      on('click', el, function(e){ tTRIT.clickNode(e); }); // end click event
 	      
 	      // lastpost nodes (single node)
 	      lnodes = $D(".//a[contains(@href,'#p') and contains(@href,'?p=')]", nodes.snapshotItem(i).parentNode.parentNode.parentNode, true);
@@ -378,7 +384,7 @@ var tTRIT = {
 	    	  el = createEl('span',Attr,'[+]');
 	    	  Dom.add(el, lnodes.parentNode);
 	        // attach event-click
-	        Dom.Ev(el, 'click', function(e){ tTRIT.clickNode(e); }); // end click event
+	        on('click', el, function(e){ tTRIT.clickNode(e); }); // end click event
 	      }
 	     } // end-for
 	    } // end-if
@@ -393,7 +399,7 @@ var tTRIT = {
 	
 
 	// event buat window
-	Dom.Ev(window.document, 'keydown', function(e) { return tTRIT.is_keydown_ondocument(e); });
+	on('keydown', window.document, function(e) { return tTRIT.is_keydown_ondocument(e); });
 	
 	
   } // end tTRIT.init()
@@ -754,7 +760,7 @@ var tPOP = {
 	$D('#preview_content').innerHTML = rets.content;
 	if($D('#btn_quote_reply')){
 	  $D('#btn_quote_reply').setAttribute('href', 'newreply.php?do=newreply&p='+rets.newreply );
-	  Dom.Ev($D('#btn_quote_reply'), 'click', function(){
+	  on('click', $D('#btn_quote_reply'), function(){
 		tPOP.toggleQuoting(true);
 		var uri = gvar.current.newreply;
 		if( gvar.current.QR_isLoaded ){
@@ -808,17 +814,17 @@ var tPOP = {
    }
    ,event_set: function(){
     // #save_settings #cancel_settings
-	if($D('#cancel_settings')) Dom.Ev($D('#cancel_settings'), 'click', function(){ tPOP.settings.toggle_partial(); });
-	if($D('#save_settings')) Dom.Ev($D('#save_settings'), 'click', function(){ tPOP.settings.save(); });
-	if($D('#reset_default')) Dom.Ev($D('#reset_default'), 'click', function(){ tPOP.settings.reset(); });
+	if($D('#cancel_settings')) on('click', $D('#cancel_settings'), function(){ tPOP.settings.toggle_partial(); });
+	if($D('#save_settings')) on('click', $D('#save_settings'), function(){ tPOP.settings.save(); });
+	if($D('#reset_default')) on('click', $D('#reset_default'), function(){ tPOP.settings.reset(); });
       
-	if($D('#edit_sigi')) Dom.Ev( $D('#edit_sigi'), 'click', function(e){ tPOP.settings.toggle_editLayout(e); });
-    if($D('#edit_tpl')) Dom.Ev( $D('#edit_tpl'), 'click',  function(e){ tPOP.settings.toggle_editLayout(e); });
+	if($D('#edit_sigi')) on('click', $D('#edit_sigi'), function(e){ tPOP.settings.toggle_editLayout(e); });
+    if($D('#edit_tpl')) on('click',  $D('#edit_tpl'), function(e){ tPOP.settings.toggle_editLayout(e); });
 	
     // better do this instead of check noCrossDomain and/or isOpera
       try {
        if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera T_T
-        Dom.Ev( $D('#chk_upd_now'), 'click',  function(e){
+        on('click', $D('#chk_upd_now'), function(e){
           if($D('#fetch_update')) return; // there is a fetch update in progress        
           if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
           Updater.notify_progres('chk_upd_now');
@@ -883,7 +889,7 @@ var tPOP = {
     // using onclick attribute identify that cancel event has been attached
     if(!el_cancel.getAttribute('onclick')){
       el_cancel.setAttribute('onclick','return false;');
-      Dom.Ev(el_cancel, 'click', function(ec){ 
+      on('click', el_cancel, function(ec){ 
        ec=ec.target||ec; var tgt = ec.id.replace('_cancel','')+'_Editor';
        Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', ec );
        e.innerHTML='edit';
@@ -995,40 +1001,36 @@ var tPOP = {
  ,event_Static: function(){
 
     // sticky toggle
-    Dom.Ev($D("#imgsticky"), 'click', function(){ tPOP.toggleSticky(); });
+    on('click', $D("#imgsticky"), function(){ tPOP.toggleSticky(); });
 
 	// close button
-    Dom.Ev($D("#imghideshow"), 'click', function(){ tPOP.closeLayerBox('hideshow'); });	
+    on('click', $D("#imghideshow"), function(){ tPOP.closeLayerBox('hideshow'); });	
     // cancel preview
-    Dom.Ev($D('#preview_cancel'), 'click', function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
+    on('click', $D('#preview_cancel'), function(){ SimulateMouse($D('#imghideshow'), 'click', true); } );
 	
 	// #head_layer; #atoggle
-    if($D('#head_layer')) Dom.Ev($D('#head_layer'),'dblclick',function(){ tPOP.toggleCollapse(); $D('#atoggle').focus(); });
-    if($D('#atoggle')) Dom.Ev($D('#atoggle'),'click',function(){ tPOP.toggleCollapse(); });
+    if($D('#head_layer')) on('dblclick',$D('#head_layer'),function(){ tPOP.toggleCollapse(); $D('#atoggle').focus(); });
+    if($D('#atoggle')) on('click',$D('#atoggle'),function(){ tPOP.toggleCollapse(); });
 
 	// detect window resize to resize textbox and controler wraper
-    Dom.Ev(window, 'resize', function() { 
-      Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
-	});	
+    on('resize', window, function() { controler_resizer() });	
 	
 	// qr_button
 	if(gvar.user.id && $D('#qr_button'))
-     Dom.Ev($D('#qr_button'), 'click', function(){
+     on('click', $D('#qr_button'), function(){
       tPOP.openQR();	  
 	  tQR.init(gvar.current.newreply+'&noquote=1');
 	 });
     
 	// #preview_setting
-    if($D('#preview_setting')) Dom.Ev($D('#preview_setting'), 'click', function(e){ 
-       tPOP.settings.toggle_partial();	   
-	});
+    if($D('#preview_setting')) on('click', $D('#preview_setting'), function(e){ tPOP.settings.toggle_partial() });
   }
  ,event_Userlink: function(){
     var nodes = $D('//a[contains(@class,"ktp-user_link")]');
     if(nodes.snapshotLength > 0){
      for(var i=0, lg=nodes.snapshotLength; i<lg; i++) {
 	    node = nodes.snapshotItem(i);
-	    Dom.Ev(node, 'click', function(e){
+	    on('click', node, function(e){
 		  var cucok, uid, prev;		  
 		  var par, el_img, el, Attr, sp_1, sp_par, dumy_el_img;
 	      e=e.target||e;
@@ -1049,15 +1051,15 @@ var tPOP = {
 			var loaduser = function(uid){
 			   
 			   par = createEl('div', {});
-			   Attr = {id:'dumy_img_ngaskuser',border:'0',src:gvar.ngaskus+'kaskus.php?u='+uid,style:"display:none;"};
+			   Attr = {id:'dumy_img_ngaskuser',border:'0',src:gvar.ktpKaskus+'kaskus.php?u='+uid,style:"display:none;"};
 			   dumy_el_img = createEl('img', Attr);			   
 			   
-			   Attr = {id:'img_ngaskuser',border:'0', style:"display:none;",rel:uid};
+			   Attr = {id:'img_ngaskuser',border:'0', style:"display:none;",rel:uid,title:'Powered by '+gvar.ktpKaskus.replace(/(?:http|www\.|[\:\/])/g,'')};
 			   el_img = createEl('div', Attr);
-			   sp_par = createEl('span', {id:'powby','class':'powby',style:'visibility:hidden;'}, '&copy;&#183;');
-			   sp_1 = createEl('span', {'class':'b'}, 'ngas'); Dom.add(sp_1, sp_par);
-			   sp_1 = createEl('span', {'class':'or'}, 'kus'); Dom.add(sp_1, sp_par);
-			   sp_1 = createTextEl('.us'); Dom.add(sp_1, sp_par);
+			   sp_par = createEl('span', {id:'powby','class':'powby',style:'visibility:hidden;'}, '&#8471; &#183; ');
+			   sp_1 = createEl('span', {'class':'b'}, 'kaskus'); Dom.add(sp_1, sp_par);
+			   sp_1 = createEl('span', {'class':'or'}, 'badge'); Dom.add(sp_1, sp_par);
+			   //sp_1 = createTextEl('.us'); Dom.add(sp_1, sp_par);
 			   Dom.add(sp_par, el_img);
 			   Dom.add(el_img, par);			   
 			   
@@ -1066,7 +1068,7 @@ var tPOP = {
 				 Dom.add(par, $D('#post_detail'));
 				 $D('#post_detail').innerHTML+=''
 				  +"\n\n"+'<style type="text/css">'
-				  +'#img_ngaskuser{background:transparent url("'+gvar.ngaskus+'kaskus.php?u='+uid+'") no-repeat 0 0;}'
+				  +'#img_ngaskuser{background:transparent url("'+gvar.ktpKaskus+'kaskus.php?u='+uid+'") no-repeat 0 0;}'
 				  +'</style>';
 			   }
 			};
@@ -1097,7 +1099,7 @@ var tPOP = {
     // additional events 
     // #show_images #show_emotes #open_spoilers
     if(gvar.current.cEMOTE && $D('#show_emotes')){
-      Dom.Ev($D('#show_emotes'), 'click', function(e){
+      on('click', $D('#show_emotes'), function(e){
         e=e.target||e;
     	var _ret = tTRIT.parse_image(gvar.current.content, 'img', 1);
     	$D('#preview_content').innerHTML = gvar.current.content = _ret;
@@ -1106,7 +1108,7 @@ var tPOP = {
       $D('#show_emotes').style.setProperty('display','inline','important');
     }
     if(gvar.current.cIMG && $D('#show_images')){
-        Dom.Ev($D('#show_images'), 'click', function(e){
+        on('click', $D('#show_images'), function(e){
            e=e.target||e;
            var _ret = tTRIT.parse_image(gvar.current.content, 'img', 2);
            $D('#preview_content').innerHTML = gvar.current.content = _ret;
@@ -1119,7 +1121,7 @@ var tPOP = {
     gvar.current.cSPL = (nodes.snapshotLength > 0);
     if( gvar.current.cSPL ){
        if($D('#open_spoilers')){
-        Dom.Ev($D('#open_spoilers'), 'click', function(e){
+        on('click', $D('#open_spoilers'), function(e){
     	  e = e.target||e;
     	  var inode, show = (e.value.indexOf("Show")!=-1);
     	  inode = getTag('input');
@@ -1149,7 +1151,7 @@ var tPOP = {
 	$D('#thread_separator').style.setProperty('display',(kasi_jarak  ? '':'none'), '');
     if( !gvar.current.isLastPost ) {	  
 	  if( $D('#last_post') && $D('#remotePID_'+gvar.LPOST.pid) )
-        Dom.Ev($D('#last_post'), 'click', function(){ SimulateMouse($D('#remotePID_'+gvar.LPOST.pid), 'click', true); });		
+        on('click', $D('#last_post'), function(){ SimulateMouse($D('#remotePID_'+gvar.LPOST.pid), 'click', true); });		
 	}
  
   } // end addition events
@@ -1286,7 +1288,7 @@ var tQR = {
 	if(!gvar.user.isDonatur && gvar.isKaskus) gvar.sITryFocusOnLoad = window.setInterval(function() {
       if ($D('#recaptcha_response_field')) {
 	    clearInterval(gvar.sITryFocusOnLoad);
-		Dom.Ev( $D('#recaptcha_response_field'), 'keydown', function(e){
+		on('keydown', $D('#recaptcha_response_field'), function(e){
             var C = (!e ? window.event : e );
 			var A = C.keyCode ? C.keyCode : C.charCode;
             if( A===13 ){ // mijit enter
@@ -1317,27 +1319,27 @@ var tQR = {
     return ($D('#loggedin_as') && $D('#loggedin_as').innerHTML!='');
   }
  ,event_TPL_vB: function(){
-	Dom.Ev($D('#textarea_clear'), 'click', function(){ vB_textarea.clear(); });	
+	on('click', $D('#textarea_clear'), function(){ vB_textarea.clear(); });	
 	//#preview_submit
     if($D('#preview_submit'))
-      Dom.Ev($D('#preview_submit'), 'click', function(){
+      on('click', $D('#preview_submit'), function(){
         var validate= ( !gvar.user.isDonatur && gvar.isKaskus ? tQR.prepost_QR() : true );
 		if(validate) tQR.post();
       });
 	//#then_gotothread
 	if($D('#then_gotothread'))
-	  Dom.Ev($D('#then_gotothread'),'click',function(e){
+	  on('click',$D('#then_gotothread'),function(e){
 	    e = e.target||e;
 		setValue(KEY_KTP+'THEN_GOTHREAD', (e.checked ? '1':'0'));
 		gvar.settings.then_goto_thread = ( e.checked );
 	  });		
-	if($D('#vbform')) Dom.Ev($D('#vbform'),'submit',function(e){
+	if($D('#vbform')) on('submit',$D('#vbform'),function(e){
 	  var C = (!e ? window.event : e ); C = do_an_e(C);
 	});
 		
 	// #atitle
 	if($D('#atitle'))
-	 Dom.Ev($D('#atitle'), 'click', function() {
+	 on('click', $D('#atitle'), function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
       var disp=$D('#titlecont');
       disp.style.display=(disp.style.display=='none' ? 'block':'none');
@@ -1349,7 +1351,7 @@ var tQR = {
      }); // #atitle
 	// #gvar.id_textarea textarea
 	if(Dom.g(gvar.id_textarea))
-	 Dom.Ev( Dom.g(gvar.id_textarea), 'keydown', function(e){
+	 on('keydown', Dom.g(gvar.id_textarea), function(e){
 	    var C = (!e ? window.event : e );
 		var CSA = (C.ctrlKey ? '1':'0')+','+(C.shiftKey ? '1':'0')+','+(C.altKey ? '1':'0');
 		var A = C.keyCode ? C.keyCode : C.charCode;
@@ -1365,8 +1367,8 @@ var tQR = {
 	// smile event
     par = $D('#vB_Editor_001_cmd_insertsmile');   
     if(par) {
-      Dom.Ev(par, 'click', function(e){ tQR.create_smile_tab(e); });
-      Dom.Ev(par, 'mouseout', function(e){
+      on('click', par, function(e){ tQR.create_smile_tab(e); });
+      on('mouseout', par, function(e){
         e.target||e;
         window.setTimeout(function() {
           obj = $D('#vB_Editor_001_cmd_insertsmile_img');
@@ -1376,7 +1378,7 @@ var tQR = {
           }
         }, 10);
       });     
-      Dom.Ev(par, 'mouseover', function(e){
+      on('mouseover', par, function(e){
         e.target||e;
         window.setTimeout(function() {
           obj = $D('#vB_Editor_001_cmd_insertsmile_img');
@@ -1417,7 +1419,7 @@ var tQR = {
 	    vB_textarea.focus();
 		if(gvar.settings.autoload_smiley[0]=='1')
          tQR.create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
-		vB_textarea.setElastic();
+		vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor);
 	  };
 	
 	  if( !gvar.current.QR_isLoaded ){
@@ -1461,7 +1463,7 @@ var tQR = {
 	  notice.innerHTML = msg;
 	  notice.setAttribute('style','display:block;');	  
 	}
-	if($D('#try_again_now')) Dom.Ev($D('#try_again_now'), 'click', function(){
+	if($D('#try_again_now')) on('click', $D('#try_again_now'), function(){
 	  if(notice) notice.innerHTML = '<div>'+_LOADING+'</div>';
 	  tQR.fetch(tQR.uri_lastFetch);
 	});
@@ -1744,7 +1746,7 @@ var tQR = {
   cont = createEl('ul',{id:'tab_parent','class':'ul_tabsmile'});  
   // tab skecil
   el2 = createEl('a',{href:'javascript:;','class':'current',id:'remote_'+scontent[0]},'kecil');
-  Dom.Ev(el2, 'click', function(e){ 
+  on('click', el2, function(e){ 
     tQR.toggle_tabsmile(e); 
     var tgt = Dom.g(scontent[0]);
     if(tgt && tgt.innerHTML=='')
@@ -1754,7 +1756,7 @@ var tQR = {
   Dom.add(el2,el); Dom.add(el,cont);
   // tab sbesar
   el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+scontent[1]},'besar');
-  Dom.Ev(el2, 'click', function(e){
+  on('click', el2, function(e){
     tQR.toggle_tabsmile(e);
     var tgt = Dom.g(scontent[1]);
     if(tgt && tgt.innerHTML=='')
@@ -1764,7 +1766,7 @@ var tQR = {
   Dom.add(el2,el); Dom.add(el,cont);
   // tab custom
   el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+scontent[2]},'[+] ');
-  Dom.Ev(el2, 'click', function(e){
+  on('click', el2, function(e){
     tQR.toggle_tabsmile(e);
     var tgt = Dom.g(scontent[2]);
     if(tgt && tgt.innerHTML=='')
@@ -1774,7 +1776,7 @@ var tQR = {
   Dom.add(el2,el); Dom.add(el,cont);
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
-  Dom.Ev(el2, 'click', function(){
+  on('click', el2, function(){
     $D('#smile_cont').style.display='none';
 	force_focus(10); 
     var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
@@ -1849,7 +1851,7 @@ var tQR = {
           Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
           imgEl = createEl('img',Attr);
        }
-       Dom.Ev(imgEl, 'click', function(e){ 
+       on('click', imgEl, function(e){ 
 	      var C = e; e=e.target||e; tQR.do_smile(e); 
 		  // stop default action
 		  try{do_an_e(C);return false;}catch(ev){} 
@@ -1901,11 +1903,9 @@ var tQR = {
      }else{
         // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
         if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
-        Dom.Ev(imgEl, 'load', function(){
-          showContent();
-        });
-        if(imgEl.height) // obj has beed loaded before this line executed
-          showContent();
+        on('load', imgEl, function(){ showContent() });
+        // obj has beed loaded before this line executed
+		if(imgEl.height) showContent();
      }
     }
   }
@@ -1916,7 +1916,7 @@ var tQR = {
     cont = createEl('div',{style:'margin-top:10px;padding:8px 0;border-top:1px solid #BBC7CE;'});
     el = createEl('a',{href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'},'Manage');
     Dom.add(el,cont);
-    Dom.Ev(el, 'click', function(e){
+    on('click', el, function(e){
       var imgtxta,obj,obj2,task,buff,cont_id = 'scustom_container';
       var mcPar=$D('#manage_container');
       e=e.target||e;
@@ -1989,7 +1989,7 @@ var tQR = {
     }); // end event click Manage-Save
     el = createEl('a',{id:'help_manage',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 10px;margin-left:20px;display:none;',title:'RTFM'},'?');
     Dom.add(el,cont);
-    Dom.Ev(el, 'click', function(){
+    on('click', el, function(){
 	  alert( ''
        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
        +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
@@ -2266,6 +2266,10 @@ var tSTORAGE = {
 
 // ========
 // common function
+function controler_resizer(){
+  gvar.maxH_editor = parseInt(GetHeight())-170;
+  Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
+}
 function getFetch(u, cb, cache){
   if(isUndefined(u)) return;
   cache = (isUndefined(cache) ? true : cache);
@@ -2300,6 +2304,8 @@ function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return x.replace(/^\s+|\s+$/g,""); };
+
+function on(m,e,f){Dom.Ev(e,m,function(e){typeof(f)=='function'?f(e):void(0)});}
 function basename(path, suffix, tailcut) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -2326,6 +2332,17 @@ function toCharRef(text){
           charRefs.push(text[i]);
     }
     return charRefs.join('');
+};
+function GetHeight(){
+  var y = 0;
+  if (self.innerHeight){ // FF; Opera; Chrome
+     y = self.innerHeight;
+  } else if (document.documentElement && document.documentElement.clientHeight){ 
+     y = document.documentElement.clientHeight;
+  } else if (document.body){
+     y = document.body.clientHeight;
+  }
+  return y;
 };
 function do_an_e(A) {
   A.stopPropagation();
@@ -2450,10 +2467,10 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
     if(gsv.indexOf('staticArgs')>0) {
  	 gvar.isGreaseMonkey=true; gvar.isFF4=false;
-	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' on FF4.0':'' )+'...',0); 
 	} // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
@@ -2500,6 +2517,7 @@ function clog(msg) {
 }
 // -end static
 // -----------
+
 //========= Global Var Init ====
 var GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalScript with a better routine
   var sel=createEl('script',{type:'text/javascript'});
@@ -2651,10 +2669,8 @@ var Updater = {
       +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton twbtn twbtn-m lilbutton" href="javascript:;"><b>Update</b></a></div>'
       +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
-    Dom.Ev($D('#upd_close'),'click', function(){
-       Dom.remove('upd_cnt');
-    });    
-    Dom.Ev($D('#upd_notify_lnk'),'click', function(){
+    on('click', $D('#upd_close'), function(){ Dom.remove('upd_cnt') });    
+    on('click', $D('#upd_notify_lnk'), function(){
        if($D('#upd_cnt'))
          Dom.remove('upd_cnt');
        else{         
@@ -2662,7 +2678,7 @@ var Updater = {
          Updater.check(true);
        }
     });    
-    Dom.Ev($D('#do_update'),'click', function(){  
+    on('click', $D('#do_update'), function(){  
       GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');      
       window.setTimeout(function(){ Dom.remove('upd_cnt'); }, 1000);
     });    
@@ -2685,7 +2701,7 @@ var Updater = {
 	if( Updater.meta.news ){
 	  $D('#nfo_version').setAttribute('title', 'What\' New...');
 	  $D('#nfo_version').style.setProperty('cursor', 'pointer', '');
-	  Dom.Ev($D('#nfo_version'), 'click', function(){ alert( gvar.codename+'\n\n== Last LOG Update ==' + Updater.meta.news );});
+	  on('click', $D('#nfo_version'), function(){ alert( gvar.codename+'\n\n== Last LOG Update ==' + Updater.meta.news );});
 	}
     
     Updater.notify_done(true);
@@ -2911,14 +2927,17 @@ var vB_textarea = {
     this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
     this.Obj.scrollTop = (this.last_scrollTop+1);
   },
-  setElastic: function(){
-    function setCols_Elastic(){var a=Dom.g(gvar.id_textarea);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic()}
-    function setRows_Elastic(){var a=Dom.g(gvar.id_textarea),c=a.cols,b=a.value;b=b.replace(/\r\n?/,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}a.setAttribute("rows",d);a.style.height=d*14+"px"}
-	var a=this.Obj||Dom.g(gvar.id_textarea);
-	a.setAttribute('style','overflow:hidden;letter-spacing:0;line-height:14px');
-	Dom.Ev(a,'keyup', function(){setCols_Elastic()});
-	window.setTimeout(function(){setCols_Elastic()}, 350);
-  }
+  
+  setElastic: function(tid,max,winrez){
+    if(isUndefined(tid)) tid=gvar.id_textarea;
+    function setCols_Elastic(max){var a=Dom.g(tid);a.setAttribute("cols",Math.floor(a.clientWidth/7));setRows_Elastic(max)}
+    function setRows_Elastic(max){var a=Dom.g(tid),c=a.cols,b=a.value.toString(),h;b=b.replace(/(?:\r\n|\r|\n)/g,"\n");for(var d=2,e=0,f=0;f<b.length;f++){var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}}h=(d*14);a.setAttribute("rows",d);a.style.height=h+"pt";vB_textarea.oflow=(max&&(d*14>(max-130))? 'auto':'hidden');a.style.setProperty('overflow',vB_textarea.oflow,'');}/*134*/
+    var a=Dom.g(tid) || this.Obj;
+    vB_textarea.oflow='hidden';
+    a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
+    if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
+    window.setTimeout(function(){setCols_Elastic(max)}, 110);
+  }  
 };
 //== end Global Var ==
 
@@ -3083,7 +3102,7 @@ Format will be valid like this:
 
 ,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
 ,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
-,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+//,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
 
 ,'32': [H+s+'7.gif', ':confused:', 'Confused']
 ,'33': [H+s+'34.gif', ':rose:', 'rose']
@@ -3098,7 +3117,7 @@ Format will be valid like this:
 ,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
 ,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
 ,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
-,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
+//,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
 ,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
 ,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
 ,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
@@ -3169,49 +3188,55 @@ Format will be valid like this:
 ,'504': [H+'marah.gif', ':marah', 'Marah']
 ,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
 ,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
-,'507': [H+'sorry.gif', ':sorry', 'Sorry']
 
+,'507': [H+'sorry.gif', ':sorry', 'Sorry']
 ,'508': [H+'capede.gif', ':cd', 'Cape d...']
 ,'509': [H+'nohope.gif', ':nohope', 'No Hope']
 ,'510': [H+'bingung.gif', ':bingung', 'Bingung']
+,'511': [H+'malu.gif', ':malu', 'Malu']
 
-,'511': [H+'hammer.gif', ':hammer', 'Hammer2']
-,'512': [H+'dp.gif', ':dp', 'DP']
-,'513': [H+'takut.gif', ':takut', 'Takut']
-,'514': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'513': [H+'dp.gif', ':dp', 'DP']
+,'514': [H+'takut.gif', ':takut', 'Takut']
+,'515': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
 
-,'515': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
-,'516': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
-,'517': [H+'toastcendol.gif', ':toast', 'Toast']
-,'518': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
-,'519': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,'516': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'517': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'518': [H+'toastcendol.gif', ':toast', 'Toast']
+,'519': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
 
-,'520': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+,'520': [H+'s_sm_repost2.gif', ':repost2', 'Purple Repost']
+,'521': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,'522': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
 
-,'521': [H+'mewek.gif', ':mewek', 'Mewek']
-,'522': [H+'sundul.gif', ':sup2:', 'Sundul']
-,'523': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+,'523': [H+'mewek.gif', ':mewek', 'Mewek']
+,'524': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'525': [H+'ngakak.gif', ':ngakak', 'Ngakak']
 
-,'524': [H+'recseller.gif', ':recsel', 'Recommended Seller']
-,'525': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
-,'526': [H+'jempol1.gif', ':thumbup', 'Jempol']
-,'527': [H+'selamat.gif', ':selamat', 'Selamat']
+,'526': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'527': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'528': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'529': [H+'selamat.gif', ':selamat', 'Selamat']
 
-,'528': [H+'ultah.gif', ':ultah', 'Ultah']
-,'529': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
-,'530': [H+'request.gif', ':request', 'Request']
-,'531': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'530': [H+'ultah.gif', ':ultah', 'Ultah']
+,'531': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'532': [H+'request.gif', ':request', 'Request']
+,'533': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'534': [H+'cystg.gif', ':cystg', 'cystg']
 
-,'532': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
-,'533': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
-,'534': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
-,'535': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
-,'536': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
-,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'538': [H+'traveller.gif', ':travel', 'Traveller']
+,'535': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'536': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'537': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'541': [H+'traveller.gif', ':travel', 'Traveller']
 
-/* Dec-2010, :kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
-,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'542': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'543': [H+'cewek.gif', ':kiss', 'Kiss']
+,'544': [H+'peluk.gif', ':peluk', 'Peluk']
+,'545': [H+'cool2.gif', ':cool', 'Cool']
+,'546': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
@@ -3223,6 +3248,7 @@ Format will be valid like this:
 ,'906': [H+'fd_7.gif', ':repost:', 'Repost']
 ,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
   };
+
 }
 ,getCSS: function(){
   return (''
@@ -3305,7 +3331,7 @@ Format will be valid like this:
 
 /* ==ktp popup== */ 
     +'#img_ngaskuser{height:120px;}'
-    +'#post_detail .powby{color:#363636;position:absolute;cursor:default;margin:88px 0 0 353px;font-size:10px;-moz-user-select:none;-webkit-user-select:none;}'
+    +'#post_detail .powby{color:#363636;position:absolute;cursor:default;margin:88px 0 0 333px;font-size:10px;-moz-user-select:none;-webkit-user-select:none;}'
     +'#post_detail .powby .b,#post_detail .powby .or{font-weight:bold;}'
     +'#post_detail .powby .b{color:#0000CE;}#post_detail .powby .or{color:#DD6F00;}'
 
@@ -3373,12 +3399,14 @@ Format will be valid like this:
 ,getSCRIPT: function(){
   return (''
    +'function showRecaptcha(element){'
+   + 'if(undefined==Recaptcha){document.getElementById(element).innerHTML="Upps, Recaptcha load failed,."; return;}'
    + 'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
    +  '{theme:"red",lang:"en"'
    +    ',custom_translations:{refresh_btn:"Reload reCapcay :: [Alt+R]",instructions_visual:"Masukkan reCapcay:"}'
    +  '}'
    + ');'
    +'};'
+   +'function loadCapcay(e){window.addEventListener("load", showRecaptcha(e), false)};'
    +'function open_win_smiley(){'
    +  'window.open("misc.php?do=getsmilies&editorid=vB_Editor_001","smilie_window", "left=20,top=10,width=520,height='+getScreenHeight()+'");return false;'
    +'};'
@@ -3612,7 +3640,7 @@ Format will be valid like this:
 
  /* -remote-capctha- */
  +'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'    
- +  '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:;" onclick="showRecaptcha(\'recaptcha_container\');" />' // remote create
+ +  '<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:;" onclick="loadCapcay(\'recaptcha_container\');" />' // remote create
  +  '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" style="display:;" onclick="Recaptcha.reload();" />' // remote reload
  +'</fieldset>'
  );
