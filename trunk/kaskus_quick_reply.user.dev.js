@@ -2,10 +2,10 @@
 // @name          Kaskus Quick Reply
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
-// @include       http://*.kaskus.us/showthread.php?*
+// @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110316315
-// @timestamp     1300264517453
+// @dtversion     110317315
+// @timestamp     1300367972433
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,7 +18,9 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-16
+// v3.1.5 - 2011-03-17
+//   Fix QQ-now not disappear in notice . Thanks=[rende]
+//   Fix failed get username . Thanks=[takut.patahhati]
 //   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
 //   Improve using with Multifox (some features not available)
 //   Fix remove missing emote (f*ck, ta*)
@@ -97,9 +99,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300264517453 // version.timestamp
+  timestamp: 1300367972433 // version.timestamp
 
- ,dtversion: 110316315 // version.date
+ ,dtversion: 110317315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -338,7 +340,7 @@ function oExist(P){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.
+  eg. gvar.settings.quick_quote
   */
   var hVal,hdc;
   gvar.settings = {
@@ -818,7 +820,7 @@ function do_click_qqr(e, multi){
     // get quote nfo
     if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
     elpm=$D('#postmenu_'+did);
-    if(elpm) el=$D(".//a[starts-with(@href,'member.php')]", elpm, true);
+    if(elpm) el=$D(".//a[(@class='bigusername') and  contains(@href,'/member.php?')]", elpm, true);
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
     if(elpm) {
@@ -2944,7 +2946,6 @@ function proc_mquickquote(){
 
 function chk_newQQ(){
     var notice;
-
     if($D('#qq_now_cont')) {
 	   $D('#qq_now_cont').innerHTML = ' or <a href="javascript:;" id="quickquote_now" title="Quick Quoted Post [Ctrl+Shift+???]">[QuickQuote]</a>';
 	   notice=$D('#qq_now_cont').parentNode;
@@ -2971,7 +2972,7 @@ function chk_newval(val){
       ajax_chk_newval();
     });
     on('click',$D('#deselect_them'),function(){deselect_it();});
-	chk_newQQ();
+	if(gvar.settings.quick_quote) chk_newQQ(); // fill in QQ now
   }else{
     showhide(notice, false); // hide notice
     return;
