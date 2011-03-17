@@ -820,7 +820,7 @@ function do_click_qqr(e, multi){
     // get quote nfo
     if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
     elpm=$D('#postmenu_'+did);
-    if(elpm) el=$D(".//a[(@class='bigusername') and  contains(@href,'/member.php?')]", elpm, true);
+    if(elpm) el=$D(".//a[(@class='bigusername') and  contains(@href,'member.php?')]", elpm, true);
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
     if(elpm) {
