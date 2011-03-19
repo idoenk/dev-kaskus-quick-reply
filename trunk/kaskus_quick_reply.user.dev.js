@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110319315
-// @timestamp     1300545328752
+// @timestamp     1300555935320
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-19
+//   Fix keep controller_wraper onclose Settings
 //   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
 //   Fix QQ-now not disappear in notice . Thanks=[rende]
 //   Fix failed get username . Thanks=[takut.patahhati]
@@ -100,7 +101,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300545328752 // version.timestamp
+  timestamp: 1300555935320 // version.timestamp
 
  ,dtversion: 110319315 // version.date
  ,scriptID: 80409 // script-Id
@@ -1272,13 +1273,17 @@ function closeLayerBox(tgt){
      var curv = Dom.g(gvar.id_textarea).value;
      var last2 = curv.substring(curv.length-2, curv.length);
      if( isPreviewMode && last2!="\n\n" && (last2.charCodeAt(0)!=13 && last2.charCodeAt(1)!=13) ){
-        vB_textarea.init();
+		vB_textarea.init();
         vB_textarea.add('\n\n');
         doLastFocus = true;
      }
     }
     lockFields_forSubmit(false); // open locked; just incase
     Dom.remove( Dom.g(tgt) );
+	
+	if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none')
+	   $D('#controller_wraper').style.display='';
+	
     try {
       delete gvar.lastPostQuery;
       Dom.g(gvar.id_textarea).focus(); 
@@ -5525,7 +5530,7 @@ Format will be valid like this:
 
 ,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
 ,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
-//,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
 
 ,'32': [H+s+'7.gif', ':confused:', 'Confused']
 ,'33': [H+s+'34.gif', ':rose:', 'rose']
@@ -5540,7 +5545,7 @@ Format will be valid like this:
 ,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
 ,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
 ,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
-//,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
+,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
 ,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
 ,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
 ,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
