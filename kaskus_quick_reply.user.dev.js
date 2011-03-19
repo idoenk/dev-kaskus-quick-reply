@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110317315
-// @timestamp     1300367972433
+// @dtversion     110319315
+// @timestamp     1300545328752
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,7 +18,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-17
+// v3.1.5 - 2011-03-19
+//   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
 //   Fix QQ-now not disappear in notice . Thanks=[rende]
 //   Fix failed get username . Thanks=[takut.patahhati]
 //   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
@@ -99,9 +100,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300367972433 // version.timestamp
+  timestamp: 1300545328752 // version.timestamp
 
- ,dtversion: 110317315 // version.date
+ ,dtversion: 110319315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -777,7 +778,7 @@ function do_click_qqr(e, multi){
 		  case "lower-alpha": ltag+= 'a'; break;
 		} // switch		
 		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
-	    el2 = createTextEl('\n'+ltag+']' + el.innerHTML + '[/LIST]\n');
+	    el2 = createTextEl('\n'+ltag+']' + trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials )) + '[/LIST]\n');
 		el.parentNode.replaceChild(el2,el);
 	  }
 	}
@@ -786,7 +787,7 @@ function do_click_qqr(e, multi){
 	if(els) for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
 	  el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
-	  el2 = createTextEl('\n[LIST]' + el.innerHTML + '[/LIST]\n');
+	  el2 = createTextEl('\n[LIST]' + trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials )) + '[/LIST]\n');
 	  el.parentNode.replaceChild(el2,el);
 	}
 	
