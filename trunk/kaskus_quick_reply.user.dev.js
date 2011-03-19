@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110319315
-// @timestamp     1300555935320
+// @timestamp     1300563485970
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,6 +19,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-19
+//   Fix QQ-now not disappear in notice on another page
 //   Fix keep controller_wraper onclose Settings
 //   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
 //   Fix QQ-now not disappear in notice . Thanks=[rende]
@@ -30,7 +31,7 @@
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-6)
+//   Add quick-quote (beta-8)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -101,7 +102,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300555935320 // version.timestamp
+  timestamp: 1300563485970 // version.timestamp
 
  ,dtversion: 110319315 // version.date
  ,scriptID: 80409 // script-Id
@@ -2951,16 +2952,15 @@ function proc_mquickquote(){
 }
 
 function chk_newQQ(){
-    var notice;
-    if($D('#qq_now_cont')) {
-	   $D('#qq_now_cont').innerHTML = ' or <a href="javascript:;" id="quickquote_now" title="Quick Quoted Post [Ctrl+Shift+???]">[QuickQuote]</a>';
-	   notice=$D('#qq_now_cont').parentNode;
+    var notice, mqs=$D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
+    if($D('#qq_now_cont') && mqs.snapshotLength>0 ) {
+	    $D('#qq_now_cont').innerHTML = ' or <a href="javascript:;" id="quickquote_now" title="Quick Quote Posts">[QuickQuote]</a>';
+	    notice=$D('#qq_now_cont').parentNode;
+	    on('click',$D('#quickquote_now'),function(){
+          if(notice) notice.innerHTML = '<span>Parsing...</span>';
+          proc_mquickquote();
+        });
 	}
-    on('click',$D('#quickquote_now'),function(){
-      if(notice) notice.innerHTML = '<span>Parsing...</span>';
-      proc_mquickquote();
-    });
-
 }
 // routine for fetching quoted post
 function chk_newval(val){
