@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.3
+// @version       0.7.4
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
@@ -20,6 +20,10 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.4 (idx)
+- fix toggle spoiler in Chrome
+- add full linkify
+- add showall spoiler
 0.7.3
 - fix anti-batman fail at spoiler with img inside 
 0.7.2
@@ -137,7 +141,7 @@ dragon*adopters,dragonadopters
     }
 
     // Now, retrieve the text nodes
-    thenodes = document.evaluate("//body//text()", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    thenodes = xP("//body//text()", document);
 
     // Perform a replacement over all the nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
@@ -150,7 +154,7 @@ dragon*adopters,dragonadopters
     }
 
     // Now, retrieve the A nodes
-    thenodes = document.evaluate("//a", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    thenodes = xP("//a", document);
 
     // Finally, perform a replacement over all A nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
@@ -166,6 +170,7 @@ dragon*adopters,dragonadopters
 	var whereAmI = function(href){
 		var asocLoc = {
 		   'td_post_' : '/showthread.php'
+		  ,'td_post' : '/showpost.php'
 		  ,'blog_message' : '/blog.php'
 		  ,'gmessage_text_' : '/group.php'
 		};
@@ -177,38 +182,113 @@ dragon*adopters,dragonadopters
     var isBatman = function(inner){
 		return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
     };	
-    var el, pnode, xID = whereAmI(location.href);
+    var el, pnode, bpnode, xID = whereAmI(location.href);
+
 	// perform anti-batman @container id
-    var pnodes = document.evaluate("//*[contains(@id,'"+xID+"')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    var pnodes = xP("//*[contains(@id,'"+xID+"')]", document);
 	
     if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
         pnode = pnodes.snapshotItem(i);		
-        thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+        // href
+		thenodes = xP(".//a", pnode);
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
+            // check for betmen
             if(node.innerHTML.indexOf(' onclick="')!=-1 && !node.innerHTML.match(/^<img\s*[^>]+/i) && isBatman(node.innerHTML)){
-               
 			   pnode.insertBefore(
 			    (function(href){
 					var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) ), c=['','FFD7FF',''];
 					if(!isKaskus) c=['title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."','FFAEFF','text-decoration:overline'];
-					return createEl('div', {}, (href ? '<div style="font-size:11px;margin-bottom:-5px;font-weight:bold;"><a style="text-decoration:none" href="'+href+'" target="_blank" '+c[0]+'>[ <span style="color:red;text-decoration:blink">BETMEN-DETECTED</span> ]</a><span style="margin-left:20px;background:#'+c[1]+';font:12px/14px \'Courier New\',sans-serif!important;'+c[2]+'">'+href+'</span></div>':''));
+					return createEl('div', {}, (href ? '<div style="font-size:11px;margin-bottom:-5px;font-weight:bold;"><a style="text-decoration:none" href="'+href+'" target="_blank" '+c[0]+'>[ <span style="color:red;text-decoration:blink">BETMEN-DETECTED</span> ]<span style="margin-left:20px;background:#'+c[1]+';font:12px/14px \'Courier New\',sans-serif!important;'+c[2]+'">'+href+'</span></a></div>':''));
 			    })(node.href) ,
 			   node.previousSibling);
 			   
                node.removeAttribute('href');
-               node.setAttribute('title','Link Deactived');
-            }
+               node.setAttribute('title','Spoiler healed, link deactived');
+			   
+            }else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
+			   node.innerHTML = node.href;
+			}
         }
-    }
+		
+		// -------------------
+		// spoiler enhancement
+		thenodes = xP(".//input[@value='Show' and contains(@onclick,'if')]", pnode);
+		var toggle_sAll=function(e){
+		  e=e.target||e;var h=g('kfo_show_all'),p=h.parentNode||false,
+		  rel=e.getAttribute('rel'); if(!rel||!g(rel))return;
+		  if(p && p.id.indexOf('kfo_hidAll_')!=-1) p.innerHTML='&#187;';
+		  g(rel).innerHTML=''; 
+		  if(h) g(rel).appendChild(h);
+		  h.style.display='';
+		}
+		,alnodes=xP(".//input[@value='Show' or @value='Hide' and contains(@onclick,'if')]", document)
+		,t=(alnodes.snapshotLength > 1 ? 'Show all spoiler. Found: ['+alnodes.snapshotLength+'] spoilers':''), id;
 
-    //
+		if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
+			node = thenodes.snapshotItem(j); hid='kfo_hidAll_'+i+''+j;
+		    el=createEl('span',{id:hid,style:'color:red'},'&#187;');
+			node.setAttribute('rel',hid);
+			// a lil hack to strip this.innerText = '', which bring error on GC(Chrome)
+			node.setAttribute('onclick', ''
+			 +"var gT=function(t,p){return (!p?document:p).getElementsByTagName(t)},"
+			 +"p=gT('div',this.parentNode.parentNode)[1],d1=gT('div',p)[0];"
+			 +"if(d1.style.display!=''){d1.style.display='';this.value='Hide'"
+			 +"} else {"
+			 +"d1.style.display='none';"
+			 +"this.value='Show'"
+			 +"}"
+			);
+			node.addEventListener('mousemove', function(e){return toggle_sAll(e);}, false);
+			node.parentNode.appendChild( el );
+		}
+		node=createEl('input',{id:'kfo_show_all',value:'Show All',type:'button',style:'display:none;font-size:10px;padding:0 10px'});
+		node.setAttribute('title',t);
+		node.addEventListener('click', function(e){
+		  e=e.target||e; var m=e.value,lTop=[],scToP=function(x){
+			var nx = [getYPos(),document.body.clientHeight];
+			if(nx[1]!=x[1]) scrollTo(0,(x[0] + x[1]) );
+		  };		  
+		  lTop = [e.offsetTop,getYPos(),document.body.clientHeight];
+		  var node,thenodes = xP(".//input[@value='"+(m=='Show All'?'Show':'Hide')+"' and contains(@onclick,'if')]", document),m=e.value,t=e.getAttribute('title');
+		  if(thenodes.snapshotLength >0 ) for (var z = 0; z < thenodes.snapshotLength; z++) {
+		    node = thenodes.snapshotItem(z);
+			SimulateMouse(node, 'click', true);
+		  }
+		  lTop[0] = (e.offsetTop-lTop[0]);
+		  e.setAttribute('title', (m=='Show All' ? t.replace(/^Show/,'Hide') : t.replace(/^Hide/,'Show') ) );
+		  e.value = (m=='Show All' ? 'Hide':'Show')+' All';
+		  
+		  scToP(lTop); // scrollto this postbit
+		}, false);
+		document.body.appendChild(node);
+    }// end scan post-container
+
+    // additional func
+    function gT(t,p){return (!p?document:p).getElementsByTagName(t)}
+    function g(x,p){return (!p?document:p).getElementById(x)}
+	function xP(x,p) {
+	  return document.evaluate(x, (p?p:document), null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	}
     function createEl(type, attrArray, html) {
         var node = document.createElement(type);
         for (var attr in attrArray)
 			if (attrArray.hasOwnProperty(attr)) node.setAttribute(attr, attrArray[attr]);
         if (html) node.innerHTML = html;
         return node;
+    }
+	function getYPos() {
+      if (document.body && document.body.scrollTop) return document.body.scrollTop;
+      if (document.documentElement && document.documentElement.scrollTop) return document.documentElement.scrollTop;
+      if (window.pageYOffset) return window.pageYOffset;
+      return 0;
+    }
+    function SimulateMouse(elem,event,preventDef) {
+      if(typeof(elem)!='object') return;
+      var evObj = document.createEvent('MouseEvents');
+      preventDef=(!preventDef ? false:true);
+      evObj.initEvent(event, preventDef, true);
+      try{elem.dispatchEvent(evObj);} catch(e){};
     }
     //
 
