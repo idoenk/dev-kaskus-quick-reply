@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110319315
-// @timestamp     1300563485970
+// @dtversion     110324315
+// @timestamp     1300914466353
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan
 // @moded         idx (http://userscripts.org/users/idx)
@@ -18,7 +18,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-19
+// v3.1.5 - 2011-03-24
+//   Fix QQ-now lastIdx of an a
 //   Fix QQ-now not disappear in notice on another page
 //   Fix keep controller_wraper onclose Settings
 //   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
@@ -102,9 +103,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300563485970 // version.timestamp
+  timestamp: 1300914466353 // version.timestamp
 
- ,dtversion: 110319315 // version.date
+ ,dtversion: 110324315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -661,14 +662,14 @@ function do_click_qqr(e, multi){
 		  mct[1]=mct[1].toUpperCase();
 		lastIdx=LT.div.length-1;
 
-		pRet= '[' +(openTag ? mct[1] : '/'+(isDefined(LT.div[lastIdx]) ? LT.div[lastIdx].toUpperCase() : '???') ) + ']';
+		pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.div[lastIdx]) ? '['+'/'+LT.div[lastIdx].toUpperCase()+']' : '') );
 		
 		if(!openTag) LT.div.splice(lastIdx,1);
         return pRet;
 
       }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
         // parse linkify
-        mct=$2.match(/\/?a(?:\shref=['"]([^'"]+))?/i);
+        mct=$2.match(/\/?a\s*(?:(?:target|style|title)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
 		if(isDefined(mct[1])) {
 		   tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
 		   LT.a.push(tag);
@@ -677,7 +678,7 @@ function do_click_qqr(e, multi){
 		}
 		openTag=(mct && mct[1]);
 		lastIdx=LT.a.length-1;
-        pRet= '[' +(mct && mct[1] ? LT.a[lastIdx].toUpperCase()+'='+mct[1] : '/'+LT.a[lastIdx].toUpperCase() ) + ']';
+        pRet= (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+'='+mct[1]+']':'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
 		
 		if(!openTag) LT.a.splice(lastIdx,1);
         return pRet;
