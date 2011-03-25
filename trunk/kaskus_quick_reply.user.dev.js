@@ -4,11 +4,10 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110324315
-// @timestamp     1300914466353
+// @dtversion     110326315
+// @timestamp     1301080229434
 // @description   provide a quick reply feature, under circumstances capcay required.
-// @author        bimatampan
-// @moded         idx (http://userscripts.org/users/idx)
+// @author        bimatampan(founder), idx(302101; http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include       http://imageshack.us/*
@@ -19,6 +18,8 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-24
+//   Fix multi-QQ in one page
+//   Fix namespace . Thanks=[Piluze]
 //   Fix QQ-now lastIdx of an a
 //   Fix QQ-now not disappear in notice on another page
 //   Fix keep controller_wraper onclose Settings
@@ -32,7 +33,7 @@
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-8)
+//   Add quick-quote (beta-9)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -103,9 +104,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1300914466353 // version.timestamp
+  timestamp: 1301080229434 // version.timestamp
 
- ,dtversion: 110324315 // version.date
+ ,dtversion: 110326315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -952,7 +953,7 @@ function additional_options_notloaded(){
 
 // fetch only the hash of humaninput
 function capcay_parser(page){
-  var match = /id=\"hash\".*value=\"(\w+)/.exec(page);
+  var match = /id=\"hash\".*value=\"(\w+)/im.exec(page);
   if(match)    
     $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
 }
@@ -1446,6 +1447,8 @@ function scustom_parser(msg){
 // eg. submit, preview, some of vb_Textarea element
 function initEventTpl(){
     
+	var ck_mquote,nodes,node,nid;
+	
     if(gvar.tmp_text){
       vB_textarea.init(); // need this coz if disable can not set
       // load capcay
@@ -1543,7 +1546,7 @@ function initEventTpl(){
               e.preventDefault(); // return false;
               return false;
             }
-		  }	  
+		  }
 
           var prp = prep_preview(), msg=template_wrapper();
           if(msg != Dom.g(gvar.id_textarea).value) Dom.g(gvar.id_textarea).value=msg;
@@ -1602,10 +1605,10 @@ function initEventTpl(){
         on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
       
       // new version multi-quote (cookie based)
-      var ck_mquote = cK.g(gvar.vbul_multiquote);
-      chk_newval(ck_mquote ? ck_mquote:'');
+      ck_mquote = cK.g(gvar.vbul_multiquote);
+	  chk_newval(ck_mquote ? ck_mquote:'');
       
-      var nodes = $D('//img[contains(@id,"mq_")]');	  
+      nodes = $D('//img[contains(@id,"mq_")]');	  
       if(nodes.snapshotLength > 0){
 	    
 		var colorize_td = function(t,td){
@@ -1615,18 +1618,16 @@ function initEventTpl(){
             removeClass('quoteselected', Dom.g(td));
         };        
         for(var i=0;i<nodes.snapshotLength; i++){
-            var node = nodes.snapshotItem(i);
+            node = nodes.snapshotItem(i);
             nid=node.id.replace(/mq_(\d+)/, 'td_post_$1');
-            colorize_td(node.src, nid);
-			if( !gvar.settings.with_multiFox )
-             on('click',node,function(e){
-              e=e.target||e;
-              var ck_mquote = cK.g(gvar.vbul_multiquote);
-              chk_newval( ck_mquote ? ck_mquote :'' );
-
-              nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
-              colorize_td(e.src, nid);
-             });
+            colorize_td(node.src, nid);			
+            on('click',node,function(e){
+               e=e.target||e;
+               var ck_mquote = cK.g(gvar.vbul_multiquote);
+               chk_newval( ck_mquote ? ck_mquote :'' );
+               nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
+               colorize_td(e.src, nid);
+            });
         }
       }
     } // end not restart mode
@@ -2955,7 +2956,7 @@ function proc_mquickquote(){
 function chk_newQQ(){
     var notice, mqs=$D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
     if($D('#qq_now_cont') && mqs.snapshotLength>0 ) {
-	    $D('#qq_now_cont').innerHTML = ' or <a href="javascript:;" id="quickquote_now" title="Quick Quote Posts">[QuickQuote]</a>';
+	    $D('#qq_now_cont').innerHTML = ' <a href="javascript:;" id="quickquote_now" title="Quick Quote Posts">[QuickQuote]</a>';
 	    notice=$D('#qq_now_cont').parentNode;
 	    on('click',$D('#quickquote_now'),function(){
           if(notice) notice.innerHTML = '<span>Parsing...</span>';
@@ -2965,25 +2966,31 @@ function chk_newQQ(){
 }
 // routine for fetching quoted post
 function chk_newval(val){
-  var tgt, notice = $D('#quoted_notice');
-  if(val.length>1){
+   var tgt, notice = $D('#quoted_notice'), nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
     removeClass('g_notice-error', notice);
-    notice.innerHTML = 'You have selected one or more posts to quote. <a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>'
+    notice.innerHTML = 'You have selected one or more posts to quote. '
+      + '<span id="fetch_now_cont"></span><span id="ft_or_qq"></span>'
       + '<span id="qq_now_cont"></span>'
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
-    on('click',$D('#quote_now'),function(){
-      vB_textarea.init();
-      vB_textarea.readonly();      
-      notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
-      ajax_chk_newval();
-    });
-    on('click',$D('#deselect_them'),function(){deselect_it();});
-	if(gvar.settings.quick_quote) chk_newQQ(); // fill in QQ now
-  }else{
-    showhide(notice, false); // hide notice
-    return;
-  } 
+	
+	on('click',$D('#deselect_them'),function(){deselect_it();});
+    if(gvar.settings.quick_quote) chk_newQQ(); // fill in QQ now
+	
+	if(val.length>1){ // or is not using with multifox
+      $D('#fetch_now_cont').innerHTML = '<a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>';
+      on('click',$D('#quote_now'),function(){
+        vB_textarea.init();
+        vB_textarea.readonly();      
+        notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
+        ajax_chk_newval();
+      });
+	  if($D('#fetch_now_cont').innerHTML && $D('#qq_now_cont').innerHTML) 
+	    $D('#ft_or_qq').innerHTML = ' or';
+    }else if(nodes.snapshotLength == 0){
+      showhide(notice, false); // hide notice
+      return;
+    }
 }
 
 // deselect selected multi quote
