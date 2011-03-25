@@ -10,9 +10,9 @@
 // @include       http://www.kaskus.us/group.php?*
 // @include       http://www.kaskus.us/blog_post.php?*
 // @include       http://www.kaskus.us/newthread.php?*
-// @version       2.25
-// @dtversion     110313225
-// @timestamp     1300038721379
+// @version       2.26
+// @dtversion     110326226
+// @timestamp     1301081092542
 // @description   Integrate kaskus uploader; Show Mostly Used Smiley beside your vb_Textarea Editor; Integrate Custom Kaskus Smiley list; Set your fav image/smiley colection; Hover preview++
 // @author        idx (http://userscripts.org/users/idx)
 // @include       http://imageshack.us/*
@@ -23,14 +23,17 @@
 // 
 // -!--latestupdate
 // 
-// v 2.25 - 2011-03-13
-// : Fix adapting FF4.0
-// : Improve Uploader
+// v 2.26 - 2011-03-26
+// : Add 2 new Kaskusemotes (Hot-News; Games)
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 // 
+// v 2.25 - 2011-03-13
+// : Fix adapting FF4.0
+// : Improve Uploader
+//
 // v 2.24 - 2011-02-20
 // : Fix adapting FF4.0b12 (partial)
 // : Fix minor CSS (blog_post.php)
@@ -55,14 +58,14 @@
 var gvar=function() {}
 
 gvar.codename   = 'KERP'+HtmlUnicodeDecode('&#8482;');
-gvar.sversion   = 'v' + '2.25';
+gvar.sversion   = 'v' + '2.26';
 /* timestamp-GENERATOR
 javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 gvar.scriptMeta = {
-  timestamp: 1300038721379 // version.timestamp
- ,dtversion : 110313225 // script-Id
+  timestamp: 1301081092542 // version.timestamp
+ ,dtversion : 110326226 // script-Id
  
  ,titlename : gvar.codename
  ,scriptID : 79879 // script-Id
@@ -2501,10 +2504,84 @@ function getSmilieSets(){
 ,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
   };  
   
-  gvar.smiliecustom = {
- '11001': [http+'img.kaskus.us/images/kaskusmobile_bb.gif', 'right', 'kaskusmobile_bb']
-,'11002': [http+'img.kaskus.us/images/kaskusmobile_hp.gif', 'right', 'kaskusmobile_hp']
-  };  
+  gvar.smiliebesar = {
+ '291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
+,'292': [H+s+'kribo.gif', ':afro:', 'afro']
+,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
+,'294': [H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
+,'295': [H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
+
+/* New Big Smilies */
+,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
+
+,'501': [H+'najis.gif', ':najis', 'Najis']
+,'502': [H+'s_sm_maho.gif', ':maho', 'Maho']
+,'503': [H+'hoax.gif', ':hoax', 'Hoax']
+,'504': [H+'marah.gif', ':marah', 'Marah']
+,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
+,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
+
+,'507': [H+'sorry.gif', ':sorry', 'Sorry']
+,'508': [H+'capede.gif', ':cd', 'Cape d...']
+,'509': [H+'nohope.gif', ':nohope', 'No Hope']
+,'510': [H+'bingung.gif', ':bingung', 'Bingung']
+,'511': [H+'malu.gif', ':malu', 'Malu']
+
+,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
+,'513': [H+'dp.gif', ':dp', 'DP']
+,'514': [H+'takut.gif', ':takut', 'Takut']
+,'515': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
+
+,'516': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,'517': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,'518': [H+'toastcendol.gif', ':toast', 'Toast']
+,'519': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
+
+,'520': [H+'s_sm_repost2.gif', ':repost2', 'Purple Repost']
+,'521': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,'522': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
+
+,'523': [H+'mewek.gif', ':mewek', 'Mewek']
+,'524': [H+'sundul.gif', ':sup2:', 'Sundul']
+,'525': [H+'ngakak.gif', ':ngakak', 'Ngakak']
+
+,'526': [H+'recseller.gif', ':recsel', 'Recommended Seller']
+,'527': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,'528': [H+'jempol1.gif', ':thumbup', 'Jempol']
+,'529': [H+'selamat.gif', ':selamat', 'Selamat']
+
+,'530': [H+'ultah.gif', ':ultah', 'Ultah']
+,'531': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,'532': [H+'request.gif', ':request', 'Request']
+,'533': [H+'cekpm.gif', ':cekpm', 'Cek PM']
+,'534': [H+'cystg.gif', ':cystg', 'cystg']
+
+,'535': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,'536': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,'537': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,'541': [H+'hotnews.gif', ':hn', 'Hot News']
+,'542': [H+'games.gif', ':games', 'Games']
+,'543': [H+'traveller.gif', ':travel', 'Traveller']
+
+,'544': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'545': [H+'cewek.gif', ':kiss', 'Kiss']
+,'546': [H+'peluk.gif', ':peluk', 'Peluk']
+,'547': [H+'cool2.gif', ':cool', 'Cool']
+,'548': [H+'bola.gif', ':bola', 'Bola']
+
+// -- OLD ---
+,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
+,'901': [H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
+,'902': [H+'fd_5.gif', ':sup:', 'Sundul Up']
+,'903': [H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
+,'904': [H+'fd_8.gif', ':kacau:', 'Thread Kacau']
+,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
+,'906': [H+'fd_7.gif', ':repost:', 'Repost']
+,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
+  };
  
 }
 // end getSmilieSets
