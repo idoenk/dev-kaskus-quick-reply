@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-24
+//   Add 2 new Kaskusemotes (Hot-News; Games)
 //   Fix multi-QQ in one page
 //   Fix namespace . Thanks=[Piluze]
 //   Fix QQ-now lastIdx of an a
@@ -5666,13 +5667,15 @@ Format will be valid like this:
 ,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
 ,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
 ,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'541': [H+'traveller.gif', ':travel', 'Traveller']
+,'541': [H+'hotnews.gif', ':hn', 'Hot News']
+,'542': [H+'games.gif', ':games', 'Games']
+,'543': [H+'traveller.gif', ':travel', 'Traveller']
 
-,'542': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-,'543': [H+'cewek.gif', ':kiss', 'Kiss']
-,'544': [H+'peluk.gif', ':peluk', 'Peluk']
-,'545': [H+'cool2.gif', ':cool', 'Cool']
-,'546': [H+'bola.gif', ':bola', 'Bola']
+,'544': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'545': [H+'cewek.gif', ':kiss', 'Kiss']
+,'546': [H+'peluk.gif', ':peluk', 'Peluk']
+,'547': [H+'cool2.gif', ':cool', 'Cool']
+,'548': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
