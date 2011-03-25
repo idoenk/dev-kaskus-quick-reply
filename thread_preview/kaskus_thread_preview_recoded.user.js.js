@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.6
-// @dtversion     110317106
-// @timestamp     1300301286949
+// @version       1.0.7
+// @dtversion     110326107
+// @timestamp     1301081362027
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,16 +19,19 @@
 //
 // -!--latestupdate
 //
+//  v1.0.7 - 2011-03-26
+//    Add 2 new Kaskusemotes (Hot-News; Games)
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 //  v1.0.6 - 2011-03-17
 //    Fix come_inside area
 //    Fix 3rd-party ktpKaskus provider (idkaskus.com)
 //    Improve addEventListener onload window (Recaptcha Object)
 //    Fix lineHeight problem (Chrome)
 //    Fix remove missing emote (f*ck, ta*)
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 //  v1.0.5 - 2011-02-21
 //    Add include come_inside.php
@@ -64,9 +67,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.6';
+gvar.sversion = 'v' + '1.0.7';
 gvar.scriptMeta = {
-  timestamp: 1300301286949 // version.timestamp
+  timestamp: 1301081362027 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -3231,13 +3234,15 @@ Format will be valid like this:
 ,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
 ,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
 ,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'541': [H+'traveller.gif', ':travel', 'Traveller']
+,'541': [H+'hotnews.gif', ':hn', 'Hot News']
+,'542': [H+'games.gif', ':games', 'Games']
+,'543': [H+'traveller.gif', ':travel', 'Traveller']
 
-,'542': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-,'543': [H+'cewek.gif', ':kiss', 'Kiss']
-,'544': [H+'peluk.gif', ':peluk', 'Peluk']
-,'545': [H+'cool2.gif', ':cool', 'Cool']
-,'546': [H+'bola.gif', ':bola', 'Bola']
+,'544': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'545': [H+'cewek.gif', ':kiss', 'Kiss']
+,'546': [H+'peluk.gif', ':peluk', 'Peluk']
+,'547': [H+'cool2.gif', ':cool', 'Cool']
+,'548': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
