@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.19
-// @dtversion     11031019
-// @timestamp     1299728787319
+// @version       1.20
+// @dtversion     11032620
+// @timestamp     1301147771286
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,17 +15,21 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.19 : 2011-03-10
-// Fix break longtext location
+// mod.R.20 : 2011-03-26
+// Fix dashpoison sequence (location)
+// Fix failed show sender's img (Chrome.12)
 //
 // ==/UserScript==
 /*
 //
-/// mod.R.18 : 2011-02-27
+// mod.R.19 : 2011-03-10
+// Fix break longtext location
+//
+// mod.R.18 : 2011-02-27
 // Fix failed get (entut;donat-tag) tag_id 
 // Fix adapting FF4.0b12 (partial)
 //
-/ mod.R.17 : 2011-02-18
+// mod.R.17 : 2011-02-18
 // Fix some RegEx parseIt
 // rebuild subfolder subscription
 // missed destroy_column(el_sender) -KaskusDonat.
@@ -47,9 +51,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '19';
+gvar.sversion = 'R' + '20';
 gvar.scriptMeta = {
-  timestamp: 1299728787319 // version.timestamp
+  timestamp: 1301147771286 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -317,7 +321,7 @@ function start_Main() {
     
     // chk is re-fetch  user detail needed
     if( !gvar._SIMULATE_ && noneed_upd() ) {
-        loadstorage(); // load from availabe storage
+		loadstorage(); // load from availabe storage
      }else{
         startDetail(gvar.userID, 0); // reload detail again
     }
@@ -543,7 +547,6 @@ function parseIt(page){
     
   ret = page.match(/<h1>([^<]+)([^i]+)/i); // kaskus_id (string)  
   if(ret) result[gvar.f[1]] = ret[1] + (ret[2].indexOf('[$]')!=-1?'[$]':'');
-  clog('kid='+result[gvar.f[1]]);
   
   ret = page.match(/<h2>(?:<b\s?[^>]*.)*([^<]+)/i); // tag_id (string)
   if(ret) result[gvar.f[2]] = ret[1];
@@ -640,17 +643,17 @@ function createSender(data, x){
   +'<div id="img_cont'+x+'">'+(data["avatar_url"].length > 0 ? gvar.uri['avatar'] + '/'+ data["avatar_url"]+'||[avatar'+data["uid"]+']' : '||')+'</div>'
   +'<div><b>'+( data["kaskus_id"] )+'</b>'+(is_donat)+'</div>'
   +'<div>'+data["tag_id"]+'</div>'
-  +'<div style="width:100px!important;"><p style="padding:0;margin:0;font-size:9px">'+dashPoison(filterChar( replacer(data["location"]) ))+'</p></div>'
+  +'<div style="width:100px!important;"><p style="padding:0;margin:0;font-size:9px">'+filterChar(dashPoison( replacer(data["location"]) ))+'</p></div>'
   +'<div>'+data["join_date"]+'</div>'
   +'<div>Post: '+data["total_post"]+'</div>'
   +'</div>';
 
   // last act, attaching..  
   var tgt = $D("_ucnd"+x);
-  tgt.innerHTML = inner + '<a class="smallfont" href="' + gvar.uri['user_link'] + data["uid"] +'"><b>'
-    + ( data["kaskus_id"] ) + '</b></a>'+(is_donat)+'<div style="clear:left;"></div><div style="float:right;padding-top:2px;margin-bottom:-5px;">'
+  tgt.innerHTML = inner + '<a class="smallfont" href="' + gvar.uri['user_link'] + data["uid"] +'"><b>' + data["kaskus_id"] + '</b></a>'
+    + (is_donat)+'<div style="clear:left;"></div><div style="float:right;padding-top:2px;margin-bottom:-5px;">'
     + ucendol(data) +'</div>';
- 
+  
   var par = tgt.parentNode; // trying node tr
   Dom.Ev(par, 'mouseout', function(e){
       if(gvar.stillOnIt) return;
@@ -662,14 +665,14 @@ function createSender(data, x){
       var imgObj = $D('img_cont'+x);
       var img = getTag('img', imgObj);
       if(!img && imgObj.innerHTML!='[no-avatar]'){
-        var parts = imgObj.innerHTML.split('||');
+        var parts = imgObj.innerHTML.match(/(https?\:\/\/(?:[^\|]+))[\|]+\[([^\]]+)/i);		
         imgObj.innerHTML = '';
-        if(isDefined(parts[0]) && parts[0]!=''){
-         var el = createEl('img', {src:parts[0], alt:parts[1]})
+        if(isDefined(parts[1]) && parts[1]!=''){
+         var el = createEl('img', {src:parts[1], alt:parts[2]})
          imgObj.appendChild(el);
         }else{
          imgObj.innerHTML = '[no-avatar]';
-        }           
+        }
       }
       $D('_ucnddiv'+x).style.display = '';
   });
@@ -947,10 +950,10 @@ function ApiBrowserCheck() {
     needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
-    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0b'; }
+    var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
     if(gsv.indexOf('staticArgs')>0) {
  	 gvar.isGreaseMonkey=true; gvar.isFF4=false;
-	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0b')>0) ?' on FF4.0b':'' )+'...',0); 
+	 show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' on FF4.0':'' )+'...',0); 
 	} // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
