@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110326315
-// @timestamp     1301080229434
+// @dtversion     110327315
+// @timestamp     1301240656917
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        bimatampan(founder), idx(302101; http://userscripts.org/users/idx)
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-24
+// v3.1.5 - 2011-03-27
+//   Improve & repositioning QQ-Button
 //   Add 2 new Kaskusemotes (Hot-News; Games)
 //   Fix multi-QQ in one page
 //   Fix namespace . Thanks=[Piluze]
@@ -105,9 +106,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301080229434 // version.timestamp
+  timestamp: 1301240656917 // version.timestamp
 
- ,dtversion: 110326315 // version.date
+ ,dtversion: 110327315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -506,26 +507,30 @@ function start_Main(){
     if(!gvar.restart) {
      nodes = getByXPath_containing('//a', false, 'QUOTE');
      for(var i=0; i<nodes.length; i++){
-      hr = nodes[i].href.split("&p=");      
-      nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
-      // prep bulu pena
-      child = '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" title="Quick Reply to this message" border=0 />';
-      Attr = {href:'newreply.php?do=newreply&p='+hr[1],rel:'nofollow',id:'qr_'+hr[1],onclick:'return false'};
-      el = createEl('a',Attr,child);
-      on('click',el,function(e){do_click_qr(e)});
-      // we remove existing node first
-      if(gvar.user.isDonatur) Dom.remove('qr_'+hr[1]);
-      Dom.add(el, nodes[i].parentNode);
-
-      Dom.add(createTextEl(' '), nodes[i].parentNode);
-      
-      // qqr
-      child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
-      Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
-      el = createEl('a',Attr,child);
-      on('click',el,function(e){do_click_qqr(e)});
-      Dom.add(el, nodes[i].parentNode);
-     }
+       hr = nodes[i].href.split("&p=");      
+       nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
+       // prep bulu pena
+       child = '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" title="Quick Reply to this message" border=0 />';
+       Attr = {href:'newreply.php?do=newreply&p='+hr[1],rel:'nofollow',id:'qr_'+hr[1],onclick:'return false'};
+       el = createEl('a',Attr,child);
+       on('click',el,function(e){do_click_qr(e)});
+       // we remove existing node first
+       if(gvar.user.isDonatur) Dom.remove('qr_'+hr[1]);
+       Dom.add(el, nodes[i].parentNode);
+       
+       Dom.add(createTextEl(' '), nodes[i].parentNode);
+       
+       // qqr
+       child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
+       Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
+       el = createEl('a',Attr,child);
+       on('click',el,function(e){do_click_qqr(e)});
+       //Dom.add(el, nodes[i].parentNode);
+       nodes[i].parentNode.insertBefore(el, nodes[i]);
+       nodes[i].parentNode.insertBefore(createTextEl(' '+"\n"), nodes[i]);
+	   //Dom.add(el, nodes[i].parentNode);
+	   
+     } // end-for
      nodes = getByXPath_containing('//a', false, 'EDIT');
      for(var i=0; i<nodes.length; i++){
         hr = nodes[i].href.split("&p=");
@@ -1347,7 +1352,7 @@ function loadLayer_reCaptcha(){
     // require this transparent layer to be attached on body, to make it appear
     Attr = {id:'hideshow',style:'display:none;'};
     el = createEl('div', Attr, rSRC.getTPL_layer_Only() );
-    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);    
+    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
     
     // this container must inside form
     Attr = {id:'hideshow_recaptcha',style:'display:none;'};
@@ -5425,10 +5430,12 @@ var rSRC = {
         +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
         +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
       ,qquote_gif : ""
-        +"data:image/gif;base64,R0lGODdhGQAWAPMAAINhK9Syf/zfqaqKVOjJlL+eaPz7yJh2Qd+9iPztuLWUX/bTnotpM8moc6CATPz+2iwAAAAAGQAWAAAE//AZYpK4i2i9Vnp"
-		+"gggiJISFgqqpCCDRB0Bpog9zo+rQCMAaNwulxkyEai8AiRRAwmkdFQzI1WK86xQEaKBRaCocuZQUdRgSg45BIhEEXjGBxSRQahIFjwFcgFm87c3MGcQgKCRkBUgVShwM8cXRLB"
-		+"pACBAgDjAoFiwMEO21xFAUEiZkDdw0KA6sDATt0JG0LDYkBe6quq5xjDwpJHg5eDUFhvAMgVhYCQQVLv17SxwpvzCQCfh8gi9IFAwe8YoWzxTcLKAupjWEO4hKz2Q0CJikO1Xw"
-		+"HDoeB2Ob1KQ7wWSMwT6ASBp5tU+GA4AEGCgTkW5iGno4GBx4CeFEJHCgJMiYA7sDIgMHGjaAGmJwioQ2BBg5MngRQUmY9AUcSLKrGyZtPLy0iAAA7"
+        +"data:image/gif;base64,R0lGODlhNgAWALMAAIxeBPzmhMyiRLSGJPzadPz+/OS6XPz+tLySLJxyDPz2lNSmROy+XLSKJKUAAAEAACH5BAEAAAUALAAAAAA2ABYAAwT/sMh"
+		+"CQiAYm23wLIGhfGRpnpNyrGzLjlSyMAyB3jh1DAZNuKtArEZbCHPIj+GwICwUi6aRhUkQFw1jcltgHBRgIKthJTCwMo56zebYTIOE+LUqFxMDgX7P7/v1CIEfgXIKHRkYFwcNN"
+		+"GR4CAJtkmp7gQOQEoEIhYgBColYGDQJkH+RHH4bgAgDrQkSl5tBnxkBXw2iDAkJfKwcrJU8G6WVrHGwhCoEYBeKuGa6pJVLLQp5CNQveauuAgGxCbaHy2A+Z498AysEeOut6+0"
+		+"HBNuWcQjzhNnVuDUB0tN1BGBbAYAar4EHAECqh8dArAELVjC7kGXKgX96Bqj4JhBBnY3X0jxejGVsl8N68pYtc6jvUjqQAtUtgslqRYOHuwAkmHdpQIMviaAwUHOAQchABjdRK"
+		+"1hH6YpWJRMAGFAAapwvFgzNUMHCnyZCEvOsMKAzrICxU+PskoqgaqurCiwEmKGv6ddWXMfuwtvCwNq/Ug24bQUAKxgjeVk8umvy1gJLjRVk2fQXAIAJbwuzGJqYBdSvkPN2ZJV"
+		+"AtFTLqCfgGQCAqwIGneftfUuSdKsFn21DZI3asoAPcQDYkmgoeG/AyJMr7z31RAfcEBecmmSqOmg9gidEAAA7"
       ,throbber_gif : ""
         +"data:image/gif;base64,R0lGODlhEAAQALMPADZmn6XF642oyHCp7V6DsEWE0Pn6/dvk7+Ls95W/8VWa7HKby8DS6ezy+U2V6////yH/C05FVFNDQVBFMi4wAwEAAAAh+"
         +"QQJAAAPACwAAAAAEAAQAAAEPvDJ2Qgg4sw9EShOUQQcxySDoy5GyR2pk7icESP0doBkPi2OgW8iKCiGkuIRSSgIh43PDApQ4JCGBnLL9UUAACH5BAkAAA8ALAAAAAAQABAAA"
