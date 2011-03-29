@@ -5,9 +5,9 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110327315
-// @timestamp     1301240656917
+// @timestamp     1301425064344
 // @description   provide a quick reply feature, under circumstances capcay required.
-// @author        bimatampan(founder), idx(302101; http://userscripts.org/users/idx)
+// @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
 // @contributor   s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include       http://imageshack.us/*
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-03-27
+//   Improve author namespace (adapting AMO)
 //   Improve & repositioning QQ-Button
 //   Add 2 new Kaskusemotes (Hot-News; Games)
 //   Fix multi-QQ in one page
@@ -106,7 +107,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301240656917 // version.timestamp
+  timestamp: 1301425064344 // version.timestamp
 
  ,dtversion: 110327315 // version.date
  ,scriptID: 80409 // script-Id
@@ -4298,7 +4299,14 @@ var ST = {
     });
       
     // m3h
-    if(isDefined($D('.nostyle')[0])) on('click',$D('.nostyle')[0],function(){window.open(gvar.domain+'mem'+'ber.ph'+'p?u=3'+'02'+'101');return;});
+	elSet = $D('.nostyle');
+	if(elSet){
+	  for(var i=0;i<elSet.length;i++)
+	    on('click',elSet[i],function(e){
+	     var u=(e.target||e).getAttribute('rel');
+		 if(u) window.open(gvar.domain+'mem'+'ber.ph'+'p?u='+u);return;
+	    });
+	}
  } // end event_settings
  
  ,close_setting: function(){
@@ -6058,7 +6066,7 @@ Format will be valid like this:
        'Firefox':{t:3170414,tt:'Add-Ons Firefox Plus Script - [UPDATE]',tsl:601361,ts:'thiaz4rhytem'}
       ,'Opera':{t:6595796,tt:'[Rebuild] '+HtmlUnicodeDecode('&#187;')+' Opera Community',tsl:786407,ts:'ceroberoz'}
       ,'Google-Chrome':{t:3319338,tt:'[Updated] Extensions/ Addons Google Chrome',tsl:449547,ts:'Aerialsky'}
-    },spacer = '<div style="height:5px;"></div>',mb='/member.php?u=',st='/showthread.php?t=',bl=' target="_blank" ',QT='<br><b>#QR</b> Topic<br>CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span>:<br>';
+    },spacer = '<div style="height:3px;"></div>',mb='/member.php?u=',st='/showthread.php?t=',bl=' target="_blank" ',QT='<br><b>#QR</b> Topic<br>CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span>:<br>';
     for(var i in T)
       QT+= ' '+HtmlUnicodeDecode('&#167;')+' <a href="'+st+T[i].t+'"'+bl+' title="'+T[i].tt+'">'+i+'</a> <a href="'+mb+T[i].tsl+'"'+bl+' title="TS: '+T[i].ts+'">*</a>';
     QT+='<br>Other:';for(var i in E)
@@ -6068,17 +6076,20 @@ Format will be valid like this:
      +'<div id="about_container" class="qrsmallfont" style="">'
      +'<b>'+gvar.fullname+' '+gvar.sversion+'</b> '+(isQR_PLUS!==0?' &nbsp;&nbsp;<b>(ADDONS)</b>':'')+' '+HtmlUnicodeDecode('&#8212;')+' <small>'+gvar.scriptMeta.dtversion+'</small>'+'<br>'
      +spacer
-     +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'">'+gvar.fullname+'</a> UserScript is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (FF Addons) initially founded by bimatampan.<br>'
-     +'<div style="height:10px;"></div>'
-     +'<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img height="33" src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" border="0" title="dev-kaskus-quick-reply - '+gvar.fullname+' on Google Code"/></a>&nbsp;'+HtmlUnicodeDecode('&#183;')+'&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"/></a><br>'
-     +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
-     +'<div style="height:10px;"></div>'
+     +'<a href="http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank">'+gvar.fullname+'</a> is an improvement of '+HtmlUnicodeDecode('&#733;')+'kaskusquickreply'+HtmlUnicodeDecode('&#733;')+' (Firefox Add-Ons) initially founded by bimatampan<br>'
+     +'<div style="height:7px;"></div>'
+     +'<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img height="33" src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" border="0" title="dev-kaskus-quick-reply - '+gvar.fullname+' on Google Code"/></a>&nbsp;'+HtmlUnicodeDecode('&#183;')+'&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"/></a><br>'
+     +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
+     +'<div style="height:7px;"></div>'
      +'KASKUS brand is a registered trademark of www.kaskus.us<br>'
      +gvar.fullname+' (QR) is not related to or endorsed by www.kaskus.us in any way.<br>'
-     +spacer     
-     +'<b>Modified By</b>: <a href="javascript:;" class="nostyle">Idx</a><br>'
+     +'QR+ (Add-ons) is ported from the original QR (@userscripts.org) as specified by author.<br>'
+     +spacer
+     +'<b>Founded By:</b> bimatampan<br>'
+     +'<b>Author By:</b> <a href="javascript:;" class="nostyle" rel="302101">Idx</a><br>'
+     +'<b>Addons Ported By:</b> <a href="javascript:;" class="nostyle" rel="1323912">Piluze</a><br>'
      +'<b>Contributors:</b>'
-     +'<div style="height:'+(gvar.isBuggedChrome ? '248':'220')+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
+     +'<div style="height:'+(gvar.isBuggedChrome||gvar.isOpera ? 220:200)+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
      +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>t0g3<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
      +QT
      +'</div>'
