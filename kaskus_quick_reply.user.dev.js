@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110405315
-// @timestamp     1301989116741
+// @timestamp     1301992435881
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -32,12 +32,11 @@
 //   Fix failed get username . Thanks=[takut.patahhati]
 //   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
 //   Improve using with Multifox (some features not available)
-//   Fix remove missing emote (f*ck, ta*)
 //   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
 //   Fix posterror on maxlength . Thanks=[t0g3]
 //   Fix input_title maxlength=85 . Thanks=[t0g3]
 //   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-9)
+//   Add quick-quote (beta-10)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -91,7 +90,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301989116741 // version.timestamp
+  timestamp: 1301992435881 // version.timestamp
 
  ,dtversion: 110405315 // version.date
  ,scriptID: 80409 // script-Id
@@ -664,6 +663,7 @@ function do_click_qqr(e, multi){
         mct=$2.match(/\/?a\s*(?:(?:target|style|title)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
 		if(isDefined(mct[1])) {
 		   tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
+		   if(tag=='EMAIL') mct[1]=mct[1].replace(/^mailto:/i,'');
 		   LT.a.push(tag);
 		}else{
 		   mct[1]=false;
