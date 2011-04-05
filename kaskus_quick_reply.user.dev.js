@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110405315
-// @timestamp     1302006481538
+// @dtversion     110406315
+// @timestamp     1302027615634
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,28 +17,28 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-04-05
+// v3.1.5 - 2011-04-06
 //   Fix multiquote behaviour with Multifox
 //   Improve QQ enabled(default)
 //   Fix Updater switch between xhr method
 //   Fix QQ clearparse inside PHP tag.
-//   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
+//   Add native/generic XHR for Multifox
 //   Improve author namespace (adapting AMO)
 //   Improve & repositioning QQ-Button
 //   Add 2 new Kaskusemotes (Hot-News; Games)
 //   Fix multi-QQ in one page
-//   Fix namespace . Thanks=[Piluze]
+//   Fix namespace
 //   Fix QQ-now lastIdx of an a
 //   Fix QQ-now not disappear in notice on another page
 //   Fix keep controller_wraper onclose Settings
-//   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
-//   Fix QQ-now not disappear in notice . Thanks=[rende]
+//   Fix QQ missed parsing inside LIST
+//   Fix QQ-now not disappear in notice
 //   Fix failed get username . Thanks=[takut.patahhati]
-//   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
+//   Improve combining multi-QQ (in One Page)
 //   Improve using with Multifox (some features not available)
 //   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
-//   Fix posterror on maxlength . Thanks=[t0g3]
-//   Fix input_title maxlength=85 . Thanks=[t0g3]
+//   Fix posterror on maxlength
+//   Fix input_title maxlength=85
 //   Fix minor (setElastic) offset max-height
 //   Add quick-quote (beta-10)
 //
@@ -94,9 +94,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1302006481538 // version.timestamp
+  timestamp: 1302027615634 // version.timestamp
 
- ,dtversion: 110405315 // version.date
+ ,dtversion: 110406315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -508,10 +508,8 @@ function start_Main(){
        Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
        el = createEl('a',Attr,child);
        on('click',el,function(e){do_click_qqr(e)});
-       //Dom.add(el, nodes[i].parentNode);
        nodes[i].parentNode.insertBefore(el, nodes[i]);
        nodes[i].parentNode.insertBefore(createTextEl(' '+"\n"), nodes[i]);
-	   //Dom.add(el, nodes[i].parentNode);
 	   
      } // end-for
      nodes = getByXPath_containing('//a', false, 'EDIT');
@@ -577,7 +575,6 @@ function start_Main(){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
     }
-
 }
 // end start_Main()
 
@@ -786,8 +783,7 @@ function do_click_qqr(e, multi){
 	  el.parentNode.replaceChild(el2,el);
 	}
 	
-	clog('after ol-ul done=\n'+pCon.innerHTML);
-	
+	clog('after ol-ul done=\n'+pCon.innerHTML);	
 
 	// cleanup lastedit
 	els=$D('.//div[@class="smallfont"]',pCon);
@@ -1178,8 +1174,7 @@ function qr_ajax_post(reply_html){
        if(ret.err==0){
          
          // set lastPost timestamp here
-         QRdp.updLast(new Date().getTime()+'');
-		 
+         QRdp.updLast(new Date().getTime()+'');		 
 
          if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
          if(ret.redirect) location.href = ret.redirect;
@@ -1308,7 +1303,6 @@ function loadLayer_reCaptcha(){
             if(ab){
              C = do_an_e(C); return false;
 			}
-
         });
         // order tabindex
         var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
@@ -1366,9 +1360,8 @@ function loadLayer_reCaptcha(){
     window.setTimeout(function() {
         SimulateMouse($D('#hidrecap_btn'), 'click', true);
     }, 100);
-
-
-} // end loadLayer_reCaptcha
+}
+// end loadLayer_reCaptcha
 
 function loadLayer_preview(){
     loadLayer( rSRC.getTPL_Preview, 'preview' );
@@ -1403,7 +1396,6 @@ function loadLayer( theTPL, flag ){
           
     // cancel preview
     if($D('#preview_cancel')) on('click',$D('#preview_cancel'),function(){ closeLayerBox('hideshow'); });
-    
 }
 
 function popupLayer_positioning(){
@@ -1511,7 +1503,6 @@ function initEventTpl(){
           e.preventDefault(); // return false;
           return false;
 		}
-
       });
       
       on('click',$D('#chk_fixups'),function(e) {
@@ -3647,9 +3638,7 @@ var QRdp = {
          QRdp.countDown = Math.abs(QRdp.selisih);
          window.setTimeout( function(){QRdp.showCounter()}, 1000);
 	  }
-	} 
-
-
+	}
  }
  ,writeTgt:function(tgt,val){
     if(tgt) tgt.innerHTML = '[ <span class="qr-delaypost">'+val+'</span> ]';
@@ -3663,8 +3652,7 @@ var QRdp = {
       if(tgt){
        tgt.innerHTML = '';
        tgt.style.display = 'none';
-	  }	  
-
+	  }
     }else{
       QRdp.countDown--;
       window.setTimeout( function(){QRdp.showCounter()}, 1000);
