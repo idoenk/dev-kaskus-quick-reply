@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110405315
-// @timestamp     1301992435881
+// @timestamp     1301996641878
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-04-05
+//   Fix Updater switch between xhr method
 //   Fix QQ clearparse inside PHP tag.
 //   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
 //   Improve author namespace (adapting AMO)
@@ -91,7 +92,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301992435881 // version.timestamp
+  timestamp: 1301996641878 // version.timestamp
 
  ,dtversion: 110405315 // version.date
  ,scriptID: 80409 // script-Id
@@ -3585,6 +3586,7 @@ var Dom = {
 var GM_XHR = {
   uri:null,
   returned:null,
+  forceGM:false, // force with GM-XHR & avoid using Native-XHR when with multifox
   cached:false,
   events:false,
   request: function(cdata,met,callback){
@@ -3610,14 +3612,14 @@ var GM_XHR = {
           }
         }
     };	
-    if( !gvar.settings.with_multiFox )
-	  GM_xmlhttpRequest( pReq_xhr );
+    if( gvar.settings.with_multiFox && !GM_XHR.forceGM )
+      NAT_xmlhttpRequest( pReq_xhr );
     else
-      GEN_xmlhttpRequest( pReq_xhr );	
+	  GM_xmlhttpRequest( pReq_xhr );
   }
 };
 // native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
-var GEN_xmlhttpRequest=function(obj) {
+var NAT_xmlhttpRequest=function(obj) {
   var request=new XMLHttpRequest();
   request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
   request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
@@ -3681,21 +3683,24 @@ var Updater = {
      // prep xhr request
      GM_XHR.uri = 'http://'+'userscripts.org'+'/scripts/source/'
        + gvar.scriptMeta.scriptID + '.meta.js';
-     GM_XHR.cached = false;
+     
+	 GM_XHR.cached = false;
+     GM_XHR.forceGM = true;
      GM_XHR.request(null,'GET',Updater.callback);
     }
   }
- ,callback: function(r){
-    setValue(KS+"QR_LastUpdate", new Date().getTime() + "");
+ ,callback: function(r){    
+	setValue(KS+"QR_LastUpdate", new Date().getTime() + "");
     if(Dom.g(Updater.caller)) 
-      Dom.g(Updater.caller).innerHTML = 'check now';
-    if (r&&r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp) { 
-      Updater.initiatePopup(r.responseText); 
-    } else {
-      Updater.notify_done(false);
-      if (gvar.updateForced)
-        alert("No update is available for QR.");      
-    }
+       Dom.g(Updater.caller).innerHTML = 'check now';	
+	try{ 
+	 if(r&&r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp) {
+	   Updater.initiatePopup(r.responseText);
+	 }else {
+       Updater.notify_done(false);
+       if(gvar.updateForced) alert("No update is available for QR.");      
+     }
+	}catch(e){}
   }
  ,initiatePopup: function(rt){    
     Updater.meta=Updater.mparser(rt);
