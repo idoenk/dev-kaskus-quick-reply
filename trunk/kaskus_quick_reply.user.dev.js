@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
-// @dtversion     110327315
-// @timestamp     1301425064344
+// @dtversion     110405315
+// @timestamp     1301989116741
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-03-27
+// v3.1.5 - 2011-04-05
+//   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
 //   Improve author namespace (adapting AMO)
 //   Improve & repositioning QQ-Button
 //   Add 2 new Kaskusemotes (Hot-News; Games)
@@ -69,28 +70,11 @@
 //   Improve BBCodeIMG (imageshack.us)
 //   Fix avoid banned global object inArray
 //
-// v3.1.3 - 2011-02-19
-//   Fix minor CSS cleanUp imageshack
-//   Add Inc-Dec Size Editor's Height
-//   Add missing kaskus smilie-besar ( Malu )
-//   Fix clear disabled field; kill absolute layer, after upload(imageshack.us)
-//   Fix parseUrl (spaced prefix b4 {message})
-//   Fix toCharRef ignore encoding [\.\,\*]
-//   Silent on oExist performed
-//   Fix minor CSS imageshack on iframe 
-//   Improve reorder uploader nav
-//   Add Uploader (beta-4)
-//   Fix failed update checker
-//   Fix AutoLoad Smiley container
-//   Improve autogrow on Edit(Sigi & Layout)
-//   Fix minor CSS, word-wrap custom_smiley; reorder navigation;
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
 // Init
 // ----
-//
 // Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
 // http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
 // --------------------------------------------------------
@@ -107,9 +91,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301425064344 // version.timestamp
+  timestamp: 1301989116741 // version.timestamp
 
- ,dtversion: 110327315 // version.date
+ ,dtversion: 110405315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -1139,7 +1123,7 @@ function do_posting(e){
   e.setAttribute('disabled','disabled');
   
   if($D('#posting_notify')) $D('#posting_notify').innerHTML = '';  
-  if( !gvar.settings.ajaxpost || gvar.settings.with_multiFox ){
+  if( !gvar.settings.ajaxpost ){
     window.setTimeout(function() {SimulateMouse($D('#qr_submit'), 'click', true)}, 200);
   }else{
     qr_ajax_post();    
@@ -1454,7 +1438,7 @@ function scustom_parser(msg){
 // eg. submit, preview, some of vb_Textarea element
 function initEventTpl(){
     
-	var ck_mquote,nodes,node,nid;
+	var nodes,node,nid;
 	
     if(gvar.tmp_text){
       vB_textarea.init(); // need this coz if disable can not set
@@ -1538,7 +1522,7 @@ function initEventTpl(){
       
       on('submit',$D('#vbform'),function(e){	    
 
-        if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced' && !gvar.settings.with_multiFox ) {
+        if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced' ) {
           clog('here and aborted');
           e.preventDefault(); // return false;
           return false;
@@ -1612,8 +1596,9 @@ function initEventTpl(){
         on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
       
       // new version multi-quote (cookie based)
-      ck_mquote = cK.g(gvar.vbul_multiquote);
-	  chk_newval(ck_mquote ? ck_mquote:'');
+      //ck_mquote = cK.g(gvar.vbul_multiquote);
+	  //chk_newval(ck_mquote ? ck_mquote:'');
+	  chk_newval();
       
       nodes = $D('//img[contains(@id,"mq_")]');	  
       if(nodes.snapshotLength > 0){
@@ -1630,8 +1615,9 @@ function initEventTpl(){
             colorize_td(node.src, nid);			
             on('click',node,function(e){
                e=e.target||e;
-               var ck_mquote = cK.g(gvar.vbul_multiquote);
-               chk_newval( ck_mquote ? ck_mquote :'' );
+               //var ck_mquote = cK.g(gvar.vbul_multiquote);
+               //chk_newval( ck_mquote ? ck_mquote :'' );
+               chk_newval();
                nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
                colorize_td(e.src, nid);
             });
@@ -1772,7 +1758,6 @@ function is_keydown_pressed(e){
       default:
         return;
     }
-	if( gvar.settings.with_multiFox && A==80 ) return;
     C = do_an_e(C);
     if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
 
@@ -2972,8 +2957,12 @@ function chk_newQQ(){
 	}
 }
 // routine for fetching quoted post
-function chk_newval(val){
-   var tgt, notice = $D('#quoted_notice'), nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
+function chk_newval(){
+    var tgt, notice = $D('#quoted_notice'), nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
+	if(nodes.snapshotLength == 0){
+      showhide(notice, false); // hide notice
+      return;
+    }
     removeClass('g_notice-error', notice);
     notice.innerHTML = 'You have selected one or more posts to quote. '
       + '<span id="fetch_now_cont"></span><span id="ft_or_qq"></span>'
@@ -2984,20 +2973,16 @@ function chk_newval(val){
 	on('click',$D('#deselect_them'),function(){deselect_it();});
     if(gvar.settings.quick_quote) chk_newQQ(); // fill in QQ now
 	
-	if(val.length>1){ // or is not using with multifox
-      $D('#fetch_now_cont').innerHTML = '<a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>';
-      on('click',$D('#quote_now'),function(){
-        vB_textarea.init();
-        vB_textarea.readonly();      
-        notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
-        ajax_chk_newval();
-      });
-	  if($D('#fetch_now_cont').innerHTML && $D('#qq_now_cont').innerHTML) 
-	    $D('#ft_or_qq').innerHTML = ' or';
-    }else if(nodes.snapshotLength == 0){
-      showhide(notice, false); // hide notice
-      return;
-    }
+	// dont give a damn with supplied val cookie; coz when use with Multi, it will never been grabbed	
+    $D('#fetch_now_cont').innerHTML = '<a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>';
+    on('click',$D('#quote_now'),function(){
+      vB_textarea.init();
+      vB_textarea.readonly();      
+      notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
+      ajax_chk_newval();
+    });
+	if($D('#fetch_now_cont').innerHTML && $D('#qq_now_cont').innerHTML)
+	  $D('#ft_or_qq').innerHTML = ' or';
 }
 
 // deselect selected multi quote
@@ -3019,7 +3004,9 @@ function do_deselect(mqs) {
   }
   // delete cookie
   cK.d(gvar.vbul_multiquote);
-  chk_newval(0); // trigger showhide notice
+  //chk_newval(0); // trigger showhide notice
+  var nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
+  showhide(notice, false); // hide notice
 }
 
 function fetch_property(){
@@ -3602,8 +3589,8 @@ var GM_XHR = {
     if(!GM_XHR.uri) return;
     met=(isDefined(met) && met ? met:'GET');
     cdata=(isDefined(cdata) && cdata ? cdata:null);
-    if(typeof(callback)!='function') callback=null;    
-    GM_xmlhttpRequest( {
+    if(typeof(callback)!='function') callback=null;
+	var pReq_xhr = {
         method:met,
         url:GM_XHR.uri + (GM_XHR.cached ? '':(GM_XHR.uri.indexOf('?')==-1?'?':'&rnd=') + Math.random().toString().replace('0.','')),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -3620,9 +3607,23 @@ var GM_XHR = {
                GM_XHR.returned = rets;
           }
         }
-    } );
+    };	
+    if( !gvar.settings.with_multiFox )
+	  GM_xmlhttpRequest( pReq_xhr );
+    else
+      GEN_xmlhttpRequest( pReq_xhr );	
   }
 };
+// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+var GEN_xmlhttpRequest=function(obj) {
+  var request=new XMLHttpRequest();
+  request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+  request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+  try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
+  if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
+  request.send(obj.data); return request;
+};
+
 // utk delay post (30sec) notify
 var QRdp = {
   // QR delay post 
@@ -4268,9 +4269,6 @@ var ST = {
     if($D('#customable_btn')) on('click',$D('#customable_btn'),function(){
       var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
     });
-	if($D('#misc_multifox')) on('click',$D('#misc_multifox'),function(e){
-      e=e.target||e;var t=$D('#misc_ajaxpost_cont'); t.style.display = (e.checked ? 'none' : '');
-    });
     // ex-imp        
     if($D('#textarea_rawdata')) {
         el = $D('#textarea_rawdata');
@@ -4319,8 +4317,6 @@ var ST = {
     
     if(!gvar.settings.textareaExpander[0] && $D(gvar.id_textarea))
        gvar.lastHeight_textarea = $D(gvar.id_textarea).style.height;
-	   
-	if($D('#qr_preview_ajx')) $D('#qr_preview_ajx').style.display= (gvar.settings.with_multiFox?'none':'');
 	
     // destroy all qr, on !restart
     if(!gvar.restart)
@@ -5813,7 +5809,7 @@ Format will be valid like this:
      +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
      +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
-     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" '+(gvar.settings.with_multiFox?'style="display:none"':'')+'/>'
+     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
      +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
      
      +'</div>'
@@ -6150,13 +6146,13 @@ Format will be valid like this:
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
-     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Directly Quick Quote from post-bit. Result may not well-parsed on complicated sources!" style="cursor:help">Experimental</b>)</label>'
+     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Direct Quote from post-bit. Some tags may not parsed properly!" style="cursor:help">Experimental</b>)</label>'
      +spacer
 	 +'<div style="display:'+(gvar.noCrossDomain ? 'none':'')+'">'
-      +'<input id="misc_multifox" type="checkbox" '+(gvar.settings.with_multiFox ? 'checked':'')+'/><label for="misc_multifox">Use with MultiFox (<b class="opr" title="Some features will not available. AjaxPost, MultiQuote, Preview." style="cursor:help">Experimental</b>)</label>'
+      +'<input id="misc_multifox" type="checkbox" '+(gvar.settings.with_multiFox ? 'checked':'')+'/><label for="misc_multifox">Use with MultiFox (<b class="opr" title="Experimental Mode" style="cursor:help">Experimental</b>)</label>'
 	 +'</div>'
      +spacer
-	 +'<div id="misc_ajaxpost_cont" style="display:'+(gvar.settings.with_multiFox ? 'none':'')+'">'
+	 +'<div id="misc_ajaxpost_cont">'
       +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
      +spacer
 	 +'</div>'
