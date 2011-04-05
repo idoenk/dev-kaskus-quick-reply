@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-04-05
+//   Fix QQ clearparse inside PHP tag.
 //   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
 //   Improve author namespace (adapting AMO)
 //   Improve & repositioning QQ-Button
@@ -722,6 +723,7 @@ function do_click_qqr(e, multi){
 	     if(cucok=el.innerHTML.match(/(?:(HTML|PHP)\s{1})*Code:/)){
 		   el2=el.parentNode; Dom.remove(el);
 		   tag=(cucok && cucok[1] ? cucok[1] : 'CODE');
+		   el2.innerHTML=el2.innerHTML.replace(/\&nbsp;/gi,' ');		   
 		   el=createTextEl('['+tag+']'+unescapeHtml(clearTag(el2.innerHTML))+'[/'+tag+']\n');
 		   el2.parentNode.replaceChild(el,el2);
 	     }
