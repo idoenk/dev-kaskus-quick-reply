@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.5
 // @dtversion     110405315
-// @timestamp     1301996641878
+// @timestamp     1302006481538
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,8 @@
 // -!--latestupdate
 //
 // v3.1.5 - 2011-04-05
+//   Fix multiquote behaviour with Multifox
+//   Improve QQ enabled(default)
 //   Fix Updater switch between xhr method
 //   Fix QQ clearparse inside PHP tag.
 //   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
@@ -92,14 +94,13 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.5';
 gvar.scriptMeta = {
-  timestamp: 1301996641878 // version.timestamp
+  timestamp: 1302006481538 // version.timestamp
 
  ,dtversion: 110405315 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
 javascript:window.alert(new Date().getTime());
-javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
@@ -118,7 +119,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES:          ['1'] // check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
- ,KEY_SAVE_QUICK_QUOTE:      ['0'] // quick quote
+ ,KEY_SAVE_QUICK_QUOTE:      ['1'] // quick quote
  ,KEY_SAVE_MULTIFOX:         ['0'] // used with multifox
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
@@ -159,10 +160,6 @@ function init(){
   gvar.domain= 'http://'+'www.kaskus.us/';  
   gvar.isNotForum = (!location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/));
   if(gvar.isNotForum) return outSideForumTreat();
-	
-
-  gvar.reCAPTCHA_domain= 'http://'+'api.recaptcha.net';
-  gvar.reCAPTCHA_google_domain= 'http://'+'www.google.com/recaptcha/api';
   
   gvar.domainstatic= 'http://'+'static.kaskus.us/';
   gvar.avatarLink= gvar.domainstatic + 'customavatars/';
@@ -580,7 +577,7 @@ function start_Main(){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
     }
-    
+
 }
 // end start_Main()
 
@@ -1494,7 +1491,15 @@ function initEventTpl(){
     // node destroyed from qr_maincontainer and all nodes inside
     // ====---==No-Repost-Event-Gan==---===
     if(!gvar.restart){
-    
+      
+	  
+	  // new version multi-quote (cookie based)
+      ck_mquote = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+	  
+	  // this btn will remotely clicked after chk coockie from surface
+      on('click',$D('#qr_chkval'),function(){
+	   chk_newval($D('#tmp_chkVal').value)
+	  });
       on('click',$D('#qr_setting_btn'),function(){
         ST.init_setting();
       });
@@ -1596,13 +1601,9 @@ function initEventTpl(){
       on('resize',window,function(){controler_resizer()});
       // activate hotkey?
       if( gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' )
-        on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
+        on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});      
       
-      // new version multi-quote (cookie based)
-      //ck_mquote = cK.g(gvar.vbul_multiquote);
-	  //chk_newval(ck_mquote ? ck_mquote:'');
-	  chk_newval();
-      
+	  chk_newval(ck_mquote ? ck_mquote:'');
       nodes = $D('//img[contains(@id,"mq_")]');	  
       if(nodes.snapshotLength > 0){
 	    
@@ -1618,9 +1619,9 @@ function initEventTpl(){
             colorize_td(node.src, nid);			
             on('click',node,function(e){
                e=e.target||e;
-               //var ck_mquote = cK.g(gvar.vbul_multiquote);
-               //chk_newval( ck_mquote ? ck_mquote :'' );
-               chk_newval();
+			   var ck_mquote = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+               chk_newval( ck_mquote ? ck_mquote :'' );
+               //chk_newval();
                nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
                colorize_td(e.src, nid);
             });
@@ -2644,7 +2645,7 @@ function do_resize_editor(e){
 
 function event_ckck(){
   //clog('in event_ckck');
-  if($D('#quickreply')) gvar.motion_target=$D('#quickreply');  
+  if($D('#quickreply')) gvar.motion_target=$D('#quickreply');
   on('mousemove',gvar.motion_target,function(){
       
       QRdp.check($D('#qr_delaycontainer'));
@@ -2960,9 +2961,9 @@ function chk_newQQ(){
 	}
 }
 // routine for fetching quoted post
-function chk_newval(){
+function chk_newval(val){
     var tgt, notice = $D('#quoted_notice'), nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
-	if(nodes.snapshotLength == 0){
+	if(nodes.snapshotLength==0 && !val ){
       showhide(notice, false); // hide notice
       return;
     }
@@ -2990,13 +2991,13 @@ function chk_newval(){
 
 // deselect selected multi quote
 function deselect_it(){
-   var mqs = cK.g(gvar.vbul_multiquote);
+   var mqs = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
    if(!mqs) return;
    gvar.idx_mq=(mqs ? mqs.split(",").length : 0);
    do_deselect(mqs);
 }
 function do_deselect(mqs) {
-  if(isUndefined(mqs)) mqs = cK.g(gvar.vbul_multiquote);
+  if(isUndefined(mqs)) mqs = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
   ids = mqs.split(',');
   while(gvar.idx_mq > 0) {
     gvar.idx_mq--;
@@ -3007,9 +3008,9 @@ function do_deselect(mqs) {
   }
   // delete cookie
   cK.d(gvar.vbul_multiquote);
-  //chk_newval(0); // trigger showhide notice
-  var nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
-  showhide(notice, false); // hide notice
+  if(gvar.settings.with_multiFox) SimulateMouse($D("qr_remoteDC"),'click',true);
+  
+  if($D('#quoted_notice')) showhide($D('#quoted_notice'), false); // hide notice
 }
 
 function fetch_property(){
@@ -5261,6 +5262,16 @@ var rSRC = {
     + '};'
     +'};'
     +''
+    +'var cK={'
+    +'  g:function(n){var D=document.cookie,A=n+"=",p=[D.indexOf("; "+A),0];if(p[0]==-1){p[0]=D.indexOf(A);if(p[0]!=0) return null;}else{p[0]+=2;}p[1]=D.indexOf(";",p[0]);if(p[1]==-1)p[1]=D.length;return unescape(D.substring(p[0]+A.length,p[1]));}'
+    +' ,d:function(n){if(cK.g(n))document.cookie=n+"=; expires=Thu, 01-Jan-70 00:00:01 GMT";}'
+    +'};'
+    +'function deleteMultiQuote(){cK.d("vbulletin_multiquote")}'
+    +'function SimulateMouse(elem,event){if(typeof(elem)!="object")return; var evObj=document.createEvent("MouseEvents");evObj.initEvent(event,false,true);try{elem.dispatchEvent(evObj);}catch(e){}}'
+    +'var mqs=cK.g("vbulletin_multiquote"); if(mqs){'
+    +  'document.getElementById("tmp_chkVal").value=mqs;'
+    +  'SimulateMouse(document.getElementById("qr_chkval"),"click",true);'
+    +'}'
   );  
  }
 
@@ -5799,6 +5810,8 @@ Format will be valid like this:
     +'<input type="hidden" name="wysiwyg" id="vB_Editor_001_mode" value="0" />'
     +'<input type="hidden" name="clicker" id="clicker" value="" />'
     +'<input type="hidden" name="styleid" value="0" />\n\n'
+	
+    +'<input type="hidden" value="" id="tmp_chkVal" />\n\n'
     
     +'<div class="sub-bottom sayapkiri">'
      +'<div id="rate_thread" style="display:none;"><img src="'+gvar.B.throbber_gif+'" border="0"/></div>'
@@ -5813,6 +5826,8 @@ Format will be valid like this:
       +(!gvar.user.isDonatur ? ''
       +'<div id="capcay_container" style="position:relative; display:none;"></div>'
       :'')
+     +'<input id="qr_chkval" type="button" style="display:none;" value="cv" />' // remote button to chkVal
+     +'<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="deleteMultiQuote()" />' // remote button to delete-mQ
      +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
      +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
@@ -6153,7 +6168,7 @@ Format will be valid like this:
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
-     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Direct Quote from post-bit. Some tags may not parsed properly!" style="cursor:help">Experimental</b>)</label>'
+     +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Quote directly from postbit on current page. Some tags may not parsed properly!" style="cursor:help">[!]</b>)</label>'
      +spacer
 	 +'<div style="display:'+(gvar.noCrossDomain ? 'none':'')+'">'
       +'<input id="misc_multifox" type="checkbox" '+(gvar.settings.with_multiFox ? 'checked':'')+'/><label for="misc_multifox">Use with MultiFox (<b class="opr" title="Experimental Mode" style="cursor:help">Experimental</b>)</label>'
