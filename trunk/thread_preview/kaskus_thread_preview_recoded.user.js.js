@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.7
-// @dtversion     110326107
-// @timestamp     1301081362027
+// @dtversion     110407107
+// @timestamp     1302187875274
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,8 +19,8 @@
 //
 // -!--latestupdate
 //
-//  v1.0.7 - 2011-03-26
-//    Add 2 new Kaskusemotes (Hot-News; Games)
+//  v1.0.7 - 2011-04-07
+//    Fix always use native-XHR.
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -69,13 +69,12 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.7';
 gvar.scriptMeta = {
-  timestamp: 1301081362027 // version.timestamp
+  timestamp: 1302187875274 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
 /*
 javascript:window.alert(new Date().getTime());
-javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
@@ -2556,6 +2555,15 @@ var GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle 
   }
   return sel;
 };
+// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+var NAT_xmlhttpRequest=function(obj) {
+  var request=new XMLHttpRequest();
+  request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+  request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+  try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
+  if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
+  request.send(obj.data); return request;
+};
 
 // Get Elements
 var $D=function (q, root, single) {
@@ -2614,7 +2622,7 @@ var GM_XHR = {
     met=(isDefined(met) && met ? met:'GET');
     cdata=(isDefined(cdata) && cdata ? cdata:null);
     if(typeof(callback)!='function') callback=null;    
-    GM_xmlhttpRequest( {
+	var pReq_xhr ={
         method:met,
         url:GM_XHR.uri + (GM_XHR.cached ? '':(GM_XHR.uri.indexOf('?')==-1?'?':'&rnd=') + Math.random().toString().replace('0.','')),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -2631,7 +2639,10 @@ var GM_XHR = {
                GM_XHR.returned = rets;
           }
         }
-    } );
+    }
+    //GM_xmlhttpRequest( );
+    // try always use this native-XHR, incase supporting multifox
+    NAT_xmlhttpRequest( pReq_xhr );	
   }
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
@@ -3234,15 +3245,13 @@ Format will be valid like this:
 ,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
 ,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
 ,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'541': [H+'hotnews.gif', ':hn', 'Hot News']
-,'542': [H+'games.gif', ':games', 'Games']
-,'543': [H+'traveller.gif', ':travel', 'Traveller']
+,'541': [H+'traveller.gif', ':travel', 'Traveller']
 
-,'544': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-,'545': [H+'cewek.gif', ':kiss', 'Kiss']
-,'546': [H+'peluk.gif', ':peluk', 'Peluk']
-,'547': [H+'cool2.gif', ':cool', 'Cool']
-,'548': [H+'bola.gif', ':bola', 'Bola']
+,'542': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,'543': [H+'cewek.gif', ':kiss', 'Kiss']
+,'544': [H+'peluk.gif', ':peluk', 'Peluk']
+,'545': [H+'cool2.gif', ':cool', 'Cool']
+,'546': [H+'bola.gif', ':bola', 'Bola']
 
 // -- OLD ---
 ,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']

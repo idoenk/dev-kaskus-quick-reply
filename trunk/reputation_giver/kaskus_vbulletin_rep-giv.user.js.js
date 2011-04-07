@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.20
-// @dtversion     11032620
-// @timestamp     1301147771286
+// @version       1.21
+// @dtversion     11040721
+// @timestamp     1302187638713
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,12 +15,15 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.20 : 2011-03-26
-// Fix dashpoison sequence (location)
-// Fix failed show sender's img (Chrome.12)
+// mod.R.21 : 2011-04-07
+// Fix always use native-XHR.
 //
 // ==/UserScript==
 /*
+//
+// mod.R.20 : 2011-03-26
+// Fix dashpoison sequence (location)
+// Fix failed show sender's img (Chrome.12)
 //
 // mod.R.19 : 2011-03-10
 // Fix break longtext location
@@ -51,15 +54,14 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '20';
+gvar.sversion = 'R' + '21';
 gvar.scriptMeta = {
-  timestamp: 1301147771286 // version.timestamp
+  timestamp: 1302187638713 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
 /*
 javascript:window.alert(new Date().getTime());
-javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //========-=-=-=-=--=========
 gvar.__DEBUG__  = false; // development debug
@@ -485,7 +487,7 @@ function hideLoader(){
 // -- 
  
 function startDetail(userSets, x){
- GM_xmlhttpRequest({
+ var pReq_xhr ={
       method: "get",
       url: gvar.uri['user_link'] + userSets[x] + '?'+Math.random().toString().replace('0.',''),
     onerror: function(result) { this.onload(result); },
@@ -513,7 +515,10 @@ function startDetail(userSets, x){
          }
          }
     }
-  });
+ };
+ //GM_xmlhttpRequest( );
+ // try always use this native-XHR, incase supporting multifox
+ NAT_xmlhttpRequest( pReq_xhr );
 }; 
 // end func startDetail();
  
@@ -1006,6 +1011,15 @@ var GM_addGlobalScript=function(script, id, tobody) { // Redefine GM_addGlobalSc
      document.body.insertBefore(sel, document.body.firstChild);
   }
   return sel;
+};
+// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+var NAT_xmlhttpRequest=function(obj) {
+  var request=new XMLHttpRequest();
+  request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+  request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+  try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
+  if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
+  request.send(obj.data); return request;
 };
 
 // -- -- -- -- 

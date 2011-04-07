@@ -3,22 +3,25 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        0.3.3
-// @dtversion      110218033
-// @timestamp      1298037211101
+// @version        0.3.4
+// @dtversion      110407034
+// @timestamp      1302188340771
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v0.3.3 - 2011-02-18
-//  Fix dump-redirect after editpost
-//  Fix edit no-need capcay
+// v0.3.4 - 2011-04-07
+//  Fix always use native-XHR.
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v0.3.3 - 2011-02-18
+//  Fix dump-redirect after editpost
+//  Fix edit no-need capcay
 //
 // v0.3.2 - 2011-02-16
 //  Fix adapting capcay-sys (kaskusDonat)
@@ -48,15 +51,14 @@
 
 var gvar=function(){};
 
-gvar.sversion = 'v' + '0.3.3';
+gvar.sversion = 'v' + '0.3.4';
 gvar.scriptMeta = {
-  timestamp: 1298037211101 // version.timestamp
+  timestamp: 1302188340771 // version.timestamp
 
  ,scriptID: 91051 // script-Id
 };
 /*
 javascript:window.alert(new Date().getTime());
-javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 //========-=-=-=-=--=========
 gvar.__DEBUG__ = false; // development debug
@@ -66,10 +68,8 @@ const OPTIONS_BOX = {
   KEY_SAVE_DelayPopupPicsTimeout:  ['500'] // Delay before popup show up
  ,KEY_SAVE_CallBackUri:           [''] // temporary referer uri
 };
-
 const GMSTORAGE_PATH = 'GM_';
 const KS 			 = 'KEY_SAVE_';
-
 
 function init(){
  
@@ -88,8 +88,7 @@ function init(){
     ,'action':'editpost'
     ,'submit':'Save Changes'
     ,'hash':''
-  };
-  
+  };  
   
   gvar.B = getBtn();
   // gvar initialized - 
@@ -580,7 +579,7 @@ var GM_XHR = {
      met=(isDefined(met) && met ? met:'GET');
      cdata=(isDefined(cdata) && cdata ? cdata:null);
      if(typeof(callback)!='function') callback=null;
-     GM_xmlhttpRequest( {
+     var pReq_xhr ={
          method:met,
          url:GM_XHR.uri + (GM_XHR.cached ? '':(GM_XHR.uri.indexOf('?')==-1?'?':'&rnd=') + Math.random().toString().replace('0.','')),
          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -592,7 +591,10 @@ var GM_XHR = {
            else
               GM_XHR.returned = rets;
          }
-     } );
+     };
+	 //GM_xmlhttpRequest( );
+     // try always use this native-XHR, incase supporting multifox
+     NAT_xmlhttpRequest( pReq_xhr );	
    }
 };
 var $D=function (q, root, single) {
@@ -649,6 +651,15 @@ var Dom= {
       };      
     }
   }()
+};
+// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+var NAT_xmlhttpRequest=function(obj) {
+  var request=new XMLHttpRequest();
+  request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+  request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+  try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
+  if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
+  request.send(obj.data); return request;
 };
 
 var GM_addGlobalStyle=function(css, id) { // Redefine GM_addGlobalStyle with a better routine
