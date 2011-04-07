@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.1.5
-// @dtversion     110406315
-// @timestamp     1302027615634
+// @version       3.1.6
+// @dtversion     110407316
+// @timestamp     1302201532246
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,34 +17,40 @@
 //
 // -!--latestupdate
 //
-// v3.1.5 - 2011-04-06
-//   Fix multiquote behaviour with Multifox
-//   Improve QQ enabled(default)
-//   Fix Updater switch between xhr method
-//   Fix QQ clearparse inside PHP tag.
-//   Add native/generic XHR for Multifox
-//   Improve author namespace (adapting AMO)
-//   Improve & repositioning QQ-Button
-//   Add 2 new Kaskusemotes (Hot-News; Games)
-//   Fix multi-QQ in one page
-//   Fix namespace
-//   Fix QQ-now lastIdx of an a
-//   Fix QQ-now not disappear in notice on another page
-//   Fix keep controller_wraper onclose Settings
-//   Fix QQ missed parsing inside LIST
-//   Fix QQ-now not disappear in notice
-//   Fix failed get username . Thanks=[takut.patahhati]
-//   Improve combining multi-QQ (in One Page)
-//   Improve using with Multifox (some features not available)
-//   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
-//   Fix posterror on maxlength
-//   Fix input_title maxlength=85
-//   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-10)
+// v3.1.6 - 2011-04-07
+//   Improve simultan QQ & MQ
+//   Fix [BIU] shortcut (Opera)
+//   Add shortcut, [Left, Center, Right] == Ctrl+[L,(Shift+E),R]
+//   Improve quick-quote (beta-11)
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.1.5 - 2011-04-05
+//   Fix multiquote behaviour with Multifox
+//   Improve QQ enabled(default)
+//   Fix Updater switch between xhr method
+//   Fix QQ clearparse inside PHP tag.
+//   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
+//   Improve author namespace (adapting AMO)
+//   Improve & repositioning QQ-Button
+//   Add 2 new Kaskusemotes (Hot-News; Games)
+//   Fix multi-QQ in one page
+//   Fix namespace . Thanks=[Piluze]
+//   Fix QQ-now lastIdx of an a
+//   Fix QQ-now not disappear in notice on another page
+//   Fix keep controller_wraper onclose Settings
+//   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
+//   Fix QQ-now not disappear in notice . Thanks=[rende]
+//   Fix failed get username . Thanks=[takut.patahhati]
+//   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
+//   Improve using with Multifox (some features not available)
+//   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
+//   Fix posterror on maxlength . Thanks=[t0g3]
+//   Fix input_title maxlength=85 . Thanks=[t0g3]
+//   Fix minor (setElastic) offset max-height
+//   Add quick-quote (beta-10)
 //
 // v3.1.4 - 2011-03-13
 //   Fix minor (setElastic) onkeyup &#13 ;
@@ -92,11 +98,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.5';
+gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1302027615634 // version.timestamp
+  timestamp: 1302201532246 // version.timestamp
 
- ,dtversion: 110406315 // version.date
+ ,dtversion: 110407316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -507,7 +513,8 @@ function start_Main(){
        child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
        Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
        el = createEl('a',Attr,child);
-       on('click',el,function(e){do_click_qqr(e)});
+       //on('click',el,function(e){do_click_qqr(e)});
+       on('click',el,function(e){proc_mquickquote(e)});
        nodes[i].parentNode.insertBefore(el, nodes[i]);
        nodes[i].parentNode.insertBefore(createTextEl(' '+"\n"), nodes[i]);
 	   
@@ -575,6 +582,7 @@ function start_Main(){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
     }
+
 }
 // end start_Main()
 
@@ -783,7 +791,8 @@ function do_click_qqr(e, multi){
 	  el.parentNode.replaceChild(el2,el);
 	}
 	
-	clog('after ol-ul done=\n'+pCon.innerHTML);	
+	clog('after ol-ul done=\n'+pCon.innerHTML);
+	
 
 	// cleanup lastedit
 	els=$D('.//div[@class="smallfont"]',pCon);
@@ -1174,7 +1183,8 @@ function qr_ajax_post(reply_html){
        if(ret.err==0){
          
          // set lastPost timestamp here
-         QRdp.updLast(new Date().getTime()+'');		 
+         QRdp.updLast(new Date().getTime()+'');
+		 
 
          if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
          if(ret.redirect) location.href = ret.redirect;
@@ -1275,7 +1285,7 @@ function closeLayerBox(tgt){
 	
     try {
       delete gvar.lastPostQuery;
-      Dom.g(gvar.id_textarea).focus(); 
+      window.setTimeout(function() { Dom.g(gvar.id_textarea).focus()}, 1); // sto is necessary for Opera
       if(isPreviewMode && doLastFocus) vB_textarea.lastfocus(); 
     }catch(e){}
 }
@@ -1303,6 +1313,7 @@ function loadLayer_reCaptcha(){
             if(ab){
              C = do_an_e(C); return false;
 			}
+
         });
         // order tabindex
         var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
@@ -1360,8 +1371,9 @@ function loadLayer_reCaptcha(){
     window.setTimeout(function() {
         SimulateMouse($D('#hidrecap_btn'), 'click', true);
     }, 100);
-}
-// end loadLayer_reCaptcha
+
+
+} // end loadLayer_reCaptcha
 
 function loadLayer_preview(){
     loadLayer( rSRC.getTPL_Preview, 'preview' );
@@ -1396,6 +1408,7 @@ function loadLayer( theTPL, flag ){
           
     // cancel preview
     if($D('#preview_cancel')) on('click',$D('#preview_cancel'),function(){ closeLayerBox('hideshow'); });
+    
 }
 
 function popupLayer_positioning(){
@@ -1458,7 +1471,8 @@ function initEventTpl(){
         }          
       });
     }
-    on('keydown',Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
+
+	on( (gvar.isOpera ? 'keypress':'keydown'), Dom.g(gvar.id_textarea),function(e){return is_keypress_pressed(e)});
     
     on('click',$D('#atitle'),function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
@@ -1503,6 +1517,7 @@ function initEventTpl(){
           e.preventDefault(); // return false;
           return false;
 		}
+
       });
       
       on('click',$D('#chk_fixups'),function(e) {
@@ -1672,8 +1687,8 @@ function is_keydown_pressed_ondocument(e){
 
   if($D('#hideshow')){
     if(A==27){
-     closeLayerBox('hideshow');
-     if($D('#hideshow_recaptcha')) closeLayerBox('hideshow_recaptcha');
+      closeLayerBox('hideshow');
+      if($D('#hideshow_recaptcha')) closeLayerBox('hideshow_recaptcha');
     }
     return;
   }  
@@ -1709,66 +1724,58 @@ function is_keydown_pressed_ondocument(e){
   }
 }
 
-// Ketika keydown tab dari textarea
-function is_keydown_pressed(e){
-  var C = (!e ? window.event : e);
+// Ketika keypress tab dari textarea
+function is_keypress_pressed(C){
+  var C = (!C ? window.event : C), asocKey={};
   if(C) {
-   if(C.ctrlKey){ // mijit + Ctrl    
+   if(C.ctrlKey){ // mijit + Ctrl
     var B, A = C.keyCode ? C.keyCode : C.charCode;
-    switch(A){
-      case 66:
-        B = 'Bold';
-        break;
-      case 73:
-        B = 'Italic';
-        break;
-      case 85:
-        B = 'Underline';
-        break;
-      case 13:  // [S] Submit post
-        B = 'qr_prepost_submit';
-        break;
-      default:
-        return;
-    }
-    C = do_an_e(C);
+	asocKey={
+	  '66':'Bold' // B
+	 ,'73':'Italic' // I
+	 ,'85':'Underline' // U
+	 
+	 ,'69':'Center' // E
+	 ,'76':'Left' // L
+	 ,'82':'Right' // R
+	 
+	 ,'13':'qr_prepost_submit' // Enter
+	};
+	B = (isDefined(asocKey[A])? asocKey[A] : false);
+	//alert('al;'+C + ' - ' + C.ctrlKey + ' - '+B);
+	if(B===false) return false;    
     if(A==13){
-      if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
+      if(C.shiftKey) B = 'qr_preview_ajx'; // preview
+	  if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
     }else{
-      do_align_BIU(B);
-    }
+	  do_align_BIU(B);
+	}
+	C = do_an_e(C);
+
    }else
    if(C.altKey){ // mijit + Alt
     var B='', A = C.keyCode ? C.keyCode : C.charCode;
-    switch(A){
-      case 83: // [S] Submit post
-        B = 'qr_prepost_submit';
-        break;
-      case 80: // [P] Preview
-        B = 'qr_preview_ajx';
-        break;
-      case 88: // [X] Advanced
-        B = 'qr_advanced';      
-        break;
-      default:
-        return;
-    }
-    C = do_an_e(C);
+	asocKey={
+	   '83':'qr_prepost_submit' // [S] Submit post
+	  ,'80':'qr_preview_ajx' // [P] Preview
+	  ,'88':'qr_advanced' // [X] Advanced
+	};
+	B = (isDefined(asocKey[A])? asocKey[A] : false);
+	if(B===false) return false;
     if(Dom.g(B)) SimulateMouse(Dom.g(B), 'click', true); 
-
+	C = do_an_e(C);
+	
    }else
    if(C.keyCode==9){ // mijit tab
      C = do_an_e(C);
      if($D('#recaptcha_response_field')){
        window.setTimeout(function() { try{$D('#recaptcha_response_field').focus()}catch(e){}; }, 150);
      }else{
-       if(!gvar.isOpera) $D('#qr_prepost_submit').focus();
+	   $D('#qr_prepost_submit').focus();
      }
-   }
-   // end keyCode==9 
-   
+   } // end keyCode==9
+   return false;
   } // end event C
-  return false;
 }
 
 function insert_custom_control(){  
@@ -2501,7 +2508,7 @@ function do_insertTag(tag, value){
 }
 // action to do [align,B,I,U]
 function do_align_BIU(e){
-  var tag=e;
+  var tag=e;  
   if(typeof(e)=='object'){
     e = e.target||e;
     tag=e.alt;
@@ -2510,11 +2517,11 @@ function do_align_BIU(e){
   var pTag={
     'Bold' :'B',    'Italic' :'I',      'Underline':'U',
     'Left' :'LEFT', 'Center' :'CENTER', 'Right'    :'RIGHT',
-  };  
+  };
   if(tag.indexOf('Align ')!=-1) tag = tag.replace('Align ','');
   if(isUndefined(pTag[tag])) return;
   vB_textarea.init();
-  vB_textarea.wrapValue(pTag[tag],''); 
+  vB_textarea.wrapValue(pTag[tag],'');
 }
 function do_btncustom(e){
   e = e.target||e;
@@ -2928,16 +2935,20 @@ function ajax_chk_newval(reply_html){
   }
 }
 
-function proc_mquickquote(){
+function proc_mquickquote(e){
    var nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]'), notice= $D('#quoted_notice');
-   for(var i=0;i<nodes.snapshotLength; i++){
-     var node = nodes.snapshotItem(i), parts, nod;
-	 nid=node.id.replace(/mq_(\d+)/, 'qqr_$1');
-	 if(parts=getTag('IMG', $D(nid))) nod = parts[0];
-	 do_click_qqr(nod, true);
+   if(nodes.snapshotLength>0){
+      for(var i=0;i<nodes.snapshotLength; i++){
+       var node = nodes.snapshotItem(i), parts, nod;
+	   nid=node.id.replace(/mq_(\d+)/, 'qqr_$1');
+	   if(parts=getTag('IMG', $D(nid))) nod = parts[0];
+	   do_click_qqr(nod, true);
+      }
+      if(notice) showhide(notice, false); // hide notice
+      deselect_it();
+   }else{
+      do_click_qqr(e);
    }
-   if(notice) showhide(notice, false); // hide notice
-   deselect_it();
 }
 
 function chk_newQQ(){
@@ -3638,7 +3649,9 @@ var QRdp = {
          QRdp.countDown = Math.abs(QRdp.selisih);
          window.setTimeout( function(){QRdp.showCounter()}, 1000);
 	  }
-	}
+	} 
+
+
  }
  ,writeTgt:function(tgt,val){
     if(tgt) tgt.innerHTML = '[ <span class="qr-delaypost">'+val+'</span> ]';
@@ -3652,7 +3665,8 @@ var QRdp = {
       if(tgt){
        tgt.innerHTML = '';
        tgt.style.display = 'none';
-	  }
+	  }	  
+
     }else{
       QRdp.countDown--;
       window.setTimeout( function(){QRdp.showCounter()}, 1000);
