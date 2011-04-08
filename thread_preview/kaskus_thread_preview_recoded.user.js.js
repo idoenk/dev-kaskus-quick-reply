@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.7
 // @dtversion     110408107
-// @timestamp     1302253479971
+// @timestamp     1302289930619
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,7 +19,8 @@
 //
 // -!--latestupdate
 //
-//  v1.0.7 - 2011-04-08
+//  v1.0.7 - 2011-04-09
+//    Fix minor CSS; deprecate eval()
 //    Fix forceGM for updater
 //    Fix always use native-XHR.
 //
@@ -70,7 +71,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.7';
 gvar.scriptMeta = {
-  timestamp: 1302253479971 // version.timestamp
+  timestamp: 1302289930619 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -1811,7 +1812,8 @@ var tQR = {
   
   if(gvar.settings.autoload_smiley[0]=='1'){
     var id= ('s'+gvar.settings.autoload_smiley[1]+'_container');
-    tQR.insert_smile_content(id, eval('gvar.smilie'+gvar.settings.autoload_smiley[1]));
+	var tS=gvar.settings.autoload_smiley[1], S=(tS=='besar' ? gvar.smiliebesar : (tS=='kecil' ? gvar.smiliekecil : (tS=='custom' ? gvar.smiliecustom : null) ));
+	tQR.insert_smile_content(id, S);
     window.setTimeout(function() { SimulateMouse($D('#remote_'+id), 'click', true); }, 50);
   }else{
     tQR.toggle_tabsmile(Dom.g(scontent[0]));
@@ -3364,21 +3366,11 @@ Format will be valid like this:
     +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px;'
     +'}'
     +'#popup_container {width:95%;left:1%;}'
-    +'.popup_block .popup {'
-    +  'float: left; width: 100%; background: #D1D4E0; margin: 0;'
-    +  'padding: 0; border: 1px solid #bbb;'
-    +'}'
+    +'.popup_block .popup {float:left; width: 100%; background: #D1D4E0; margin:0;padding:0; border:1px solid #bbb;}'
     +'.popup img.cntrl, .popup img.sticky {position:absolute;border:0px;}'
     +'.popup img.cntrl {right:-20px;top:-20px;}'
     +'.popup img.sticky {left:0;top:-3px;}'
-    +'*html #popup_container{'
-    +  'position: absolute;'
-    +  'top:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollTop'
-    +  '+((documentElement.clientHeight-this.clientHeight)/2) : document.body.scrollTop'
-    +  '+((document.body.clientHeight-this.clientHeight)/2));'
-    +  'left:expression(eval(document.compatMode && document.compatMode==\'CSS1Compat\') ? documentElement.scrollLeft'
-    +  '+(document.body.clientWidth /2 ) : document.body.scrollLeft + (document.body.offsetWidth/2));'
-    +'}'
+    +'*html #popup_container{position: absolute}'
     
 	/* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;'
