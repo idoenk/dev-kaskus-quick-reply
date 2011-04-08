@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.7
-// @dtversion     110407107
-// @timestamp     1302187875274
+// @dtversion     110408107
+// @timestamp     1302253479971
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,7 +19,8 @@
 //
 // -!--latestupdate
 //
-//  v1.0.7 - 2011-04-07
+//  v1.0.7 - 2011-04-08
+//    Fix forceGM for updater
 //    Fix always use native-XHR.
 //
 // -/!latestupdate---
@@ -69,7 +70,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.0.7';
 gvar.scriptMeta = {
-  timestamp: 1302187875274 // version.timestamp
+  timestamp: 1302253479971 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -2615,13 +2616,14 @@ var Dom = {
 var GM_XHR = {
   uri:null,
   returned:null,
+  forceGM:false, // force with GM-XHR & avoid using Native-XHR when with multifox
   cached:false,
   events:false,
   request: function(cdata,met,callback){
     if(!GM_XHR.uri) return;
     met=(isDefined(met) && met ? met:'GET');
     cdata=(isDefined(cdata) && cdata ? cdata:null);
-    if(typeof(callback)!='function') callback=null;    
+    if(typeof(callback)!='function') callback=null;
 	var pReq_xhr ={
         method:met,
         url:GM_XHR.uri + (GM_XHR.cached ? '':(GM_XHR.uri.indexOf('?')==-1?'?':'&rnd=') + Math.random().toString().replace('0.','')),
@@ -2639,10 +2641,11 @@ var GM_XHR = {
                GM_XHR.returned = rets;
           }
         }
-    }
-    //GM_xmlhttpRequest( );
-    // try always use this native-XHR, incase supporting multifox
-    NAT_xmlhttpRequest( pReq_xhr );	
+    };
+    if( !GM_XHR.forceGM )
+      NAT_xmlhttpRequest( pReq_xhr );
+    else
+	  GM_xmlhttpRequest( pReq_xhr );	  
   }
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
@@ -2657,7 +2660,9 @@ var Updater = {
      // prep xhr request
      GM_XHR.uri = 'http://'+'userscripts.org'+'/scripts/source/'
        + gvar.scriptMeta.scriptID + '.meta.js';
-     GM_XHR.cached = false;
+     
+	 GM_XHR.cached = false;
+	 GM_XHR.forceGM = true;
      GM_XHR.request(null,'GET',Updater.callback);
     }
   }
