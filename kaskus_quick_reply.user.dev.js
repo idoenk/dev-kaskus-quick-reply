@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110407316
-// @timestamp     1302201532246
+// @dtversion     110425316
+// @timestamp     1303681763083
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-04-07
+// v3.1.6 - 2011-04-25
+//   Fix always use native XHR (use with multifox no-longer required)
 //   Improve simultan QQ & MQ
 //   Fix [BIU] shortcut (Opera)
 //   Add shortcut, [Left, Center, Right] == Ctrl+[L,(Shift+E),R]
@@ -100,9 +101,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1302201532246 // version.timestamp
+  timestamp: 1303681763083 // version.timestamp
 
- ,dtversion: 110407316 // version.date
+ ,dtversion: 110425316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -126,7 +127,6 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['0'] // hide avatar
  ,KEY_SAVE_QUICK_QUOTE:      ['1'] // quick quote
- ,KEY_SAVE_MULTIFOX:         ['0'] // used with multifox
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
@@ -359,7 +359,6 @@ function getSettings(){
     updates: (getValue(KS+'UPDATES')=='1'),
     updates_interval: Math.abs(getValue(KS+'UPDATES_INTERVAL')),
     quick_quote: (getValue(KS+'QUICK_QUOTE')!='0'),
-    with_multiFox: (getValue(KS+'MULTIFOX')!='0' && !gvar.noCrossDomain),
     dynamic: (getValue(KS+'DYNAMIC_QR')!='0'),
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
@@ -1500,7 +1499,7 @@ function initEventTpl(){
       
 	  
 	  // new version multi-quote (cookie based)
-      ck_mquote = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+      ck_mquote = $D('#tmp_chkVal').value;
 	  
 	  // this btn will remotely clicked after chk coockie from surface
       on('click',$D('#qr_chkval'),function(){
@@ -1625,7 +1624,7 @@ function initEventTpl(){
             colorize_td(node.src, nid);			
             on('click',node,function(e){
                e=e.target||e;
-			   var ck_mquote = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+			   var ck_mquote = $D('#tmp_chkVal').value;
                chk_newval( ck_mquote ? ck_mquote :'' );
                //chk_newval();
                nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
@@ -1635,8 +1634,8 @@ function initEventTpl(){
       }
     } // end not restart mode
     
-    // event monitor cookie change    
-	if( !gvar.settings.with_multiFox ) event_ckck();
+    // event monitor cookie change (useable for cookie-swap)
+	event_ckck();
 }
 // - end initEventTpl()
 
@@ -2993,13 +2992,14 @@ function chk_newval(val){
 
 // deselect selected multi quote
 function deselect_it(){
-   var mqs = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+   var mqs = $D('#tmp_chkVal').value;
    if(!mqs) return;
    gvar.idx_mq=(mqs ? mqs.split(",").length : 0);
    do_deselect(mqs);
 }
 function do_deselect(mqs) {
-  if(isUndefined(mqs)) mqs = (gvar.settings.with_multiFox ? $D('#tmp_chkVal').value : cK.g(gvar.vbul_multiquote) );
+  if(isUndefined(mqs)) 
+    mqs = $D('#tmp_chkVal').value;
   ids = mqs.split(',');
   while(gvar.idx_mq > 0) {
     gvar.idx_mq--;
@@ -3010,7 +3010,8 @@ function do_deselect(mqs) {
   }
   // delete cookie
   cK.d(gvar.vbul_multiquote);
-  if(gvar.settings.with_multiFox) SimulateMouse($D("qr_remoteDC"),'click',true);
+  // always do this for...
+  SimulateMouse($D("qr_remoteDC"),'click',true);
   
   if($D('#quoted_notice')) showhide($D('#quoted_notice'), false); // hide notice
 }
@@ -3615,7 +3616,7 @@ var GM_XHR = {
           }
         }
     };	
-    if( gvar.settings.with_multiFox && !GM_XHR.forceGM )
+    if( !GM_XHR.forceGM ) // always use this native; except update checker
       NAT_xmlhttpRequest( pReq_xhr );
     else
 	  GM_xmlhttpRequest( pReq_xhr );
@@ -4340,7 +4341,7 @@ var ST = {
  }
  ,load_rawsetting: function(){
     // collect all settings from storage,. 
-    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','MULTIFOX','AJAXPOST'
+    var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','AJAXPOST'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
@@ -4358,7 +4359,6 @@ var ST = {
      ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
      ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
-     ,'MULTIFOX':'Mode use with MultiFox; validValue=[1,0]'
      ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
@@ -4463,7 +4463,7 @@ var ST = {
     var yakin = confirm(msg);
     if(yakin) {
       var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
-	              ,'QUICK_QUOTE','MULTIFOX','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
+	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
@@ -4526,7 +4526,6 @@ var ST = {
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
       ,'misc_quickquote':KS+'QUICK_QUOTE'
-      ,'misc_multifox':KS+'MULTIFOX'
       ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
@@ -6171,10 +6170,6 @@ Format will be valid like this:
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
      +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Quote directly from postbit on current page. Some tags may not parsed properly!" style="cursor:help">[!]</b>)</label>'
-     +spacer
-	 +'<div style="display:'+(gvar.noCrossDomain ? 'none':'')+'">'
-      +'<input id="misc_multifox" type="checkbox" '+(gvar.settings.with_multiFox ? 'checked':'')+'/><label for="misc_multifox">Use with MultiFox (<b class="opr" title="Experimental Mode" style="cursor:help">Experimental</b>)</label>'
-	 +'</div>'
      +spacer
 	 +'<div id="misc_ajaxpost_cont">'
       +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
