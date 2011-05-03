@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110503316
-// @timestamp     1304399877406
+// @dtversion     110504316
+// @timestamp     1304455801456
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-05-03
+// v3.1.6 - 2011-05-04
+//   Improve save_draft choice to continue draft
 //   Improve save_draft with reset(-draft-)
 //   Fix clear tmp_text after post
 //   Add List controller
@@ -107,9 +108,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304399877406 // version.timestamp
+  timestamp: 1304455801456 // version.timestamp
 
- ,dtversion: 110503316 // version.date
+ ,dtversion: 110504316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -424,7 +425,8 @@ function getSettings(){
   }  
   // is there any saved text
   gvar.tmp_text=getValue(KS+'TMP_TEXT');
-  if(gvar.tmp_text!='') setValue(KS+'TMP_TEXT', ''); //set blank to nulled it
+  if(gvar.tmp_text!='' && !gvar.settings.qrdraft) 
+     setValue(KS+'TMP_TEXT', ''); //set blank to nulled it
 
   getUploaderSetting();
 }
@@ -557,21 +559,21 @@ function start_Main(){
        if(gvar.settings.autoload_smiley[0]=='1')
          create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
        
+       // check for draft from tmp_text
        if( trimStr(gvar.tmp_text) ){
-         if( trimStr(gvar.tmp_text)!=gvar.silahken ){
+         if( trimStr(gvar.tmp_text)!=gvar.silahken && !gvar.settings.qrdraft ){
            vB_textarea.enabled();
-           vB_textarea.focus();
+           // retrigger elastic
+           vB_textarea.adjustElastic();           
+           force_focus(100);
          }else{
            vB_textarea.readonly();
+           removeClass('twbtn-disabled', $D('#save_draft'));
+           $D('#save_draft').setAttribute('title', 'Continue Draft');
+           $D('#draft_desc').innerHTML = 'Available';
          }
-         gvar.tmp_text=null;
+         //gvar.tmp_text=null; dont delete it yet, will be used onclick Draft button         
          
-         if(gvar.settings.textareaExpander[0])
-           vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
-         else if(gvar.lastHeight_textarea){
-           $D(gvar.id_textarea).style.height = gvar.lastHeight_textarea;
-              delete gvar.lastHeight_textarea;
-         }
        }else{ // disable|readonly textarea.
          vB_textarea.readonly();
          Dom.g(gvar.id_textarea).style.height=100+'px';
@@ -1457,16 +1459,19 @@ function scustom_parser(msg){
 // eg. submit, preview, some of vb_Textarea element
 function initEventTpl(){
     
-	var nodes,node,nid;
-	
-    if( trimStr(gvar.tmp_text) ){
-      vB_textarea.init(); // need this coz if disable can not set
-      // load capcay
-      if(capcay_notloaded()) ajax_buildcapcay();
-      if(gvar.user.isDonatur && additional_options_notloaded()) 
-        ajax_additional_opt();
-    }
-    vB_textarea.set( trimStr(gvar.tmp_text) ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
+	var nodes,node,nid;	
+    
+    if( !gvar.settings.qrdraft )
+        if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){        
+            vB_textarea.init(); // need this coz if disable can not set
+            // load capcay
+            if(capcay_notloaded()) ajax_buildcapcay();
+            if(gvar.user.isDonatur && additional_options_notloaded()) 
+                ajax_additional_opt();            
+            vB_textarea.set( trimStr(gvar.tmp_text) ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
+        }
+    else    
+        vB_textarea.set( gvar.silahken ); // initilaize value with "silahken"
     
     var dvacs = $D('#dv_accessible');
     if(dvacs){
@@ -1490,8 +1495,9 @@ function initEventTpl(){
 	if(gvar.settings.qrdraft)
         on('keypress', Dom.g(gvar.id_textarea),function(){
             if($D('#save_draft')) {
-               $D('#save_draft').value='Save Now';
-               removeClass('twbtn-disabled', $D('#save_draft'));
+               //$D('#save_draft').value='Save Now';
+               //removeClass('twbtn-disabled', $D('#save_draft'));
+               vB_textarea.saveDraft();
             }
             clearTimeout( gvar.sITryLiveDrafting );
             gvar.isKeyPressed=1; DRAFT.quick_check();
@@ -1667,9 +1673,22 @@ function initEventTpl(){
           if($D("#save_draft")) 
             on("click", $D("#save_draft"), function(e){
               e=e.target||e; 
-              if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
               var text=Dom.g(gvar.id_textarea).value;
-              if( text!=gvar.silahken && text!="") DRAFT.save();
+              if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
+              if(e.value=='Draft'){
+                vB_textarea.enabled();
+                vB_textarea.focus();
+                if( text==gvar.silahken || text=="" )
+                  vB_textarea.set( gvar.tmp_text );
+                else
+                  vB_textarea.add( gvar.tmp_text );                                
+                // retrigger elastic
+                vB_textarea.adjustElastic();
+                
+                $D('#draft_desc').innerHTML='';
+              }else{                
+                if( text!=gvar.silahken && text!="") DRAFT.save();
+              }
             });
       }
     } // end not restart mode
@@ -1716,13 +1735,15 @@ var DRAFT= {
         $D('#draft_desc').innerHTML = 'Saved seconds ago';
         if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
         if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
-        force_focus(10);
+        if( !$D('#hideshow') ) force_focus(10);
     }
   }
   ,clear: function(txt){
-    setValue(KS+'TMP_TEXT', '');
+    gvar.tmp_text = '';
+    setValue(KS+'TMP_TEXT', gvar.tmp_text);
     $D('#save_draft').removeAttribute('title');
     $D('#save_draft').value= 'Draft';
+    addClass('twbtn-disabled', $D('#save_draft'));
     $D('#draft_desc').innerHTML = 'blank';
     force_focus(10);
   }
@@ -3674,13 +3695,23 @@ var vB_textarea = {
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   },
   
+  adjustElastic: function(){
+    if(gvar.settings.textareaExpander[0]){
+        // retrigger autogrow now
+        vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); 
+    }else if(gvar.lastHeight_textarea){
+        $D(gvar.id_textarea).style.height = gvar.lastHeight_textarea;
+        delete gvar.lastHeight_textarea;
+    }
+  },
   saveDraft: function(){    
     var liveVal=Dom.g(gvar.id_textarea).value;
     if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
         $D('#save_draft').setAttribute('title', 'Save Draft');
-        $D('#save_draft').value='Save Now';        
+        $D('#save_draft').value='Save Now';
         removeClass('twbtn-disabled', $D('#save_draft'));
-        clearTimeout( gvar.sITryLiveDrafting ); gvar.isKeyPressed=1;    
+        $D('#draft_desc').innerHTML='';
+        clearTimeout( gvar.sITryLiveDrafting ); gvar.isKeyPressed=1;
         if(gvar.settings.qrdraft) DRAFT.quick_check();
     }
   }
