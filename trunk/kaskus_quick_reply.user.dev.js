@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110425316
-// @timestamp     1303681763083
+// @dtversion     110503316
+// @timestamp     1304382293283
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,11 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-04-25
+// v3.1.6 - 2011-05-03
+//   Add List controller
+//   Add save_draft
+//   Fix failed remove selected quote after fetching
+//   Fix event_ckck (adapting multifox use)
 //   Fix always use native XHR (use with multifox no-longer required)
 //   Improve simultan QQ & MQ
 //   Fix [BIU] shortcut (Opera)
@@ -101,9 +105,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1303681763083 // version.timestamp
+  timestamp: 1304382293283 // version.timestamp
 
- ,dtversion: 110425316 // version.date
+ ,dtversion: 110503316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -129,7 +133,8 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_QUICK_QUOTE:      ['1'] // quick quote
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
+ ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -146,7 +151,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
- ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
+ ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp 
 };
 const GMSTORAGE_PATH = 'GM_';
 const KS             = 'KEY_SAVE_';
@@ -214,11 +219,10 @@ function init(){
     Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
     
   //------------
-  start_Main();
-  //------------
+  if( isDefined(gvar.user.id) )
+     start_Main();
+  //------------  
   
-  if(!gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS==0)
-    window.setTimeout(function(){ Updater.check(); }, 5000);
 }
 
 // outside forum like u.kaskus.us || imageshack.us
@@ -336,7 +340,7 @@ function oExist(P){
 // populate settings value
 function getSettings(){
   /** 
-  eg. gvar.settings.quick_quote
+  eg. gvar.settings.qrdraft
   */
   var hVal,hdc;
   gvar.settings = {
@@ -363,6 +367,7 @@ function getSettings(){
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
     scustom_noparse: (getValue(KS+'SCUSTOM_NOPARSE')=='1'), // dont parse?
+    qrdraft: (getValue(KS+'QR_DRAFT')=='1'),
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),
     hotkeychar: getValue(KS+'QR_HOTKEY_CHAR'),
     hidecontroll: []
@@ -403,13 +408,13 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
+  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
     /** banyak controler (14)
     # Ini utk label di Settings
-    # [format,align,font,size,color,link,image,youtube,smile,quote,code,spoiler,tranparent,noparse,strikethrough]
+    # [format,align,list,font,size,color,link, image,youtube,smile,quote,code,spoiler,tranparent,noparse,strikethrough]
     **/
     var nController = gvar.labelControl.length; 
     for(var i=0; i<nController; i++)
@@ -472,14 +477,16 @@ function start_Main(){
     
     if(gvar.__DEBUG__ && !DOMTimer.dtStart) DOMTimer.start();
     
-    fetch_property();    
-    // keadaan ga nongolin qr_ :: thread closed or server timeout ..
-    if(!gvar.newreply) {
-      show_alert('Thread is closed or page not loaded.', 0);
-      if(gvar.user.isDonatur) 
-         Dom.remove('qrform'); // destroy original QR
-      return false;
-    }
+    if( !fetch_property() ){
+        // keadaan ga nongolin qr_ :: thread closed or server timeout ..
+        if( isUndefined(gvar.newreply) ) {
+            show_alert('Thread is closed or page not loaded.', 0);
+            if(gvar.user.isDonatur) 
+                Dom.remove('qrform'); // destroy original QR
+        }
+        return;
+    } // dead end-
+    
     var Attr,child,el,nodes,par,hr,bufftxt = '';
     
     if( !$D('#quickreply') ){
@@ -548,8 +555,8 @@ function start_Main(){
        if(gvar.settings.autoload_smiley[0]=='1')
          create_smile_tab( $D('#vB_Editor_001_cmd_insertsmile') );
        
-       if(gvar.tmp_text){
-         if(gvar.tmp_text!=gvar.silahken){
+       if( trimStr(gvar.tmp_text) ){
+         if( trimStr(gvar.tmp_text)!=gvar.silahken ){
            vB_textarea.enabled();
            vB_textarea.focus();
          }else{
@@ -577,11 +584,14 @@ function start_Main(){
 	   if($D('#qr_delaycontainer')) QRdp.check($D('#qr_delaycontainer'));
     }, 350);
 
-    if(gvar.__DEBUG__){
+
+    if( gvar.__DEBUG__ && $D('#dom_created') ){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
      DOMTimer.dtStart=null;
     }
 
+    if(!gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS==0)
+        window.setTimeout(function(){ Updater.check(); }, 5000);
 }
 // end start_Main()
 
@@ -1444,14 +1454,14 @@ function initEventTpl(){
     
 	var nodes,node,nid;
 	
-    if(gvar.tmp_text){
+    if( trimStr(gvar.tmp_text) ){
       vB_textarea.init(); // need this coz if disable can not set
       // load capcay
       if(capcay_notloaded()) ajax_buildcapcay();
       if(gvar.user.isDonatur && additional_options_notloaded()) 
         ajax_additional_opt();
     }
-    vB_textarea.set(gvar.tmp_text ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
+    vB_textarea.set( trimStr(gvar.tmp_text) ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
     
     var dvacs = $D('#dv_accessible');
     if(dvacs){
@@ -1472,6 +1482,15 @@ function initEventTpl(){
     }
 
 	on( (gvar.isOpera ? 'keypress':'keydown'), Dom.g(gvar.id_textarea),function(e){return is_keypress_pressed(e)});
+	if(gvar.settings.qrdraft)
+        on('keypress', Dom.g(gvar.id_textarea),function(){
+            if($D('#save_draft')) {
+               $D('#save_draft').value='Save Now';
+               removeClass('twbtn-disabled', $D('#save_draft'));
+            }
+            clearTimeout( gvar.sITryLiveDrafting );
+            gvar.isKeyPressed=1; event_qck_draft();
+        });
     
     on('click',$D('#atitle'),function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
@@ -1501,7 +1520,7 @@ function initEventTpl(){
 	  // new version multi-quote (cookie based)
       ck_mquote = $D('#tmp_chkVal').value;
 	  
-	  // this btn will remotely clicked after chk coockie from surface
+	  // this btn will remotely clicked after chk multiquote cookie from surface
       on('click',$D('#qr_chkval'),function(){
 	   chk_newval($D('#tmp_chkVal').value)
 	  });
@@ -1632,13 +1651,61 @@ function initEventTpl(){
             });
         }
       }
+      
+      if(gvar.settings.qrdraft){          
+          gvar.timeOld = new Date().getTime();
+          // default interval should be 120 sec || 2 minutes
+          gvar.sITryKeepDrafting= window.setInterval(function() {
+            event_ck_draft();
+          }, 120000);          
+          
+          // initiate event click for save_draft
+          if($D("#save_draft")) 
+            on("click", $D("#save_draft"), function(e){
+              e=e.target||e; 
+              if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
+              var text=Dom.g(gvar.id_textarea).value;
+              if( text!=gvar.silahken && text!="") do_save_draft();
+            });
+      }
     } // end not restart mode
     
     // event monitor cookie change (useable for cookie-swap)
-	event_ckck();
+    if( !gvar.isOpera && !gvar.isBuggedChrome )
+	  event_ckck();
 }
 // - end initEventTpl()
 
+function event_ck_draft(){
+    clog('checking draft..');
+    var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
+    ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
+    if( tmp_text==gvar.silahken || tmp_text=="")
+        return false;
+    
+    if( isDefined(gvar.isKeyPressed) ){
+        // any live change ? 
+        do_save_draft();
+    }else{
+        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';
+    }
+}
+function event_qck_draft(){
+    gvar.sITryLiveDrafting= window.setTimeout(function() {event_ck_draft()}, 5000); // 5 sec if any live change
+}
+function do_save_draft(txt){
+    if(isUndefined(txt)){
+        $D('#save_draft').value='Saving..';        
+        addClass('twbtn-disabled', $D('#save_draft'));
+        window.setTimeout(function() { do_save_draft(Dom.g(gvar.id_textarea).value.toString())}, 600);
+    }else{
+        setValue(KS+'TMP_TEXT', txt.toString());
+        $D('#save_draft').value= 'Saved';
+        $D('#draft_desc').innerHTML = 'Saved seconds ago';   
+        if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
+        if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
+    }
+}
 function controler_resizer(){   
    gvar.maxH_editor = parseInt(GetHeight())-170;
    var wtxa=Dom.g(gvar.id_textarea).clientWidth;
@@ -1858,6 +1925,9 @@ function re_event_vbEditor(){
     switch(alt){
       case 'Align Left': case 'Align Center': case 'Align Right': case 'Bold': case 'Italic': case 'Underline':
         on('click',el,function(e){do_align_BIU(e)});
+      break;
+      case 'oList': case 'uoList':
+        on('click',el,function(e){do_btncustom_list(e)});
       break;
       case 'Insert Image': case 'Insert Link':
         on('click',el,function(e){ return do_btncustom(e) });
@@ -2481,6 +2551,22 @@ function prep_paired_scustom(){
    return paired;
 }
 
+function tTagFromAlt(e){
+  var tag=e;
+  if(typeof(e)=='object'){
+	el=e.target||e;
+    e=el;
+	if(el.nodeName!='IMG'){
+	  e = getTag('img',el);
+	  if(e.length) e=e[0];
+	}
+	return e.alt;
+  }else if(typeof(e)=='string'){
+    return e;
+  }else{
+    return false;
+  }
+}
 // action to do insert smile
 function do_smile(Obj, nospace){
   var bbcode;  
@@ -2503,15 +2589,14 @@ function do_smile(Obj, nospace){
 // action to do insert font/color/size
 function do_insertTag(tag, value){
   vB_textarea.init();
-  vB_textarea.wrapValue(tag,'"'+value+'"');
+  if(value) 
+    vB_textarea.wrapValue(tag,'"'+value+'"');
+  else
+    vB_textarea.wrapValue(tag);
 }
 // action to do [align,B,I,U]
 function do_align_BIU(e){
-  var tag=e;  
-  if(typeof(e)=='object'){
-    e = e.target||e;
-    tag=e.alt;
-  }
+  var tag=tTagFromAlt(e);
   
   var pTag={
     'Bold' :'B',    'Italic' :'I',      'Underline':'U',
@@ -2524,7 +2609,7 @@ function do_align_BIU(e){
 }
 function do_btncustom(e){
   e = e.target||e;
-  var tag=e.alt;
+  var tag=tTagFromAlt(e);
   var tagprop = '';
   tag = tag.replace(/[\[\]]/g,'').replace('Insert ','').toLowerCase();
   var pTag={
@@ -2616,6 +2701,23 @@ function do_btncustom(e){
     vB_textarea.wrapValue( pTag[tag], (tagprop!='' ? tagprop:'') );
   }
 }
+function do_btncustom_list(e){
+  var tag=tTagFromAlt(e);
+  var reInsert = function(pass){
+    var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
+    vB_textarea.init();
+    if( isUndefined(pass) ) vB_textarea.setValue( '\n' );
+    if(ins){
+        vB_textarea.setValue( '\n' + '[*]' + ins + '');
+        reInsert(true);
+    }else{
+        return;	
+    }
+  }, mode=(tag=='oList' ? 'number':'dot');  
+  do_insertTag('LIST', (mode=='number' ? 1:false) );
+  vB_textarea.focus();
+  reInsert(); 
+}
 function do_TextStrike(){
   vB_textarea.init();
   var endFocus=function(){ vB_textarea.focus(); return false};
@@ -2640,23 +2742,20 @@ function do_resize_editor(e){
   o.style.height = (newheight >= 99 ? newheight : 99 ) + "px";
 }
 
+
+function chk_ckck(){
+    SimulateMouse($D("qr_chk_ckck"),"click",true);
+    gvar.ck.hotbb=-1;
+    var cv=($D('#current_ckck') && $D('#current_ckck').value.length > 0 ? $D('#current_ckck').value : false);
+    if(cv) gvar.ck.hotbb=cv;
+}
 function event_ckck(){
-  //clog('in event_ckck');
   if($D('#quickreply')) gvar.motion_target=$D('#quickreply');
   on('mousemove',gvar.motion_target,function(){
-      
-      QRdp.check($D('#qr_delaycontainer'));
-	  
-
-      var ck=document.cookie.toString().split(';');
-      gvar.ck.hotbb=-1;
-      for(var i=0;i<ck.length;i++){
-        var cv=ck[i].split('=');
-        if(cv[0].indexOf('bb'+'us'+'erid')!=-1) 
-           gvar.ck.hotbb=cv[1];
-      }
-      //show_alert(gvar.ck.hotbb+' - '+gvar.ck.bbuserid);
+      QRdp.check($D('#qr_delaycontainer'));	  
+      chk_ckck();
       /*
+       clog(gvar.ck.hotbb+' - '+gvar.ck.bbuserid);
        >>if hotbb == -1, decide nothin.
        bbuserid should be untouchable and will only appear after switching w/ cookie-swap  
       */
@@ -2665,8 +2764,9 @@ function event_ckck(){
          massive_lock( gvar.ck.bbuserid_currentpage!=gvar.ck.bbuserid );
       }
       return;
-  } );  
+  } );
 }
+
 
 function massive_lock(isChanged){
       //clog('in massive_lock');
@@ -2993,7 +3093,6 @@ function chk_newval(val){
 // deselect selected multi quote
 function deselect_it(){
    var mqs = $D('#tmp_chkVal').value;
-   if(!mqs) return;
    gvar.idx_mq=(mqs ? mqs.split(",").length : 0);
    do_deselect(mqs);
 }
@@ -3008,6 +3107,13 @@ function do_deselect(mqs) {
         SimulateMouse($D("#mq_"+mq[parseInt(gvar.idx_mq)]), 'click', true);
     }
   }
+  // direct touch current page do deselecting
+  var nodes = $D('//img[contains(@id,"mq_") and contains(@src,"multiquote_on")]');
+  if(nodes.snapshotLength>0) for(var i=0;i<nodes.snapshotLength; i++){
+     var node = nodes.snapshotItem(i);
+     SimulateMouse($D('#'+node.id), 'click', true);
+  }
+  
   // delete cookie
   cK.d(gvar.vbul_multiquote);
   // always do this for...
@@ -3019,9 +3125,9 @@ function do_deselect(mqs) {
 function fetch_property(){
    var match=null;   
    gvar.page = gvar.newreply = match;
-   gvar.securitytoken = $D('//input[@name="securitytoken"]', null, true);
-   if(!gvar.securitytoken) return;
+   gvar.securitytoken = $D('//input[@name="securitytoken"]', null, true);  
    gvar.securitytoken = gvar.securitytoken.value;
+   if( !/\d{10}\-\w{40}/i.test(gvar.securitytoken) ) return false;
    
    gvar.threadid = $D('//a[contains(@href,"showthread.php?t=")]', null, true);
    match= (gvar.threadid ? /\Wt=(\d+)/.exec(gvar.threadid.href) : false);
@@ -3029,12 +3135,15 @@ function fetch_property(){
    
    // find first element postid
    gvar.newreply = is_opened_thread();
+   if( gvar.newreply===false ) return false;
+   
    match = /\Wp=(\d+)/.exec(gvar.newreply);
    if(gvar.newreply && match){
      gvar.page = match[1];
      var tmpuri = gvar.newreply.replace(/\=newreply/,'\=postreply');
      gvar.uripreview=tmpuri.substring(0,tmpuri.indexOf('&')) + '&t=' +gvar.threadid;     
    }
+   return true;
 }
 
 function is_opened_thread(){
@@ -3453,6 +3562,7 @@ var vB_textarea = {
     if(!this.Obj)
       this.Obj = Dom.g(gvar.id_textarea);
     this.Obj.value = this.content = value;
+    this.saveDraft();
   },
   lastfocus: function (){
     var pos = Dom.g(gvar.id_textarea).value.length; // use the actual content
@@ -3467,6 +3577,7 @@ var vB_textarea = {
    // fix chrome weird
    var lastpos=(this.cursorPos[0] + text.length);
    this.setCaretPos( lastpos, lastpos );
+   this.saveDraft();   
   },
   subStr: function(start, end){ return this.content.substring(start, end);},
   getSelectedText : function() {    
@@ -3538,6 +3649,17 @@ var vB_textarea = {
     a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
     if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
+  },
+  
+  saveDraft: function(){
+    //clog('in saveDraft' + ($D('#save_draft') && this.content!=gvar.silahken && this.content!="" ) );
+    var liveVal=Dom.g(gvar.id_textarea).value;
+    if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
+        $D('#save_draft').value='Save Now';
+        removeClass('twbtn-disabled', $D('#save_draft'));
+        clearTimeout( gvar.sITryLiveDrafting ); gvar.isKeyPressed=1;    
+        if(gvar.settings.qrdraft) event_qck_draft();
+    }
   }
 };
 // Get Elements
@@ -3919,20 +4041,20 @@ var SML_LDR = {
       // ekstrak all group
       SML_LDR.custom.tab_menu_left();
       
-      el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
+      el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
       Dom.add(el,cont);
       on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
 	  el = createEl('span',{id:'title_group',style:'margin-left:8px;font-weight:bold'},(gvar.smiliegroup ? gvar.smiliegroup[0]:'') );
       Dom.add(el,cont);
 	  
-      el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn twbtn-m lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
+      el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
       Dom.add(el,cont);
       on('click',el,function(){
         var mcPar=$D('#manage_container');
         if(mcPar) Dom.remove(mcPar);
         SML_LDR.custom.toggle_manage();
       });
-      el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn twbtn-m lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
+      el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
       Dom.add(el,cont);
       on('click',el,function(e){
       alert( ''
@@ -4323,6 +4445,7 @@ var ST = {
     closeLayerBox('hideshow');
  }
  ,cold_boot_qr: function(){
+    delete gvar.settings;
     getSettings(); // redefine gvar
     ST.close_setting()
     
@@ -4344,7 +4467,7 @@ var ST = {
     var keys  = [ 'LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','UPDATES','UPDATES_INTERVAL','DYNAMIC_QR','QUICK_QUOTE','AJAXPOST'
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
-                 ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
+                 ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
                  ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                  ,'SCUSTOM_ALT','CUSTOM_SMILEY','SCUSTOM_NOPARSE'
                 ];
@@ -4360,6 +4483,7 @@ var ST = {
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
      ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
      ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
+     ,'QR_DRAFT':'Mode QR-Draft; validValue=[1-0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
      ,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
@@ -4368,7 +4492,7 @@ var ST = {
      ,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
      ,'QR_COLLAPSE':'Mode QR collapsed; validValue=[1,0]'
      ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
-     ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
+     ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'     
      ,'LAYOUT_CONFIG':'Layout Config; [userid=isEnable_autoSIGI,isEnable_autoTEMPLATE]; isEnable\'s validValue=[1,0]'
      ,'LAYOUT_SIGI':'Layout Signature; [userid=SIGI];'
      ,'LAYOUT_TPL':'Layout Template; [userid=TEMPLATE]; TEMPLATE\'s validValue must contain escaped string {MESSAGE}'
@@ -4464,7 +4588,7 @@ var ST = {
     if(yakin) {
       var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
 	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
-                  ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR'
+                  ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE'
                  ];
@@ -4526,6 +4650,7 @@ var ST = {
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
       ,'misc_quickquote':KS+'QUICK_QUOTE'
+      ,'misc_qrdraft':KS+'QR_DRAFT'
       ,'misc_ajaxpost':KS+'AJAXPOST'
     };
     for(var id in misc){
@@ -4577,9 +4702,12 @@ var ST = {
     window.setTimeout(function() {
       gvar.restart=true;
       // ==
-      window.setTimeout(function() { ST.cold_boot_qr(); }, 150);
+      window.setTimeout(function() { 
+        ST.cold_boot_qr();
+        if( $D('#qrdraft') ) $D('#qrdraft').style.display = (gvar.settings.qrdraft ? '':'none');
+      }, 150);
       // ==
-    }, (gvar.isOpera ? 50:300));    
+    }, (gvar.isOpera ? 50:300));
     
  } // end save_setting
  ,toggle_childs: function(e){
@@ -4786,19 +4914,19 @@ var UPL = {
           if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
         });
         Dom.add(el2,el); Dom.add(el,par);
-        Attr={id:'btn_upload',value:'Upload','class':'twbtn twbtn-m',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
+        Attr={id:'btn_upload',value:'Upload','class':'twbtn',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
         el=createEl('input',Attr);
         on('click',el,function(){UPL.prep_upload()});
         Dom.add(el,par);
         
-        Attr={id:'cancel_upload',value:'Cancel','class':'twbtn twbtn-m',type:'button',style:'margin:1px 0 0 20px;display:none;'}
+        Attr={id:'cancel_upload',value:'Cancel','class':'twbtn',type:'button',style:'margin:1px 0 0 20px;display:none;'}
         el=createEl('input',Attr);
         on('click',el,function(){UPL.cancel_upload()});
         Dom.add(el,par);
       }
       
       Attr={style:'margin-top:7px;font-weight:bold;font-size:10px;'+(allow_cross ? 'float:right;':'display:inline')}; el=createEl('div',Attr);
-      Attr={href:'javascript:;','class':'twbtn twbtn-m','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
+      Attr={href:'javascript:;','class':'twbtn','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
       on('click',el2,function(){return UPL.toogle_iframe()});
       Dom.add(el2,el); Dom.add(el,par);
 	  
@@ -5178,6 +5306,13 @@ var rSRC = {
   +'.cancel_layout-invi {display:none;}'
   /* for delay */
   +'#qr_delaycontainer{padding-right:5px;color:#FFFF00}'
+  /* for top title */
+  +'#qrsetting, #qrdraft{vertical-align:top;}'
+  +'#qrsetting{margin:-21px 5px 0 0;}'
+  +'#qrdraft{margin:-15px 5px 0 0;}'
+  +'#qrdraft #draft_desc{font-size:10px;margin-right:3px}'
+  +'#save_draft{padding:'+(gvar.isBuggedChrome ? '4px ':'')+'2px;line-height:14px;width:70px;text-align:center;}'  
+  
   
   /* for updates */
   +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
@@ -5211,6 +5346,7 @@ var rSRC = {
     +'.qrset-content br { margin:4px 0;}'
     +'.qrset-show{display:block!important;}'
     +'a.lilbutton{padding:1px 5px; 2px 5px!important;text-shadow:none;font-size:11px;}'
+    +'a.lilbutton:hover{text-decoration:none;}'
     +'.opr{color:#D20000;}'
     +'a.cyellow{color:#F0F000!important;}'
     +'a.nostyle, a.nostyle:hover{color:#333;outline:none;}'
@@ -5223,15 +5359,17 @@ var rSRC = {
     +'#ul_group li a{text-align:center;padding:3px 0.5em;}'
     
     /* twitter's button */
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:4px;-khtml-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;color:#333;cursor:pointer;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} .twbtn-m{background-position:0 -200px;font-size:12px;font-weight:bold;line-height:10px!important;padding:5px 10px; -moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;} a.twbtn{text-decoration:none;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 -200px;font:11px/14px "Lucida Grande",sans-serif;width:auto;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;color:#333;cursor:pointer;line-height:10px!important;padding:5px 10px;font-size:12px;font-weight:bold;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} a.twbtn{text-decoration:none;color:#000080!important;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
+    
+    +'#draft_desc{color:#D4D4D4;font-size:11px;font-weight:normal;}'
   
   /* for preview popup */ 
-      +'#hideshow, #hideshow_recaptcha{position:absolute; min-width:100%; min-height:100%; top:0; left:0;}'
+    +'#hideshow, #hideshow_recaptcha{position:absolute; min-width:100%; min-height:100%; top:0; left:0;}'
     +'.trfade, .fade{position:fixed; width:100%; height:100%; left:0;}'
     +'.trfade {background:#000; z-index:99998;'
     +  'filter:alpha(opacity=25); opacity: .25;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
     +'}'
-    +'.fade {background: #000; z-index: 99990;'
+    +'.fade {background: transparent; z-index: 99990;'
     +  'filter:alpha(opacity=60); opacity: .60;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
     +'}'
     +'#popup_container, #popup_container_precap{background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
@@ -5267,12 +5405,14 @@ var rSRC = {
     +'  g:function(n){var D=document.cookie,A=n+"=",p=[D.indexOf("; "+A),0];if(p[0]==-1){p[0]=D.indexOf(A);if(p[0]!=0) return null;}else{p[0]+=2;}p[1]=D.indexOf(";",p[0]);if(p[1]==-1)p[1]=D.length;return unescape(D.substring(p[0]+A.length,p[1]));}'
     +' ,d:function(n){if(cK.g(n))document.cookie=n+"=; expires=Thu, 01-Jan-70 00:00:01 GMT";}'
     +'};'
+    +'var checkCurrentCred=function(){document.getElementById("current_ckck").value=cK.g("bb"+"us"+"erid")};'
     +'function deleteMultiQuote(){cK.d("vbulletin_multiquote")}'
     +'function SimulateMouse(elem,event){if(typeof(elem)!="object")return; var evObj=document.createEvent("MouseEvents");evObj.initEvent(event,false,true);try{elem.dispatchEvent(evObj);}catch(e){}}'
     +'var mqs=cK.g("vbulletin_multiquote"); if(mqs){'
     +  'document.getElementById("tmp_chkVal").value=mqs;'
     +  'SimulateMouse(document.getElementById("qr_chkval"),"click",true);'
     +'}'
+    
   );  
  }
 
@@ -5759,8 +5899,11 @@ Format will be valid like this:
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
     +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
-    +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
-    +'<div style="position:absolute;right:57px;margin:-21px 5px 0 0;vertical-align:top;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
+    +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;font-size:10px;font-weight:normal;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
+
+    +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="Save Draft" value="Draft" /></div>' : '')
+    
+    +'<div id="qrsetting" style="position:absolute;right:57px;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
     +'</td></tr></thead>'
     
     +'<tbody id="collapseobj_quickreply" style="display:'+(gvar.settings.qrtoggle==1?'':'none')+';"><tr><td class="panelsurround" align="center">'
@@ -5812,7 +5955,8 @@ Format will be valid like this:
     +'<input type="hidden" name="clicker" id="clicker" value="" />'
     +'<input type="hidden" name="styleid" value="0" />\n\n'
 	
-    +'<input type="hidden" value="" id="tmp_chkVal" />\n\n'
+    +'<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" value=""/>\n\n'
+    +'<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" id="current_ckck" value=""/>\n\n' // current ck.crecidential
     
     +'<div class="sub-bottom sayapkiri">'
      +'<div id="rate_thread" style="display:none;"><img src="'+gvar.B.throbber_gif+'" border="0"/></div>'
@@ -5829,6 +5973,9 @@ Format will be valid like this:
       :'')
      +'<input id="qr_chkval" type="button" style="display:none;" value="cv" />' // remote button to chkVal
      +'<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="deleteMultiQuote()" />' // remote button to delete-mQ
+     
+     +'<input id="qr_chk_ckck" type="button" style="display:none;" value="cck" onclick="if(typeof(checkCurrentCred)==\'function\')checkCurrentCred();"/>' // remote button to fetch ck.crecidential
+     
      +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
      +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+(gvar.user.isDonatur ? '':'pre-')+'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
@@ -5880,8 +6027,13 @@ Format will be valid like this:
      +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_justifyright"><img src="'+gvar.domainstatic+'images/editor/justifyright.gif" alt="Align Right" /></div></td>'
      +konst.__sep__ : '')
      
-     // --Font 
      +(gvar.settings.hidecontroll[2] != '1' ? ''
+     +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_orderedlist"><img src="'+gvar.domainstatic+'images/editor/insertorderedlist.gif" alt="oList" title="Ordered List" /></div></td>'
+     +'<td><div class="imagebutton" id="vB_Editor_001_qrcmd_unorderedlist"><img src="'+gvar.domainstatic+'images/editor/insertunorderedlist.gif" alt="uoList" title="Unordered List" /></div></td>'
+     +konst.__sep__ : '')
+     
+     // --Font 
+     +(gvar.settings.hidecontroll[3] != '1' ? ''
      +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontname">'
      +konst._tbo
      +'<tbody><tr>'
@@ -5895,7 +6047,7 @@ Format will be valid like this:
      +konst.__sep__ : '')
      
      // --Size 
-     +(gvar.settings.hidecontroll[3] != '1' ? ''
+     +(gvar.settings.hidecontroll[4] != '1' ? ''
      +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_fontsize">'
      +konst._tbo
      +'<tbody><tr>'
@@ -5909,7 +6061,7 @@ Format will be valid like this:
      +konst.__sep__ : '')
      
      // --Color 
-     +(gvar.settings.hidecontroll[4] != '1' ? ''
+     +(gvar.settings.hidecontroll[5] != '1' ? ''
      +'<td><div class="imagebutton_color" id="vB_Editor_001_popup_forecolor">'
      +konst._tbo
      +'<tr>'
@@ -5920,25 +6072,25 @@ Format will be valid like this:
      +'</div></td>'
      +konst.__sep__ : '')
      
-     +(gvar.settings.hidecontroll[5] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" title="Insert Link" /></div></td>'
+     +(gvar.settings.hidecontroll[6] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_createlink"><img src="'+gvar.domainstatic+'images/editor/createlink.gif" alt="Insert Link" title="Insert Link" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[6] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" title="Insert Image" /></div></td>'
+     +(gvar.settings.hidecontroll[7] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_qrcmd_insertimage"><img src="'+gvar.domainstatic+'images/editor/insertimage.gif" alt="Insert Image" title="Insert Image" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[7] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>'
+     +(gvar.settings.hidecontroll[8] != '1' ?' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertyoutube"></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[5] == '1' && gvar.settings.hidecontroll[6] == '1' && gvar.settings.hidecontroll[7] == '1' ? '' : konst.__sep__)
+     +(gvar.settings.hidecontroll[6] == '1' && gvar.settings.hidecontroll[7] == '1' && gvar.settings.hidecontroll[8] == '1' ? '' : konst.__sep__)
      
-     +(gvar.settings.hidecontroll[8] != '1' ? ''
-     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>' :'')
      +(gvar.settings.hidecontroll[9] != '1' ? ''
+     +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_insertsmile"><img id="vB_Editor_001_cmd_insertsmile_img" src="'+gvar.B.smile_gif+'" alt="Smiles" title="Smiles" /></div></td>' :'')
+     +(gvar.settings.hidecontroll[10] != '1' ? ''
      +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_uploader"><img id="vB_Editor_001_cmd_uploader_img" src="'+gvar.B.upld_png+'" alt="Uploader" title="Uploader" /></div></td>' :'')
-     +(gvar.settings.hidecontroll[8] == '1' && gvar.settings.hidecontroll[9] == '1' ? '' : konst.__sep__)
+     +(gvar.settings.hidecontroll[9] == '1' && gvar.settings.hidecontroll[10] == '1' ? '' : konst.__sep__)
      
-     +(gvar.settings.hidecontroll[10] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[11] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[11] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[12] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[10] == '1' && gvar.settings.hidecontroll[11] == '1' ? '' : konst.__sep__)     
+     +(gvar.settings.hidecontroll[11] == '1' && gvar.settings.hidecontroll[12] == '1' ? '' : konst.__sep__)     
      
      +                '<td id="customed_control"></td>'
      +                '<td width="100%"></td>'
@@ -6073,7 +6225,7 @@ Format will be valid like this:
      +'<textarea id="textarea_rawdata" class="textarea" style="height:335px;width:99%;overflow:auto;white-space:pre;"></textarea>'
      +'<div style="float:left;"><a id="exim_select_all" class="qrsmallfont" style="margin:10px 0 0 5px;text-decoration:none;" href="javascript:;"><b>'+HtmlUnicodeDecode('&#9650;')+' Select All</b></a></div>'
      +'<div style="float:right;"><a id="reset_default" class="qrsmallfont" style="margin:10px 10px 0 0;color:red;" href="javascript:;"><small>reset default</small></a></div>'
-     +'<div style="text-align:center;width:100%;margin:10px 0 5px 0;"><input type="button" id="import_setting" class="twbtn twbtn-m" value="Import.." /></div>'
+     +'<div style="text-align:center;width:100%;margin:10px 0 5px 0;"><input type="button" id="import_setting" class="twbtn" value="Import.." /></div>'
      +'</div>'    
     );
  }
@@ -6164,12 +6316,14 @@ Format will be valid like this:
     var spacer = '<div style="height:5px;">&nbsp;</div>';
     return (''
      +'<div id="general_container" class="qrsmallfont">'
-     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn twbtn-m lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
+     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
      +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Quote directly from postbit on current page. Some tags may not parsed properly!" style="cursor:help">[!]</b>)</label>'
+     +spacer
+     +'<input id="misc_qrdraft" type="checkbox" '+(gvar.settings.qrdraft ? 'checked':'')+'/><label for="misc_qrdraft">AutoSave Draft</label> <small><em>(reload page required)</em></small>'
      +spacer
 	 +'<div id="misc_ajaxpost_cont">'
       +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
@@ -6185,11 +6339,11 @@ Format will be valid like this:
      +'</div>'
      +spacer
      +'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/><label for="misc_autolayout_sigi">AutoSignature</label>&nbsp;'
-     +'<a id="edit_sigi" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> cancel </a>'
+     +'<a id="edit_sigi" class="twbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn lilbutton"> cancel </a>'
      +'<div id="edit_sigi_Editor" style="display:none;"></div>'
      +spacer
      +'<input id="misc_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1' ? 'checked':'')+'/><label for="misc_autolayout_tpl">AutoLayout</label>&nbsp;'
-     +'<a id="edit_tpl" class="twbtn twbtn-m lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn twbtn-m lilbutton"> cancel </a>'
+     +'<a id="edit_tpl" class="twbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn lilbutton"> cancel </a>'
      +'<div id="edit_tpl_Editor" style="display:none;"></div>'
      +spacer     
      +'<input id="misc_hotkey" type="checkbox" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/><label for="misc_hotkey">QR-Hotkey</label>'
@@ -6234,7 +6388,7 @@ Format will be valid like this:
      +  rSRC.getTPL_Settings_Controller()
      + '</div>'
      + '<div style="clear:both; text-align:center; width:100%; margin-top:5px; position:absolute; bottom:50px; left:11%;">'
-     +  '<input type="button" id="save_settings" class="twbtn twbtn-m" value="Save"/>'
+     +  '<input type="button" id="save_settings" class="twbtn" value="Save"/>'
      + '</div>'
      +'</div>' // #general_control
      +'<div id="tbcon_eximp" class="qrset-content qroutline">'
