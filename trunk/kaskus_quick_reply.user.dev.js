@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
 // @dtversion     110503316
-// @timestamp     1304385872886
+// @timestamp     1304399877406
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.6 - 2011-05-03
+//   Improve save_draft with reset(-draft-)
 //   Fix clear tmp_text after post
 //   Add List controller
 //   Add save_draft
@@ -106,7 +107,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304385872886 // version.timestamp
+  timestamp: 1304399877406 // version.timestamp
 
  ,dtversion: 110503316 // version.date
  ,scriptID: 80409 // script-Id
@@ -1493,7 +1494,7 @@ function initEventTpl(){
                removeClass('twbtn-disabled', $D('#save_draft'));
             }
             clearTimeout( gvar.sITryLiveDrafting );
-            gvar.isKeyPressed=1; event_qck_draft();
+            gvar.isKeyPressed=1; DRAFT.quick_check();
         });
     
     on('click',$D('#atitle'),function() {
@@ -1658,20 +1659,17 @@ function initEventTpl(){
         }
       }
       
-      if(gvar.settings.qrdraft){          
-          gvar.timeOld = new Date().getTime();
-          // default interval should be 120 sec || 2 minutes
-          gvar.sITryKeepDrafting= window.setInterval(function() {
-            event_ck_draft();
-          }, 120000);          
+      if(gvar.settings.qrdraft){
+          // initialize draft check
+          DRAFT.check();
           
-          // initiate event click for save_draft
+          // event click for save_draft
           if($D("#save_draft")) 
             on("click", $D("#save_draft"), function(e){
               e=e.target||e; 
               if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
               var text=Dom.g(gvar.id_textarea).value;
-              if( text!=gvar.silahken && text!="") do_save_draft();
+              if( text!=gvar.silahken && text!="") DRAFT.save();
             });
       }
     } // end not restart mode
@@ -1682,36 +1680,53 @@ function initEventTpl(){
 }
 // - end initEventTpl()
 
-function event_ck_draft(){
-    clog('checking draft..');
-    var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
-    ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
-    if( tmp_text==gvar.silahken || tmp_text=="")
-        return false;
-    
-    if( isDefined(gvar.isKeyPressed) ){
+var DRAFT= {
+   check: function(){
+        clog('checking draft..');
+        if($D('#save_draft') && $D('#save_draft').value=='Draft'){
+            gvar.timeOld = new Date().getTime();
+            clearInterval(gvar.sITryKeepDrafting);
+            // default interval should be 120 sec || 2 minutes
+            gvar.sITryKeepDrafting= window.setInterval(function() { DRAFT.check() }, 120000);
+        }
+        
+        var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
+            ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
+        if( tmp_text==gvar.silahken || tmp_text=="")
+            return false;
+        
         // any live change ? 
-        do_save_draft();
-    }else{
-        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';
-    }
-}
-function event_qck_draft(){
-    gvar.sITryLiveDrafting= window.setTimeout(function() {event_ck_draft()}, 5000); // 5 sec if any live change
-}
-function do_save_draft(txt){
+        if( isDefined(gvar.isKeyPressed) )
+            DRAFT.save();
+        else
+        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
+   }
+  ,quick_check: function(){
+    gvar.sITryLiveDrafting= window.setTimeout(function() {DRAFT.check()}, 5000); // 5 sec if any live change
+  }
+  ,save: function(txt){
     if(isUndefined(txt)){
-        $D('#save_draft').value='Saving..';        
+        $D('#save_draft').value='Saving ...';
+        $D('#save_draft').removeAttribute('title');
         addClass('twbtn-disabled', $D('#save_draft'));
-        window.setTimeout(function() { do_save_draft(Dom.g(gvar.id_textarea).value.toString())}, 600);
+        window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
     }else{
         setValue(KS+'TMP_TEXT', txt.toString());
         $D('#save_draft').value= 'Saved';
-        $D('#draft_desc').innerHTML = 'Saved seconds ago';   
+        $D('#draft_desc').innerHTML = 'Saved seconds ago';
         if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
         if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
+        force_focus(10);
     }
-}
+  }
+  ,clear: function(txt){
+    setValue(KS+'TMP_TEXT', '');
+    $D('#save_draft').removeAttribute('title');
+    $D('#save_draft').value= 'Draft';
+    $D('#draft_desc').innerHTML = 'blank';
+    force_focus(10);
+  }
+};
 function controler_resizer(){   
    gvar.maxH_editor = parseInt(GetHeight())-170;
    var wtxa=Dom.g(gvar.id_textarea).clientWidth;
@@ -1913,6 +1928,8 @@ function insert_custom_control(){
 function re_event_vbEditor(){
   // event reset / clear textarrea
   on('click',$D('#textarea_clear'),function(){vB_textarea.clear()});
+  // event reset draft
+  on('click',$D('#draft_clear'),function(){DRAFT.clear()});
   
   // event textarea autogrowth  
   if(gvar.settings.textareaExpander[0])
@@ -3657,14 +3674,14 @@ var vB_textarea = {
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   },
   
-  saveDraft: function(){
-    //clog('in saveDraft' + ($D('#save_draft') && this.content!=gvar.silahken && this.content!="" ) );
+  saveDraft: function(){    
     var liveVal=Dom.g(gvar.id_textarea).value;
     if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
-        $D('#save_draft').value='Save Now';
+        $D('#save_draft').setAttribute('title', 'Save Draft');
+        $D('#save_draft').value='Save Now';        
         removeClass('twbtn-disabled', $D('#save_draft'));
         clearTimeout( gvar.sITryLiveDrafting ); gvar.isKeyPressed=1;    
-        if(gvar.settings.qrdraft) event_qck_draft();
+        if(gvar.settings.qrdraft) DRAFT.quick_check();
     }
   }
 };
@@ -5873,7 +5890,7 @@ Format will be valid like this:
     +'<td id="avatar_header"></td>'
     +'<td><div class="qrsmallfont">'
     +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" maxlength="85" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
-    +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
+    +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>(<a id="draft_clear" href="javascript:;" title="Clear Draft">-draft-</a>)'
     +'</div></td>'
     +'</tr><tr>'    
     
@@ -5907,7 +5924,7 @@ Format will be valid like this:
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;font-size:10px;font-weight:normal;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
 
-    +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="Save Draft" value="Draft" /></div>' : '')
+    +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="" value="Draft" /></div>' : '')
     
     +'<div id="qrsetting" style="position:absolute;right:57px;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
     +'</td></tr></thead>'
