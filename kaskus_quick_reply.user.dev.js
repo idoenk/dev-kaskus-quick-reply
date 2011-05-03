@@ -1929,7 +1929,7 @@ function re_event_vbEditor(){
   // event reset / clear textarrea
   on('click',$D('#textarea_clear'),function(){vB_textarea.clear()});
   // event reset draft
-  on('click',$D('#draft_clear'),function(){DRAFT.clear()});
+  if($D('#draft_clear')) on('click',$D('#draft_clear'),function(){DRAFT.clear()});
   
   // event textarea autogrowth  
   if(gvar.settings.textareaExpander[0])
@@ -5890,7 +5890,8 @@ Format will be valid like this:
     +'<td id="avatar_header"></td>'
     +'<td><div class="qrsmallfont">'
     +'<div style="float:left;">Title:&nbsp;<a href="javascript:;" id="atitle" title="Optional Title Message">[+]</a>&nbsp;</div><div id="titlecont" style="display:none;"><div id="dtitle" style="float:left;margin-top:-3px;""><input id="input_title" type="text" tabindex="1" name="title" maxlength="85" class="input_title" title="Optional"/></div>&nbsp;<div class="spacer">&nbsp;</div></div>'
-    +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>(<a id="draft_clear" href="javascript:;" title="Clear Draft">-draft-</a>)'
+    +'Message:&nbsp;<a id="textarea_clear" href="javascript:;" title="Clear Editor">reset</a>'
+    +(gvar.settings.qrdraft ? '(<a id="draft_clear" href="javascript:;" title="Clear Draft">-draft-</a>)':'')
     +'</div></td>'
     +'</tr><tr>'    
     
