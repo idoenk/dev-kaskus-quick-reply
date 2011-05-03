@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
 // @dtversion     110503316
-// @timestamp     1304382293283
+// @timestamp     1304385872886
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.6 - 2011-05-03
+//   Fix clear tmp_text after post
 //   Add List controller
 //   Add save_draft
 //   Fix failed remove selected quote after fetching
@@ -105,7 +106,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304382293283 // version.timestamp
+  timestamp: 1304385872886 // version.timestamp
 
  ,dtversion: 110503316 // version.date
  ,scriptID: 80409 // script-Id
@@ -1193,10 +1194,13 @@ function qr_ajax_post(reply_html){
          
          // set lastPost timestamp here
          QRdp.updLast(new Date().getTime()+'');
-		 
+         // delete tmp_text; set blank to nulled it
+         try{setValue(KS+'TMP_TEXT', ''); }catch(er){}
 
-         if(tgt) tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
-         if(ret.redirect) location.href = ret.redirect;
+         if(tgt && ret.redirect) {
+           tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';           
+           location.href = ret.redirect;
+         }
        }else{
          if(tgt) {
            tgt.setAttribute('style','height:auto!important');
@@ -1552,7 +1556,7 @@ function initEventTpl(){
         controler_resizer(); // resize elements width
       });
       
-      on('submit',$D('#vbform'),function(e){	    
+      on('submit',$D('#vbform'),function(e){
 
         if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced' ) {
           clog('here and aborted');
@@ -1579,6 +1583,8 @@ function initEventTpl(){
           if($D('#clicker').value != 'Go Advanced' && prp[0]=='postreply' ){
             // set lastPost timestamp here
             QRdp.updLast(new Date().getTime()+'');
+            // delete tmp_text; set blank to nulled it
+            try{setValue(KS+'TMP_TEXT', ''); }catch(er){}
 		  }
 		}
       });
