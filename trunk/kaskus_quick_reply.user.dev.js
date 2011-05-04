@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
 // @dtversion     110504316
-// @timestamp     1304455801456
+// @timestamp     1304477389823
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.6 - 2011-05-04
+//   Fix continue draft after save settings
 //   Improve save_draft choice to continue draft
 //   Improve save_draft with reset(-draft-)
 //   Fix clear tmp_text after post
@@ -108,7 +109,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304455801456 // version.timestamp
+  timestamp: 1304477389823 // version.timestamp
 
  ,dtversion: 110504316 // version.date
  ,scriptID: 80409 // script-Id
@@ -564,10 +565,11 @@ function start_Main(){
          if( trimStr(gvar.tmp_text)!=gvar.silahken && !gvar.settings.qrdraft ){
            vB_textarea.enabled();
            // retrigger elastic
-           vB_textarea.adjustElastic();           
+           vB_textarea.adjustElastic();
            force_focus(100);
          }else{
            vB_textarea.readonly();
+           $D('#save_draft').value = 'Draft';
            removeClass('twbtn-disabled', $D('#save_draft'));
            $D('#save_draft').setAttribute('title', 'Continue Draft');
            $D('#draft_desc').innerHTML = 'Available';
