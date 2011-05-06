@@ -18,7 +18,8 @@
 // -!--latestupdate
 //
 // v3.1.6 - 2011-05-06
-//   Fox (Opera) shortcut-key on textarea
+//   Fix minor (Chrome) failed destroy QR on locked thread
+//   Fix (Opera) shortcut-key on textarea
 //   Improve warn & close popup when post is too (short|long) 
 //   Fix controllers visibility settings. Thanks=[takut.sendirian]
 //   Improve save_draft choice to continue draft
@@ -486,7 +487,7 @@ function start_Main(){
     
     if( !fetch_property() ){
         // keadaan ga nongolin qr_ :: thread closed or server timeout ..
-        if( isUndefined(gvar.newreply) ) {
+        if( !gvar.newreply ) {
             show_alert('Thread is closed or page not loaded.', 0);
             if(gvar.user.isDonatur) 
                 Dom.remove('qrform'); // destroy original QR
