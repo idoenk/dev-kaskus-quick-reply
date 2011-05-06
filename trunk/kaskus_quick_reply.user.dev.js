@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110504316
-// @timestamp     1304477389823
+// @dtversion     110506316
+// @timestamp     1304642179943
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,13 +17,15 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-05-04
-//   Fix continue draft after save settings
+// v3.1.6 - 2011-05-06
+//   Fox (Opera) shortcut-key on textarea
+//   Improve warn & close popup when post is too (short|long) 
+//   Fix controllers visibility settings. Thanks=[takut.sendirian]
 //   Improve save_draft choice to continue draft
 //   Improve save_draft with reset(-draft-)
 //   Fix clear tmp_text after post
-//   Add List controller
-//   Add save_draft
+//   Add List controller. Thanks[andrypein]
+//   Add save_draft. Thanks=[zha1]
 //   Fix failed remove selected quote after fetching
 //   Fix event_ckck (adapting multifox use)
 //   Fix always use native XHR (use with multifox no-longer required)
@@ -109,9 +111,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304477389823 // version.timestamp
+  timestamp: 1304642179943 // version.timestamp
 
- ,dtversion: 110504316 // version.date
+ ,dtversion: 110506316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -138,7 +140,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0'] // serial hide [controller]
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -412,13 +414,13 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'tranparent', 'noparse', 'strikethrough'];
+  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'transparent', 'noparse', 'strikethrough'];
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
     /** banyak controler (14)
     # Ini utk label di Settings
-    # [format,align,list,font,size,color,link, image,youtube,smile,quote,code,spoiler,tranparent,noparse,strikethrough]
+    # [format,align,list,font,size,color,link, image,youtube,smile,quote,code,spoiler,transparent,noparse,strikethrough]
     **/
     var nController = gvar.labelControl.length; 
     for(var i=0; i<nController; i++)
@@ -565,11 +567,10 @@ function start_Main(){
          if( trimStr(gvar.tmp_text)!=gvar.silahken && !gvar.settings.qrdraft ){
            vB_textarea.enabled();
            // retrigger elastic
-           vB_textarea.adjustElastic();
+           vB_textarea.adjustElastic();           
            force_focus(100);
          }else{
            vB_textarea.readonly();
-           $D('#save_draft').value = 'Draft';
            removeClass('twbtn-disabled', $D('#save_draft'));
            $D('#save_draft').setAttribute('title', 'Continue Draft');
            $D('#draft_desc').innerHTML = 'Available';
@@ -1170,19 +1171,18 @@ function qr_ajax_post(reply_html){
     GM_XHR.cached = true;
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
 
-  }else{
+  }else{    
     if( !reply_html ) return;
     reply_html = reply_html.responseText;
-    var parse_ajax_post = function(html){
-       
+    var parse_ajax_post = function(html){       
         var r={err:1,msg:' Unknown-Error ',redirect:false},cucok,ErMsg;
-        if(html.indexOf('POSTERROR')!=-1){ // there's some error
-          cucok = html.match(/<ol><li>([^\n]+)<\/ol/);
+        if(html.indexOf('POSTERROR')!=-1){ // there's some error          
+          cucok = html.match(/<ol><li>([^\n]+)<\/li/);
           if(cucok) ErMsg = cucok[1];
           if(cucok = ErMsg.match(/Please\s*try\s*again\s*in\s*([^.(]+)/i)){
             r = {err:1, msg:'Posting delayed, please try again in '+cucok[1]};
           }else{
-            r = {err:1, msg:(/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': cucok[1])};
+            r = {err:1, msg:(/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': ErMsg ) };
           }
           // grab and update hash
           capcay_parser(html);
@@ -1194,7 +1194,7 @@ function qr_ajax_post(reply_html){
        return r;
     }, ret = parse_ajax_post(reply_html);
     if(ret) {
-       var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));
+       var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));       
        if(ret.err==0){
          
          // set lastPost timestamp here
@@ -1203,14 +1203,24 @@ function qr_ajax_post(reply_html){
          try{setValue(KS+'TMP_TEXT', ''); }catch(er){}
 
          if(tgt && ret.redirect) {
-           tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';           
+           tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
            location.href = ret.redirect;
          }
-       }else{
+       }else{         
          if(tgt) {
            tgt.setAttribute('style','height:auto!important');
            tgt.innerHTML = '<div class="g_notice g_notice-error" style="display:block!important;">'+ret.msg+'</div>';
+         }         
+         if( !gvar.user.isDonatur && /too\s(?:short|long)\b/.test(ret.msg) ){
+            window.setTimeout(function() { 
+              var notice = $D('#quoted_notice'); addClass('g_notice-error', notice);
+              notice.innerHTML = ret.msg;
+              notice.setAttribute('style','display:block;');
+              SimulateMouse($D("#imghideshow_precap"), 'click', true);
+            }, 1500);
+            return false; // break here; close popup imidiately
          }
+         
          lockFields_forSubmit( false );
          if($D('#botgreet_text'))
             $D('#botgreet_text').innerHTML = rSRC.getBOT_greet(0, 10);
@@ -1489,18 +1499,17 @@ function initEventTpl(){
           if(capcay_notloaded()) ajax_buildcapcay();
           if(gvar.user.isDonatur && additional_options_notloaded()) 
              ajax_additional_opt();
+          force_focus(10);
         }          
       });
     }
 
-	on( (gvar.isOpera ? 'keypress':'keydown'), Dom.g(gvar.id_textarea),function(e){return is_keypress_pressed(e)});
+	on( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
 	if(gvar.settings.qrdraft)
-        on('keypress', Dom.g(gvar.id_textarea),function(){
-            if($D('#save_draft')) {
-               //$D('#save_draft').value='Save Now';
-               //removeClass('twbtn-disabled', $D('#save_draft'));
-               vB_textarea.saveDraft();
-            }
+        on( 'keypress' , Dom.g(gvar.id_textarea),function(e){
+            var A = e.keyCode ? e.keyCode : e.charCode;
+            if( A>=37 && A<=40 ) return; // not an arrow
+            if($D('#save_draft')) vB_textarea.saveDraft();
             clearTimeout( gvar.sITryLiveDrafting );
             gvar.isKeyPressed=1; DRAFT.quick_check();
         });
@@ -1834,8 +1843,8 @@ function is_keydown_pressed_ondocument(e){
   }
 }
 
-// Ketika keypress tab dari textarea
-function is_keypress_pressed(C){
+// Ketika keydown tab dari textarea
+function is_keydown_pressed(C){
   var C = (!C ? window.event : C), asocKey={};
   if(C) {
    if(C.ctrlKey){ // mijit + Ctrl
@@ -1889,63 +1898,56 @@ function is_keypress_pressed(C){
 }
 
 function insert_custom_control(){  
-  if(!$D('#customed_control')) return;
-  
-  var Attr,div1,el,idx;
-    div1 = createEl('div',{'class':'customed_addcontroller'});    
+    if(!$D('#customed_control')) return;
+    
+    var Attr,div1,el, idx, genProp={
+       // general properties
+       eventClick: do_btncustom
+      ,style:'vertical-align:bottom'      
+    }
+    ,btncustom={
+        // defined tautan btn custom     
+        youtube: {
+            title:'Insert youtube URL'
+           ,alt:'[youtube]', src:gvar.B.youtube_gif, parent:'#vB_Editor_001_cmd_insertyoutube'
+        }
+        ,spoiler: {
+            title:'Wrap [SPOILER] tags around selected text'
+           ,alt:'[spoiler]', src:gvar.B.spoiler_png, parent:'parent'
+        }
+        ,transparent: {
+            title:'Wrap [COLOR=transparent] tags around selected text'
+           ,alt:'[transparent]', src:gvar.B.transp_gif, parent:'parent'
+        }
+        ,noparse: {
+            title:'Wrap noparse tags around selected text'
+           ,alt:'[noparse]', src:gvar.B.noparse_gif, parent:'parent'
+        }
+        ,strikethrough: {
+            title:'Strikethrough text around selected text'
+           ,alt:'[strike]', src:gvar.B.tstrike_gif, parent:'parent'
+           ,eventClick:do_TextStrike
+        }
+    };    
+    div1 = createEl('div',{'class':'customed_addcontroller'});
     Dom.add(div1,$D('#customed_control'));
-    idx=7;
-    // tombol youtube
-    if(gvar.settings.hidecontroll[idx] != '1'){
-      Attr={title:'Insert youtube URL',
-            alt:'[youtube]',style:'vertical-align:bottom',src:gvar.B.youtube_gif
-           };
-      el = createEl('img',Attr);
-      on('click',el,function(e){return do_btncustom(e)});
-      Dom.add(el,$D('#vB_Editor_001_cmd_insertyoutube'));
-    }
-    idx=12;
-    // tombol spoiler
-    if(gvar.settings.hidecontroll[idx] != '1'){
-      Attr={title:'Wrap [SPOILER] tags around selected text',
-            alt:'[spoiler]',style:'vertical-align:bottom',src:gvar.B.spoiler_png
-           };
-      el = createEl('img',Attr);
-      on('click',el,function(e){return do_btncustom(e)});
-      Dom.add(el,div1);
-    }
-    idx++;
-    // tombol transparent
-    if(gvar.settings.hidecontroll[idx] != '1'){
-      Attr={title:'Wrap [COLOR=transparent] tags around selected text',
-            alt:'[transparent]',style:'vertical-align:bottom',src:gvar.B.transp_gif
-           };
-      el = createEl('img',Attr);
-      on('click',el,function(e){return do_btncustom(e)});
-      Dom.add(el,div1);
-    }
-    idx++;
-    // tombol noparse
-    if(gvar.settings.hidecontroll[idx] != '1'){
-      Attr={title:'Wrap noparse tags around selected text',
-            alt:'[noparse]',style:'vertical-align:bottom',src:gvar.B.noparse_gif
-           };
-      el = createEl('img',Attr);
-      on('click',el,function(e){return do_btncustom(e)});
-      Dom.add(el,div1);
-    }
-    idx++;
-    // tombol tstrike
-    if(gvar.settings.hidecontroll[idx] != '1'){
-      Attr={title:'Strikethrough text around selected text',
-            alt:'[strike]',style:'vertical-align:bottom',src:gvar.B.tstrike_gif
-           };
-      el = createEl('img',Attr);
-      on('click',el,function(){return do_TextStrike()});
-      Dom.add(el,div1);
-    }
-
+    
+    for(var tag in btncustom){
+        idx= gvar.labelControl.indexOf( String(tag) );
+        if( idx && gvar.settings.hidecontroll[idx] != '1' ){
+            var property = btncustom[tag]
+               ,parent=( property["parent"]=="parent" ? div1 : $D(property["parent"]) );
+            Attr={title:property["title"], alt:property["alt"],style:genProp["style"],src:property["src"]};
+            el = createEl('img',Attr);
+            if( property["alt"]=="[strike]" ) 
+                on('click',el, function(e){return property["eventClick"](e)} );
+            else
+                on('click',el, function(e){return genProp["eventClick"](e)} );
+            Dom.add(el, parent);
+        }
+    } // end for
 }
+// end insert_custom_control
 
 // create event controler on vbEditor & settings
 function re_event_vbEditor(){
@@ -4543,12 +4545,12 @@ var ST = {
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
      ,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
-     ,'TEXTA_EXPANDER':'Textarea Expander preferences; [isEnabled,minHeight,maxHeight]; validValue1=[1,0]; validValue2=>75; validValue3=<2048'
+     ,'TEXTA_EXPANDER':'Textarea Expander preferences; [isEnabled]; validValue1=[1,0]'
      ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
      ,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
      ,'QR_COLLAPSE':'Mode QR collapsed; validValue=[1,0]'
      ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
-     ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'     
+     ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
      ,'LAYOUT_CONFIG':'Layout Config; [userid=isEnable_autoSIGI,isEnable_autoTEMPLATE]; isEnable\'s validValue=[1,0]'
      ,'LAYOUT_SIGI':'Layout Signature; [userid=SIGI];'
      ,'LAYOUT_TPL':'Layout Template; [userid=TEMPLATE]; TEMPLATE\'s validValue must contain escaped string {MESSAGE}'
@@ -4575,7 +4577,7 @@ var ST = {
       } catch(e){}
     }
     if($D('#fsize')) $D('#fsize').innerHTML = ' <small>(Estimated: '+gvar.buftxt.length+' bytes)</small>';
-    if($D('#textarea_rawdata')) $D('#textarea_rawdata').value = gvar.buftxt;    
+    if($D('#textarea_rawdata')) $D('#textarea_rawdata').value = gvar.buftxt;
  }
  ,import_setting: function(){
     
@@ -6361,12 +6363,14 @@ Format will be valid like this:
     sett+=spacer;
     sett+='<input id="misc_hideavatar" type="checkbox" '+(gvar.settings.hideavatar=='1' ? 'checked':'')+'/><label for="misc_hideavatar">Hide Avatar</label><br>';
     sett+=spacer;
-    sett+='<div id="main_controller">';
-    var lcL=gvar.labelControl.length;
+    sett+='<div id="main_controller"><table width="100%" cellpadding=0 cellspacing=0 class="qrsmallfont"><tr><td valign="top" class="qrsmallfont">';
+    var lcL=gvar.labelControl.length, mid=Math.round((lcL-1)/2), tdsp;
     for(var i=0; i<lcL; i++)
-     if( isString(gvar.labelControl[i]) )
-      sett+='<input id="qrset_'+gvar.labelControl[i]+'" type="checkbox" '+(gvar.settings.hidecontroll[i]=='1' ? 'checked':'')+'/><label for="qrset_'+gvar.labelControl[i]+'">Hide ' + gvar.labelControl[i]+'</label><br>';
-    sett+='</div></div>'; // #main_controller  #visibility_container
+     if( isString(gvar.labelControl[i]) ){
+        tdsp=( i>0 && i%mid == 0 ? '</td><td valign="top" class="qrsmallfont">':'' );
+        sett+= '<input id="qrset_'+gvar.labelControl[i]+'" type="checkbox" '+(gvar.settings.hidecontroll[i]=='1' ? 'checked':'')+'/><label for="qrset_'+gvar.labelControl[i]+'">Hide ' + gvar.labelControl[i]+'</label><br>'+tdsp;
+     }
+    sett+='</td></tr></table></div></div>'; // #main_controller  #visibility_container
     return sett;
  }
  ,getTPL_Settings_General: function(){
