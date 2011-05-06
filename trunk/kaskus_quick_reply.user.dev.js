@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110506316
-// @timestamp     1304642179943
+// @dtversion     110507316
+// @timestamp     1304714646042
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-05-06
+// v3.1.6 - 2011-05-07
+//   Improve onsubmit & facing "Kepenuhan"
+//   Fix failed redirect after post (donatur)
 //   Fix minor (Chrome) failed destroy QR on locked thread
 //   Fix (Opera) shortcut-key on textarea
 //   Improve warn & close popup when post is too (short|long) 
@@ -112,9 +114,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304642179943 // version.timestamp
+  timestamp: 1304714646042 // version.timestamp
 
- ,dtversion: 110506316 // version.date
+ ,dtversion: 110507316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -1173,61 +1175,92 @@ function qr_ajax_post(reply_html){
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
 
   }else{    
+    
+    clog('here');
+    clog(reply_html.responseText);
+    
     if( !reply_html ) return;
+    
+    clog('here2');
+    
     reply_html = reply_html.responseText;
-    var parse_ajax_post = function(html){       
+    var parse_ajax_post = function(html){
         var r={err:1,msg:' Unknown-Error ',redirect:false},cucok,ErMsg;
         if(html.indexOf('POSTERROR')!=-1){ // there's some error          
-          cucok = html.match(/<ol><li>([^\n]+)<\/li/);
-          if(cucok) ErMsg = cucok[1];
-          if(cucok = ErMsg.match(/Please\s*try\s*again\s*in\s*([^.(]+)/i)){
-            r = {err:1, msg:'Posting delayed, please try again in '+cucok[1]};
-          }else{
-            r = {err:1, msg:(/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': ErMsg ) };
-          }
-          // grab and update hash
-          capcay_parser(html);
+            cucok = html.match(/<ol><li>([^\n]+)<\/li/);
+            if(cucok) ErMsg = cucok[1];
+            if(cucok = ErMsg.match(/Please\s*try\s*again\s*in\s*([^.(]+)/i)){
+                r.msg = 'Posting delayed, please try again in '+cucok[1];
+            }else{
+                r.msg = (/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': ErMsg );
+            }
+            // grab and update hash
+            capcay_parser(html);
         }else if( cucok = html.match(/<meta\s*http\-equiv=[\"\']Refresh[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i) ){
-          r = {err:0, msg:'', redirect:cucok[1]};
+          
+            // NO-Error, grab redirect location
+            r = {err:0, msg:'', redirect:cucok[1]};
+          
+        }else if( cucok = html.match(/TITLE>Kaskus\sKepenuhan\b[^<]+/i) ){
+
+            r.msg = '"Kaskus Kepenuhan", post may has been posted. Try to reload and conform the new post.';
+        
+        }else{
+        
+            r.msg = 'Unknown Error or Post Malfunction';
         }
         if(r.err!=0) clog(html);
         
        return r;
-    }, ret = parse_ajax_post(reply_html);
+    },
+    ret = parse_ajax_post(reply_html);
+        
     if(ret) {
        var tgt = (ret.err==0 ? $D('#recaptcha_container') : $D('#'+(gvar.user.isDonatur?'posting_notify_donat':'posting_notify') ));       
        if(ret.err==0){
+         clog('it is ret.err==0');
          
          // set lastPost timestamp here
          QRdp.updLast(new Date().getTime()+'');
          // delete tmp_text; set blank to nulled it
          try{setValue(KS+'TMP_TEXT', ''); }catch(er){}
 
+         // tgt is just needed for non-donatur
          if(tgt && ret.redirect) {
-           tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';
-           location.href = ret.redirect;
+           tgt.innerHTML = '<br/><div class="g_notice" style="display:block!important;">Thank you for posting! redirecting to <a href="'+ret.redirect+'" target="_self">post</a>..</div>';           
          }
+         clog('location.href performed');
+         location.href = ret.redirect;
        }else{         
          if(tgt) {
            tgt.setAttribute('style','height:auto!important');
            tgt.innerHTML = '<div class="g_notice g_notice-error" style="display:block!important;">'+ret.msg+'</div>';
          }         
-         if( !gvar.user.isDonatur && /too\s(?:short|long)\b/.test(ret.msg) ){
+         
+         if( /Kepenuhan/.test(ret.msg) || /too\s(?:short|long)\b/.test(ret.msg) ){
             window.setTimeout(function() { 
               var notice = $D('#quoted_notice'); addClass('g_notice-error', notice);
               notice.innerHTML = ret.msg;
               notice.setAttribute('style','display:block;');
-              SimulateMouse($D("#imghideshow_precap"), 'click', true);
+              
+              // close popup (non-donatur) or release lock(donatur)
+              if(!gvar.user.isDonatur)
+                SimulateMouse($D("#imghideshow_precap"), 'click', true);
+              else
+                lockFields_forSubmit( false );
             }, 1500);
             return false; // break here; close popup imidiately
          }
          
          lockFields_forSubmit( false );
-         if($D('#botgreet_text'))
+         if( !gvar.user.isDonatur && $D('#botgreet_text') ){
             $D('#botgreet_text').innerHTML = rSRC.getBOT_greet(0, 10);
-         // reload capcay
-         SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+            // reload capcay
+            SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
+         }
        }
+    }else{
+        clog("failed ret in parse_ajax_post");
     }
     return;
   }
@@ -1862,7 +1895,7 @@ function is_keydown_pressed(C){
 	 ,'13':'qr_prepost_submit' // Enter
 	};
 	B = (isDefined(asocKey[A])? asocKey[A] : false);
-	//alert('al;'+C + ' - ' + C.ctrlKey + ' - '+B);
+	
 	if(B===false) return false;    
     if(A==13){
       if(C.shiftKey) B = 'qr_preview_ajx'; // preview
