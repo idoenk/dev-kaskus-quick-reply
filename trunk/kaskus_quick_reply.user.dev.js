@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
 // @dtversion     110507316
-// @timestamp     1304714646042
+// @timestamp     1304771142479
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.1.6 - 2011-05-07
+//   Aware with mimin's "Official Statement"
 //   Improve onsubmit & facing "Kepenuhan"
 //   Fix failed redirect after post (donatur)
 //   Fix minor (Chrome) failed destroy QR on locked thread
@@ -66,33 +67,6 @@
 //   Fix minor (setElastic) offset max-height
 //   Add quick-quote (beta-10)
 //
-// v3.1.4 - 2011-03-13
-//   Fix minor (setElastic) onkeyup &#13 ;
-//   Add & AutoSwitch to LastUsed-Uploader
-//   Split Smiley & Uploader Container
-//   Fix missing emote besar (repost2,cystg,kiss,peluk)
-//   Fix avoid doubled event on textformat,align controllers (Donatur)
-//   Add controller button for uploader
-//   Fix strict find threadid
-//   Fix minor toggle-iframe
-//   Fix failed send rating (ajaxPost)
-//   Fix post-timer enabled w/o ajaxPost
-//   Fix void(increase/decrease-textarea)
-//   Add settings ajaxPost/autoredirect
-//   Fix failed parse smiley-custom BBCode (ajaxPost)
-//   Add 3rd-party additional uploader (imgur.com; photoserver.ws)
-//   Fix failed Go Advanced
-//   Fix do_an_e() avoid form submit when ajaxPost
-//   Fix setElastic, height decreased when add Link/Image tags
-//   Improve give icon on editpost
-//   Fix lineHeight problem (Chrome)
-//   Add strikethrough controller
-//   Add post-timer afterSubmit
-//   Add posting with ajaxPost (beta-2)
-//   Fix adapting FF4.0b12/RC (partial)
-//   Improve BBCodeIMG (imageshack.us)
-//   Fix avoid banned global object inArray
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
@@ -114,7 +88,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304714646042 // version.timestamp
+  timestamp: 1304771142479 // version.timestamp
 
  ,dtversion: 110507316 // version.date
  ,scriptID: 80409 // script-Id
@@ -125,6 +99,7 @@ javascript:window.alert(new Date().getTime());
 //=-=-=-=--=
 //========-=-=-=-=--=========
 gvar.__DEBUG__ = false; // development debug
+gvar.__SIMPATI__ = 1; // kaskusimpati
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -1505,7 +1480,7 @@ function scustom_parser(msg){
 // eg. submit, preview, some of vb_Textarea element
 function initEventTpl(){
     
-	var nodes,node,nid;	
+	var nodes, node, nid, notice;
     
     if( !gvar.settings.qrdraft )
         if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){        
@@ -1584,10 +1559,46 @@ function initEventTpl(){
         ST.init_setting();
       });
       on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
+
+      // check msh ada "Official Statement"
+      if( notice=$D('.navbar_notice') ){
+        ofs = (notice.length > 0 ? /Official\sStatement/i.test(notice[0].innerHTML) : false);
+        if(ofs && $D('#simpati_notify')) $D('#simpati_notify').innerHTML = '<a id="notify_kaskusimpati" target="_blank" href="https://www.facebook.com/home.php?sk=group_164610980266203&ap=1" onclick="return false">"Ada ada dengan kaskus dan jajaran moderator?"</a><input id="remote_notify_kaskusimpati" type="button" style="display:none;"/>';
+      }
+      if($D('#notify_kaskusimpati')) on('click',$D('#notify_kaskusimpati'),function(e){
+        e=e.target||e;
+        var n='\n', msg=''
+         +'"Ada ada dengan kaskus dan jajaran moderator?"'+n
+         +'Maaf harus menggunakan media QR untuk hal yang tidak,'+n
+         +'relevan. Well, you have rights to remain silent & don\'t'+n
+         +'give a damn with this crap.'+n
+         +''+n
+         +'Sebagai wujud simpati atas inisiden internal kaskus,.'+n
+         +'cukupkah dg official statement lalu manggut-manggut / geleng-geleng?'+n
+         +''+n
+         +'*valid notify upto next version, ~1 mo.'+n
+         +' (at least kaskus still with vBulletin)'+n
+         +'\/rapatkan barisan, satukan suara\/i'+n
+         +''+n
+         +'Proceed goto this Group on Facebook?'+n
+         +'facebook.com/home.php?sk=group_164610980266203'
+        , conf=confirm( msg );
+        if(conf){
+            var er=$D('#remote_notify_kaskusimpati');
+            if( !er.getAttribute('onclick') ){
+                on("click", er, function(){
+                    var rel=$D('#notify_kaskusimpati')
+                    window.open(rel.href, '_newtab');
+                });
+                er.setAttribute("onclick", "return true");
+            }
+            SimulateMouse(er, 'click', true);
+        }        
+      });
       on('keydown',$D('#input_title'),function(e){
         var C = window.event||e, A = C.keyCode ? C.keyCode : C.charCode;
         if(A===13){
-          if(C.ctrlKey) SimulateMouse($D('#qr_prepost_submit'), 'click', true);          
+          if(C.ctrlKey) SimulateMouse($D('#qr_prepost_submit'), 'click', true);
           e.preventDefault(); // return false;
           return false;
 		}
@@ -1596,7 +1607,7 @@ function initEventTpl(){
       
       on('click',$D('#chk_fixups'),function(e) {
         e=e.target||e;
-        var chk=e.getAttribute('checked');        
+        var chk=e.getAttribute('checked');
         if(chk){
             $D('#css_fixups').innerHTML='';
             e.removeAttribute('checked');
@@ -1744,55 +1755,6 @@ function initEventTpl(){
 }
 // - end initEventTpl()
 
-var DRAFT= {
-   check: function(){
-        clog('checking draft..');
-        if($D('#save_draft') && $D('#save_draft').value=='Draft'){
-            gvar.timeOld = new Date().getTime();
-            clearInterval(gvar.sITryKeepDrafting);
-            // default interval should be 120 sec || 2 minutes
-            gvar.sITryKeepDrafting= window.setInterval(function() { DRAFT.check() }, 120000);
-        }
-        
-        var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
-            ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
-        if( tmp_text==gvar.silahken || tmp_text=="")
-            return false;
-        
-        // any live change ? 
-        if( isDefined(gvar.isKeyPressed) )
-            DRAFT.save();
-        else
-        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
-   }
-  ,quick_check: function(){
-    gvar.sITryLiveDrafting= window.setTimeout(function() {DRAFT.check()}, 5000); // 5 sec if any live change
-  }
-  ,save: function(txt){
-    if(isUndefined(txt)){
-        $D('#save_draft').value='Saving ...';
-        $D('#save_draft').removeAttribute('title');
-        addClass('twbtn-disabled', $D('#save_draft'));
-        window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
-    }else{
-        setValue(KS+'TMP_TEXT', txt.toString());
-        $D('#save_draft').value= 'Saved';
-        $D('#draft_desc').innerHTML = 'Saved seconds ago';
-        if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
-        if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
-        if( !$D('#hideshow') ) force_focus(10);
-    }
-  }
-  ,clear: function(txt){
-    gvar.tmp_text = '';
-    setValue(KS+'TMP_TEXT', gvar.tmp_text);
-    $D('#save_draft').removeAttribute('title');
-    $D('#save_draft').value= 'Draft';
-    addClass('twbtn-disabled', $D('#save_draft'));
-    $D('#draft_desc').innerHTML = 'blank';
-    force_focus(10);
-  }
-};
 function controler_resizer(){   
    gvar.maxH_editor = parseInt(GetHeight())-170;
    var wtxa=Dom.g(gvar.id_textarea).clientWidth;
@@ -3846,6 +3808,56 @@ var NAT_xmlhttpRequest=function(obj) {
   request.send(obj.data); return request;
 };
 
+var DRAFT= {
+   check: function(){
+        clog('checking draft..');
+        if($D('#save_draft') && $D('#save_draft').value=='Draft'){
+            gvar.timeOld = new Date().getTime();
+            clearInterval(gvar.sITryKeepDrafting);
+            // default interval should be 120 sec || 2 minutes
+            gvar.sITryKeepDrafting= window.setInterval(function() { DRAFT.check() }, 120000);
+        }
+        
+        var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
+            ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
+        if( tmp_text==gvar.silahken || tmp_text=="")
+            return false;
+        
+        // any live change ? 
+        if( isDefined(gvar.isKeyPressed) )
+            DRAFT.save();
+        else
+        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
+   }
+  ,quick_check: function(){
+    gvar.sITryLiveDrafting= window.setTimeout(function() {DRAFT.check()}, 5000); // 5 sec if any live change
+  }
+  ,save: function(txt){
+    if(isUndefined(txt)){
+        $D('#save_draft').value='Saving ...';
+        $D('#save_draft').removeAttribute('title');
+        addClass('twbtn-disabled', $D('#save_draft'));
+        window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
+    }else{
+        setValue(KS+'TMP_TEXT', txt.toString());
+        $D('#save_draft').value= 'Saved';
+        $D('#draft_desc').innerHTML = 'Saved seconds ago';
+        if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
+        if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
+        if( !$D('#hideshow') ) force_focus(10);
+    }
+  }
+  ,clear: function(txt){
+    gvar.tmp_text = '';
+    setValue(KS+'TMP_TEXT', gvar.tmp_text);
+    $D('#save_draft').removeAttribute('title');
+    $D('#save_draft').value= 'Draft';
+    addClass('twbtn-disabled', $D('#save_draft'));
+    $D('#draft_desc').innerHTML = 'blank';
+    force_focus(10);
+  }
+}; // - end DRAFT
+
 // utk delay post (30sec) notify
 var QRdp = {
   // QR delay post 
@@ -5314,6 +5326,7 @@ var rSRC = {
   +'.avafetch{display:block;margin:0 5px 0 0;padding:0.3px 5px;font-size:9px;line-height:12px;}'
   +'#vbform .tborder{width:100%;}'
   +'#atoggle{float:right;}'
+  +'.plain_notify{margin-left:20px;color:#FFFF00;font-size:10px;font-weight:normal;}'  
    
   +'.panelsurrounds .panel, .imagebutton{background:#DFDFE0;}'
   +'.controlbar{text-align:left;}'
@@ -5992,7 +6005,9 @@ Format will be valid like this:
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
     +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
-    +(gvar.__DEBUG__===true ? '<span style="margin-left:20px;color:#FFFF00;font-size:10px;font-weight:normal;">&nbsp;&nbsp;[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
+    +(gvar.__DEBUG__===true ? '<span class="plain_notify">[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
+    
+    +(gvar.__SIMPATI__ && !gvar.__DEBUG__ ? '<span class="plain_notify" id="simpati_notify"></span>':'')
 
     +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="" value="Draft" /></div>' : '')
     
