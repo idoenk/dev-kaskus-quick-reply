@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.6
-// @dtversion     110507316
-// @timestamp     1304771142479
+// @dtversion     110508316
+// @timestamp     1304808177548
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,9 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.1.6 - 2011-05-07
-//   Aware with mimin's "Official Statement"
-//   Improve onsubmit & facing "Kepenuhan"
+// v3.1.6 - 2011-05-08
+//   Fix save_draft thingie
+//   Improve not responding onsubmit then "Kepenuhan"
 //   Fix failed redirect after post (donatur)
 //   Fix minor (Chrome) failed destroy QR on locked thread
 //   Fix (Opera) shortcut-key on textarea
@@ -88,9 +88,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.6';
 gvar.scriptMeta = {
-  timestamp: 1304771142479 // version.timestamp
+  timestamp: 1304808177548 // version.timestamp
 
- ,dtversion: 110507316 // version.date
+ ,dtversion: 110508316 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -99,7 +99,6 @@ javascript:window.alert(new Date().getTime());
 //=-=-=-=--=
 //========-=-=-=-=--=========
 gvar.__DEBUG__ = false; // development debug
-gvar.__SIMPATI__ = 1; // kaskusimpati
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -351,7 +350,7 @@ function getSettings(){
     ajaxpost: (getValue(KS+'AJAXPOST')!='0'),
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
     scustom_noparse: (getValue(KS+'SCUSTOM_NOPARSE')=='1'), // dont parse?
-    qrdraft: (getValue(KS+'QR_DRAFT')=='1'),
+    qrdraft: (getValue(KS+'QR_DRAFT')!='0'),
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),
     hotkeychar: getValue(KS+'QR_HOTKEY_CHAR'),
     hidecontroll: []
@@ -787,7 +786,6 @@ function do_click_qqr(e, multi){
 	
 	clog('after ol-ul done=\n'+pCon.innerHTML);
 	
-
 	// cleanup lastedit
 	els=$D('.//div[@class="smallfont"]',pCon);
 	for(var i=0;i<els.snapshotLength; i++){
@@ -1482,17 +1480,19 @@ function initEventTpl(){
     
 	var nodes, node, nid, notice;
     
-    if( !gvar.settings.qrdraft )
-        if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){        
-            vB_textarea.init(); // need this coz if disable can not set
+    vB_textarea.init(); // need this coz if disable can not set
+    // if qrdraft inactive recieve from tmp_text of reload of location.false
+    if( !gvar.settings.qrdraft ){
+        if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){            
             // load capcay
             if(capcay_notloaded()) ajax_buildcapcay();
             if(gvar.user.isDonatur && additional_options_notloaded()) 
-                ajax_additional_opt();            
-            vB_textarea.set( trimStr(gvar.tmp_text) ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
-        }
-    else    
+                ajax_additional_opt();
+        }        
+        vB_textarea.set( trimStr(gvar.tmp_text)!="" ? gvar.tmp_text : gvar.silahken); // initilaize value with "silahken"    or tmp_text    
+    } else {
         vB_textarea.set( gvar.silahken ); // initilaize value with "silahken"
+    }
     
     var dvacs = $D('#dv_accessible');
     if(dvacs){
@@ -1518,7 +1518,7 @@ function initEventTpl(){
         on( 'keypress' , Dom.g(gvar.id_textarea),function(e){
             var A = e.keyCode ? e.keyCode : e.charCode;
             if( A>=37 && A<=40 ) return; // not an arrow
-            if($D('#save_draft')) vB_textarea.saveDraft();
+            if($D('#save_draft')) vB_textarea.saveDraft(e);
             clearTimeout( gvar.sITryLiveDrafting );
             gvar.isKeyPressed=1; DRAFT.quick_check();
         });
@@ -1546,8 +1546,7 @@ function initEventTpl(){
     // node destroyed from qr_maincontainer and all nodes inside
     // ====---==No-Repost-Event-Gan==---===
     if(!gvar.restart){
-      
-	  
+
 	  // new version multi-quote (cookie based)
       ck_mquote = $D('#tmp_chkVal').value;
 	  
@@ -1560,41 +1559,6 @@ function initEventTpl(){
       });
       on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
 
-      // check msh ada "Official Statement"
-      if( notice=$D('.navbar_notice') ){
-        ofs = (notice.length > 0 ? /Official\sStatement/i.test(notice[0].innerHTML) : false);
-        if(ofs && $D('#simpati_notify')) $D('#simpati_notify').innerHTML = '<a id="notify_kaskusimpati" target="_blank" href="https://www.facebook.com/home.php?sk=group_164610980266203&ap=1" onclick="return false">"Ada ada dengan kaskus dan jajaran moderator?"</a><input id="remote_notify_kaskusimpati" type="button" style="display:none;"/>';
-      }
-      if($D('#notify_kaskusimpati')) on('click',$D('#notify_kaskusimpati'),function(e){
-        e=e.target||e;
-        var n='\n', msg=''
-         +'"Ada ada dengan kaskus dan jajaran moderator?"'+n
-         +'Maaf harus menggunakan media QR untuk hal yang tidak,'+n
-         +'relevan. Well, you have rights to remain silent & don\'t'+n
-         +'give a damn with this crap.'+n
-         +''+n
-         +'Sebagai wujud simpati atas inisiden internal kaskus,.'+n
-         +'cukupkah dg official statement lalu manggut-manggut / geleng-geleng?'+n
-         +''+n
-         +'*valid notify upto next version, ~1 mo.'+n
-         +' (at least kaskus still with vBulletin)'+n
-         +'\/rapatkan barisan, satukan suara\/i'+n
-         +''+n
-         +'Proceed goto this Group on Facebook?'+n
-         +'facebook.com/home.php?sk=group_164610980266203'
-        , conf=confirm( msg );
-        if(conf){
-            var er=$D('#remote_notify_kaskusimpati');
-            if( !er.getAttribute('onclick') ){
-                on("click", er, function(){
-                    var rel=$D('#notify_kaskusimpati')
-                    window.open(rel.href, '_newtab');
-                });
-                er.setAttribute("onclick", "return true");
-            }
-            SimulateMouse(er, 'click', true);
-        }        
-      });
       on('keydown',$D('#input_title'),function(e){
         var C = window.event||e, A = C.keyCode ? C.keyCode : C.charCode;
         if(A===13){
@@ -1728,23 +1692,22 @@ function initEventTpl(){
           // event click for save_draft
           if($D("#save_draft")) 
             on("click", $D("#save_draft"), function(e){
-              e=e.target||e; 
-              var text=Dom.g(gvar.id_textarea).value;
-              if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
-              if(e.value=='Draft'){
-                vB_textarea.enabled();
-                vB_textarea.focus();
-                if( text==gvar.silahken || text=="" )
-                  vB_textarea.set( gvar.tmp_text );
-                else
-                  vB_textarea.add( gvar.tmp_text );                                
-                // retrigger elastic
-                vB_textarea.adjustElastic();
-                
-                $D('#draft_desc').innerHTML='';
-              }else{                
-                if( text!=gvar.silahken && text!="") DRAFT.save();
-              }
+                e=e.target||e; 
+                var text=Dom.g(gvar.id_textarea).value;
+                if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
+                if(e.value=='Draft'){
+                    vB_textarea.enabled();
+                    vB_textarea.focus();
+                    if( text==gvar.silahken || text=="" )
+                        vB_textarea.set( gvar.tmp_text );
+                    else
+                        vB_textarea.add( gvar.tmp_text );                                
+                    // retrigger elastic
+                    vB_textarea.adjustElastic();                
+                    $D('#draft_desc').innerHTML='';
+                }else{                
+                    if( text!=gvar.silahken && text!="") DRAFT.save();
+                }
             });
       }
     } // end not restart mode
@@ -2811,7 +2774,6 @@ function event_ckck(){
   } );
 }
 
-
 function massive_lock(isChanged){
       //clog('in massive_lock');
  if(isChanged){
@@ -2824,7 +2786,7 @@ function massive_lock(isChanged){
       $D('#qravatar_refetch').innerHTML='';
     }
     
-    var tokill = ['textarea_clear','capcay_container','capcay_header'];
+    var tokill = ['qrsetting','textarea_clear','capcay_container','capcay_header','qrdraft','draft_clear'];
     for(var i=0; i<tokill.length;i++)
        if(Dom.g(tokill[i])) showhide(Dom.g(tokill[i]), false);
        
@@ -3571,6 +3533,7 @@ var vB_textarea = {
     this.Obj.style.height='1px'; // min-height should be set before
     this.enabled();
     this.focus();
+    DRAFT.provide_draft();
   },
   disabled: function(){ 
     this.Obj.setAttribute('disabled','disabled');
@@ -3605,8 +3568,9 @@ var vB_textarea = {
   set: function(value){
     if(!this.Obj)
       this.Obj = Dom.g(gvar.id_textarea);
-    this.Obj.value = this.content = value;
-    this.saveDraft();
+    this.Obj.value = this.content = value;    
+    if(this.Obj.value!="" && this.Obj.value!=gvar.silahken)
+        this.saveDraft();
   },
   lastfocus: function (){
     var pos = Dom.g(gvar.id_textarea).value.length; // use the actual content
@@ -3704,14 +3668,16 @@ var vB_textarea = {
         delete gvar.lastHeight_textarea;
     }
   },
-  saveDraft: function(){    
+  saveDraft: function(e){
+    if(e && (e.ctrlKey || e.altKey) ) return true;
     var liveVal=Dom.g(gvar.id_textarea).value;
     if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
         $D('#save_draft').setAttribute('title', 'Save Draft');
         $D('#save_draft').value='Save Now';
         removeClass('twbtn-disabled', $D('#save_draft'));
         $D('#draft_desc').innerHTML='';
-        clearTimeout( gvar.sITryLiveDrafting ); gvar.isKeyPressed=1;
+        clearTimeout( gvar.sITryLiveDrafting ); 
+        //gvar.isKeyPressed=1;
         if(gvar.settings.qrdraft) DRAFT.quick_check();
     }
   }
@@ -3814,12 +3780,14 @@ var DRAFT= {
         if($D('#save_draft') && $D('#save_draft').value=='Draft'){
             gvar.timeOld = new Date().getTime();
             clearInterval(gvar.sITryKeepDrafting);
-            // default interval should be 120 sec || 2 minutes
+            // default interval should be 120 sec || 2 minutes (120000)
             gvar.sITryKeepDrafting= window.setInterval(function() { DRAFT.check() }, 120000);
         }
         
         var tmp_text= Dom.g(gvar.id_textarea).value, timeNow=new Date().getTime()
             ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
+        
+        if( DRAFT.provide_draft() ) return false;
         if( tmp_text==gvar.silahken || tmp_text=="")
             return false;
         
@@ -3827,9 +3795,21 @@ var DRAFT= {
         if( isDefined(gvar.isKeyPressed) )
             DRAFT.save();
         else
-        $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
+            $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
    }
+  ,provide_draft: function(){
+    var tmp_text= Dom.g(gvar.id_textarea).value;
+    if(tmp_text=="" && gvar.tmp_text!="") {
+        $D('#save_draft').value='Draft';
+        $D('#save_draft').setAttribute('title', 'Continue Draft');
+        $D('#draft_desc').innerHTML='Available';
+        removeClass('twbtn-disabled', $D('#save_draft'));
+        return true;
+    }
+    return false;
+  }
   ,quick_check: function(){
+    window.setTimeout(function() {DRAFT.provide_draft()}, 300);
     gvar.sITryLiveDrafting= window.setTimeout(function() {DRAFT.check()}, 5000); // 5 sec if any live change
   }
   ,save: function(txt){
@@ -3839,7 +3819,8 @@ var DRAFT= {
         addClass('twbtn-disabled', $D('#save_draft'));
         window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
     }else{
-        setValue(KS+'TMP_TEXT', txt.toString());
+        gvar.tmp_text = txt.toString();
+        setValue(KS+'TMP_TEXT', gvar.tmp_text);
         $D('#save_draft').value= 'Saved';
         $D('#draft_desc').innerHTML = 'Saved seconds ago';
         if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
@@ -4550,7 +4531,7 @@ var ST = {
  }
  ,cold_boot_qr: function(){
     delete gvar.settings;
-    getSettings(); // redefine gvar
+    getSettings(); // redefine gvar    
     ST.close_setting()
     
     if(!gvar.settings.textareaExpander[0] && $D(gvar.id_textarea))
@@ -4587,7 +4568,7 @@ var ST = {
      ,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
      ,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
      ,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
-     ,'QR_DRAFT':'Mode QR-Draft; validValue=[1-0]'
+     ,'QR_DRAFT':'Mode QR-Draft; validValue=[1,0]'
      ,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
      ,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
@@ -4664,8 +4645,8 @@ var ST = {
       }
     } // end for
     // check & save text on TMP_TEXT before reload-page
-    if(value=vB_textarea.Obj.value){
-      if(value && value!=gvar.silahken)
+    if(value=Dom.g(gvar.id_textarea).value){
+      if($D('#dv_accessible') && $D('#dv_accessible').style.display=='none' && value!=gvar.silahken)
         setValue(KS+'TMP_TEXT',value.toString());
     }
     window.setTimeout(function() {
@@ -4801,8 +4782,10 @@ var ST = {
     setValueForId(gvar.user.id, value.toString(), 'LAYOUT_CONFIG'); //save layout
     
     // set temporarty text
-    value=vB_textarea.Obj.value;
-    if(value) setValue(KS+'TMP_TEXT', value );
+    if(value=Dom.g(gvar.id_textarea).value){
+      if($D('#dv_accessible') && $D('#dv_accessible').style.display=='none' && value!=gvar.silahken)
+        setValue(KS+'TMP_TEXT',value.toString());
+    }
     window.setTimeout(function() {
       gvar.restart=true;
       // ==
@@ -6006,9 +5989,6 @@ Format will be valid like this:
     +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span class="plain_notify">[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
-    
-    +(gvar.__SIMPATI__ && !gvar.__DEBUG__ ? '<span class="plain_notify" id="simpati_notify"></span>':'')
-
     +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="" value="Draft" /></div>' : '')
     
     +'<div id="qrsetting" style="position:absolute;right:57px;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
