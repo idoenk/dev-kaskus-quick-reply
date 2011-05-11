@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.1.6
-// @dtversion     110508316
-// @timestamp     1304808177548
+// @version       3.1.7
+// @dtversion     110511317
+// @timestamp     1305086659731
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -16,6 +16,14 @@
 // @include       http://photoserver.ws/*
 //
 // -!--latestupdate
+//
+// v3.1.7 - 2011-05-11
+//   Fix avoid focus on particular state (autoload_smiley). Thanks=[holdonzzz, Atho1982]
+//   Fix save_draft thingie
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.1.6 - 2011-05-08
 //   Fix save_draft thingie
@@ -38,35 +46,6 @@
 //   Add shortcut, [Left, Center, Right] == Ctrl+[L,(Shift+E),R]
 //   Improve quick-quote (beta-11)
 //
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//
-// v3.1.5 - 2011-04-05
-//   Fix multiquote behaviour with Multifox
-//   Improve QQ enabled(default)
-//   Fix Updater switch between xhr method
-//   Fix QQ clearparse inside PHP tag.
-//   Add native/generic XHR for Multifox work with . Thanks=[hultmann]
-//   Improve author namespace (adapting AMO)
-//   Improve & repositioning QQ-Button
-//   Add 2 new Kaskusemotes (Hot-News; Games)
-//   Fix multi-QQ in one page
-//   Fix namespace . Thanks=[Piluze]
-//   Fix QQ-now lastIdx of an a
-//   Fix QQ-now not disappear in notice on another page
-//   Fix keep controller_wraper onclose Settings
-//   Fix QQ missed parsing inside LIST . Thanks=[p1nky]
-//   Fix QQ-now not disappear in notice . Thanks=[rende]
-//   Fix failed get username . Thanks=[takut.patahhati]
-//   Improve combining multi-QQ (One Page) .Thanks=[p1nky]
-//   Improve using with Multifox (some features not available)
-//   Fix QQ quote Officer/Moderator username . Thanks=[ketang7keting] 
-//   Fix posterror on maxlength . Thanks=[t0g3]
-//   Fix input_title maxlength=85 . Thanks=[t0g3]
-//   Fix minor (setElastic) offset max-height
-//   Add quick-quote (beta-10)
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
@@ -86,11 +65,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.6';
+gvar.sversion = 'v' + '3.1.7pre';
 gvar.scriptMeta = {
-  timestamp: 1304808177548 // version.timestamp
+  timestamp: 1305086659731 // version.timestamp
 
- ,dtversion: 110508316 // version.date
+ ,dtversion: 110511317 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -2362,6 +2341,7 @@ function force_focus(delay){
     if(isUndefined(delay)) delay=560;
     if(!vB_textarea.Obj) vB_textarea.init();
     window.setTimeout(function() {
+      if( $D('#dv_accessible') && $D('#dv_accessible').style.display!='none' && gvar.settings.qrdraft ) return;
       vB_textarea.Obj.focus();
     }, delay); // rite after dumy created, lost its focus
 }
@@ -3569,8 +3549,12 @@ var vB_textarea = {
     if(!this.Obj)
       this.Obj = Dom.g(gvar.id_textarea);
     this.Obj.value = this.content = value;    
-    if(this.Obj.value!="" && this.Obj.value!=gvar.silahken)
+    if(this.Obj.value!="" && this.Obj.value!=gvar.silahken){
         this.saveDraft();
+        if(capcay_notloaded()) ajax_buildcapcay();
+        if(gvar.user.isDonatur && additional_options_notloaded()) 
+           ajax_additional_opt();
+    }
   },
   lastfocus: function (){
     var pos = Dom.g(gvar.id_textarea).value.length; // use the actual content
@@ -4792,6 +4776,7 @@ var ST = {
       window.setTimeout(function() { 
         ST.cold_boot_qr();
         if( $D('#qrdraft') ) $D('#qrdraft').style.display = (gvar.settings.qrdraft ? '':'none');
+        if( $D('#save_draft') ) $D('#save_draft').value = 'Draft';
       }, 150);
       // ==
     }, (gvar.isOpera ? 50:300));
