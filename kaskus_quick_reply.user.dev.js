@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.8
-// @dtversion     110518318
-// @timestamp     1305742044105
+// @dtversion     110521318
+// @timestamp     1305932549494
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.1.8 - 2011-05-18
+// v3.1.8 - 2011-05-21
+//   Fix resolve behaviour with kaskus capcay. Thanks=[p1nky,ketang6,ceroberoz,reinhard.tambz]
 //   Rollback using ordinary kaskus capcay. (Beta)
 //
 // -/!latestupdate---
@@ -68,11 +69,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.8.b1';
+gvar.sversion = 'v' + '3.1.8';
 gvar.scriptMeta = {
-  timestamp: 1305742044105 // version.timestamp
+  timestamp: 1305932549494 // version.timestamp
 
- ,dtversion: 110518318 // version.date
+ ,dtversion: 110521318 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -167,6 +168,8 @@ function init(){
   GM_addGlobalStyle( rSRC.getCSS() );
   GM_addGlobalStyle('','css_fixups', true); // blank style tag for kaskus fixups, should be on body instead of head
   GM_addGlobalStyle('','css_qqr', true); // blank style tag for qqr toggle
+  
+  GM_addGlobalScript('','kaskus_capcay_trigger', true); // blank for trigger kaskus capcay
   
   GM_addGlobalScript( rSRC.getSCRIPT() );
   
@@ -493,7 +496,6 @@ function start_Main(){
        child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
        Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
        el = createEl('a',Attr,child);
-       //on('click',el,function(e){do_click_qqr(e)});
        on('click',el,function(e){proc_mquickquote(e)});
        nodes[i].parentNode.insertBefore(el, nodes[i]);
        nodes[i].parentNode.insertBefore(createTextEl(' '+"\n"), nodes[i]);
@@ -957,16 +959,11 @@ function create_tplcapcay(){
 		+'</fieldset>'
 		;
 	}else{
-		$D('#capcay_header').innerHTML = ''
-		+'<span id="refresh_imagereg" class="qrsmallfont" style="display:none;color:#000;">'
-		+'<a id="remote_refresh_capcay" href="javascript:;" tabindex="6">Re-Capcay</a>'
-		+'<a id="refresh_capcay" href="javascript:;"></a></span><span id="nfolink" class="qrsmallfont"><a href="http:/'+'/kask.us/3882791" tabindex="7" title="NFO Image Verifikasi" target="_blank">Info</a></span>'
-		;
 		$D('#capcay_container').innerHTML = ''
-		+'<fieldset class="fieldset" id="fieldset_capcay">'    
-		+'<div id="imgcapcay"><div class="g_notice normal_notice" style="display:block;margin-right:3px;width:131px;font-size:9px;text-align:center;">[capcay-space]</div></div>'
-		+'<input type="text" tabindex="2" title="insert capcay here" class="bginput" name="humanverify[input]" id="humaninput" size="4" maxlength="3" disabled="disabled" autocomplete="off"/>'
-		+'<div id="progress_imagereg" style="display:none;float:right;margin:8px 15px 0 0;"><img src="'+gvar.domainstatic+'images/misc/progress.gif" alt="~~" /></div>'
+		+'<fieldset class="fieldset" id="fieldset_capcay" style="display:none;">'
+        +'<span id="refresh_imagereg" class="qrsmallfont" style="display:none;color:#000;">'
+         +'<a id="refresh_capcay" href="javascript:;"></a>'
+        +'</span>'        
 		+'</fieldset>'
 		;
 	}
@@ -989,8 +986,11 @@ function ajax_buildcapcay(reply_html){
         build_additional_opt(reply_html);
     
     var rets=false;
+    
     // need to parse & store hash humaninput
     // ada hash capcay ? || capcay enabled
+    rets = capcay_parser(reply_html)
+    //return reply_html;
     if( rets = capcay_parser(reply_html) ) 
         create_kaskus_capcay(rets);
   }
@@ -999,33 +999,63 @@ function ajax_buildcapcay(reply_html){
 function create_kaskus_capcay( rets ){
     if( gvar.settings.recaptcha ) return; // only for kaskus capcay
     
-    var Attr = {id:'imagereg',alt:'capcay',title:'capcay',width:'131',height:'55',border:'0',
+    // pre tpl
+    if($D('#recaptcha_container')) $D('#recaptcha_container').innerHTML = ''        
+        +'<div id="imgcapcay" style="margin:1px 0;"><div class="g_notice normal_notice" style="display:block; margin-right:3px; width:200px; font-size:9px; text-align:center;">[capcay-space]</div></div>'
+        +'<div id="progress_imagereg" style="display:none;position:absolute;margin:-20px auto;"><img src="'+gvar.B.throbber_gif+'" /></div>'
+        +'<div><a id="remote_refresh_capcay" href="javascript:;" class="qrsmallfont" tabindex="6">Refresh-Capcay</a></div>'
+        +'<input type="text" tabindex="2" title="insert capcay here" class="bginput" name="humanverify[input]" id="humaninput" size="4" maxlength="3" disabled="disabled" autocomplete="off"/>';
+    
+    var Attr = {id:'imagereg',alt:'capcay',title:'capcay',width:'200',height:'61',border:'0',style:'cursor:pointer',
                 src:(gvar.settings.qrtoggle==1 ? 'image.php?type=hv&hash='+rets[0]:'')};
-    var el=createEl('img',Attr);
+    var el=createEl('img',Attr);    
+
     if(rets[1]) gvar.securitytoken = rets[1]; // update token
     $D('#imgcapcay').innerHTML='';
     Dom.add(el, $D('#imgcapcay'));
-    el=createEl('input',{id:'hash',type:'hidden',name:'humanverify[hash]',value:rets[0]});
-    Dom.add(el, $D('#fieldset_capcay'));
+    if( !$D('#hash') ){
+        el=createEl('input',{id:'hash',type:'hidden',name:'humanverify[hash]',value:rets[0]});
+        Dom.add(el, $D('#fieldset_capcay'));
+    }else{
+        $D('#hash').value = rets[0];
+    }
     
-    GM_addGlobalScript( 'if(document.getElementById("refresh_imagereg").style.display=\'none\' && typeof(vB_AJAX_ImageReg_Init)==\'function\'){window.setTimeout(vB_AJAX_ImageReg_Init,200);}else{var cp=document.getElementById("refresh_imagereg");cp.innerHTML="<span title=\'vB_AJAX_ImageReg_Init failed to load. Unable to refresh capcay.\'>Capcay</span>";cp.style.display="";};' );
+    el = $D('#kaskus_capcay_trigger');
+    if(el && el.innerHTML=='') $D('#kaskus_capcay_trigger').innerHTML = 'if(document.getElementById("refresh_imagereg").style.display==\'none\' && typeof(vB_AJAX_ImageReg_Init)==\'function\'){window.setTimeout(vB_AJAX_ImageReg_Init,200);}else{var cp=document.getElementById("refresh_imagereg");cp.innerHTML="<span title=\'vB_AJAX_ImageReg_Init failed to load. Unable to refresh capcay.\'>LoadCapcay-Failed</span>";cp.style.display="";};';
+    
     var hi = $D('#humaninput');
-    addClass('idleinput', hi);
-    Dom.Ev(hi, 'focus', function(){removeClass('idleinput', hi);addClass('activeField', hi);});
-    Dom.Ev(hi, 'blur', function(){removeClass('activeField', hi);addClass('idleinput', hi);});
-    
-    Dom.Ev($D('#refresh_capcay'), 'click', function(){ hi.value='';});
-    Dom.Ev($D('#remote_refresh_capcay'), 'click', function(){ 
-        SimulateMouse($D('#refresh_capcay'),'click',true); hi.focus(); hi.select();
-    });
-    Dom.Ev($D('#imagereg'), 'click', function(){hi.value='';hi.focus();});
-    
-    window.setTimeout(function() {
-        if( $D('#imagereg').getAttribute('src')=='' ) {
-            clickIt(true); // refresh w/o focusing
-        }
-    }, 201);       
+    if(hi) {    
+        hi.removeAttribute('disabled');
+        addClass('idleinput', hi);
+        Dom.Ev(hi, 'focus', function(){removeClass('idleinput', hi);addClass('activeField', hi);});
+        Dom.Ev(hi, 'blur', function(){removeClass('activeField', hi);addClass('idleinput', hi);});
+        
+        Dom.Ev($D('#refresh_capcay'), 'click', function(){ hi.value='';});
+        Dom.Ev($D('#remote_refresh_capcay'), 'click', function(){ 
+            SimulateMouse($D('#refresh_capcay'),'click',true); hi.focus(); hi.select();
+        });
+        Dom.Ev($D('#imagereg'), 'click', function(){hi.value='';hi.focus();});
+        
+        event_inputCapcay('humaninput','captcha_submit','remote_refresh_capcay');
 
+        // order tabindex
+        var reCp_field=['humaninput','captcha_submit','captcha_cancel'];
+        for(var i=0; i<reCp_field.length; i++)
+          if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '');
+          
+    }
+    window.setTimeout(function() {        
+        if( $D('#imagereg').getAttribute('src')=='' || isDefined(gvar.cache_rets_capcay) ){
+            clickIt();
+            if( isDefined(gvar.cache_rets_capcay) && $D('#imagereg') ) 
+                on("click", $D('#imagereg'), function(){ clickIt() });    
+        }else{
+            hi.focus()
+        }
+        gvar.cache_rets_capcay = rets;
+    }, 201);
+        
+    $D('#button_preview').style.display = '';
 }
 
 // create rating, and hidden element of additional options
@@ -1119,7 +1149,7 @@ function qr_preview(reply_html){
     }
     if($D('#preview_presubmit')){
        $D('#preview_presubmit').removeAttribute('disabled');
-       $D('#preview_presubmit').value = (gvar.settings.recaptcha ? (gvar.user.isDonatur ? '':'pre-') : '') + 'Post';
+       $D('#preview_presubmit').value = (gvar.user.isDonatur ? '' : 'pre-') + 'Post';
     }
   }
 }
@@ -1127,16 +1157,18 @@ function qr_preview(reply_html){
 
 function lockFields_forSubmit(flag){
   var toDisb = [
-       "recaptcha_submit","preview_presubmit", gvar.id_textarea
+       "captcha_submit","preview_presubmit", gvar.id_textarea
       ,"qr_preview_ajx","qr_prepost_submit"
-  ], sml_par=$D('#smile_cont'), el=$D('#controller_wraper')
-  , rsf=$D('recaptcha_response_field'), rsl=$D('#recaptcha_submit_load');
+  ], sml_par=$D('#smile_cont'), el=$D('#controller_wraper'), rsl=$D('#captcha_submit_load');
+  var toRo = ['recaptcha_response_field', 'humaninput'];
   
   if(flag) { // locking ..    
-      for(var i=0;i<toDisb.length;i++)
+      for(var i=0;i<toDisb.length;i++)      
         if($D(toDisb[i])) $D(toDisb[i]).setAttribute('disabled','disabled');
       
-      if(rsf) rsf.setAttribute('readonly',true);
+      for(var i=0;i<toRo.length;i++)
+        if( $D('#'+toRo[i]) ) $D('#'+toRo[i]).setAttribute('readonly',true);
+      //if(rsf) rsf.setAttribute('readonly',true);
       
       if(sml_par.style.display!='none')
         window.setTimeout(function() {SimulateMouse($D('#tab_close'), 'click', true)}, 1);
@@ -1154,10 +1186,10 @@ function lockFields_forSubmit(flag){
     // remove locking
     for(var i=0;i<toDisb.length;i++)
           if($D('#'+toDisb[i])) $D('#'+toDisb[i]).removeAttribute('disabled');
-    if(rsf) rsf.removeAttribute('readonly');
-    if($D('#recaptcha_submit')) $D('#recaptcha_submit').value='Post';
-    if($D('#preview_presubmit')) $D('#preview_presubmit').value=(gvar.settings.recaptcha ? (gvar.user.isDonatur ? '':'pre-') : '') + 'Post';
-    if($D('#qr_prepost_submit')) $D('#qr_prepost_submit').value= (gvar.settings.recaptcha ? (gvar.user.isDonatur ? '':'pre-') : '') + 'Post Quick Reply';
+    for(var i=0;i<toRo.length;i++)
+        if( $D('#'+toRo[i]) ) $D('#'+toRo[i]).removeAttribute('readonly',true);
+    if($D('#captcha_submit')) $D('#captcha_submit').value='Post';
+    if($D('#qr_prepost_submit')) $D('#qr_prepost_submit').value= (gvar.user.isDonatur ? '' : 'pre-') + 'Post Quick Reply';
     if( !gvar.settings.recaptcha ) clickIt(true);
   }
   if(rsl) rsl.style.setProperty('display',(flag?'':'none'),'');
@@ -1198,7 +1230,6 @@ function qr_ajax_post(reply_html){
         }
       }
     }
-    //clog(spost); clog(prep);
     lockFields_forSubmit(true);
 
     GM_XHR.uri = prep[1];
@@ -1223,7 +1254,7 @@ function qr_ajax_post(reply_html){
             if(cucok = ErMsg.match(/Please\s*try\s*again\s*in\s*([^.(]+)/i)){
                 r.msg = 'Posting delayed, please try again in '+cucok[1];
             }else{
-                r.msg = (/did\snot\smatch/i.test(ErMsg) ? 'reCapcay not match, please try again..': ErMsg );
+                r.msg = (/did\snot\smatch/i.test(ErMsg) ? 'Capcay not match, please try again..': ErMsg );
             }
             // grab and update hash
             var rets;
@@ -1390,32 +1421,93 @@ function toogleLayerDiv(tgt) {
   Dom.g(tgt).style.display= (currentVisible.style.display == 'none' ? '' : 'none');
 }
 
+function event_inputCapcay(txfield, btnsubmit, btn_reload){
+    if( $D(txfield) )
+    on('keydown',$D(txfield),function(e){
+        var C = (!e ? window.event : e ), ab=false;
+        var A = C.keyCode ? C.keyCode : C.charCode;
+        if( A===13 ){ // mijit enter
+            SimulateMouse($D(btnsubmit), 'click', true);
+            ab=true;
+        }else if( (C.altKey && A===82) || (A===33||A===34) ) { //** Alt+R(82) | Pg-Up(33) | Pg-Down(34)
+            SimulateMouse($D(btn_reload), 'click', true);
+            ab=true;
+        }
+        if(ab){
+         C = do_an_e(C); return false;
+		}
+    });
+}
+
+function loadLayer_initTplCapcay(TPL){
+    var Attr,el;
+    // require this transparent layer to be attached on body, to make it appear
+    Attr = {id:'hideshow',style:'display:none;'};
+    el = createEl('div', Attr, rSRC.getTPL_layer_Only() );
+    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+    
+    // this container must inside form
+    Attr = {id:'hideshow_recaptcha',style:'display:none;'};
+    el = createEl('div', Attr, TPL );
+    Dom.add(el, $D('#vbform') );
+    
+    // tpl events
+    on('click',$D("#imghideshow_precap"),function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
+    // cancel
+    on('click',$D("#captcha_cancel"),function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
+}
+
+function loadLayer_kaskusCaptcha(){    
+    
+    var is_capcay_filled = function(tgt){
+        if($D('#humaninput') && !$D('#humaninput').value){
+          alert('Belum Isi Image Verification');
+          try{if(typeof(tgt)=='object') tgt.focus()}catch(e){}
+          return false;
+        }else{
+          return ($D('#humaninput').value);
+        }
+    };
+    
+    if($D('#hideshow'))
+      closeLayerBox('hideshow');
+    
+    loadLayer_initTplCapcay(rSRC.getTPL_prompt_kaskusCAPTCHA());
+    
+    // init event capcay
+    if( !gvar.cache_rets_capcay )
+        ajax_buildcapcay();
+    else
+        create_kaskus_capcay(gvar.cache_rets_capcay);
+    
+        // submit recaptcha
+    on('click',$D('#captcha_submit'),function(e){
+        if( !is_capcay_filled($D('#humaninput')) ){
+          e.preventDefault;
+          return false;
+        }
+        do_an_e(e);
+        return do_posting(e);
+    } );
+    
+    // calibrate width/position container
+    $D('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
+    $D('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
+}
+
 function loadLayer_reCaptcha(){
     
     gvar.sITryFocusOnLoad = window.setInterval(function() {
       if ($D('#recaptcha_response_field')) {
         clearInterval(gvar.sITryFocusOnLoad);
-        on('keydown',$D('#recaptcha_response_field'),function(e){
-            var C = (!e ? window.event : e ), ab=false;
-            var A = C.keyCode ? C.keyCode : C.charCode;
-            if( A===13 ){ // mijit enter
-                SimulateMouse($D('#recaptcha_submit'), 'click', true);
-                ab=true;
-            }else if( (C.altKey && A===82) || (A===33||A===34) /*Alt+R(82) | Pg-Up(33) | Pg-Down(34)*/ ) {
-                SimulateMouse($D('#hidrecap_reload_btn'), 'click', true);
-                ab=true;
-            }
-            if(ab){
-             C = do_an_e(C); return false;
-			}
+        event_inputCapcay('recaptcha_response_field','captcha_submit','hidrecap_reload_btn');
 
-        });
         // order tabindex
         var reCp_field=['recaptcha_response_field','recaptcha_reload_btn','recaptcha_switch_audio_btn','recaptcha_switch_img_btn','recaptcha_whatsthis_btn'];
         for(var i=0; i<reCp_field.length; i++)
           if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '');
         
-        $D('#button_preview').style.display = ''; 
+        $D('#button_preview').style.display = '';
         $D('#recaptcha_response_field').focus();
       }
     }, 200);
@@ -1433,24 +1525,10 @@ function loadLayer_reCaptcha(){
     if($D('#hideshow'))
       closeLayerBox('hideshow');
     
-    var Attr,el;
-    // require this transparent layer to be attached on body, to make it appear
-    Attr = {id:'hideshow',style:'display:none;'};
-    el = createEl('div', Attr, rSRC.getTPL_layer_Only() );
-    getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
-    
-    // this container must inside form
-    Attr = {id:'hideshow_recaptcha',style:'display:none;'};
-    el = createEl('div', Attr, rSRC.getTPL_prompt_reCAPTCHA() );
-    Dom.add(el, $D('#vbform') );
-    
-    // event close button
-    on('click',$D("#imghideshow_precap"),function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
-    // cancel
-    on('click',$D("#recaptcha_cancel"),function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
+    loadLayer_initTplCapcay(rSRC.getTPL_prompt_reCAPTCHA());    
 
     // submit recaptcha
-    on('click',$D('#recaptcha_submit'),function(e){
+    on('click',$D('#captcha_submit'),function(e){
         if( !is_capcay_filled($D('#recaptcha_response_field')) ){
           e.preventDefault;
           return false;
@@ -1477,26 +1555,17 @@ function loadLayer_preview(){
     if($D('#preview_presubmit'))
       on('click',$D('#preview_presubmit'),function(e){
          if( !gvar.user.isDonatur ){
-           if($D('#preview_loading')) return;
-           if( gvar.settings.recaptcha ){
-            loadLayer_reCaptcha();
+            if($D('#preview_loading')) return;
+            if( gvar.settings.recaptcha ){
+                loadLayer_reCaptcha();            
+            }else{
+                loadLayer_kaskusCaptcha();            
+            }
             toogleLayerDiv('hideshow');
             toogleLayerDiv('hideshow_recaptcha');
-           }else{
-            var hi=($D('#humaninput') ? $D('#humaninput') : null);
-            if(hi && hi.value==''){
-                if(hi.getAttribute('disabled')=='disabled') 
-                e.preventDefault(); // return false;
-                alert('Belum Isi Image Verification'); hi.focus();
-                e.preventDefault(); // return false;
-                return false;
-            }
-            try{do_an_e(e);return false;}catch(ev){}
-            return do_posting(e);
-           }
          }else{
-           do_an_e(e);
-           return do_posting(e);
+            do_an_e(e);
+            return do_posting(e);
          }
       });
 }
@@ -1517,44 +1586,6 @@ function loadLayer( theTPL, flag ){
     // cancel preview
     if($D('#preview_cancel')) on('click',$D('#preview_cancel'),function(){ closeLayerBox('hideshow'); });
     
-    //remote capcay
-    if( !gvar.settings.recaptcha && !gvar.user.isDonatur ) create_remote_capcay();
-    
-}
-
-function create_remote_capcay(){
-      var is_capcay_filled = function(tgt){
-        if($D('#humaninput') && !$D('#humaninput').value){
-          alert('Belum Isi Image Verification');
-          try{if(typeof(tgt)=='object') tgt.focus()}catch(e){}
-          return false;
-        }else{
-          return ($D('#humaninput').value);
-        }
-      }
-      Attr = {id:'reload_remote_capcay',title:'refresh capcay',alt:'recapcay',src:gvar.B.refreshcapcay_gif,border:'0',style:'margin-right:3px;cursor:pointer;'}
-      el = createEl('img', Attr)
-      Dom.Ev(el, 'click', function(){
-        clickIt(true); // without focus
-        window.setTimeout(function() {
-            var hirem = $D('#hi_remote_capcay');
-            hirem.value=''; hirem.focus();
-        }, 300);       
-      });
-      Dom.add(el, $D('#remote_capcay'));
-      
-      Attr = {id:'hi_remote_capcay',title:'Remote Capcay',value:$D('#humaninput').value, 'class':'bginput idleinput', size:'4', maxlength:'3', style:'margin-right:5px;font-size:15px !important;'}
-      el = createEl('input', Attr);
-      Dom.add(el, $D('#remote_capcay'));
-      Dom.Ev(el, 'keyup', function(e){
-       var obj=$D('#hi_remote_capcay'), C = (!e ? window.event : e), A = C.keyCode ? C.keyCode : C.charCode;       
-       if(A==13) { // enter?
-         if(is_capcay_filled(obj))
-           SimulateMouse($D('#preview_submit'), 'click', true);
-       } else if($D('#humaninput'))
-           $D('#humaninput').value=obj.value 
-      });
-
 }
 
 function popupLayer_positioning(){
@@ -1562,11 +1593,9 @@ function popupLayer_positioning(){
     if($D('#popup_container')){
       $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
       if($D('#popup_container').clientWidth){ // only if width is defined; width:100% will return 0
-       var cW = Math.floor($D('#popup_container').clientWidth/2);
-       $D('#popup_container').style.left = (Math.floor(parseInt( GetWidth() )/2) - cW) + 'px';
+        var cW = Math.floor($D('#popup_container').clientWidth/2);
+        $D('#popup_container').style.left = (Math.floor(parseInt( GetWidth() )/2) - cW) + 'px';
       }
-      if(!gvar.user.isDonatur)
-        $D('#popup_container').style.width = '75%';
     }
  }
 
@@ -1731,30 +1760,21 @@ function initEventTpl(){
       on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
       on('click',$D('#qr_prepost_submit'),function(e){
          if( !gvar.user.isDonatur ){
-           if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
-           e=e.target||e;
-           var msg = trimStr(Dom.g(gvar.id_textarea).value);
-           if(!(msg.length>=5)){
-             // show warning message is too short
-             alert(gvar.tooshort);
-             e.preventDefault(); return false;
-           }
-           if( gvar.settings.recaptcha ){
-            loadLayer_reCaptcha();
+            if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
+            e=e.target||e;
+            var msg = trimStr(Dom.g(gvar.id_textarea).value);
+            if(!(msg.length>=5)){
+                // show warning message is too short
+                alert(gvar.tooshort);
+                e.preventDefault(); return false;
+            }
+            if( gvar.settings.recaptcha ){
+                loadLayer_reCaptcha();
+            }else{
+                loadLayer_kaskusCaptcha();
+            }
             toogleLayerDiv('hideshow');
             toogleLayerDiv('hideshow_recaptcha');
-           }else{
-            var hi=($D('#humaninput') ? $D('#humaninput') : null);
-            if(hi && hi.value==''){
-                if(hi.getAttribute('disabled')=='disabled') 
-                e.preventDefault(); // return false;
-                alert('Belum Isi Image Verification'); hi.focus();
-                e.preventDefault(); // return false;
-                return false;
-            }
-            try{do_an_e(e);return false;}catch(ev){}
-            return do_posting(e);
-           }
          }else{
            do_an_e(e);
            return do_posting(e);
@@ -6168,7 +6188,7 @@ Format will be valid like this:
     +'<div id="qr_maincontainer"></div>' 
     +'</td>'
      // Image Verification container
-    +( !gvar.settings.recaptcha && !gvar.user.isDonatur  ? ''
+    +( false && !gvar.user.isDonatur  ? ''
     +'<td width="150"><table cellpadding="0" cellspacing="0">'
      +'<tr><td id="capcay_header" style="width:150px !important;"></td></tr>'
      +'<tr><td><div id="capcay_container">'
@@ -6225,7 +6245,7 @@ Format will be valid like this:
      +'<input id="qr_chk_ckck" type="button" style="display:none;" value="cck" onclick="if(typeof(checkCurrentCred)==\'function\')checkCurrentCred();"/>' // remote button to fetch ck.crecidential
      
      +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
-     +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="'+ (gvar.settings.recaptcha ? (gvar.user.isDonatur ? '':'pre-') : '') + 'Post Quick Reply" />'
+     +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="' + (gvar.user.isDonatur ? '' : 'pre-') + 'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
      +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
      +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
@@ -6403,6 +6423,33 @@ Format will be valid like this:
     cK.s('last_greet', String(lastgreet), '/', 'www.kaskus.us');
     return c[lastgreet];
   }
+ ,getTPL_prompt_kaskusCAPTCHA: function(){
+   return (''
+    
+     +'<div id="popup_container_precap" class="popup_block">'
+     + '<div class="popup">'
+     +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
+     +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
+     +  '<tbody><tr>'
+     +   '<td class="tcat"><span id="nfolink">Image Verification</span></td>'
+     +  '</tr><tr>'
+     +  '<td class="alt1">'
+     +   '<div class="spacer" id="posting_notify"></div>'
+     +   '<div id="recaptcha_container" style="text-align:center;">'
+     +     '<div id="throbber_loader"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>'
+     +   '</div>'
+     +  '</td></tr>'
+     +  '<tbody></table>'
+     +   '<div id="button_preview" style="display:none;">'
+     +    '<span id="remote_capcay"></span>'
+     +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+     +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+     +   '</div>'
+     + '</div>'
+     +'</div>'
+
+   );  
+  }
  ,getTPL_prompt_reCAPTCHA: function(){
   return (''
      +'<div id="popup_container_precap" class="popup_block"> '
@@ -6428,8 +6475,8 @@ Format will be valid like this:
      +  '<tbody></table>'
      +   '<div id="button_preview" style="display:none;">'
      +    '<span id="remote_capcay"></span>'
-     +    '<img id="recaptcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="recaptcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
-     +    '<a tabindex="212" id="recaptcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
+     +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+     +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      +   '</div>'
      + '</div>'
      +'</div>'
