@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.1.8
-// @dtversion     110521318
-// @timestamp     1305932549494
+// @version       3.1.9
+// @dtversion     110524319
+// @timestamp     1306188531671
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,15 +17,18 @@
 //
 // -!--latestupdate
 //
-// v3.1.8 - 2011-05-21
-//   Fix resolve behaviour with kaskus capcay. Thanks=[p1nky,ketang6,ceroberoz,reinhard.tambz]
-//   Rollback using ordinary kaskus capcay. (Beta)
+// v3.1.9 - 2011-05-24
+//   Fix rate thread thingie. Thanks=[black341469]
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
-/// v3.1.7 - 2011-05-11
+// v3.1.8 - 2011-05-21
+//   Fix resolve behaviour with kaskus capcay. Thanks=[p1nky,ketang6,ceroberoz,reinhard.tambz]
+//   Rollback using ordinary kaskus capcay. (Beta)
+//
+// v3.1.7 - 2011-05-11
 //   Fix avoid focus on particular state (autoload_smiley). Thanks=[holdonzzz, Atho1982]
 //   Fix save_draft thingie
 //
@@ -69,11 +72,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.8';
+gvar.sversion = 'v' + '3.1.9b';
 gvar.scriptMeta = {
-  timestamp: 1305932549494 // version.timestamp
+  timestamp: 1306188531671 // version.timestamp
 
- ,dtversion: 110521318 // version.date
+ ,dtversion: 110524319 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -884,10 +887,10 @@ function find_parent(obj){
 function buildRate(){
   var el,par,sel;
   var rates = { '5':'5: Excellent', '4':'4: Good', '3':'3: Average', '2':'2: Bad', '1':'1: Terrible' };
-  par = createEl('div', {style:'float:left'}, 'Rating:&nbsp;');
-  sel = createEl('select', {id:'sel_rating',name:'rating',tabindex:'6'});
+  par = createEl('div', {style:'float:left'}, ' ');
+  sel = createEl('select', {id:'sel_rating',name:'rating',tabindex:'6',title:'Rate this Thread..'});
    Dom.add(sel, par);
-  el=createEl('option', {value:0},'Choose a rating');
+  el=createEl('option', {value:0}, 'Choose Rating');
    Dom.add(el, sel);
   el=createEl('optgroup', {label:' '});
    Dom.add(el, sel);
@@ -1004,6 +1007,7 @@ function create_kaskus_capcay( rets ){
         +'<div id="imgcapcay" style="margin:1px 0;"><div class="g_notice normal_notice" style="display:block; margin-right:3px; width:200px; font-size:9px; text-align:center;">[capcay-space]</div></div>'
         +'<div id="progress_imagereg" style="display:none;position:absolute;margin:-20px auto;"><img src="'+gvar.B.throbber_gif+'" /></div>'
         +'<div><a id="remote_refresh_capcay" href="javascript:;" class="qrsmallfont" tabindex="6">Refresh-Capcay</a></div>'
+        +'<div style="position:absolute;margin:7px 0 0 100px;width:16px;display:inline;"><img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none;"/></div>'
         +'<input type="text" tabindex="2" title="insert capcay here" class="bginput" name="humanverify[input]" id="humaninput" size="4" maxlength="3" disabled="disabled" autocomplete="off"/>';
     
     var Attr = {id:'imagereg',alt:'capcay',title:'capcay',width:'200',height:'61',border:'0',style:'cursor:pointer',
@@ -1054,7 +1058,11 @@ function create_kaskus_capcay( rets ){
         }
         gvar.cache_rets_capcay = rets;
     }, 201);
-        
+
+    if($D('#rating_onpop') && $D('#rating_onpop').innerHTML=='' && $D('#rate_thread')){
+        Dom.add($D('#rate_thread'), $D('#rating_onpop'));
+        $D('#rate_thread').style.display = '';
+    }
     $D('#button_preview').style.display = '';
 }
 
@@ -1064,22 +1072,30 @@ function build_additional_opt(html){
     var rate = (html.indexOf('a rating')!=-1 ? buildRate() : false);
     if($D('#rate_thread')){
       $D('#rate_thread').innerHTML='';
-      Dom.add(rate ? rate : createTextEl('Thread Rated'), $D('#rate_thread'));
+      Dom.add(rate ? rate : createTextEl(' '), $D('#rate_thread')); // "Thread Rated" no longer showd up
+      if(!gvar.user.isDonatur) {
+        Dom.add($D('#rate_thread'), $D('#rating_onpop'));
+        if(!$D('#rating_onpop')) $D('#rate_thread').style.display = 'none';
+      }
     }
 }
 
 // make sure this func is called only by donatur, which never do prefetch for capcay
 // this will collecting additional opt like rating and/or subscriptions folderid
 function ajax_additional_opt(reply_html){
-  // not donatur | already do this ? get out
+  // not donatur | already do this ? get out ---> old version
+  // not donatur ? will do on popup capcay via additional_opt_parser() (since 3.1.8)
   if(!gvar.user.isDonatur || !additional_options_notloaded() ) return;
   // initialize
   if($D('#rate_thread')) $D('#rate_thread').style.display='';
+  var postbtn = $D('#qr_prepost_submit');
   if(isUndefined(reply_html)){ // is there ret from XHR :: reply_html
+    if(postbtn) postbtn.setAttribute('disabled','disabled');
     GM_XHR.uri = gvar.newreply;
     GM_XHR.cached = true;    
     GM_XHR.request(null,'GET',ajax_additional_opt);
   }else{
+    postbtn.removeAttribute('disabled');
     if(!reply_html) return;
     reply_html = reply_html.responseText;
     build_additional_opt(reply_html);
@@ -1168,7 +1184,6 @@ function lockFields_forSubmit(flag){
       
       for(var i=0;i<toRo.length;i++)
         if( $D('#'+toRo[i]) ) $D('#'+toRo[i]).setAttribute('readonly',true);
-      //if(rsf) rsf.setAttribute('readonly',true);
       
       if(sml_par.style.display!='none')
         window.setTimeout(function() {SimulateMouse($D('#tab_close'), 'click', true)}, 1);
@@ -1392,7 +1407,7 @@ function buildQuery(isToPost){
 }
 
 function closeLayerBox(tgt){
-    var doLastFocus = false;
+    var doLastFocus = false, partmp;
     var isPreviewMode = ($D('#preview_presubmit'));
     if(tgt=='hideshow' && $D('#hideshow')) {
      var curv = Dom.g(gvar.id_textarea).value;
@@ -1401,6 +1416,12 @@ function closeLayerBox(tgt){
 		vB_textarea.init();
         vB_textarea.add('\n\n');
         doLastFocus = true;
+     }
+     // store temporary rating state
+     partmp = $D('.sayapkiri'); partmp = (partmp ? partmp[0] : false);
+     if( partmp && !isPreviewMode ) {
+        Dom.add($D('#rate_thread'), partmp);
+        $D('#rate_thread').style.display = 'none';
      }
     }
     lockFields_forSubmit(false); // open locked; just incase
@@ -6227,7 +6248,7 @@ Format will be valid like this:
     +'<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" id="current_ckck" value=""/>\n\n' // current ck.crecidential
     
     +'<div class="sub-bottom sayapkiri">'
-     +'<div id="rate_thread" style="display:none;"><img src="'+gvar.B.throbber_gif+'" border="0"/></div>'
+     +'<div id="rate_thread" style="display:none;" title="initializing additional opt"><img src="'+gvar.B.throbber_gif+'" border="0"/></div>'
     +'&nbsp;</div>\n'
     +'<div class="sub-bottom sayapkanan">'
     +'<input id="chk_fixups" tabindex="7" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread with Kaskus Fixups" for="chk_fixups">Expand</label></a>'
@@ -6441,8 +6462,12 @@ Format will be valid like this:
      +  '</td></tr>'
      +  '<tbody></table>'
      +   '<div id="button_preview" style="display:none;">'
+     + (gvar.user.isDonatur ? ''
+       : ''
+       + '<div id="rating_onpop" style="float:left;min-width:120px;"></div>'
+       )
      +    '<span id="remote_capcay"></span>'
-     +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+     +    '<input tabindex="211" id="captcha_submit" type="button" class="button" style="margin-left:-68px;" value=" Post " />&nbsp;&nbsp;'
      +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      +   '</div>'
      + '</div>'
