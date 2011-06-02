@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.1.9
-// @dtversion     110524319
-// @timestamp     1306188531671
+// @dtversion     110603319
+// @timestamp     1307053877437
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,8 @@
 // -!--latestupdate
 //
 // v3.1.9 - 2011-05-24
+//   Back to Recaptcha again. --"
+//   Add HTML/PHP tag controllers
 //   Fix rate thread thingie. Thanks=[black341469]
 //
 // -/!latestupdate---
@@ -74,9 +76,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.1.9b';
 gvar.scriptMeta = {
-  timestamp: 1306188531671 // version.timestamp
+  timestamp: 1307053877437 // version.timestamp
 
- ,dtversion: 110524319 // version.date
+ ,dtversion: 110603319 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -103,7 +105,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0'] // serial hide [controller]
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -350,7 +352,7 @@ function getSettings(){
   };
   
   // pick between capcay google or original kaskus
-  gvar.settings.recaptcha = false;
+  gvar.settings.recaptcha = true;
   
   //get layout config
   hVal=getValueForId(gvar.user.id, 'LAYOUT_CONFIG');
@@ -387,7 +389,7 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'spoiler', 'transparent', 'noparse', 'strikethrough'];
+  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'htmlphp', 'spoiler', 'transparent', 'noparse', 'strikethrough'];
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
@@ -994,8 +996,9 @@ function ajax_buildcapcay(reply_html){
     // ada hash capcay ? || capcay enabled
     rets = capcay_parser(reply_html)
     //return reply_html;
-    if( rets = capcay_parser(reply_html) ) 
+    if( rets = capcay_parser(reply_html) ) {
         create_kaskus_capcay(rets);
+    }
   }
 }
 
@@ -1478,7 +1481,7 @@ function loadLayer_initTplCapcay(TPL){
     on('click',$D("#captcha_cancel"),function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
 }
 
-function loadLayer_kaskusCaptcha(){    
+function loadLayer_kaskusCaptcha(){
     
     var is_capcay_filled = function(tgt){
         if($D('#humaninput') && !$D('#humaninput').value){
@@ -1530,6 +1533,10 @@ function loadLayer_reCaptcha(){
         
         $D('#button_preview').style.display = '';
         $D('#recaptcha_response_field').focus();
+      }
+      if($D('#rating_onpop') && $D('#rating_onpop').innerHTML=='' && $D('#rate_thread')){
+          Dom.add($D('#rate_thread'), $D('#rating_onpop'));
+          $D('#rate_thread').style.display = '';
       }
     }, 200);
     
@@ -2112,7 +2119,7 @@ function re_event_vbEditor(){
         on('click',el,function(e){do_resize_editor(e)});
       break;
       default:
-       if(alt && (alt.indexOf('[quote]')!=-1 || alt.indexOf('[code]')!=-1) )
+       if(alt && (alt.indexOf('[quote]')!=-1 || alt.indexOf('[code]')!=-1 || alt.indexOf('[html]')!=-1|| alt.indexOf('[php]')!=-1) )
         on('click',el,function(e){return do_btncustom(e)});
       break;
     }
@@ -2790,7 +2797,7 @@ function do_btncustom(e){
   var tagprop = '';
   tag = tag.replace(/[\[\]]/g,'').replace('Insert ','').toLowerCase();
   var pTag={
-     'quote':'QUOTE','code' :'CODE'
+     'quote':'QUOTE','code' :'CODE','html' :'HTML','php' :'PHP'
     ,'link' :'URL',  'image':'IMG'
     ,'spoiler' :'SPOILER','transparent':'COLOR','noparse' :'NOPARSE','youtube' :'YOUTUBE'
   };
@@ -2798,7 +2805,7 @@ function do_btncustom(e){
   if(isUndefined(pTag[tag])) return endFocus();;
   vB_textarea.init();
   
-  if(tag=='quote' || tag=='code'){
+  if(tag=='quote' || tag=='code' || tag=='html' || tag=='php'){
     vB_textarea.wrapValue( tag );  
   }else if(tag=='spoiler'){
   
@@ -6375,11 +6382,15 @@ Format will be valid like this:
      +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_uploader"><img id="vB_Editor_001_cmd_uploader_img" src="'+gvar.B.upld_png+'" alt="Uploader" title="Uploader" /></div></td>' :'')
      +(gvar.settings.hidecontroll[9] == '1' && gvar.settings.hidecontroll[10] == '1' ? '' : konst.__sep__)
      
-     +(gvar.settings.hidecontroll[11] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>'
+     +(gvar.settings.hidecontroll[11] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_quote"><img src="'+gvar.domainstatic+'images/editor/quote.gif" alt="[quote]" title="Wrap [QUOTE] tags around selected text" /></div></td>' + konst.__sep__
      :'')
      +(gvar.settings.hidecontroll[12] != '1' ? ' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_code"><img src="'+gvar.domainstatic+'images/editor/code.gif" alt="[code]" title="Wrap [CODE] tags around selected text" /></div></td>'
      :'')
-     +(gvar.settings.hidecontroll[11] == '1' && gvar.settings.hidecontroll[12] == '1' ? '' : konst.__sep__)     
+     +(gvar.settings.hidecontroll[13] != '1' ? ''
+      +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_html"><img src="'+gvar.domainstatic+'images/editor/html.gif" alt="[html]" title="Wrap [HTML] tags around selected text" /></div></td>'
+      +' <td><div class="imagebutton cdefault" id="vB_Editor_001_cmd_wrap_qr_php"><img src="'+gvar.domainstatic+'images/editor/php.gif" alt="[php]" title="Wrap [PHP] tags around selected text" /></div></td>'
+     :'')
+     +(gvar.settings.hidecontroll[12] == '1' && gvar.settings.hidecontroll[13] == '1' ? '' : konst.__sep__)
      
      +                '<td id="customed_control"></td>'
      +                '<td width="100%"></td>'
@@ -6499,6 +6510,10 @@ Format will be valid like this:
      +  '</td></tr>'
      +  '<tbody></table>'
      +   '<div id="button_preview" style="display:none;">'
+     + (gvar.user.isDonatur ? ''
+       : ''
+       + '<div id="rating_onpop" style="float:left;min-width:120px;"></div>'
+       )
      +    '<span id="remote_capcay"></span>'
      +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
      +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
