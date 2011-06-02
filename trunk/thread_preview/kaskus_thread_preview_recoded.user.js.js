@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.8
-// @dtversion     110530108
-// @timestamp     1306694851708
+// @version       1.0.9
+// @dtversion     110603319
+// @timestamp     1307053877437
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,12 +19,15 @@
 //
 // -!--latestupdate
 //
-//  v1.0.8 - 2011-05-30
-//    Fix resolve behaviour with old kaskus capcay.
+//  v1.0.9 - 2011-06-03
+//    Back to Recaptcha again. --"
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+//  v1.0.8 - 2011-05-30
+//    Fix resolve behaviour with old kaskus capcay.
 //
 //  v1.0.7 - 2011-04-09
 //    Fix minor CSS; deprecate eval()
@@ -39,9 +42,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.8';
+gvar.sversion = 'v' + '1.0.9b';
 gvar.scriptMeta = {
-  timestamp: 1306694851708 // version.timestamp
+  timestamp: 1307053877437 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -167,7 +170,7 @@ function getSettings(){
   };
   
   // pick between capcay google or original kaskus
-  gvar.settings.recaptcha = false;
+  gvar.settings.recaptcha = true;
   
   //get layout config
   hVal=tSTORAGE.getValueForId(gvar.user.id, 'LAYOUT_CONFIG');
