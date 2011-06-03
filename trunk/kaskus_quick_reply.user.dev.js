@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.1.9
-// @dtversion     110604319
-// @timestamp     1307123120806
+// @version       3.2.0
+// @dtversion     110604320
+// @timestamp     1307131273339
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,16 +17,19 @@
 //
 // -!--latestupdate
 //
-// v3.1.9 - 2011-06-04
-//   Switchable setting capctha mode.
-//   Shortcut for draft thingie. Thanks=[p1nky]
-//   Back to Recaptcha again. --"
-//   Add HTML/PHP tag controllers. Thanks=[p1nky]
-//   Fix rate thread thingie. Thanks=[black341469]
+// v3.2.0 - 2011-06-04
+//   Fix invalid input capcay. Thanks=[andrypein]
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.1.9 - 2011-06-04
+//   Switchable setting capctha mode.
+//   Shortcut for draft thingie. Thanks=[p1nky]
+//   Back to Recaptcha again. --". Thanks=[t0g3, skycreeper]
+//   Add HTML/PHP tag controllers. Thanks=[deodeye]
+//   Fix rate thread thingie. Thanks=[black341469]
 //
 // v3.1.8 - 2011-05-21
 //   Fix resolve behaviour with kaskus capcay. Thanks=[p1nky,ketang6,ceroberoz,reinhard.tambz]
@@ -55,11 +58,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.1.9';
+gvar.sversion = 'v' + '3.2.0';
 gvar.scriptMeta = {
-  timestamp: 1307123120806 // version.timestamp
+  timestamp: 1307131273339 // version.timestamp
 
- ,dtversion: 110604319 // version.date
+ ,dtversion: 110604320 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -995,6 +998,7 @@ function ajax_buildcapcay(reply_html){
 }
 
 function create_kaskus_capcay( rets ){
+    if(gvar.settings.recaptcha) return;
     
     // pre tpl
     if($D('#recaptcha_container')) $D('#recaptcha_container').innerHTML = ''        
