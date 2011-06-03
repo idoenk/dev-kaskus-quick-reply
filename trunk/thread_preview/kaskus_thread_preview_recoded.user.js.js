@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.0.9
-// @dtversion     110603319
-// @timestamp     1307053877437
+// @dtversion     110604319
+// @timestamp     1307123120806
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,7 +19,8 @@
 //
 // -!--latestupdate
 //
-//  v1.0.9 - 2011-06-03
+//  v1.0.9 - 2011-06-04
+//    Switchable setting capctha mode.
 //    Back to Recaptcha again. --"
 //
 // -/!latestupdate---
@@ -42,9 +43,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.9b';
+gvar.sversion = 'v' + '1.0.9';
 gvar.scriptMeta = {
-  timestamp: 1307053877437 // version.timestamp
+  timestamp: 1307123120806 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -69,11 +70,12 @@ OPTIONS_BOX = {
  ,KEY_KTP_SCROLL_THREAD:   ['0'] // scroll to last opened-thread
  ,KEY_KTP_IMGLOAD:         ['2'] // 0:no-load, 1:load-smilies-only, 2:load-all
  ,KEY_KTP_RELOAD_AFTERSENT:['1'] // fresh reload after send reply
- 
+  
  ,KEY_KTP_SHOW_SMILE:      ['0,kecil']   // [flag,type] of autoshow_smiley
  ,KEY_KTP_LAYOUT_CONFIG:   ['']  // flag of [signature_on, template_on], 
  ,KEY_KTP_LAYOUT_SIGI:     [''] // signature layout, eg. [RIGHT]&#8212;[SIZE=1][b]QR[/b][/SIZE]&#8482;[/RIGHT]
  ,KEY_KTP_LAYOUT_TPL:      [''] // template layout, must contain: "{message}". eg. [B]{message}[/B]
+ ,KEY_KTP_USE_RECAPTCHA:   ['1']   // state of using google captcha or original kaskus
 
  ,KEY_KTP_SCUSTOM_ALT:     ['0'] // use alt instead of thumbnail
  ,KEY_KTP_SCUSTOM_NOPARSE: ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
@@ -163,14 +165,15 @@ function getSettings(){
     ,scustom_alt: ( getValue(KEY_KTP + 'SCUSTOM_ALT')=='1' ) // boolean
     ,scustom_noparse: ( getValue(KEY_KTP + 'SCUSTOM_NOPARSE')=='1' ) // boolean
 	,userLayout: {
-       config: [], //[[1,0], [1,0]] [signature_on, template_on]
+       config: [], //[[1,0], [1,0]] [signature_on, template_on]    
        signature:getValue(KEY_KTP+'LAYOUT_SIGI'),
        template: getValue(KEY_KTP+'LAYOUT_TPL'),
-    },
-  };
-  
-  // pick between capcay google or original kaskus
-  gvar.settings.recaptcha = true;
+    }
+    // pick between capcay google or original kaskus 
+    // conform capcay mode will be performed
+    ,recaptcha: ( getValue(KEY_KTP + 'USE_RECAPTCHA')=='1' )
+  };  
+  //gvar.settings.recaptcha = false;
   
   //get layout config
   hVal=tSTORAGE.getValueForId(gvar.user.id, 'LAYOUT_CONFIG');
@@ -900,6 +903,7 @@ var tPOP = {
 	  'stg_reload_afterpost': 'RELOAD_AFTERSENT'
 	 ,'stg_scrollto_lastrow': 'SCROLL_THREAD'
 	 ,'stg_updates': 'UPDATES'	 
+	 ,'stg_recaptcha_mode': 'USE_RECAPTCHA'	 
 	};
 	for(var field in sets){
 	  if( isString(sets[field]) && $D('#'+field) ){
@@ -981,10 +985,12 @@ var tPOP = {
      +'This will delete/reset all saved data.\nThings that might be conflict with your Kaskus Thread Preview.'     
      +'\nPlease report any bug or some bad side effects here:'+space+'\n'+home[1]+'\nor\n'+home[0]+
      '\n\n'+HtmlUnicodeDecode('&#187;')+' Continue with Reset?';
-
     if( confirm(msg) ) {
-	    var keys = ['IMGLOAD','FIXED_PREVIEW','SCROLL_THREAD','THEN_GOTHREAD'
-	              ,'UPDATES','UPDATES_INTERVAL','RELOAD_AFTERSENT'
+	    var keys = ['FIXED_PREVIEW','THEN_GOTHREAD','UPDATES','UPDATES_INTERVAL'
+                    ,'NODE_STATE','SCROLL_THREAD','IMGLOAD','RELOAD_AFTERSENT'
+                    ,'SHOW_SMILE','LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
+                    ,'USE_RECAPTCHA'
+                    ,'SCUSTOM_ALT','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
 				  ];
         for(var i in keys)
           try{ if(isString(keys[i])) GM_deleteValue(KEY_KTP + keys[i]); }catch(e){};		
@@ -1311,7 +1317,7 @@ var tQR = {
   }
   
  ,waitload_reCaptcha: function(){
-    tQR.event_inputCapcay('recaptcha_response_field','captcha_submit','hidrecap_reload_btn');
+    tQR.event_inputCapcay('recaptcha_response_field','preview_submit','hidrecap_reload_btn');
     
     // reorder tabindex // 'recaptcha_response_field',
 	Dom.g('recaptcha_response_field').setAttribute('tabindex', '202');
@@ -1424,7 +1430,7 @@ var tQR = {
     on('keydown',$D(txfield),function(e){
         var C = (!e ? window.event : e ), ab=false;
         var A = C.keyCode ? C.keyCode : C.charCode;
-        if( A===13 ){ // mijit enter
+        if( A == 13 ){ // mijit enter
             if($D(btnsubmit)) SimulateMouse($D(btnsubmit), 'click', true);
             ab=true;
         }else if( (C.altKey && A===82) || (A===33||A===34) ) { //** Alt+R(82) | Pg-Up(33) | Pg-Down(34)
@@ -1634,9 +1640,18 @@ var tQR = {
 	  if( cucok = text.match(re) )
 	     if( Dom.g(hid) ) Dom.g(hid).value = cucok[1];
     } // end for   
+    
+    // conform capcay mode
+    if(gvar.isKaskus && text.indexOf('recaptcha_response_field')!=-1 && text.indexOf('humanverify[input]')!=-1){
+        if( /<input\s*(?:(?:type|value|style|id)=[\'\"][^\'\"]+[\'\"]\s*)*name=[\'\"]recaptcha_response_field/i.test(text) )
+            gvar.settings.recaptcha = true;
+        else if( /<input\s*(?:(?:type|value|style|id)=[\'\"][^\'\"]+[\'\"]\s*)*name=[\'\"]humanverify\[input\]/i.test(text) )
+            gvar.settings.recaptcha = false;
+    }
     // isDonatur check
     gvar.user.isDonatur = (gvar.isKaskus && 
-            (gvar.settings.recaptcha ? (text.indexOf('recaptcha_response_field')==-1) : (text.indexOf('humanverify[input]')==-1))
+            //(gvar.settings.recaptcha ? (text.indexOf('recaptcha_response_field')==-1) : (text.indexOf('humanverify[input]')==-1))
+            (gvar.settings.recaptcha ? (text.indexOf('recaptcha_response_field')==-1) : (text.indexOf('humanverify[hash]')==-1))
         );
     
 	// additional opt
@@ -3719,7 +3734,10 @@ Format will be valid like this:
  +   '<label for="stg_autoshow_smile_besar"><input name="rd_sml" id="stg_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/>besar</label>&nbsp;'
  +   '<label for="stg_autoshow_smile_custm"><input name="rd_sml" id="stg_autoshow_smile_custm" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/>[+]</label>'
  +  '</small>'
- +spacer   
+ +spacer
+ +(!gvar.user.isDonatur ? ''
+ +  '<input id="stg_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/> reCaptcha Mode On<br />'
+ +spacer : '' ) 
  + '</td>' 
  + '<td class="alt2" valign="top" style="padding:0 5px 10px 5px; border-left:1px solid #BBC7CE; width:200px;">'
  +  '<div class="setting_subtitle"><b>::General::</b></div>'
@@ -3730,9 +3748,6 @@ Format will be valid like this:
  +  '<small style="margin-left:20px;" title="Interval check update, 0 &lt; interval &lt;= 99">Interval&nbsp;<input id="stg_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</small>'
  +spacer : '') 
  
- //+  '<input id="stg_autoload_qr" type="checkbox" /> AutoLoad QR<br />'
- //+  '<input id="stg_autoshow_spoiler" type="checkbox" /> AutoShow Spoiler<br />'
- // 
  +'&nbsp;*<span style="margin-left:8px;">Images Policy</span><br />'
  +'<div id="image_policy" style="margin-left:20px;font-size:10px;">'
  +   '<label for="stg_showimages_none"><input name="rd_img" id="stg_showimages_none" type="radio" value="0" '+(gvar.settings.imgload==0?'checked':'')+'/>No-Image</label>' + '<br/>'
