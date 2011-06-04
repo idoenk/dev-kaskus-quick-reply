@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.0
-// @dtversion     110604320
-// @timestamp     1307131273339
+// @version       3.2.1
+// @dtversion     110605321
+// @timestamp     1307226634691
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,12 +17,16 @@
 //
 // -!--latestupdate
 //
-// v3.2.0 - 2011-06-04
-//   Fix invalid input capcay. Thanks=[andrypein]
+// v3.2.1 - 2011-06-05
+//   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
+//   Fix minor draft thingie
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v3.2.0 - 2011-06-04
+//   Fix invalid input capcay. Thanks=[andrypein]
 //
 // v3.1.9 - 2011-06-04
 //   Switchable setting capctha mode.
@@ -58,11 +62,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.2.0';
+gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307131273339 // version.timestamp
+  timestamp: 1307226634691 // version.timestamp
 
- ,dtversion: 110604320 // version.date
+ ,dtversion: 110605321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -679,13 +683,12 @@ function do_click_qqr(e, multi){
         return S;
       }      
     };
-	// end parseSerials
-	
+	// end parseSerials	
 	var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
     x=x.substring(pos+contentsep.length);
     // clean message separator
     ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
-	
+    
 	// clean all previous quote
 	pCon=createEl('div',{},x);
 	// reveal quote
@@ -717,27 +720,37 @@ function do_click_qqr(e, multi){
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
-	var bSp,iSp;
-	if(els) for(var i=0;i<els.snapshotLength; i++){
-	  el=els.snapshotItem(i);
-	  bSp = getTag('b',el); 
-	  if( bSp.length ){
-		iSp= getTag('i',el); // title spoiler
-		if(iSp.length)
-		  iSp=iSp[0].innerHTML.toString();
-		
-		el2=els.snapshotItem(i).parentNode;
-		Dom.remove(el);
-		
-		el2.innerHTML = clearTag ( revealQuoteCode(el2.innerHTML), 'div' );
-		// kill newline after spoiler
-		el = el2.childNodes[0];
-		el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');
-		
-		el2.removeAttribute('style');
-		el2.setAttribute('rel','spoiler-'+iSp );
-	  }
-	}
+	var bSp,iSp,tParent,nLength=(els.snapshotLength-1), inerEscape, newContSP;
+	if(els) {
+        tParent=els.snapshotItem(0);
+        //for(var i=0;i<els.snapshotLength; i++){
+        for(var i=nLength;i>=0; i--){
+            el=els.snapshotItem(i);
+            bSp = getTag('b',el); 
+            if( bSp.length ){
+                iSp= getTag('i',el); // title spoiler
+                if(iSp.length)
+                iSp=iSp[0].innerHTML.toString();
+                
+                el2=el.parentNode;
+                Dom.remove(el);                
+                el2.innerHTML = clearTag ( revealQuoteCode(el2.innerHTML), 'div' );                
+                
+                clog('now el2.innerHTML='+el2.innerHTML);
+                // kill newline after spoiler
+                el = el2.childNodes[0];
+                el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');
+                
+                // kill first <br> after spoiler
+                inerEscape = (el2.innerHTML).replace(/<br\/?>/g,'').toString();
+                newContSP = createTextEl('{div spoiler-'+iSp+'}'+(inerEscape)+'{/div}');
+                el2.innerHTML = '';
+                Dom.add(newContSP, el2);
+            }
+        }
+        var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};
+        pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/g,'>').replace(/\&lt;/g,'<');
+    }
 	clog('after spoiler done=\n'+pCon.innerHTML);
 	
 	// reveal ol
@@ -797,7 +810,8 @@ function do_click_qqr(e, multi){
     // get quote nfo
     if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
     elpm=$D('#postmenu_'+did);
-    if(elpm) el=$D(".//a[(@class='bigusername') and  contains(@href,'member.php?')]", elpm, true);
+    //alert('passed - postmenu_'+ did);
+    if(elpm) el=$D(".//a[(@class='bigusername') and contains(@href,'member.php?')]", elpm, true);
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
     if(elpm) {
@@ -817,7 +831,7 @@ function do_click_qqr(e, multi){
      var cSml = gvar.settings.autoload_smiley;
      gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
      ss.STEPS = 5; // scroll speed; smaller is faster          
-     ss.smoothScroll( Dom.g(gvar.id_textarea), function(){parseQQ()} );
+     ss.smoothScroll( Dom.g(gvar.id_textarea), function(){ parseQQ()} );
   }else{
 	 parseQQ();
   }
@@ -1875,6 +1889,8 @@ function initEventTpl(){
                     // retrigger elastic
                     vB_textarea.adjustElastic();                
                     $D('#draft_desc').innerHTML='';
+                    $D('#save_draft').value='Saved';
+                    addClass('twbtn-disabled', $D('#save_draft'));
                 }else{                
                     if( text!=gvar.silahken && text!="") DRAFT.save();
                 }
@@ -3608,7 +3624,7 @@ function ApiBrowserCheck() {
     var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
     if(gsv.indexOf('staticArgs')>0) {
       gvar.isGreaseMonkey=true; gvar.isFF4=false;
-     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' on FF4.0':'' )+'...',0); 
+     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' >= FF4':'' )+'...',0); 
     } // test GM_hitch
     else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
   } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
@@ -3998,12 +4014,18 @@ var DRAFT= {
    }
   ,provide_draft: function(){
     var tmp_text= Dom.g(gvar.id_textarea).value;
-    if(tmp_text=="" && gvar.tmp_text!="") {
+    if(tmp_text=="") {
         $D('#save_draft').value='Draft';
-        $D('#save_draft').setAttribute('title', 'Continue Draft');
-        $D('#draft_desc').innerHTML='Available';
-        removeClass('twbtn-disabled', $D('#save_draft'));
-        return true;
+        if(gvar.tmp_text!=""){
+            $D('#save_draft').setAttribute('title', 'Continue Draft');
+            $D('#draft_desc').innerHTML='Available';
+            removeClass('twbtn-disabled', $D('#save_draft'));
+            return true;
+        }else{
+            $D('#save_draft').removeAttribute('title');
+            $D('#draft_desc').innerHTML = 'blank';
+            addClass('twbtn-disabled', $D('#save_draft'));
+        }
     }
     return false;
   }
@@ -6675,8 +6697,8 @@ Format will be valid like this:
      +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Quote directly from postbit on current page. Some tags may not parsed properly!" style="cursor:help">[!]</b>)</label>'
      +spacer     
      +(!gvar.user.isDonatur ? ''
-     +'<input id="misc_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/> reCaptcha Mode On<br />'
-     +spacer : '' ) 
+     +'<input id="misc_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/><label for="misc_recaptcha_mode">reCaptcha Mode On</label>'
+     +spacer : '' )
      +'</td><td valign="top" class="qrsmallfont" style="border-left:1px solid #bbb; padding-left:5px;">'
      
      +'<input id="misc_qrdraft" type="checkbox" '+(gvar.settings.qrdraft ? 'checked':'')+'/><label for="misc_qrdraft">AutoSave Draft</label> <small><em>(reload required)</em></small>'
