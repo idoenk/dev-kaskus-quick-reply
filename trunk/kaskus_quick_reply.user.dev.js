@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
 // @dtversion     110605321
-// @timestamp     1307226634691
+// @timestamp     1307232585775
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.2.1 - 2011-06-05
+//   Fix minor draft thingie --enhance autosave on(set & add)
 //   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
 //   Fix minor draft thingie
 //
@@ -64,7 +65,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307226634691 // version.timestamp
+  timestamp: 1307232585775 // version.timestamp
 
  ,dtversion: 110605321 // version.date
  ,scriptID: 80409 // script-Id
@@ -537,7 +538,7 @@ function start_Main(){
          }else{
            vB_textarea.readonly();
            removeClass('twbtn-disabled', $D('#save_draft'));
-           $D('#save_draft').setAttribute('title', 'Continue Draft');
+           DRAFT.title('continue');
            $D('#draft_desc').innerHTML = 'Available';
          }
          //gvar.tmp_text=null; dont delete it yet, will be used onclick Draft button         
@@ -3786,6 +3787,7 @@ var vB_textarea = {
         if(gvar.user.isDonatur && additional_options_notloaded()) 
            ajax_additional_opt();
     }
+    this.saveDraft();
   },
   lastfocus: function (){
     var pos = Dom.g(gvar.id_textarea).value.length; // use the actual content
@@ -3800,7 +3802,7 @@ var vB_textarea = {
    // fix chrome weird
    var lastpos=(this.cursorPos[0] + text.length);
    this.setCaretPos( lastpos, lastpos );
-   this.saveDraft();   
+   this.saveDraft();
   },
   subStr: function(start, end){ return this.content.substring(start, end);},
   getSelectedText : function() {    
@@ -3887,12 +3889,12 @@ var vB_textarea = {
     if(e && (e.ctrlKey || e.altKey) ) return true;
     var liveVal=Dom.g(gvar.id_textarea).value;
     if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
-        $D('#save_draft').setAttribute('title', 'Save Draft');
+        DRAFT.title('save');
         $D('#save_draft').value='Save Now';
         removeClass('twbtn-disabled', $D('#save_draft'));
         $D('#draft_desc').innerHTML='';
         clearTimeout( gvar.sITryLiveDrafting ); 
-        //gvar.isKeyPressed=1;
+        gvar.isKeyPressed=1;
         if(gvar.settings.qrdraft) DRAFT.quick_check();
     }
   }
@@ -4010,19 +4012,19 @@ var DRAFT= {
         if( isDefined(gvar.isKeyPressed) )
             DRAFT.save();
         else
-            $D('#draft_desc').innerHTML = 'Saved ' + (minuten > 0 ? minuten + ' minutes' : 'seconds') + ' ago';    
+            $D('#draft_desc').innerHTML = (minuten > 0 ? 'Last saved ' + minuten + ' minutes' : 'Saved seconds') + ' ago';    
    }
   ,provide_draft: function(){
     var tmp_text= Dom.g(gvar.id_textarea).value;
     if(tmp_text=="") {
         $D('#save_draft').value='Draft';
         if(gvar.tmp_text!=""){
-            $D('#save_draft').setAttribute('title', 'Continue Draft');
+            DRAFT.title('continue');
             $D('#draft_desc').innerHTML='Available';
             removeClass('twbtn-disabled', $D('#save_draft'));
             return true;
         }else{
-            $D('#save_draft').removeAttribute('title');
+            DRAFT.title();
             $D('#draft_desc').innerHTML = 'blank';
             addClass('twbtn-disabled', $D('#save_draft'));
         }
@@ -4036,27 +4038,36 @@ var DRAFT= {
   ,save: function(txt){
     if(isUndefined(txt)){
         $D('#save_draft').value='Saving ...';
-        $D('#save_draft').removeAttribute('title');
+        DRAFT.title();
         addClass('twbtn-disabled', $D('#save_draft'));
         window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
+        return;
     }else{
         gvar.tmp_text = txt.toString();
         setValue(KS+'TMP_TEXT', gvar.tmp_text);
         $D('#save_draft').value= 'Saved';
         $D('#draft_desc').innerHTML = 'Saved seconds ago';
-        if($D('#save_draft')) addClass('twbtn-disabled', $D('#save_draft'));
+        addClass('twbtn-disabled', $D('#save_draft'));
         if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
         if( !$D('#hideshow') ) force_focus(10);
     }
+    gvar.timeOld = new Date().getTime();
   }
   ,clear: function(txt){
     gvar.tmp_text = '';
     setValue(KS+'TMP_TEXT', gvar.tmp_text);
-    $D('#save_draft').removeAttribute('title');
+    DRAFT.title('continue');
     $D('#save_draft').value= 'Draft';
     addClass('twbtn-disabled', $D('#save_draft'));
     $D('#draft_desc').innerHTML = 'blank';
     force_focus(10);
+  }
+  ,title: function(mode){
+    var t = (mode=='save' ? 'Save Now' : (mode=='continue' ? 'Continue Draft' : '') );
+    if(t!='') 
+        $D('#save_draft').setAttribute('title', t+' [Ctrl+Shift+D]');
+    else
+        $D('#save_draft').removeAttribute('title');
   }
 }; // - end DRAFT
 
