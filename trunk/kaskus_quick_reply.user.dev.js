@@ -18,6 +18,7 @@
 // -!--latestupdate
 //
 // v3.2.1 - 2011-06-05
+//   Fix notify on invalid security token
 //   Fix minor draft thingie --enhance autosave on(set & add)
 //   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
 //   Fix minor draft thingie
@@ -1155,13 +1156,16 @@ function qr_preview(reply_html){
     reply_html = reply_html.responseText;
     var rets = parse_preview(reply_html);
     if(rets===null){
-	  var msg, cucok,erMsg;
+	  var msg, cucok,erMsg='';
 	  if(reply_html.indexOf('<!--POSTERROR ')!=-1){
 	    cucok=reply_html.match(/<ol><li>([^\n]+)<\/ol/);
 		erMsg=(cucok ? cucok[1] : 'Unknown Error Occurs');
-		if($D('#preview_presubmit')) showhide($D('#preview_presubmit'),false);
-	  }
-	  msg='<div class="g_notice g_notice-error" style="display:block;">' + (reply_html.indexOf('<!--POSTERROR ')!=-1 ? erMsg : 'Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.' ) + '</div>';
+	  }else if(reply_html.indexOf('security token was invalid.<br')!=-1 ){
+        erMsg='Sorry <b>'+gvar.user.name+'</b>, your submission could not be processed, invalid security token. <a href="javascript:location.reload(false);">reload this page</a>';
+      }
+      if(erMsg && $D('#preview_presubmit')) showhide($D('#preview_presubmit'),false);
+      
+	  msg='<div class="g_notice g_notice-error" style="display:block;">' + (erMsg ? erMsg : 'Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.' ) + '</div>';
       $D('#preview_content').innerHTML = msg;
        on('click',$D('#upss_preview'),function(e){
         if($D('#preview_content'))
@@ -1295,7 +1299,7 @@ function qr_ajax_post(reply_html){
           
         }else if( cucok = html.match(/TITLE>Kaskus\sKepenuhan\b[^<]+/i) ){
 
-            r.msg = '"Kaskus Kepenuhan", post may has been posted. Try to reload and conform the new post.';
+            r.msg = '"Kaskus Kepenuhan", post may has been posted. Try to <a href="javascript:location.reload(false);">reload this page</a> and check if it has been posted.';
         
         }else{
         
