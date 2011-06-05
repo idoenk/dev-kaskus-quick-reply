@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.0.9
-// @dtversion     110604319
-// @timestamp     1307123120806
+// @version       1.1.0
+// @dtversion     110605110
+// @timestamp     1307242851178
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,15 +19,19 @@
 //
 // -!--latestupdate
 //
-//  v1.0.9 - 2011-06-04
-//    Switchable setting capctha mode.
-//    Back to Recaptcha again. --"
+//  v1.1.0 - 2011-06-05
+//    Fix isOrigin (anti jebmen for vBulletin Thread Preview)
+//    Fix Update Link. Thanks=[Ngentoad]
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
-//  v1.0.8 - 2011-05-30
+///  v1.0.9 - 2011-06-04
+//    Switchable setting capctha mode.
+//    Back to Recaptcha again. --"
+//
+/  v1.0.8 - 2011-05-30
 //    Fix resolve behaviour with old kaskus capcay.
 //
 //  v1.0.7 - 2011-04-09
@@ -43,9 +47,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.0.9';
+gvar.sversion = 'v' + '1.1.0';
 gvar.scriptMeta = {
-  timestamp: 1307123120806 // version.timestamp
+  timestamp: 1307242851178 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -95,11 +99,15 @@ function init(){
   //------------
     ApiBrowserCheck();
   //------------
-  gvar.domain= 'http://'+'www.kaskus.us/';
-  gvar.domainstatic= 'http://'+'static.kaskus.us/';
-  gvar.ktpKaskus = 'http://'+'www.idkaskus.com/'
+  gvar.prot = String(location.protocol);
+  gvar.currentdomain = gvar.prot+'//'+location.hostname+'/';
   
-  gvar.codename= 'Kaskus Thread Preview';
+  gvar.domain= gvar.prot+'//'+'www.kaskus.us/';
+  gvar.domainstatic= gvar.prot+'//'+'static.kaskus.us/';
+  gvar.ktpKaskus = gvar.prot+'//'+'www.idkaskus.com/'
+  
+  gvar.isKaskus = (location.href.indexOf(gvar.domain)!=-1 ? 1:null);
+  gvar.codename= (gvar.isKaskus ? 'Kaskus':'vBulletin') + ' Thread Preview';
   gvar.id_textarea= 'vB_Editor_001_textarea';
   _LOADING = '<div class="ktp-loading" style="display:inline-block;padding-left:15px;">loading...</div>';
   
@@ -112,8 +120,7 @@ function init(){
   
   gvar.meta_refresh = null;
   gvar.fixed_ktfi = false;
-  gvar.isVBul4 = false;
-  gvar.isKaskus = (location.href.indexOf(gvar.domain)!=-1 ? 1:null);
+  gvar.isVBul4 = false;  
   
   gvar.user= tTRIT.getUserId(); // all about logged is user: {id:'',name:'',isDonat:[1,0]}
   gvar.settings = {};
@@ -481,8 +488,12 @@ var tTRIT = {
     }
   }
  ,is_closed_thread: function(text){ // text-mode
-    // find first href with noquote    
-	return (text.match(/[\'\"]\s*alt=[\'\"]Closed\s*Thread[\'\"]/i));
+    // find first href with noquote OR 
+    // there is a username textbox vBull4:
+	return ( 
+     text.match(/[\'\"]\s*alt=[\'\"]Closed\s*Thread[\'\"]/i) || /* vBul 3.6.8 closed thread */ /<input\s*(?:(?:type|class|id|size|accesskey|tabindex|value|style)=[\'\"][^\'\"]+[\'\"]\s*)*name=[\'\"]vb_login_username/i.test(text) || /* vBul 4 not login yet*/
+     !gvar.isKaskus
+    );
   }
  ,clickNode: function(e){
     e = e.target||e;	
@@ -592,8 +603,10 @@ var tTRIT = {
   var el, buff, aL, isClean, aTag = getTag('a', temp);
   if(!aTag) return text;  
   var newHref = function(inner, href){
-    var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) );
-	var nel = createEl('div', {}, (href ? '<div class="btman-suspect"><a href="'+href+'" target="_blank" '+(isKaskus?'':'title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."')+'>[ <span>BETMEN-DETECTED</span> ]</a><span class="btman-href'+(isKaskus?'':' btman-strike')+'">'+href+'</span></div>':'') + inner );
+    //var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) );
+    var re = new RegExp( "^"+String(gvar.prot).replace(/\:/,"\\\:")+"\\\/\\\/"+String(location.hostname).replace(/\./g,'\\\.')+"\\\/", "i")
+    ,isOrigin= re.test(href)
+    , nel = createEl('div', {}, (href ? '<div class="btman-suspect"><a href="'+href+'" target="_blank" '+(isOrigin?'':'title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."')+'>[ <span>BETMEN-DETECTED</span> ]</a><span class="btman-href'+(isOrigin?'':' btman-strike')+'">'+href+'</span></div>':'') + inner );
 	return nel;
   }
   aL=aTag.length; isClean='';
@@ -629,7 +642,7 @@ var tTRIT = {
 	   gvar.isVBul4 = true;
 	 }
    }
-   if( gvar.isVBul4 ) gvar.codename=gvar.codename.replace(/Kaskus/i,'vBulletin');
+   //if( gvar.isVBul4 ) gvar.codename=gvar.codename.replace(/Kaskus/i,'vBulletin');
    
    var dSpliter = (gvar.isVBul4 ? 'postbody':'td_post_');
    var cucok, wraper, poss, _ret, _tit, _nr;
@@ -2834,7 +2847,7 @@ var Updater = {
         alert("No update is available for Thread-Preview.");	  
     }
   }
- ,initiatePopup: function(rt){    
+ ,initiatePopup: function(rt){
     Updater.meta=Updater.mparser(rt);
 	Updater.showDialog(
        '<img id="nfo_version" src="'+gvar.B.news_png+'" class="qbutton" style="float:left; margin:3px 5px 0 2px;padding:3px;"/> '
@@ -2845,7 +2858,7 @@ var Updater = {
       +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
     on('click', $D('#upd_close'), function(){ Dom.remove('upd_cnt') });    
-    on('click', $D('#upd_notify_lnk'), function(){
+    if($D('#upd_notify_lnk')) on('click', $D('#upd_notify_lnk'), function(){
        if($D('#upd_cnt'))
          Dom.remove('upd_cnt');
        else{         
@@ -2853,14 +2866,14 @@ var Updater = {
          Updater.check(true);
        }
     });    
-    on('click', $D('#do_update'), function(){  
-      GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');      
+    on('click', $D('#do_update'), function(){
+      GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');
       window.setTimeout(function(){ Dom.remove('upd_cnt'); }, 1000);
     });    
   }
  ,showDialog: function(inner){
     var Attr, el;
-    if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
+    if($D('#upd_cnt')) Dom.remove($D('upd_cnt'));
     Attr = {id:'upd_cnt','class':'tborder qrdialog',style:'position:fixed;z-index:999999;'};
     el = createEl('div', Attr);
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
@@ -2884,7 +2897,7 @@ var Updater = {
   
  ,notify_progres: function(caller){
     if($D('#upd_notify'))
-	  $D('#upd_notify').innerHTML = '<div id="fetch_update" class="ktp-loading" style="margin-left:10px;"></div>';
+	  $D('#upd_notify').innerHTML = '<div id="fetch_update" class="ktp-loading" style="display:inline-block; margin: 0 0 2px 5px;"></div>';
 	if(Dom.g(caller)) {
 	  Updater.caller=caller;
 	  Dom.g(caller).innerHTML='checking..'; // OR check now
@@ -3612,7 +3625,7 @@ Format will be valid like this:
 
  +   '<div id="post_detail"></div>' // kaskus badge | user detail
  +   '<div id="preview_content" class="blockbody formcontrols"></div>' // main post-content
- + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
+ + (!gvar.current.TRIT_isClosed ? ''
  +   '<div id="container_reply" style="text-align:right;padding:3px 15px 0 0;margin:5px 0 -6px 0;border-top:1px solid #DBDBDB;">'
  +    '<a id="btn_quote_reply" onclick="return false" href="javascript:;" >'
  +     '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Quote & Quick Reply this Message" border="0"/></a>'
@@ -3637,7 +3650,7 @@ Format will be valid like this:
  +  '<div id="thread_separator" style="height:25px; display:'+(gvar.current.isLastPost?'none':'')+';"></div>'
 
  // quick-reply form
- +(gvar.user.id && !gvar.current.TRIT_isClosed ? '<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">' : '')
+ +(!gvar.current.TRIT_isClosed ? '<form action="'+gvar.current.action+'" method="post" name="vbform" id="vbform" style="display:;">' : '')
  +   '<div style="display:none;">'
  +    '<input type="submit" name="real_submit" value="Submit Post"/>'
  +   '</div>'
@@ -3663,8 +3676,8 @@ Format will be valid like this:
  +  '<tfoot id="tr_qr_button">' // this node will killed once qr pressed 
  +  '<tr><td class="tcat blockhead" style="border:0;">' 
  +    '<a tabindex="206" id="preview_cancel" href="javascript:;" class="'+(!gvar.isVBul4?'cyellow ':'')+'hd_layer-left" style=""><b>Cancel</b></a>'
- +    '<span id="ktp_version" class="hd_layer-right" style="">'+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+(!gvar.isVBul4 ? gvar.codename:'vBulletin Thread Preview')+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
- + (gvar.user.id && !gvar.current.TRIT_isClosed ? ''
+ +    '<span id="ktp_version" class="hd_layer-right" style="">'+gvar.codename+' '+HtmlUnicodeDecode('&#8212;')+' '+'<a href="http://userscripts.org/scripts/show/94448" target="_blank" title="Home '+gvar.codename+' - '+gvar.sversion+'">'+gvar.sversion+'</a></span>'
+ + (!gvar.current.TRIT_isClosed ? ''
  +    '<div id="qr_button_cont" class="qr_button_cont">'
  +     '<input type="button" id="qr_button" class="twbtn twbtn-m" value="Quick Reply" style="width:300px;" />'
  +    '</div>' : '')
@@ -3694,7 +3707,7 @@ Format will be valid like this:
  +   '</div>' // #button_preview
  : '')
  
- +(gvar.user.id && !gvar.current.TRIT_isClosed ? '</form>' : '')
+ +(!gvar.current.TRIT_isClosed ? '</form>' : '')
  
  + '<div id="setting_container" style="position:absolute;right:1%;min-width:450px;border:2px outset;background:#F5F5FF;margin-top:1px;display:none;">'
  //+ rSRC.getTPL_setting()
