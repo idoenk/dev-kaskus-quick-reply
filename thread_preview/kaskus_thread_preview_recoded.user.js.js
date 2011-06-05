@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.1.0
 // @dtversion     110605110
-// @timestamp     1307242851178
+// @timestamp     1307246266534
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -20,6 +20,7 @@
 // -!--latestupdate
 //
 //  v1.1.0 - 2011-06-05
+//    Fix freezed onclick menubwhjb navigation
 //    Fix isOrigin (anti jebmen for vBulletin Thread Preview)
 //    Fix Update Link. Thanks=[Ngentoad]
 //
@@ -49,7 +50,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.1.0';
 gvar.scriptMeta = {
-  timestamp: 1307242851178 // version.timestamp
+  timestamp: 1307246266534 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -324,14 +325,15 @@ var tTRIT = {
 	        node = nodes.snapshotItem(i);
 	   	    // attach event-click
 	        on('click', node, function(e){
-	   	      gvar.sTryWaitLoader = window.setInterval(function() {
+	   	      if(gvar.sTryWaitLoader) clearInterval(gvar.sTryWaitLoader);
+              gvar.sTryWaitLoader = window.setInterval(function() {
 	   	        var loader = $D('#loaderani');
 	   	    	if(loader && loader.style.display=='none'){
 	   	    	  clearInterval(gvar.sTryWaitLoader);
 	   	    	  even_node(areas_home, 'tabcontentcontainer');
 	   	    	}else{
-                  tPOP.closeLayerBox();
-                  return;
+                  if($D('#hideshow'))
+                    tPOP.closeLayerBox();
                 }
 	   	      }, 100);
 	   	    }); // end click event
