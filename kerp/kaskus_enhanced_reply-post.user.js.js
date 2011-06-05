@@ -1,18 +1,16 @@
 // ==UserScript==
 // @name          Kaskus Enhanced Reply-Post
 // @namespace     http://userscripts.org/scripts/show/79879
-// @include       http://u2.kaskus.us/*
 // @include       http://u.kaskus.us/*
 // @include       http://www.kaskus.us/newreply.php?*
 // @include       http://www.kaskus.us/editpost.php?*
-// @include       http://www.kaskus.us/private.php?*
 // @include       http://www.kaskus.us/visitormessage.php?*
 // @include       http://www.kaskus.us/group.php?*
 // @include       http://www.kaskus.us/blog_post.php?*
 // @include       http://www.kaskus.us/newthread.php?*
 // @version       2.26
-// @dtversion     110326226
-// @timestamp     1301081092542
+// @dtversion     110605226
+// @timestamp     1307250270130
 // @description   Integrate kaskus uploader; Show Mostly Used Smiley beside your vb_Textarea Editor; Integrate Custom Kaskus Smiley list; Set your fav image/smiley colection; Hover preview++
 // @author        idx (http://userscripts.org/users/idx)
 // @include       http://imageshack.us/*
@@ -20,16 +18,17 @@
 // @include       http://imgur.com/*
 // @include       http://photoserver.ws/*
 // --------------------------------------------------------
-// 
 // -!--latestupdate
 // 
-// v 2.26 - 2011-03-26
+// v 2.26 - 2011-06-05
+// : Deprecate KERP in private message (due to disabled bbcode --")
+// : Fix Text Counter
 // : Add 2 new Kaskusemotes (Hot-News; Games)
-//
+// 
 // -/!latestupdate---
 // ==/UserScript==
 /*
-// 
+//
 // v 2.25 - 2011-03-13
 // : Fix adapting FF4.0
 // : Improve Uploader
@@ -38,14 +37,6 @@
 // : Fix adapting FF4.0b12 (partial)
 // : Fix minor CSS (blog_post.php)
 // 
-// v 2.23 - 2011-01-13
-// : Fix CSS (Improve CSS3 Opera)
-// : Fix Uploader (deprecate some CSS; -Opera)
-// 
-// v 2.22 - 2011-01-12
-// : Fix smiley (kecil) failed using IMG tag
-// : Fix smiley (besar) invalid path (using IMG tag)
-// : Lil improve Uploader
 //
 // v 0.1 - 2010-06-20
 // : Init
@@ -64,8 +55,8 @@ javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 gvar.scriptMeta = {
-  timestamp: 1301081092542 // version.timestamp
- ,dtversion : 110326226 // script-Id
+  timestamp: 1307250270130 // version.timestamp
+ ,dtversion : 110605226 // script-Id
  
  ,titlename : gvar.codename
  ,scriptID : 79879 // script-Id
@@ -106,7 +97,7 @@ var GM_addGlobalStyle=function(css, id, tobody) { // Redefine GM_addGlobalStyle 
 };
 var vB_textarea = {
   init: function(id) {
-    this.Obj = (isUndefined(id) ? getById(gvar.id_textarea) : getById(id));
+    this.Obj = (isUndefined(id) ? $D(gvar.id_textarea) : $D(id));
     this.content = (this.Obj ? this.Obj.value : "");
 	this.cursorPos = this.rearmPos(); // [start, end]
 	this.last_scrollTop = this.Obj.scrollTop; // last scrolltop pos
@@ -129,7 +120,7 @@ var vB_textarea = {
   },
   set: function(value){    
     if(!this.Obj)
-      this.Obj = getById(gvar.id_textarea);
+      this.Obj = $D(gvar.id_textarea);
     this.Obj.value = this.content = value;
   },
   lastfocus: function (){
@@ -503,6 +494,9 @@ function init(){
   
   gvar.id_smilebox = 'vB_Editor_001_smiliebox';
   gvar.id_textarea = 'vB_Editor_001_textarea';
+  if(!$D(gvar.id_textarea)) return;
+  
+  gvar.is_visitormessage = (gvar.loc.indexOf('\/visitormessage\.php\?') !=-1 );
   
   gvar.width_smilebox = '280';
   
@@ -706,10 +700,10 @@ function start_routine(){
   align_adjuster();
   
   // recreate smilebox container on PM
-  if(!getById(gvar.id_smilebox)) recreate_smilebox();
+  if(!$D(gvar.id_smilebox)) recreate_smilebox();
 
   // recreate editor on VM  
-  if(gvar.loc.indexOf('visitormessage.php')!=-1) recreate_editor();
+  if( gvar.is_visitormessage ) recreate_editor();
   
   // alocate/build smiliebox DOM and its content
   loadSmilieBox();
@@ -717,10 +711,10 @@ function start_routine(){
   // load text counter
   loadCounter();
   
-  if(gvar.loc.indexOf('visitormessage.php')==-1){
+  if( !gvar.is_visitormessage ){
     init_smileyeditor();
   }
-  if(false && gvar.loc.indexOf('visitormessage.php')==-1){
+  if(false && !gvar.is_visitormessage ){
     // add- remove element
     loadAddRemove();	
 	// if ada mysmiley tambahin dah tuh & yap gak berlaku di VM
@@ -813,7 +807,7 @@ function init_smileyeditor(){
   Div2.appendChild(Div3);  
   
   Div1.appendChild(Div2);
-  getById(gvar.id_smilebox).appendChild(Div1);
+  $D(gvar.id_smilebox).appendChild(Div1);
   
   reload_mysmiley();
   
@@ -1159,44 +1153,43 @@ function reorder_tabIndex(){
     for(var i=0; i<nodes.snapshotLength; i++)
 	  nodes.snapshotItem(i).setAttribute('tabindex', 1);
 
-  if(getById(gvar.id_textarea))
-     getById(gvar.id_textarea).setAttribute('tabindex', 1);
+  if($D(gvar.id_textarea))
+     $D(gvar.id_textarea).setAttribute('tabindex', 1);
 	 
   var isPreviewMode = getByXPath_containing('//td', false, 'Preview');
   isPreviewMode = (isPreviewMode && isPreviewMode.length > 0 && isPreviewMode[0].getAttribute('class')=='tcat' ? true:false);
   
   window.setTimeout(function(){
      try{ hi.focus(); 
-	   if(isPreviewMode){var mo=(getById('Middleorgna')?getAbsoluteTop(getById('Middleorgna')):95);scrollTo(0,mo);} 
+	   if(isPreviewMode){var mo=($D('Middleorgna')?getAbsoluteTop($D('Middleorgna')):95);scrollTo(0,mo);} 
 	 } catch(e){}; // first load, try focus to element
    }, 200);
 }
 
 // in private.php (PM) need to create this node first
 function recreate_smilebox(){
- var txa = getById(gvar.id_textarea);
- {
-   var parent;
-   if(txa.parentNode.nodeName=='TD')
-     parent = txa.parentNode.parentNode;
-   else	{
-     parent = txa.parentNode;
-	 parent.parentNode.setAttribute('style', 'max-width: 90%;');
-	 parent.setAttribute('style', 'height:220px !important;');
-     txa.setAttribute('style', 'float:left;width:480px;');
-   }
- }
- var fieldset = mycreateElement('fieldset', { id:gvar.id_smilebox,style:'max-width:'+gvar.width_smilebox+'px;' } ); 
- var holder= document.createElement( (parent.nodeName=='TR' ? 'td' : 'div') );
+ var txa = $D(gvar.id_textarea), parent, fieldset, holder;
+ 
+ if(txa)
+    if(txa.parentNode.nodeName=='TD'){
+        parent = txa.parentNode.parentNode;
+    } else {
+        parent = txa.parentNode;
+        parent.parentNode.setAttribute('style', 'max-width: 90%;');
+        parent.setAttribute('style', 'height:220px !important;');
+        txa.setAttribute('style', 'float:left;width:480px;');
+    } 
+ fieldset = mycreateElement('fieldset', { id:gvar.id_smilebox,style:'max-width:'+gvar.width_smilebox+'px;' } ); 
+ holder= document.createElement( (parent.nodeName=='TR' ? 'td' : 'div') );
  if(parent.nodeName=='DIV')
-   fieldset.setAttribute('style', 'float:left;');   
+    fieldset.setAttribute('style', 'float:left;');   
  
  holder.appendChild(fieldset);
  parent.appendChild(holder);
 }
 // in visitor message need to recreate editor container
 function recreate_editor(){
-  var chld = [getById(gvar.id_textarea).parentNode, getById(gvar.id_smilebox)]; // txtarea, smilebox
+  var chld = [$D(gvar.id_textarea).parentNode, $D(gvar.id_smilebox)]; // txtarea, smilebox
   var par = getByClas('panel', 'div'); // style yakin >,<
   par = getTag('div', par);
   var Attr, div0,ctbl,ctr,ctd, tbl,tr,td;
@@ -1243,7 +1236,7 @@ function recreate_editor(){
 // add buttons to blue control box
 function spoiler_act(){
   //
-  var vb_Control = getById('vB_Editor_001_controls');
+  var vb_Control = $D('vB_Editor_001_controls');
   if(vb_Control){
     var tbl_cont=getTag('table',vb_Control);
 	var Attr = {};
@@ -1274,13 +1267,13 @@ function spoiler_act(){
 		  }
 		}
 		// tambahin separator
-		if(gvar.loc.indexOf('visitormessage.php')==-1)
+		if( !gvar.is_visitormessage )
 		  tr_cont[0].appendChild(Insert.separator().cloneNode(true));		
 		
 		Attr = {'class':'smilekecil tcat',style:'padding:1px;width:100%;min-width:130px;'};
 		td = mycreateElement('td', Attr);
 		
-		if(gvar.loc.indexOf('visitormessage.php')==-1){ // no controler for VM
+		if( !gvar.is_visitormessage ){ // no controler for VM
 		  Attr={id:'vB_Editor_001_cmd_wrap0_addcontroller','class':'imagebutton'};		
 		  div1 = mycreateElement('div', Attr);		
 		  
@@ -1486,7 +1479,7 @@ function do_btncustom(e){
 function align_adjuster(){
   // fix panel alignment; may eat alot of resource so doit later
   window.setTimeout(function() {
-	 var w = parseInt(getById(gvar.id_textarea).style.width.replace(/px/,''))+60;
+	 var w = parseInt($D(gvar.id_textarea).style.width.replace(/px/,''))+60;
 	 if(gvar.smiley_box==1)
 	   w+=parseInt(gvar.width_smilebox);
 	 var tgt=getTag('div', getByClas('panel', 'div') )[0];
@@ -1496,17 +1489,17 @@ function align_adjuster(){
 
 function loadCounter(){
    vB_textarea.init();
-   var tdTxtA = getById(gvar.id_textarea);
+   var tdTxtA = $D(gvar.id_textarea);
    if(tdTxtA) 
     tdTxtA= tdTxtA.parentNode;
    else return;
-   var curlen = vB_textarea.content.length;
+   var realLen = String(vB_textarea.content).replace(/[\r\n]/g,'  ').length;
    
    var Attr,el,cont;
    Attr = {id:"counter_container", style:"float:right;text-align:left;"};      
    cont = mycreateElement('div', Attr, false, "<small>Text Counter:<small>&nbsp;");
-   Attr = { id:"txta_counter",'class':(curlen >=10000 ? 'txta_counter_red':'txta_counter'),
-     readonly:"readonly",value:curlen};
+   Attr = { id:"txta_counter",'class':(realLen >= (gvar.is_visitormessage ? 256 : 10000) ? 'txta_counter_red':'txta_counter'),
+     readonly:"readonly",value:realLen};
    el = mycreateElement('input', Attr);
    cont.appendChild(el);
    tdTxtA.appendChild(cont);
@@ -1532,15 +1525,16 @@ function updateCounter(){
   clearInterval(gvar.INTERVAL);
   gvar.INTERVAL = window.setInterval( function(){
     vB_textarea.init();
-	if(getById('txta_counter')){
-	   getById('txta_counter').value = vB_textarea.content.length;	   
-	   getById('txta_counter').setAttribute('class', (vB_textarea.content.length >= 10000 ? 'txta_counter_red' : 'txta_counter') );	   
+    var realLen = String(vB_textarea.content).replace(/[\r\n]/g,'  ').length;    
+	if($D('txta_counter')){
+	   $D('txta_counter').value = realLen;
+	   $D('txta_counter').setAttribute('class', (realLen >= (gvar.is_visitormessage ? 256 : 10000) ? 'txta_counter_red' : 'txta_counter') );	   
 	}	
   }, 10);
 }
 
 function loadSmilieBox(){
-  var smbx = getById(gvar.id_smilebox);
+  var smbx = $D(gvar.id_smilebox);
   // bersihiin dulu, coz pake append
   if(smbx)
     smbx.innerHTML = '';
@@ -1615,7 +1609,7 @@ function loadSmilieBox(){
   var p0 = mycreateElement('p', {id:'more_smile'}, false, atxt);
   Div1.appendChild(p0);
   
-  if(gvar.loc.indexOf('visitormessage.php')==-1){
+  if( !gvar.is_visitormessage ){
     // load smile custom
 	Attr={'class':'smallfont smilebesar',style:'display:'+ (gvar.tabSmiley[2]==1 ? '':'none') +';',
            id:gvar.tabTitleId[2] // 'scustom_container'
@@ -1656,7 +1650,7 @@ function judulSmiley(parent, title, target){
   // prep create checkbox for tag img mode |&| will not available on visitormessage.php
   var besarkecil = ['skecil_container','sbesar_container'];
   var Elm=false;
-  if(inArray(besarkecil, target) && gvar.loc.indexOf('visitormessage.php')==-1){
+  if(inArray(besarkecil, target) && !gvar.is_visitormessage ){
     if(target.indexOf('kecil')==-1) parent.appendChild(document.createElement('br'));
 	var mix_id = 'imgmode_id_'+target;
 	var Attr = {id: mix_id,value:(target.indexOf('kecil')!=-1 ? '1' : '2'),type:'checkbox',name:'imgmode',style:'cursor:pointer'};
@@ -1677,7 +1671,7 @@ function judulSmiley(parent, title, target){
   }
 
   // add separator if in VM
-  if(gvar.loc.indexOf('visitormessage.php')!=-1 && target.indexOf('kecil')==-1){
+  if(gvar.is_visitormessage && target.indexOf('kecil')==-1){
     parent.appendChild(document.createElement('br'));
   }
     
@@ -1721,21 +1715,21 @@ function chkDimensi(e, Obj){
    if(lDim[0] > 400 || lDim[1] > 400)
      rez = ' (resized from: '+lDim[0]+'px X '+lDim[1]+'px)';	 
    
-   var prev=Obj.parentNode; // getById("preview")
+   var prev=Obj.parentNode; // $D("preview")
    var Margin = {
      y:(lDim[0] > 400 ? '300': (Obj.height >0 ? Math.floor(parseInt(Obj.height))+10 : '60') )
 	,x:(lDim[1] > 400 ? '300': (Obj.width > 0 ? Math.floor(parseInt(Obj.width))/2 : '60') )
    };   
-   if(getById("loading_img")) Dom.remove(getById("loading_img"));
+   if($D("loading_img")) Dom.remove($D("loading_img"));
    prev.style.display='none';
 
    window.setTimeout(function() {
      trackme(e, Margin);
      Obj.style.display = '';
      prev.style.display='';
-	 var imgsub = getById('imgsubtitle');
+	 var imgsub = $D('imgsubtitle');
 	 if(imgsub && imgsub.innerHTML.indexOf('(resized from')==-1)
-	    getById('imgsubtitle').innerHTML+= rez;	 
+	    $D('imgsubtitle').innerHTML+= rez;	 
    }, 100);
    return false;
 }
@@ -1743,7 +1737,7 @@ function chkDimensi(e, Obj){
 // preview event
 function trackme(e, Mrg){
   var e = (isDefined(e) ? e : ((window.event) ? window.event : null) );
-  var prev = getById("kerp_preview");
+  var prev = $D("kerp_preview");
   if(!prev) return;
   var img0 = getTag('img',prev)[0];
   if(isUndefined(Mrg))
@@ -1760,7 +1754,7 @@ function trackme(e, Mrg){
 //   +'margin:-'+(Mrg.y ? (Math.floor(parseInt(Mrg.y))+10) : gvar.yOffset)+'px 0px 0px -' + (Mrg.x > 400 ? '300' : (Mrg.y > 0 ? Math.floor(parseInt(Mrg.y))/2 : '60') ) + 'px');
 }
 function removeme(){
-   if(getById('kerp_preview')) Dom.remove(getById('kerp_preview'));
+   if($D('kerp_preview')) Dom.remove($D('kerp_preview'));
 }
 // triggered on mouseover span, big smilie
 function preview(e, Obj){   
@@ -1780,7 +1774,7 @@ function preview(e, Obj){
 	small.appendChild(createTextEl(Obj.getAttribute('rel') ));
 	innerImg.appendChild(small);
 	p0.appendChild(innerImg);
-	var concon = getById(gvar.id_smilebox).parentNode;
+	var concon = $D(gvar.id_smilebox).parentNode;
     concon.insertBefore(p0,concon.firstChild);    
 	
 }
@@ -1852,7 +1846,7 @@ function preload_small_emote(parent){
 function toogle_smile(target_id, show){
   var idxtab = inArray(gvar.tabTitleId, target_id);
   if(idxtab==-1) return;
-  var tgt = getById(target_id);  
+  var tgt = $D(target_id);  
   
   // special tret on smiley kecil
   if(target_id == 'skecil_container'){
@@ -2434,77 +2428,6 @@ function getSmilieSets(){
   };
 
   gvar.smiliebesar = {
- //'291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
-//,'292': [H+s+'kribo.gif', ':afro:', 'afro']
-//,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
-//,'294': [H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
-'295': [H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
-
-/* New Big Smilies */
-,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
-
-,'501': [H+'najis.gif', ':najis', 'Najis']
-,'502': [H+'s_sm_maho.gif', ':maho', 'Maho']
-,'503': [H+'hoax.gif', ':hoax', 'Hoax']
-,'504': [H+'marah.gif', ':marah', 'Marah']
-,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
-,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
-,'507': [H+'sorry.gif', ':sorry', 'Sorry']
-
-,'508': [H+'capede.gif', ':cd', 'Cape d...']
-,'509': [H+'nohope.gif', ':nohope', 'No Hope']
-,'510': [H+'bingung.gif', ':bingung', 'Bingung']
-
-,'511': [H+'hammer.gif', ':hammer', 'Hammer2']
-,'512': [H+'dp.gif', ':dp', 'DP']
-,'513': [H+'takut.gif', ':takut', 'Takut']
-,'514': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
-
-,'515': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
-,'516': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
-,'517': [H+'toastcendol.gif', ':toast', 'Toast']
-,'518': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
-,'519': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
-
-,'520': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
-
-,'521': [H+'mewek.gif', ':mewek', 'Mewek']
-,'522': [H+'sundul.gif', ':sup2:', 'Sundul']
-,'523': [H+'ngakak.gif', ':ngakak', 'Ngakak']
-
-,'524': [H+'recseller.gif', ':recsel', 'Recommended Seller']
-,'525': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
-,'526': [H+'jempol1.gif', ':thumbup', 'Jempol']
-,'527': [H+'selamat.gif', ':selamat', 'Selamat']
-
-,'528': [H+'ultah.gif', ':ultah', 'Ultah']
-,'529': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
-,'530': [H+'request.gif', ':request', 'Request']
-,'531': [H+'cekpm.gif', ':cekpm', 'Cek PM']
-
-,'532': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
-,'533': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
-,'534': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
-,'535': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
-,'536': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
-,'537': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'538': [H+'traveller.gif', ':travel', 'Traveller']
-
-/* Dec-2010, :kimpoi,:ngacir,:salahkamar,:ultah,:rate5 */
-,'539': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-
-// -- OLD ---
-,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
-,'901': [H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
-,'902': [H+'fd_5.gif', ':sup:', 'Sundul Up']
-,'903': [H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
-,'904': [H+'fd_8.gif', ':kacau:', 'Thread Kacau']
-,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
-,'906': [H+'fd_7.gif', ':repost:', 'Repost']
-,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
-  };  
-  
-  gvar.smiliebesar = {
  '291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
 ,'292': [H+s+'kribo.gif', ':afro:', 'afro']
 ,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
@@ -2581,7 +2504,13 @@ function getSmilieSets(){
 ,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
 ,'906': [H+'fd_7.gif', ':repost:', 'Repost']
 ,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
+
   };
+  
+  gvar.smiliecustom = {
+ '11001': [http+'img.kaskus.us/images/kaskusmobile_bb.gif', 'right', 'kaskusmobile_bb']
+,'11002': [http+'img.kaskus.us/images/kaskusmobile_hp.gif', 'right', 'kaskusmobile_hp']
+  };  
  
 }
 // end getSmilieSets
@@ -2630,13 +2559,6 @@ function getTag(name, parent){
 	if(typeof(parent)!='object')
 	    parent = document;	
 	return parent.getElementsByTagName(name);
-}
-function getById(id, parent){
-  if(!parent)
-    parent = document;
-  var obj = false
-  try{obj = parent.getElementById(id)}catch(e){};
-  return obj;
 }
 function getByXPath (xp, par, snapshot) {
   if(isUndefined(par)) par = document;
