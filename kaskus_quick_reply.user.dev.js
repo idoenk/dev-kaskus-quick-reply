@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110605321
-// @timestamp     1307232585775
+// @dtversion     110611321
+// @timestamp     1307801978007
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,10 +17,13 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-05
+// v3.2.1 - 2011-06-11 . 1307801978007
+//   Fix QQ failed parse keep innerhtml unescaped. Thanks=[mentheleng]
+//   Fix QQ failed parse spoiler w/o title; Thanks [aadc, ketang6]
+//   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
+//   Fix xpath when finding edit link. Thank=[arifhn,ketang6]
 //   Fix notify on invalid security token
 //   Fix minor draft thingie --enhance autosave on(set & add)
-//   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
 //   Fix minor draft thingie
 //
 // -/!latestupdate---
@@ -66,17 +69,17 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307232585775 // version.timestamp
+  timestamp: 1307801978007 // version.timestamp
 
- ,dtversion: 110605321 // version.date
+ ,dtversion: 110611321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
-javascript:window.alert(new Date().getTime());
+window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = true; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -501,6 +504,7 @@ function start_Main(){
      } // end-for
      nodes = getByXPath_containing('//a', false, 'EDIT');
      for(var i=0; i<nodes.length; i++){
+        if(nodes[i].parentNode.nodeName != 'TD') continue;
         hr = nodes[i].href.split("&p=");
         nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
 	 }
@@ -725,7 +729,6 @@ function do_click_qqr(e, multi){
 	var bSp,iSp,tParent,nLength=(els.snapshotLength-1), inerEscape, newContSP;
 	if(els) {
         tParent=els.snapshotItem(0);
-        //for(var i=0;i<els.snapshotLength; i++){
         for(var i=nLength;i>=0; i--){
             el=els.snapshotItem(i);
             bSp = getTag('b',el); 
@@ -744,14 +747,14 @@ function do_click_qqr(e, multi){
                 el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');
                 
                 // kill first <br> after spoiler
-                inerEscape = (el2.innerHTML).replace(/<br\/?>/g,'').toString();
+                inerEscape = (el2.innerHTML).replace(/<br\/?>/g,'').toString().replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
                 newContSP = createTextEl('{div spoiler-'+iSp+'}'+(inerEscape)+'{/div}');
                 el2.innerHTML = '';
                 Dom.add(newContSP, el2);
             }
         }
-        var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};
-        pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/g,'>').replace(/\&lt;/g,'<');
+        var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};        
+        pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
 	
@@ -812,7 +815,6 @@ function do_click_qqr(e, multi){
     // get quote nfo
     if(apr && apr.id) did=apr.id.replace(/qqr_/i,'');
     elpm=$D('#postmenu_'+did);
-    //alert('passed - postmenu_'+ did);
     if(elpm) el=$D(".//a[(@class='bigusername') and contains(@href,'member.php?')]", elpm, true);
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
