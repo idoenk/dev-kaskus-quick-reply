@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110611321
-// @timestamp     1307801978007
+// @dtversion     110613321
+// @timestamp     1307906876739
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-11 . 1307801978007
+// v3.2.1 - 2011-06-13 . 1307906876739
+//   Fix QQ cleanup kaskus-spoiler-alert (partial)
+//   Improve switchable recapcay theme. Thanks=[t0g3,Aerialsky]
 //   Fix QQ failed parse keep innerhtml unescaped. Thanks=[mentheleng]
 //   Fix QQ failed parse spoiler w/o title; Thanks [aadc, ketang6]
 //   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
@@ -69,9 +71,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307801978007 // version.timestamp
+  timestamp: 1307906876739 // version.timestamp
 
- ,dtversion: 110611321 // version.date
+ ,dtversion: 110613321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -79,7 +81,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = true; // development debug
+gvar.__DEBUG__ = false; // development debug
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -112,6 +114,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
  ,KEY_SAVE_QR_USE_RECAPCAY:  ['1'] // state of capcay mode
+ ,KEY_SAVE_QR_RECAPCAY_PROP: ['clean,0'] // recapcay theme, is_simple_mode
  
  ,KEY_SAVE_QR_COLLAPSE:  ['1'] // initial state of qr
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
@@ -170,9 +173,7 @@ function init(){
   GM_addGlobalStyle('','css_qqr', true); // blank style tag for qqr toggle
   
   GM_addGlobalScript('','kaskus_capcay_trigger', true); // blank for trigger kaskus capcay
-  
-  GM_addGlobalScript( rSRC.getSCRIPT() );
-  
+    
   // this is needed for chk avatar
   gvar.user= getUserId(); //will be [gvar.user.id, gvar.user.name, gvar.user.avatar, gvar.user.isDonatur ]
   gvar.ck.bbuserid_currentpage = gvar.ck.bbuserid = gvar.user.id;
@@ -182,11 +183,14 @@ function init(){
   // get saved settings to gvar
   getSettings();
   
-  if( gvar.settings.recaptcha )
+  GM_addGlobalScript( rSRC.getSCRIPT() );
+  
+  if( gvar.settings.recaptcha && !gvar.user.isDonatur ){
     GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
-  else
+  }else{
     GM_addGlobalScript(gvar.domain + 'clientscript\/vbulletin_ajax_imagereg\.js?v=380');
-
+  }
+  
   
   if(gvar.settings.widethread)
     Dom.add( createTextEl( rSRC.getCSS_fixup() ), $D('#css_fixups') );
@@ -344,11 +348,21 @@ function getSettings(){
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),    
     hotkeychar: getValue(KS+'QR_HOTKEY_CHAR'),
     hidecontroll: [],
-    recaptcha: (getValue(KS+'QR_USE_RECAPCAY')=='1')
+    recaptcha: (getValue(KS+'QR_USE_RECAPCAY')=='1'),
+    recaptcha_prop: {}
   };
   
   // pick between capcay google or original kaskus
-  //gvar.settings.recaptcha = true;
+  //gvar.settings.recaptcha = true; 
+  
+  // recapcay properties
+  hVal=getValue(KS+'QR_RECAPCAY_PROP');
+  if(!hVal) hVal = 'clean,0';
+  hVal = hVal.split(',');
+  gvar.settings.recaptcha_prop = {
+     theme:  trimStr( hVal[0] )
+    ,simple: trimStr( hVal[1] )
+  };
   
   //get layout config
   hVal=getValueForId(gvar.user.id, 'LAYOUT_CONFIG');
@@ -694,7 +708,7 @@ function do_click_qqr(e, multi){
     x=x.substring(pos+contentsep.length);
     // clean message separator
     ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
-    
+        
 	// clean all previous quote
 	pCon=createEl('div',{},x);
 	// reveal quote
@@ -719,10 +733,18 @@ function do_click_qqr(e, multi){
 	  }
 	  return rvCon.innerHTML;
 	};
+    
+    
 	// reveal simple quote
-	pCon.innerHTML = revealQuoteCode();
-	
+	pCon.innerHTML = revealQuoteCode();	
 	clog('previous Quote&Code=\n'+pCon.innerHTML);
+    
+    // clean messy from ksa
+    els = getTag('span', pCon), nLength=els.length;
+    for(var i=0; i<nLength; i++)  
+        if(els[i] && els[i].style.color=='darkblue')
+            els[i].innerHTML = '';
+    
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
@@ -4676,7 +4698,7 @@ var ST = {
     if($D('#chk_select_all')) on('click',$D('#chk_select_all'),function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
     
     // having child set
-    elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey'], cL=elSet.length;
+    elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey','misc_recaptcha_mode'], cL=elSet.length;
     for(var i=0;i<cL;i++)
        if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.toggle_childs(e); });
     elSet = ['misc_autolayout_sigi','misc_autolayout_tpl'], cL=elSet.length;
@@ -4770,8 +4792,8 @@ var ST = {
  ,cold_boot_qr: function(){
     delete gvar.settings;
     getSettings(); // redefine gvar    
-    ST.close_setting()
-    
+    ST.close_setting();
+
     if(!gvar.settings.textareaExpander[0] && $D(gvar.id_textarea))
        gvar.lastHeight_textarea = $D(gvar.id_textarea).style.height;
 	
@@ -4825,6 +4847,9 @@ var ST = {
     if(gvar.user.isDonatur) {
         keys.push('QR_USE_RECAPCAY');
         keykomeng['QR_USE_RECAPCAY'] = 'Mode reCaptcha; validValue=[1,0]';
+        
+        keys.push('QR_RECAPCAY_PROP');
+        keykomeng['QR_RECAPCAY_PROP'] = 'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]';
     }
     var kL=keys.length, getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
     var parse_UA_Vers = function(){
@@ -4916,7 +4941,7 @@ var ST = {
 	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
-                  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE','QR_USE_RECAPCAY'
+                  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE','QR_USE_RECAPCAY','QR_RECAPCAY_PROP'
                  ];
       var kL=keys.length;
       for(var i=0; i<kL; i++){
@@ -4991,6 +5016,13 @@ var ST = {
       value = Math.abs($D('#misc_updates_interval').value);
       value = (isNaN(value)||value <= 0 ? 1 : (value > 99 ? 99 : value) );
       setValue(KS+'UPDATES_INTERVAL', value.toString());
+    }
+    
+    // saving recapcay prop
+    if( gvar.settings.recaptcha && !gvar.user.isDonatur ){
+        misc=['misc_recaptcha_theme','misc_recaptcha_simple'];
+        value = [($D(misc[0]) ? $D(misc[0]).value : 'clean'), ($D(misc[1]) && $D(misc[1]).checked ? '1' : '0') ];
+        setValue(KS+'QR_RECAPCAY_PROP', value.toString());
     }
     
     // saving autoexpand
@@ -5715,7 +5747,7 @@ var rSRC = {
     +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
     +'}'
     +'#popup_container {width:88%; left:5%}'
-    +'#popup_container_precap{width:340px; left:50%}'
+    +'#popup_container_precap{left:50%}'
     +'.popup_block .popup {float:left; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
     +'.popup img.cntrl {position:absolute; right:-20px; top:-20px; border:0px;}'
     +'#button_preview {padding:3px;text-align:center;}'
@@ -5727,7 +5759,7 @@ var rSRC = {
   return (''
     +'function showRecaptcha(element){'
     +  'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU",element,'
-    +    '{theme:"red",lang:"en"'
+    +    '{theme:"'+gvar.settings.recaptcha_prop.theme+'",lang:"en"'
     +     ',custom_translations:{refresh_btn:"Reload reCapcay :: ['+(gvar.isOpera ? 'Ctrl+Alt+R':'Alt+R')+']",instructions_visual:"Masukkan reCapcay:"}'
     +    '}'
     +  ');'
@@ -5749,8 +5781,7 @@ var rSRC = {
     +'var mqs=cK.g("vbulletin_multiquote"); if(mqs){'
     +  'document.getElementById("tmp_chkVal").value=mqs;'
     +  'SimulateMouse(document.getElementById("qr_chkval"),"click",true);'
-    +'}'
-    
+    +'}'    
   );  
  }
 
@@ -6538,21 +6569,27 @@ Format will be valid like this:
   }
  ,getTPL_prompt_reCAPTCHA: function(){
   return (''
-     +'<div id="popup_container_precap" class="popup_block"> '
+     +'<div id="popup_container_precap" class="popup_block" style="width:'+(gvar.settings.recaptcha_prop.theme=='clean' ? '460':'340')+'px!important;"> '
      + '<div class="popup">'
      +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
      +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
      +  '<tbody><tr>'
-     +   '<td class="tcat"><a id="nfolink" href="javascript:;" onclick="pop_reCAPTCHA=window.open (\'http:\/\/recaptcha.net\/popuphelp\/\',\'mywindow\',\'status=1,toolbar=0,menubar=0,width=450,height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(400/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>'
+     +   '<td class="tcat"><a id="nfolink" href="javascript:;" onclick="var rw=\'760\';pop_reCAPTCHA=window.open (\'http:\/\/www.google.com\/recaptcha\/learnmore\',\'mywindow\',\'status=1,toolbar=0,menubar=0,scrollbars=1,width=\'+rw+\',height=480\'); var Lw=Math.round((document.documentElement.clientWidth/2)-(rw/2)); pop_reCAPTCHA.moveTo(Lw,100)" title="What is this?">reCAPTCHA</a></td>'
      +  '</tr><tr>'
      +  '<td class="alt1">'
-     +   '<div id="recaptcha_container_header">'
-     +   '<span class="qrsmallfont"><span id="botgreet_text" style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+rSRC.getBOT_greet(0, 10)+'</span>'
-     +   '<span style="float:right;padding:auto 0;">'
-     +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
-     +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
-     +  '</span>'
-     +   '</div>'
+     +(gvar.settings.recaptcha_prop.simple!='1' ? ''
+       +   '<div id="recaptcha_container_header">'
+       +   '<span class="qrsmallfont"><span id="botgreet_text" style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+rSRC.getBOT_greet(0, 10)+'</span>'
+       +   '<span style="float:right;padding:auto 0;">'
+       +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
+       +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
+       +  '</span>'
+       +   '</div>'
+        : ''
+       +   '<div id="recaptcha_container_header" style="display:none">'
+       +    '<span id="botgreet_text" style="visibility:hidden"></span>'
+       +   '</div>'
+      )
      +   '<div class="spacer" id="posting_notify"></div>'
      +   '<div id="recaptcha_container" style="text-align:center;">'
      +    '<div><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>'
@@ -6703,6 +6740,7 @@ Format will be valid like this:
  }
  ,getTPL_Settings_General: function(){
     var spacer = '<div style="height:'+( !gvar.isOpera && !gvar.isBuggedChrome ? '1':'5')+'px;">&nbsp;</div>';
+    var theme = ['clean','red','white','blackglass'];
     return (''
      +'<div id="general_container" class="qrsmallfont">'
      +'<table width="100%" cellpadding=0 cellspacing=0 class="qrsmallfont"><tr><td valign="top" class="qrsmallfont">'
@@ -6715,10 +6753,21 @@ Format will be valid like this:
      +spacer     
      +(!gvar.user.isDonatur ? ''
      +'<input id="misc_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/><label for="misc_recaptcha_mode">reCaptcha Mode On</label>'
+     +'<div id="misc_recaptcha_mode_child" class="smallfont" style="margin:2px 0 0 15px;'+(gvar.settings.recaptcha ? '':'display:none')+'">'
+     +'&nbsp;<select id="misc_recaptcha_theme">'
+     +(function(th){
+        var ret='';
+        for(var i=0; i<th.length; i++) 
+            ret+='<option value="'+th[i]+'"'+(gvar.settings.recaptcha_prop.theme==th[i] ? ' selected':'')+'>'+th[i]+'</option>';
+        return ret;
+     })(theme)
+     +'</select>*&nbsp;'
+     +'<input id="misc_recaptcha_simple" type="checkbox" '+(gvar.settings.recaptcha_prop.simple=='1' ? 'checked':'')+'/><label for="misc_recaptcha_simple">simple</label>'
+     +'</div>'
      +spacer : '' )
      +'</td><td valign="top" class="qrsmallfont" style="border-left:1px solid #bbb; padding-left:5px;">'
      
-     +'<input id="misc_qrdraft" type="checkbox" '+(gvar.settings.qrdraft ? 'checked':'')+'/><label for="misc_qrdraft">AutoSave Draft</label> <small><em>(reload required)</em></small>'
+     +'<input id="misc_qrdraft" type="checkbox" '+(gvar.settings.qrdraft ? 'checked':'')+'/><label for="misc_qrdraft">AutoSave Draft</label> *'
      +spacer
 	 +'<div id="misc_ajaxpost_cont">'
       +'<input id="misc_ajaxpost" type="checkbox" '+(gvar.settings.ajaxpost ? 'checked':'')+'/><label for="misc_ajaxpost">AjaxPost &amp; Auto-Redirect</label>'
@@ -6743,8 +6792,11 @@ Format will be valid like this:
      +'</div>'
      +spacer
      +'</td></tr>'
+     +'<tr><td colspan="2" style="border-top:1px solid #bbb;padding:0 0 2px 15px;">'
+     + '&nbsp;<small>(*) <em>(reload required)</em></small>'
+     +'</td></tr>'
      
-     +'<tr><td valign="top" class="qrsmallfont" colspan="2" style="border-top:1px solid #bbb;">'     
+     +'<tr><td valign="top" class="qrsmallfont" colspan="2" style="border-top:1px solid #bbb;">'
      +'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/><label for="misc_autolayout_sigi">AutoSignature</label>&nbsp;'
      +'<a id="edit_sigi" class="twbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn lilbutton"> cancel </a>'
      +'<div id="edit_sigi_Editor" style="display:none;"></div>'
