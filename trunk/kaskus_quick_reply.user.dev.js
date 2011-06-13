@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110613321
-// @timestamp     1307906876739
+// @dtversion     110614321
+// @timestamp     1307991502573
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,10 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-13 . 1307906876739
+// v3.2.1 - 2011-06-14 . 1307991502573
+//   Improve/Fix QQ parse youtube tag. Thanks=[farindiy,ketang6]
+//   Fix QQ preserve spoiler title w/o entities
+//   Fix QQ cleanup head postbit in FJB-SF. Thanks=[ketang6]
 //   Fix QQ cleanup kaskus-spoiler-alert (partial)
 //   Improve switchable recapcay theme. Thanks=[t0g3,Aerialsky]
 //   Fix QQ failed parse keep innerhtml unescaped. Thanks=[mentheleng]
@@ -71,9 +74,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307906876739 // version.timestamp
+  timestamp: 1307991502573 // version.timestamp
 
- ,dtversion: 110613321 // version.date
+ ,dtversion: 110614321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -611,7 +614,7 @@ function do_click_qqr(e, multi){
 	}	
   };
   var parseMSG=function(x){
-	var pCon,els,el,el2,eIner,cucok,openTag,LT={'font':[],'div':[],'a':[]},pairedEmote=false;
+	var pCon,els,el,el2,eIner,cucok,openTag,sBox,LT={'font':[],'div':[],'a':[]},pairedEmote=false;
 	var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
       // parse BIU
@@ -645,7 +648,14 @@ function do_click_qqr(e, multi){
 			if(mct[1].indexOf('spoiler')!=-1) {
 			  LT.div.push('SPOILER');
 			  parts = mct[1].split('-');
-			  mct[1]='SPOILER='+(isDefined(parts[1]) ? parts[1] : '');
+			  if( isDefined(parts[1]) && parts[1].length ){
+				sBox=createEl('div',{},parts[1]);
+				parts[1] = sBox.childNodes[0].nodeValue;
+				try{Dom.remove(sBox)}catch(e){};
+			  }else{
+			    parts[1]='';
+			  }
+			  mct[1]='SPOILER='+parts[1];
 			}else{
 			  LT.div.push(mct[1]);
 			}			
@@ -688,14 +698,17 @@ function do_click_qqr(e, multi){
 	    // parse img
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
         if(isDefined(mct[1])){
-          // is kaskus emotes?
-		  if( cucok=$2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
+		  
+		  if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
+			if(cucok) return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
+		  }else if( cucok=$2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
+            // is kaskus emotes?
 			if(cucok){
 		      tag= mct[1].replace(/[^\w]/g,'').toString();
 		      if(!pairedEmote) pairedEmote = prep_paired_emotes();
 			  return ( isDefined(pairedEmote[tag]) ? pairedEmote[tag] : '[IMG]' + mct[1] + '[/IMG]' );
 			}
-		  }else{
+		  }else {
 		    return '[IMG]' + mct[1] + '[/IMG]';
 		  }
 		}
@@ -703,14 +716,34 @@ function do_click_qqr(e, multi){
         return S;
       }      
     };
-	// end parseSerials	
+	// end parseSerials
+	
+	
 	var ret='',contentsep='<!-- message -->', pos=x.indexOf(contentsep);
     x=x.substring(pos+contentsep.length);
     // clean message separator
-    ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';
-        
+    ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';        
+	
 	// clean all previous quote
 	pCon=createEl('div',{},x);
+	
+	// cleanup head in for FJB-SF (stop until found <hr>)
+	els = $D(".//div[contains(@id,'post_message_')]", pCon);
+	if(els.snapshotLength){
+		var done = false, jk=0, tgt=els.snapshotItem(0), fjbel=tgt.firstChild;
+		while(!done){
+			fjbel = tgt.childNodes[jk]; 
+			if(fjbel){
+				if(fjbel.nodeName!='HR') {
+					Dom.remove(fjbel);
+				}else{
+					jk++;
+					done=true;
+				}
+			}
+		}
+	}
+	
 	// reveal quote
 	var revealQuoteCode=function(html){
 	  var els,el,el2,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
@@ -825,6 +858,7 @@ function do_click_qqr(e, multi){
     return unescapeHtml(clearTag( ret ) );
   };
   // end parseMSG
+  
   var parseQQ=function(){
     if( !$D('#qr_submit') ) return; // the state of user is changed? submit_container has been destroyed.              
 	
@@ -2872,11 +2906,11 @@ function do_btncustom(e){
     var text, selected = vB_textarea.getSelectedText();
     var is_youtube_link = function(text){
         text = trimStr ( text ); //trim
-        if(text.match(/youtube\.com\/watch\?v=[\w\d-]+/i)){
-         var rx = /youtube\.com\/watch\?v=([^&]+)/i.exec(text);
-         text = ( rx ? rx[1] : '');
-        }else if(!/^[\d\w-]+$/.test(text))
-         text = false;
+		var rx;
+        if( rx = text.match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
+			text = ( rx ? rx[1] : '');
+        }else if( !/^[\d\w-]+$/.test(text) )
+			text = false;
         return text;
     };
     if(selected==''){
@@ -6683,7 +6717,8 @@ Format will be valid like this:
      +'<b>Author By:</b> <a href="javascript:;" class="nostyle" rel="302101">Idx</a><br>'
      +'<b>Addons Ported By:</b> <a href="javascript:;" class="nostyle" rel="1323912">Piluze</a><br>'
      +'<b>Contributors:</b>'
-     +'<div style="height:'+(gvar.isBuggedChrome||gvar.isOpera ? 220:190)+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
+	 //||gvar.isOpera
+     +'<div style="height:'+(gvar.isBuggedChrome ? 220 : 190)+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
      +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>t0g3<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
      +QT
      +'<br><br></div>'
