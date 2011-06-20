@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110614321
-// @timestamp     1307991502573
+// @dtversion     110621321
+// @timestamp     1308590225188
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-14 . 1307991502573
+// v3.2.1 - 2011-06-21 . 1308590225188
+//   Fix failed wrap list controller on selected text. Thanks=[slifer2006]
+//   Fix QQ inconsistent side-effect of spoiler inside spoiler. Thanks=[skycreeper]
 //   Improve/Fix QQ parse youtube tag. Thanks=[farindiy,ketang6]
 //   Fix QQ preserve spoiler title w/o entities
 //   Fix QQ cleanup head postbit in FJB-SF. Thanks=[ketang6]
@@ -45,13 +47,6 @@
 //   Add HTML/PHP tag controllers. Thanks=[deodeye]
 //   Fix rate thread thingie. Thanks=[black341469]
 //
-// v3.1.8 - 2011-05-21
-//   Fix resolve behaviour with kaskus capcay. Thanks=[p1nky,ketang6,ceroberoz,reinhard.tambz]
-//   Rollback using ordinary kaskus capcay. (Beta)
-//
-// v3.1.7 - 2011-05-11
-//   Fix avoid focus on particular state (autoload_smiley). Thanks=[holdonzzz, Atho1982]
-//   Fix save_draft thingie
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -74,9 +69,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1307991502573 // version.timestamp
+  timestamp: 1308590225188 // version.timestamp
 
- ,dtversion: 110614321 // version.date
+ ,dtversion: 110621321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -729,7 +724,7 @@ function do_click_qqr(e, multi){
 	
 	// cleanup head in for FJB-SF (stop until found <hr>)
 	els = $D(".//div[contains(@id,'post_message_')]", pCon);
-	if(els.snapshotLength){
+	if(els.snapshotLength){		
 		var done = false, jk=0, tgt=els.snapshotItem(0), fjbel=tgt.firstChild;
 		while(!done){
 			fjbel = tgt.childNodes[jk]; 
@@ -781,13 +776,14 @@ function do_click_qqr(e, multi){
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
-	var bSp,iSp,tParent,nLength=(els.snapshotLength-1), inerEscape, newContSP;
+	var bSp, iSp, nLength=(els.snapshotLength-1), inerEscape, newContSP, adaSpoiler=false;	
 	if(els) {
-        tParent=els.snapshotItem(0);
-        for(var i=nLength;i>=0; i--){
+        //tParent=els.snapshotItem(0);
+        for(var i=nLength; i>=0; i--){
             el=els.snapshotItem(i);
             bSp = getTag('b',el); 
             if( bSp.length ){
+				adaSpoiler = (bSp.length>0);
                 iSp= getTag('i',el); // title spoiler
                 if(iSp.length)
                 iSp=iSp[0].innerHTML.toString();
@@ -808,8 +804,11 @@ function do_click_qqr(e, multi){
                 Dom.add(newContSP, el2);
             }
         }
-        var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};        
-        pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
+		
+		if(adaSpoiler){
+			var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};        
+			pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
+		}
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
 	
@@ -887,6 +886,7 @@ function do_click_qqr(e, multi){
 	     SimulateMouse($D('#mq_'+did), 'click', true);
     }
   };
+  
   if( !multi ){
      var cSml = gvar.settings.autoload_smiley;
      gvar.offsetTop = -Math.round((parseInt(GetHeight()) * 3.95)/ 61) + (cSml[0]=='1'? (cSml[1]=='kecil'?7:10) : 0);
@@ -2972,27 +2972,41 @@ function do_btncustom(e){
   }
 }
 function do_btncustom_list(e){
-  var tag=tTagFromAlt(e);
-  var reInsert = function(pass){
-    var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
-    vB_textarea.init();
-    if( isUndefined(pass) ) vB_textarea.setValue( '\n' );
-    if(ins){
-        vB_textarea.setValue( '\n' + '[*]' + ins + '');
-        reInsert(true);
-    }else{
-        return;	
-    }
-  }, mode=(tag=='oList' ? 'number':'dot');  
-  do_insertTag('LIST', (mode=='number' ? 1:false) );
-  vB_textarea.focus();
-  reInsert(); 
+  vB_textarea.init();
+  var tag=tTagFromAlt(e)
+	, mode=(tag=='oList' ? 'number':'dot')
+	, selected = vB_textarea.getSelectedText();
+  
+  if(selected=='') {
+	var reInsert = function(pass){
+		var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
+		vB_textarea.init();
+		if( isUndefined(pass) ) vB_textarea.setValue( '\n' );
+		if(ins){
+			vB_textarea.setValue( '\n' + '[*]' + ins + '');
+			reInsert(true);
+		}else{
+			return;	
+		}
+	};  
+	do_insertTag('LIST', (mode=='number' ? 1:false) );
+	reInsert();
+  }else{
+  
+	var ret = '', parts = selected.split('\n');
+	for(var i=0; i< parts.length; i++)
+		if(trimStr(parts[i])) ret+= '\n' + '[*]' + parts[i] + '';
+	ret = '[LIST'+(mode=='number' ? '="1"' : '')+']' + ret + '\n[/LIST]';
+	vB_textarea.replaceSelected( ret, [0, ret.length] );
+  }  
+  vB_textarea.focus();  
 }
+
 function do_TextStrike(){
   vB_textarea.init();
   var endFocus=function(){ vB_textarea.focus(); return false};
   var strikeEm=function(t){var pr=t.split(''), r='';for(var i=0;i<pr.length;i++) r+=pr[i]+'\u0336'; return String(r)};
-  var selected = vB_textarea.getSelectedText(), text, ret='', realLen=0, prehead;  
+  var selected = vB_textarea.getSelectedText(), text, ret='', prehead;  
   text=(selected!= '' ? selected : prompt('Please enter Text to strikethrough:', 'strikethrough') );  
   
   if(text==null) return endFocus();
@@ -6717,7 +6731,6 @@ Format will be valid like this:
      +'<b>Author By:</b> <a href="javascript:;" class="nostyle" rel="302101">Idx</a><br>'
      +'<b>Addons Ported By:</b> <a href="javascript:;" class="nostyle" rel="1323912">Piluze</a><br>'
      +'<b>Contributors:</b>'
-	 //||gvar.isOpera
      +'<div style="height:'+(gvar.isBuggedChrome ? 220 : 190)+'px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
      +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>Rh354<br>gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>drupalorg<br>.Shana<br>t0g3<br>&all-kaskuser@<a href="'+gvar.domain+'showthread.php?t=3170414" target="_blank">t=3170414</a><br>&nbsp;'
      +QT
@@ -6930,9 +6943,7 @@ return(''
 }; // end rSRC
 
 // =============== /END Global Var ===
-// ------
 init();
-// ------
 
 })();
 /* Mod By Idx. */
