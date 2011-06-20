@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
 // @dtversion     110621321
-// @timestamp     1308590225188
+// @timestamp     1308604565676
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-21 . 1308590225188
+// v3.2.1 - 2011-06-21 . 1308604565676
+//   Fix QQ parse youtube 'dirty' tag, beta(Opera failed). Thanks=[farindiya]
 //   Fix failed wrap list controller on selected text. Thanks=[slifer2006]
 //   Fix QQ inconsistent side-effect of spoiler inside spoiler. Thanks=[skycreeper]
 //   Improve/Fix QQ parse youtube tag. Thanks=[farindiy,ketang6]
@@ -69,7 +70,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1308590225188 // version.timestamp
+  timestamp: 1308604565676 // version.timestamp
 
  ,dtversion: 110621321 // version.date
  ,scriptID: 80409 // script-Id
@@ -692,9 +693,18 @@ function do_click_qqr(e, multi){
       }else if( /\ssrc=/i.test($2) ){
 	    // parse img
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
-        if(isDefined(mct[1])){
-		  
-		  if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
+		//alert($2);
+		//alert( mct && mct[1] ? "ada="+mct[1] : "nop");
+		
+        if( mct && isDefined(mct[1]) ){
+		  // dirty-youtube
+		  if( /^embed\s*/i.test($2) ){
+			cucok=mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');			
+			if(cucok) {
+				cucok = unescape(cucok).replace(/>/g,'&gt;').replace(/</g,'&lt;');
+				return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
+			}			
+		  }else if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
 			if(cucok) return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
 		  }else if( cucok=$2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
             // is kaskus emotes?
@@ -706,6 +716,8 @@ function do_click_qqr(e, multi){
 		  }else {
 		    return '[IMG]' + mct[1] + '[/IMG]';
 		  }
+		}else{
+			return '';
 		}
       }else{
         return S;
