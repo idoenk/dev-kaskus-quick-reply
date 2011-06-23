@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110621321
-// @timestamp     1308604565676
+// @dtversion     110623321
+// @timestamp     1308846762647
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-21 . 1308604565676
+// v3.2.1 - 2011-06-23 . 1308846762647
+//   Fix QQ clean-up KSA tags; identified starts-with[@id=KSA-]. Thanks=[arifhn]
 //   Fix QQ parse youtube 'dirty' tag, beta(Opera failed). Thanks=[farindiya]
 //   Fix failed wrap list controller on selected text. Thanks=[slifer2006]
 //   Fix QQ inconsistent side-effect of spoiler inside spoiler. Thanks=[skycreeper]
@@ -70,9 +71,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1308604565676 // version.timestamp
+  timestamp: 1308846762647 // version.timestamp
 
- ,dtversion: 110621321 // version.date
+ ,dtversion: 110623321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -610,8 +611,10 @@ function do_click_qqr(e, multi){
 	}	
   };
   var parseMSG=function(x){
-	var pCon,els,el,el2,eIner,cucok,openTag,sBox,LT={'font':[],'div':[],'a':[]},pairedEmote=false;
-	var parseSerials=function(S,$1,$2){
+	var pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength
+       ,LT={'font':[],'div':[],'a':[]}, pairedEmote=false;
+	
+    var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
       // parse BIU
       if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
@@ -779,16 +782,18 @@ function do_click_qqr(e, multi){
 	pCon.innerHTML = revealQuoteCode();	
 	clog('previous Quote&Code=\n'+pCon.innerHTML);
     
-    // clean messy from ksa
-    els = getTag('span', pCon), nLength=els.length;
-    for(var i=0; i<nLength; i++)  
-        if(els[i] && els[i].style.color=='darkblue')
-            els[i].innerHTML = '';
-    
+    // clean messy from ksa, based on id=KSA-
+    els = $D('.//span[starts-with(@id,"KSA-")]', pCon);
+    nLength=(els.snapshotLength-1);
+    for(var i=nLength; i>=0; i--){
+        el=els.snapshotItem(i);
+        if( el ) Dom.remove(el);
+    }
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
-	var bSp, iSp, nLength=(els.snapshotLength-1), inerEscape, newContSP, adaSpoiler=false;	
+	var bSp, iSp, inerEscape, newContSP, adaSpoiler=false;
+    nLength=(els.snapshotLength-1)
 	if(els) {
         //tParent=els.snapshotItem(0);
         for(var i=nLength; i>=0; i--){
@@ -1920,7 +1925,7 @@ function initEventTpl(){
         on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});      
       
 	  chk_newval(ck_mquote ? ck_mquote:'');
-      nodes = $D('//img[contains(@id,"mq_")]');	  
+      nodes = $D('//img[contains(@id,"mq_")]');
       if(nodes.snapshotLength > 0){
 	    
 		var colorize_td = function(t,td){
