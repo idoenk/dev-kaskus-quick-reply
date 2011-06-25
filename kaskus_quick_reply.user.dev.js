@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.1
-// @dtversion     110623321
-// @timestamp     1308846762647
+// @dtversion     110625321
+// @timestamp     1308951638176
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.1 - 2011-06-23 . 1308846762647
+// v3.2.1 - 2011-06-25 . 1308951638176
+//   Fix QQ parse align inside spoiler. Thanks=[ketang6]
 //   Fix QQ clean-up KSA tags; identified starts-with[@id=KSA-]. Thanks=[arifhn]
 //   Fix QQ parse youtube 'dirty' tag, beta(Opera failed). Thanks=[farindiya]
 //   Fix failed wrap list controller on selected text. Thanks=[slifer2006]
@@ -71,9 +72,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.1b';
 gvar.scriptMeta = {
-  timestamp: 1308846762647 // version.timestamp
+  timestamp: 1308951638176 // version.timestamp
 
- ,dtversion: 110623321 // version.date
+ ,dtversion: 110625321 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -612,8 +613,11 @@ function do_click_qqr(e, multi){
   };
   var parseMSG=function(x){
 	var pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength
-       ,LT={'font':[],'div':[],'a':[]}, pairedEmote=false;
+       ,LT={'font':[],'sp':[],'a':[],'align':[]}, pairedEmote=false;
 	
+    var entity_decode=function(S){
+        return S.replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
+    };
     var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
       // parse BIU
@@ -634,18 +638,13 @@ function do_click_qqr(e, multi){
 		if(!openTag) LT.font.splice(lastIdx,1);
         return pRet;
       
-      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
-		if($2.indexOf('rel=')==-1){
-          // parse align
-		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) 
-		    LT.div.push(mct[1]);
-		}else{
-		  // parse code | spoiler
-		  mct=$2.match(/\/?div(?:\srel=['"]([^'"]+))?/i);
-          if(isDefined(mct[1])) {
+      
+      }else if( /span\s/i.test($2) || $2.toUpperCase()=='SPAN' ){
+		// parse code | spoiler
+		mct=$2.match(/\/?span(?:\srel=['"]([^'"]+))?/i);
+        if(isDefined(mct[1])) {
 			if(mct[1].indexOf('spoiler')!=-1) {
-			  LT.div.push('SPOILER');
+			  LT.sp.push('SPOILER');
 			  parts = mct[1].split('-');
 			  if( isDefined(parts[1]) && parts[1].length ){
 				sBox=createEl('div',{},parts[1]);
@@ -656,21 +655,41 @@ function do_click_qqr(e, multi){
 			  }
 			  mct[1]='SPOILER='+parts[1];
 			}else{
-			  LT.div.push(mct[1]);
+			  LT.sp.push(mct[1]);
 			}			
-		  }else{
+		}else{
 		    mct[1]=false;
-		  }
 		}
+		
 		openTag= (mct && mct[1]);
 		if(openTag && mct[1].indexOf('=')==-1) 
 		  mct[1]=mct[1].toUpperCase();
-		lastIdx=LT.div.length-1;
+		lastIdx=LT.sp.length-1;
 
-		pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.div[lastIdx]) ? '['+'/'+LT.div[lastIdx].toUpperCase()+']' : '') );
+		pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.sp[lastIdx]) ? '['+'/'+LT.sp[lastIdx].toUpperCase()+']' : '') );
 		
-		if(!openTag) LT.div.splice(lastIdx,1);
+		if(!openTag) LT.sp.splice(lastIdx,1);
         return pRet;
+      
+      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+		if($2.indexOf('rel=')==-1 && $2.indexOf('style=')==-1){
+          // parse align
+		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
+          if(isDefined(mct[1])) 
+		    LT.align.push(mct[1]);
+            
+		  openTag= (mct && mct[1]);
+		  if(openTag && mct[1].indexOf('=')==-1) 
+		    mct[1]=mct[1].toUpperCase();
+		  lastIdx=LT.align.length-1;
+          
+		  pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.align[lastIdx]) ? '['+'/'+LT.align[lastIdx].toUpperCase()+']' : '') );
+		  
+		  if(!openTag) LT.align.splice(lastIdx,1);
+          return pRet;
+        }else{
+            return '';
+        }
 
       }else if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
         // parse linkify
@@ -696,15 +715,13 @@ function do_click_qqr(e, multi){
       }else if( /\ssrc=/i.test($2) ){
 	    // parse img
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
-		//alert($2);
-		//alert( mct && mct[1] ? "ada="+mct[1] : "nop");
 		
         if( mct && isDefined(mct[1]) ){
 		  // dirty-youtube
 		  if( /^embed\s*/i.test($2) ){
 			cucok=mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');			
 			if(cucok) {
-				cucok = unescape(cucok).replace(/>/g,'&gt;').replace(/</g,'&lt;');
+				cucok = entity_decode( unescape(cucok) );
 				return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
 			}			
 		  }else if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
@@ -757,8 +774,11 @@ function do_click_qqr(e, multi){
 	// reveal quote
 	var revealQuoteCode=function(html){
 	  var els,el,el2,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
-	  if(isDefined(html))
-	    rvCon=createEl('div',{},html);
+	  if(isDefined(html)){
+        // fix align inside spoiler
+        html = String(html).replace(/<(\/?)([^>]+)>/gm, parseSerials );
+        rvCon=createEl('div',{},html);
+      }
 	  els=$D(XPathStr, rvCon);
 	  if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 	     el=els.snapshotItem(i);
@@ -795,36 +815,37 @@ function do_click_qqr(e, multi){
 	var bSp, iSp, inerEscape, newContSP, adaSpoiler=false;
     nLength=(els.snapshotLength-1)
 	if(els) {
-        //tParent=els.snapshotItem(0);
         for(var i=nLength; i>=0; i--){
             el=els.snapshotItem(i);
             bSp = getTag('b',el); 
             if( bSp.length ){
-				adaSpoiler = (bSp.length>0);
+				adaSpoiler = (bSp.length>0) || adaSpoiler;
                 iSp= getTag('i',el); // title spoiler
                 if(iSp.length)
                 iSp=iSp[0].innerHTML.toString();
                 
-                el2=el.parentNode;
+                el2=el.parentNode;                
                 Dom.remove(el);                
                 el2.innerHTML = clearTag ( revealQuoteCode(el2.innerHTML), 'div' );                
                 
                 clog('now el2.innerHTML='+el2.innerHTML);
                 // kill newline after spoiler
                 el = el2.childNodes[0];
-                el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');
+                el.nodeValue = el.nodeValue.replace(/[\r\n]+/,'');                
                 
                 // kill first <br> after spoiler
-                inerEscape = (el2.innerHTML).replace(/<br\/?>/g,'').toString().replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
-                newContSP = createTextEl('{div spoiler-'+iSp+'}'+(inerEscape)+'{/div}');
+                inerEscape = entity_decode( (el2.innerHTML).replace(/<br\/?>/g,'').toString() );
+                
+                newContSP = createTextEl('{spoiler-'+iSp+'}'+trimStr(inerEscape)+'{/spoiler}');
                 el2.innerHTML = '';
                 Dom.add(newContSP, el2);
+                clog('now-II el2.innerHTML='+el2.innerHTML);
             }
         }
 		
 		if(adaSpoiler){
-			var reSpoiler= function (S,$1){return '<div rel="spoiler-'+$1+'">'};        
-			pCon.innerHTML = String(pCon.innerHTML).replace(/\{div\sspoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/div\}/g, '</div>').replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
+			var reSpoiler= function (S,$1){return '<span rel="spoiler-'+$1+'">'};
+			pCon.innerHTML = entity_decode( String(pCon.innerHTML).replace(/\{spoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/spoiler\}/g, '</span>') );
 		}
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
@@ -845,6 +866,7 @@ function do_click_qqr(e, multi){
 		} // switch		
 		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
 	    el2 = createTextEl('\n'+ltag+']' + trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials )) + '[/LIST]\n');
+        el2.nodeValue = entity_decode( el2.nodeValue );
 		el.parentNode.replaceChild(el2,el);
 	  }
 	}
@@ -858,13 +880,13 @@ function do_click_qqr(e, multi){
 	}
 	
 	clog('after ol-ul done=\n'+pCon.innerHTML);
-	
+    	
 	// cleanup lastedit
 	els=$D('.//div[@class="smallfont"]',pCon);
 	for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
 	  Dom.remove(el);
-	}	
+	}    
 	x=pCon.innerHTML; delete pCon;
 
 	// serials parse
