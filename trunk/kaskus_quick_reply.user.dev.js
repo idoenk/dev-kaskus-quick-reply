@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.1
-// @dtversion     110627321
-// @timestamp     1309170789237
+// @version       3.2.2
+// @dtversion     110701322
+// @timestamp     1309457338009
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -16,6 +16,9 @@
 // @include       http://photoserver.ws/*
 //
 // -!--latestupdate
+//
+// v3.2.2 - 2011-07-01 . 1309457338009
+//   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
 //
 // v3.2.1 - 2011-06-27 . 1309170789237
 //   Fix QQ parse align inside spoiler. Thanks=[ketang6]
@@ -70,11 +73,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.2.1';
+gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1309170789237 // version.timestamp
+  timestamp: 1309457338009 // version.timestamp
 
- ,dtversion: 110627321 // version.date
+ ,dtversion: 110701322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -1044,8 +1047,11 @@ function capcay_parser(page){
         $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
     rets[0] = match[1];
   }
-  match = /SECURITYTOKEN(?:[\s\=]+)\"([\w\-]+)/.exec(page);
-  if(match) rets[1] = (match[1]);
+  if( match = /SECURITYTOKEN(?:[\s\=]+)\"([\w\-]+)/.exec(page) ) {
+    // keep update hash & securitytoken
+    gvar.securitytoken = rets[1] = match[1];
+    $D('#qr_securitytoken').value = gvar.securitytoken;
+  }  
   return rets;
 }
 
@@ -1124,8 +1130,7 @@ function create_kaskus_capcay( rets ){
     var Attr = {id:'imagereg',alt:'capcay',title:'capcay',width:'200',height:'61',border:'0',style:'cursor:pointer',
                 src:(gvar.settings.qrtoggle==1 ? 'image.php?type=hv&hash='+rets[0]:'')};
     var el=createEl('img',Attr);    
-
-    if(rets[1]) gvar.securitytoken = rets[1]; // update token
+    
     $D('#imgcapcay').innerHTML='';
     Dom.add(el, $D('#imgcapcay'));
     if( !$D('#hash') ){
@@ -1251,6 +1256,9 @@ function qr_preview(reply_html){
   } else {
     if( !reply_html || !$D('#preview_content') ) return;
     reply_html = reply_html.responseText;
+    
+    // reparse & update hash & sec.token
+    capcay_parser(reply_html);
     var rets = parse_preview(reply_html);
     if(rets===null){
 	  var msg, cucok,erMsg='';
@@ -1499,11 +1507,13 @@ function template_wrapper(txt){
 function buildQuery(isToPost){
   isToPost = isDefined(isToPost) && isToPost ? true : false; // instead of toPreview
   var hidden = getTag( 'input', $D('#submit_container') );
-  var el, q='', hL=hidden.length;
-  for(var h=0; h<hL; h++)
-    if( typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
-      q+='&' + hidden[h].getAttribute('name') + '=' + encodeURIComponent(hidden[h].value);
-
+  var el, q='', hL=hidden.length, name;
+  for(var h=0; h<hL; h++){
+    name = hidden[h].getAttribute('name');
+    if( name && typeof(hidden[h].getAttribute)!='undefined' && hidden[h].getAttribute('type')=='hidden' )
+      q+='&' + encodeURIComponent(name) + '=' + encodeURIComponent(hidden[h].value);
+  }
+  
   q+= (isToPost ? '&sbutton=sbutton' : '&preview=Preview+Post');
   q+= (isToPost && $D('sel_rating') ? '&rating='+$D('sel_rating').selectedIndex : '');
   
@@ -3306,7 +3316,8 @@ function ajax_chk_newval(reply_html){
        $D('#imgcapcay').innerHTML='<div class="g_notice" style="display:block;font-size:9px;">'
         +'<img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;Loading&nbsp;capcay<span id="imgcapcay_dots">...</span></div>';
 	
-    // prep xhr request  
+    // prep xhr request    
+    GM_XHR.forceGM = false;
     GM_XHR.uri = gvar.newreply;
     GM_XHR.cached = true;
     GM_XHR.request(null,'GET',ajax_chk_newval);
@@ -3315,12 +3326,17 @@ function ajax_chk_newval(reply_html){
     
     if(capcay_notloaded())
       ajax_buildcapcay(reply_html);
-
+    
     // bukan maksut repost walau dah ada rutin di ajax_buildcapcay
     // u/ kaskus donatur..:)
     if(gvar.user.isDonatur && additional_options_notloaded()) 
       ajax_additional_opt(reply_html);
-    var rets = quote_parser(reply_html.responseText);
+    var html=reply_html.responseText, rets = quote_parser(html);
+    
+    // refetch & update sec.token
+    capcay_parser(html);
+    
+    clog(html);
     
     vB_textarea.init();
     var notice = $D('#quoted_notice');
@@ -4089,7 +4105,7 @@ var GM_XHR = {
                GM_XHR.returned = rets;
           }
         }
-    };	
+    };
     if( !GM_XHR.forceGM ) // always use this native; except update checker
       NAT_xmlhttpRequest( pReq_xhr );
     else
@@ -6407,7 +6423,7 @@ Format will be valid like this:
     //+'<input type="hidden" name="fromquickreply" value="1" />'
     
     +'<input type="hidden" name="s" value="" />'
-    +'<input type="hidden" name="securitytoken" value="'+gvar.securitytoken+'" />'
+    +'<input type="hidden" name="securitytoken" value="'+gvar.securitytoken+'" id="qr_securitytoken"/>'
      +'<input type="hidden" name="do" value="postreply" id="qr_do" />'
     +'<input type="hidden" name="t" value="'+gvar.threadid+'" id="qr_threadid" />'
     +'<input type="hidden" name="p" value="'+gvar.page+'" id="qr_postid" />'
