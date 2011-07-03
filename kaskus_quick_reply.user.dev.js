@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
 // @dtversion     110703322
-// @timestamp     1309642368063
+// @timestamp     1309660176714
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-03 . 1309642368063
+// v3.2.2 - 2011-07-03 . 1309660176714
+//   Fix emote click (blame smileycustoom autotext)
 //   Improve smileycustom now support autotext (beta)
 //   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
 //
@@ -76,7 +77,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1309642368063 // version.timestamp
+  timestamp: 1309660176714 // version.timestamp
 
  ,dtversion: 110703322 // version.date
  ,scriptID: 80409 // script-Id
@@ -2895,23 +2896,21 @@ function tTagFromAlt(e){
 }
 // action to do insert smile
 function do_smile(Obj, nospace){
-  var bbcode, _src, tag, prehead;
+  var bbcode, _src, tag='IMG';
   if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none')
     SimulateMouse($D('#dv_accessible'), 'click', true);
   vB_textarea.init();
   if(Obj.getAttribute("alt"))
-    bbcode = Obj.getAttribute("alt");
-  // custom mode using IMG tag instead
+    bbcode = Obj.getAttribute("alt");    
+  
   if(bbcode && bbcode.match(/_alt_.+/)) {
+    // custom mode using IMG tag instead
     _src=Obj.getAttribute("src");
-    tag = 'IMG';
-    //prehead = [('['+tag+']').length, 0];
-    //prehead[1] = (prehead[0]+_src.length);
     vB_textarea.setValue( '['+tag+']'+_src+'[/'+tag+']' + (!nospace ? ' ':''));
-  }else if( bbcode=Obj.getAttribute("title") ) {
+  }else if( Obj.nodeName != tag ) {
+    bbcode=Obj.getAttribute("title");
     _src = bbcode.split(' ' + HtmlUnicodeDecode('&#8212;'));
     vB_textarea.setValue( _src[1] + (!nospace ? ' ':''));  
-  
   }else{
     vB_textarea.setValue(bbcode + (!nospace ? ' ':'') );
   }
