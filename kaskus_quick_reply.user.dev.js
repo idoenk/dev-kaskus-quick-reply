@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110703322
-// @timestamp     1309660176714
+// @dtversion     110705322
+// @timestamp     1309799675701
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-03 . 1309660176714
+// v3.2.2 - 2011-07-03 . 1309799675701
+//   Fix QQ parse youtube 'dirty' tag, (again).
 //   Fix emote click (blame smileycustoom autotext)
 //   Improve smileycustom now support autotext (beta)
 //   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
@@ -77,9 +78,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1309660176714 // version.timestamp
+  timestamp: 1309799675701 // version.timestamp
 
- ,dtversion: 110703322 // version.date
+ ,dtversion: 110705322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -621,7 +622,9 @@ function do_click_qqr(e, multi){
        ,LT={'font':[],'sp':[],'a':[],'align':[]}, pairedEmote=false;
 	
     var entity_decode=function(S){
-        return S.replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<');
+        return S.replace(/\&gt;/gm,'>').replace(/\&lt;/gm,'<').replace(/\&amp;/gm,'&');
+    }, entity_encode=function(S){
+        return S.replace(/>/gm,'&gt;').replace(/</gm,'&lt;');
     };
     var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
@@ -722,11 +725,12 @@ function do_click_qqr(e, multi){
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
 		
         if( mct && isDefined(mct[1]) ){
-		  // dirty-youtube
+		  // dirty-youtube || Opera is not supported yet or never --"
 		  if( /^embed\s*/i.test($2) ){
-			cucok=mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');			
+            cucok=mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');			
 			if(cucok) {
-				cucok = entity_decode( unescape(cucok) );
+                cucok = entity_decode( entity_decode( unescape(cucok) ) ); // dua X decode coy
+                cucok = entity_encode(cucok);
 				return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
 			}			
 		  }else if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
