@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110705322
-// @timestamp     1309799675701
+// @dtversion     110706322
+// @timestamp     1309895402586
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-03 . 1309799675701
+// v3.2.2 - 2011-07-06 . 1309895402586
+//   Fix onchange hash & securitytoken, update when conditional meets.
 //   Fix QQ parse youtube 'dirty' tag, (again).
 //   Fix emote click (blame smileycustoom autotext)
 //   Improve smileycustom now support autotext (beta)
@@ -78,9 +79,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1309799675701 // version.timestamp
+  timestamp: 1309895402586 // version.timestamp
 
- ,dtversion: 110705322 // version.date
+ ,dtversion: 110706322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -1046,9 +1047,14 @@ function additional_options_notloaded(){
 }
 
 // fetch only the hash of humaninput
-function capcay_parser(page){
-  var rets = [false,false], match = /id=\"hash\".*value=\"(\w+)/im.exec(page);
-  if(match){
+function capcay_parser(page){  
+  // firstly conform user is the same and is not donat; else update hash & sec.token
+  if( !/\bmember\.php\?u=(\d+)/.test(page) || page.indexOf('security token was invalid.<br')!=-1 || gvar.user.isDonatur ){
+     return false;
+  }
+    
+  var rets = [false,false], match;
+  if( match = /id=\"hash\".*value=\"(\w+)/im.exec(page) ){
     if(gvar.settings.recaptcha)
         $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
     rets[0] = match[1];
@@ -1267,13 +1273,16 @@ function qr_preview(reply_html){
     capcay_parser(reply_html);
     var rets = parse_preview(reply_html);
     if(rets===null){
-	  var msg, cucok,erMsg='';
+	  var msg, cucok, reload='<a href="javascript:location.reload(false);">reload this page</a>', erMsg='';
 	  if(reply_html.indexOf('<!--POSTERROR ')!=-1){
 	    cucok=reply_html.match(/<ol><li>([^\n]+)<\/ol/);
 		erMsg=(cucok ? cucok[1] : 'Unknown Error Occurs');
 	  }else if(reply_html.indexOf('security token was invalid.<br')!=-1 ){
-        erMsg='Sorry <b>'+gvar.user.name+'</b>, your submission could not be processed, invalid security token. <a href="javascript:location.reload(false);">reload this page</a>';
+        erMsg='Sorry <b>'+gvar.user.name+'</b>, your submission could not be processed, invalid security token. '+reload;
+      }else if( /You are not logged in or you do not have permission to access this page/i.test(reply_html) ){
+        erMsg='Please login to post. '+reload;
       }
+      
       if(erMsg && $D('#preview_presubmit')) showhide($D('#preview_presubmit'),false);
       
 	  msg='<div class="g_notice g_notice-error" style="display:block;">' + (erMsg ? erMsg : 'Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.' ) + '</div>';
@@ -1960,7 +1969,7 @@ function initEventTpl(){
       on('resize',window,function(){controler_resizer()});
       // activate hotkey?
       if( gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' )
-        on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});      
+        on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
       
 	  chk_newval(ck_mquote ? ck_mquote:'');
       nodes = $D('//img[contains(@id,"mq_")]');
