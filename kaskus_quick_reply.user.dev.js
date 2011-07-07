@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110706322
-// @timestamp     1309895402586
+// @dtversion     110707322
+// @timestamp     1310053813602
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-06 . 1309895402586
+// v3.2.2 - 2011-07-06 . 1310053813602
+//   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
 //   Fix onchange hash & securitytoken, update when conditional meets.
 //   Fix QQ parse youtube 'dirty' tag, (again).
 //   Fix emote click (blame smileycustoom autotext)
@@ -79,9 +80,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1309895402586 // version.timestamp
+  timestamp: 1310053813602 // version.timestamp
 
- ,dtversion: 110706322 // version.date
+ ,dtversion: 110707322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -138,7 +139,7 @@ function init(){
   
   if(gvar.__DEBUG__) DOMTimer.start();
   
-  if(page_is_notloaded('Page is temporary not available')) show_alert('Page is not available', 0);
+  if(page_is_notloaded('Page is temporary not available')) clog('Page is not available', 0);
   
   //------------
    ApiBrowserCheck();
@@ -318,7 +319,7 @@ function outSideForumTreat(){
 function oExist(P){
   // dari sejak awal aj klo ada node #quickreply, assume collision X
   var q=document.getElementById('quickreply');
-  if(q) show_alert('QR'+(!P?' userscript':'+')+' load aborted.\n#quickreply already created.\nYou have to disable one of these QR script or QR+');
+  if(q) clog('QR'+(!P?' userscript':'+')+' load aborted.\n#quickreply already created.\nYou have to disable one of these QR script or QR+');
   return q;
 }
 
@@ -480,7 +481,7 @@ function start_Main(){
     if( !fetch_property() ){
         // keadaan ga nongolin qr_ :: thread closed or server timeout ..
         if( !gvar.newreply ) {
-            show_alert('Thread is closed or page not loaded.', 0);
+            clog('Thread is closed or page not loaded.', 0);
             if(gvar.user.isDonatur) 
                 Dom.remove('qrform'); // destroy original QR
         }
@@ -539,10 +540,9 @@ function start_Main(){
     // chk & append avatar
     check_avatar();
     if(isDefined(gvar.user.id)){
-       //show_alert('Attaching Avatar..');
        appendAvatar();
     }else{
-       show_alert('Failed attaching Avatar..');
+       clog('Failed attaching Avatar..');
     }
     
     // Do Event Element later, might reduce lag
@@ -3129,7 +3129,6 @@ function massive_lock(isChanged){
     // re-start it .
     if(gvar.ck.bbuserid > 0){
       check_avatar();
-       //show_alert('bbuserid changed, re-attach Avatar');
       if(isDefined(gvar.user.id))
         appendAvatar();
       $D('#qravatar_refetch').innerHTML='';
@@ -3773,29 +3772,29 @@ function ApiBrowserCheck() {
   
   var needApiUpgrade=false;
   if(window.navigator.appName.match(/^opera/i) && typeof(window.opera)!='undefined') {
-    needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; show_alert('Opera detected...',0);
+    needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; clog('Opera detected...',0);
   }
   if(typeof(GM_setValue)!='undefined') {
     var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
     if(gsv.indexOf('staticArgs')>0) {
       gvar.isGreaseMonkey=true; gvar.isFF4=false;
-     show_alert('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' >= FF4':'' )+'...',0); 
+     clog('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' >= FF4':'' )+'...',0); 
     } // test GM_hitch
-    else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; show_alert('Bugged Chrome GM Api detected...',0); }
-  } else { needApiUpgrade=true; show_alert('No GM Api detected...',0); }
+    else if(gsv.match(/not\s+supported/)) { needApiUpgrade=true; gvar.isBuggedChrome=true; clog('Bugged Chrome GM Api detected...',0); }
+  } else { needApiUpgrade=true; clog('No GM Api detected...',0); }
 
   gvar.noCrossDomain = (gvar.isOpera || gvar.isBuggedChrome);
   if(needApiUpgrade) {
-    GM_isAddon=true; show_alert('Try to recreate needed GM Api...',0);
+    GM_isAddon=true; clog('Try to recreate needed GM Api...',0);
     //OPTIONS_BOX['FLASH_PLAYER_WMODE'][3]=2; OPTIONS_BOX['FLASH_PLAYER_WMODE_BCHAN'][3]=2; // Change Default wmode if there no greasemonkey installed
     var ws=null; try { ws=typeof(unsafeWindow.localStorage) } catch(e) { ws=null; } // Catch Security error
     if(ws=='object') {
-      show_alert('Using localStorage for GM Api.',0);
+      clog('Using localStorage for GM Api.',0);
       GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; };
       GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } };
       GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); };
     } else if(!gvar.isOpera || typeof(GM_setValue)=='undefined') {
-      show_alert('Using temporarilyStorage for GM Api.',0); gvar.temporarilyStorage=new Array();
+      clog('Using temporarilyStorage for GM Api.',0); gvar.temporarilyStorage=new Array();
       GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } };
       GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } };
       GM_deleteValue=function(name) { delete gvar.temporarilyStorage[GMSTORAGE_PATH+name]; };
@@ -3803,7 +3802,7 @@ function ApiBrowserCheck() {
     if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); }; }
     if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); }; } // Dummy
     if(!gvar.isOpera || typeof(GM_xmlhttpRequest)=='undefined') {
-      show_alert('Using XMLHttpRequest for GM Api.',0);
+      clog('Using XMLHttpRequest for GM Api.',0);
       GM_xmlhttpRequest=function(obj) {
         var request=new XMLHttpRequest();
         request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
@@ -4118,7 +4117,7 @@ var GM_XHR = {
         data:(isString(cdata) ? cdata : ''),
         onload: function(ret) {
           if(ret.status==503){
-            show_alert('Reach 503, retrying...');
+            clog('Reach 503, retrying...');
             setTimeout(GM_XHR.request(cdata,met,callback), 777);
           }else{
             var rets=ret;
@@ -4870,7 +4869,7 @@ var ST = {
         Updater.notify_progres('chk_upd_now');
         Updater.check(true);
       });
-    }catch(e){ show_alert(e);};
+    }catch(e){ clog(e);};
     // event for input nodes inside #general_control
     par = $D('#general_control');
     var alNod = getTag('input', par), aL=alNod.length;
@@ -6197,107 +6196,115 @@ Format will be valid like this:
   if(isDefined(custom) && custom) return;
   
   gvar.smiliekecil = {
- '1' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
-,'2' : [H+'mahos.gif', ':mahos', 'Maho (S)']
-,'3' : [H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
-,'4' : [H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
-,'5' : [H+'cendols.gif', ':cendols', 'Cendol (S)']
-,'6' : [H+'takuts.gif', ':takuts', 'Takut (S)']
+ '1' : [H+'add-friend-kecil.gif', ':addfriends', 'Add Friends (S)']
+,'2' : [H+'berbusa-kecil.gif', ':berbusas', 'Berbusa (S)']
+,'3' : [H+'army-kecil.gif', ':armys', 'Army (S)']
+,'4' : [H+'bookmark-kecil.gif', ':bookmarks', 'Bookmark (S)']
+,'5' : [H+'shutup-kecil.gif', ':shutups', 'Shutup (S)']
 
-,'7' : [H+'batas.gif', ':batas', 'Bata (S)']
-,'8' : [H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
-,'9' : [H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
-,'10': [H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
-,'11': [H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
-,'12': [H+'berdukas.gif', ':berdukas', 'Berduka (S)']
-,'13': [H+'capedes.gif', ':capedes', 'Cape d... (S)']
-,'14': [H+'bingungs.gif', ':bingungs', 'Bingung (S)']
 
-,'15': [H+'malus.gif', ':malus', 'Malu (S)']
-,'16': [H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
-,'17': [H+'kisss.gif', ':kisss', 'Kiss (S)']
-,'18': [H+'mads.gif', ':mads', 'Mad (S)']
-,'19': [H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
-,'20': [H+'najiss.gif', ':najiss', 'Najis (S)']
-,'21': [H+'hammers.gif', ':hammers', 'Hammer (S)']
-,'22': [H+'reposts.gif', ':reposts', 'Repost (S)']
-,'23': [H+s+'004.gif', ':matabelo:', 'Belo']
-,'24': [H+s+'q11.gif', ':nohope:', 'Nohope']
-,'25': [H+s+'8.gif', ':hammer:', 'Hammer']
-,'26': [H+s+'24.gif', ':army:', 'army']
-,'27': [H+s+'005.gif', ':Peace:', 'Peace']
-,'28': [H+s+'12.gif', ':mad:', 'Mad']
+,'6' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
+,'7' : [H+'mahos.gif', ':mahos', 'Maho (S)']
+,'8' : [H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
+,'9' : [H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
+,'10' : [H+'cendols.gif', ':cendols', 'Cendol (S)']
+,'11' : [H+'takuts.gif', ':takuts', 'Takut (S)']
 
-,'29': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
-,'30': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
-,'31': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+,'12' : [H+'batas.gif', ':batas', 'Bata (S)']
+,'13' : [H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
+,'14' : [H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
+,'15': [H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
+,'16': [H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
+,'17': [H+'berdukas.gif', ':berdukas', 'Berduka (S)']
+,'18': [H+'capedes.gif', ':capedes', 'Cape d... (S)']
+,'19': [H+'bingungs.gif', ':bingungs', 'Bingung (S)']
 
-,'32': [H+s+'7.gif', ':confused:', 'Confused']
-,'33': [H+s+'34.gif', ':rose:', 'rose']
-,'34': [H+s+'35.gif', ':norose:', 'norose']
-,'35': [H+s+'017.gif', ':angel:', 'angel']
-,'36': [H+s+'3.gif', ':kagets:', 'Kagets']
-,'37': [H+s+'4.gif', ':eek:', 'EEK!']
-,'38': [H+s+'014.gif', ':kissing:', 'kisssing']
-,'39': [H+s+'q03.gif', ':genit:', 'Genit']
+,'20': [H+'malus.gif', ':malus', 'Malu (S)']
+,'21': [H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
+,'22': [H+'kisss.gif', ':kisss', 'Kiss (S)']
+,'23': [H+'mads.gif', ':mads', 'Mad (S)']
+,'24': [H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
+,'25': [H+'najiss.gif', ':najiss', 'Najis (S)']
+,'26': [H+'hammers.gif', ':hammers', 'Hammer (S)']
+,'27': [H+'reposts.gif', ':reposts', 'Repost (S)']
+,'28': [H+s+'004.gif', ':matabelo:', 'Belo']
+,'29': [H+s+'q11.gif', ':nohope:', 'Nohope']
+,'30': [H+s+'8.gif', ':hammer:', 'Hammer']
+,'31': [H+s+'24.gif', ':army:', 'army']
+,'32': [H+s+'005.gif', ':Peace:', 'Peace']
+,'33': [H+s+'12.gif', ':mad:', 'Mad']
 
-,'40': [H+s+'001.gif', ':wowcantik', 'Wowcantik']
-,'41': [H+s+'amazed.gif', ':amazed:', 'Amazed']
-,'42': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
-,'43': [H+s+'crazy.gif', ':gila:', 'Gila']
-,'44': [H+s+'shit-3.gif', ':tai:', 'Tai']
-,'45': [H+s+'5.gif', ':shutup:', 'Shutup']
-,'46': [H+s+'q20.gif', ':berbusa:', 'Busa']
-,'47': [H+s+'49.gif', ':shakehand', 'shakehand']
-,'48': [H+s+'48.gif', ':thumbdown', 'thumbdown']
-,'49': [H+s+'47.gif', ':thumbup:', 'thumbsup']
-,'50': [H+s+'020.gif', ':siul:', 'siul']
-,'51': [H+s+'1.gif', ':malu:', 'Malu']
-,'52': [H+s+'14.gif', ':D', 'Big Grin']
+,'34': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
+,'35': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
+,'36': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+
+,'37': [H+s+'7.gif', ':confused:', 'Confused']
+,'38': [H+s+'34.gif', ':rose:', 'rose']
+,'39': [H+s+'35.gif', ':norose:', 'norose']
+,'40': [H+s+'017.gif', ':angel:', 'angel']
+,'41': [H+s+'3.gif', ':kagets:', 'Kagets']
+,'42': [H+s+'4.gif', ':eek:', 'EEK!']
+,'43': [H+s+'014.gif', ':kissing:', 'kisssing']
+,'44': [H+s+'q03.gif', ':genit:', 'Genit']
+
+,'45': [H+s+'001.gif', ':wowcantik', 'Wowcantik']
+,'46': [H+s+'amazed.gif', ':amazed:', 'Amazed']
+,'47': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
+,'48': [H+s+'crazy.gif', ':gila:', 'Gila']
+,'49': [H+s+'shit-3.gif', ':tai:', 'Tai']
+,'50': [H+s+'5.gif', ':shutup:', 'Shutup']
+,'51': [H+s+'q20.gif', ':berbusa:', 'Busa']
+,'52': [H+s+'49.gif', ':shakehand', 'shakehand']
+,'53': [H+s+'48.gif', ':thumbdown', 'thumbdown']
+,'54': [H+s+'47.gif', ':thumbup:', 'thumbsup']
+,'55': [H+s+'020.gif', ':siul:', 'siul']
+,'56': [H+s+'1.gif', ':malu:', 'Malu']
+,'57': [H+s+'14.gif', ':D', 'Big Grin']
+
 ,'91': [H+s+'15.gif', ':)', 'Smilie']
 ,'92': [H+s+'06.gif', ':(', 'Frown']
 
-,'53': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
-,'54': [H+s + '26.gif', ':linux2:', 'linux2']
-,'55': [H+'bolakbalik.gif', ':bingung:', 'Bingung']
-,'56': [H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
+,'58': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
+,'59': [H+s + '26.gif', ':linux2:', 'linux2']
+,'60': [H+'bolakbalik.gif', ':bingung:', 'Bingung']
+,'61': [H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
 
-,'57': [H+s+'q17.gif', ':metal:', 'Metal']
-,'58': [H+s+'05.gif', ':cool:', 'Cool']
-,'59': [H+s+'hi.gif', ':hi:', 'Hi']
-,'60': [H+s+'6.gif', ':p', 'Stick Out Tongue']
-,'61': [H+s+'13.gif', ';)', 'Wink']
+,'62': [H+s+'q17.gif', ':metal:', 'Metal']
+,'63': [H+s+'05.gif', ':cool:', 'Cool']
+,'64': [H+s+'hi.gif', ':hi:', 'Hi']
+,'65': [H+s+'6.gif', ':p', 'Stick Out Tongue']
+,'66': [H+s+'13.gif', ';)', 'Wink']
 
-,'64': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
-,'65': [H+s+'18.gif', ':doctor:', 'doctor']
+,'67': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
+,'68': [H+s+'18.gif', ':doctor:', 'doctor']
 
-,'66': [H+s+'006.gif', ':think:', 'Thinking']
-,'67': [H+s+'07.gif', ':o', 'Embarrassment']
-,'68': [H+s+'36.gif', ':kissmouth', 'kiss']
-,'69': [H+s+'37.gif', ':heart:', 'heart']
-,'70': [H+s+'e03.gif', ':flower:', 'flower']
-,'71': [H+s+'e02.gif', ':rainbow:', 'rainbow']
-,'72': [H+s+'008.gif', ':sun:', 'Matahari']
-,'73': [H+s+'007.gif', ':moon:', 'Moon']
-,'74': [H+s+'40.gif', ':present:', 'present']
+,'69': [H+s+'006.gif', ':think:', 'Thinking']
+,'70': [H+s+'07.gif', ':o', 'Embarrassment']
+,'71': [H+s+'36.gif', ':kissmouth', 'kiss']
+,'72': [H+s+'37.gif', ':heart:', 'heart']
+,'73': [H+s+'e03.gif', ':flower:', 'flower']
+,'74': [H+s+'e02.gif', ':rainbow:', 'rainbow']
+,'75': [H+s+'008.gif', ':sun:', 'Matahari']
+,'76': [H+s+'007.gif', ':moon:', 'Moon']
+,'77': [H+s+'40.gif', ':present:', 'present']
 
-,'75': [H+s+'41.gif', ':Phone:', 'phone']
-,'76': [H+s+'42.gif', ':clock:', 'clock']
-,'77': [H+s+'44.gif', ':tv:', 'televisi']
-,'78': [H+s+'39.gif', ':table:', 'table']
-,'79': [H+s+'32.gif', ':ricebowl:', 'ricebowl']
-,'80': [H+s+'rice.gif', ':Onigiri:', 'Onigiri']
-,'81': [H+s+'31.gif', ':coffee:', 'coffee']
-,'82': [H+s+'33.gif', ':medicine:', 'medicine']
-,'83': [H+s+'43.gif', ':email:', 'mail']
+,'78': [H+s+'41.gif', ':Phone:', 'phone']
+,'79': [H+s+'42.gif', ':clock:', 'clock']
+,'80': [H+s+'44.gif', ':tv:', 'televisi']
+,'81': [H+s+'39.gif', ':table:', 'table']
+,'82': [H+s+'32.gif', ':ricebowl:', 'ricebowl']
+,'83': [H+s+'rice.gif', ':Onigiri:', 'Onigiri']
+,'84': [H+s+'31.gif', ':coffee:', 'coffee']
+,'85': [H+s+'33.gif', ':medicine:', 'medicine']
+,'86': [H+s+'43.gif', ':email:', 'mail']
 
-,'84': [H+s+'paw.gif', ':Paws:', 'Paw']
-,'85': [H+s+'29.gif', ':anjing:', 'anjing']
-,'86': [H+s+'woof.gif', ':buldog:', 'Buldog']
-,'87': [H+s+'28.gif', ':kucing:', 'kucing']
-,'88': [H+s+'frog.gif', ':frog:', 'frog']
-,'89': [H+s+'27.gif', ':babi:', 'babi']
-,'90': [H+s+'52.gif', ':exclamati', 'exclamation']
+,'87': [H+s+'paw.gif', ':Paws:', 'Paw']
+,'88': [H+s+'29.gif', ':anjing:', 'anjing']
+,'89': [H+s+'woof.gif', ':buldog:', 'Buldog']
+,'90': [H+s+'28.gif', ':kucing:', 'kucing']
+,'91': [H+s+'frog.gif', ':frog:', 'frog']
+,'92': [H+s+'27.gif', ':babi:', 'babi']
+,'93': [H+s+'52.gif', ':exclamati', 'exclamation']
 
   };
   gvar.smiliebesar = {
