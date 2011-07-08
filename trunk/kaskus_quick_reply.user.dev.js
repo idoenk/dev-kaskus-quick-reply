@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110707322
-// @timestamp     1310053813602
+// @dtversion     110709322
+// @timestamp     1310158371102
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-06 . 1310053813602
+// v3.2.2 - 2011-07-09 . 1310158371102
+//   Fix/Improve smileySets
 //   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
 //   Fix onchange hash & securitytoken, update when conditional meets.
 //   Fix QQ parse youtube 'dirty' tag, (again).
@@ -80,9 +81,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310053813602 // version.timestamp
+  timestamp: 1310158371102 // version.timestamp
 
- ,dtversion: 110707322 // version.date
+ ,dtversion: 110709322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -2851,14 +2852,16 @@ function do_parse_scustom(msg){
 // load and prep paired kaskus smiley to do quick-quote parsing 
 function prep_paired_emotes(){
   // '1' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
-  var sml,paired={};
+  var sml, paired={}, tmp;
   if(!gvar.smiliekecil || !gvar.smiliebesar) rSRC.getSmileySet();
-  for(var idx in gvar.smiliekecil){
-    sml=gvar.smiliekecil[idx];
+  tmp = gvar.smiliekecil;
+  for(var i=0; i < tmp.length; i++){
+    sml=tmp[i];
 	paired[sml[0].replace(/[^\w]/g,'').toString()] = sml[1].toString();
   }
-  for(var idx in gvar.smiliebesar){
-    sml=gvar.smiliebesar[idx];
+  tmp = gvar.smiliebesar;
+  for(var i=0; i < tmp.length; i++){
+    sml=tmp[i];
 	paired[sml[0].replace(/[^\w]/g,'').toString()] = sml[1].toString();
   }
   return paired;
@@ -6195,196 +6198,200 @@ Format will be valid like this:
   } // end is buff
   if(isDefined(custom) && custom) return;
   
-  gvar.smiliekecil = {
- '1' : [H+'add-friend-kecil.gif', ':addfriends', 'Add Friends (S)']
-,'2' : [H+'berbusa-kecil.gif', ':berbusas', 'Berbusa (S)']
-,'3' : [H+'army-kecil.gif', ':armys', 'Army (S)']
-,'4' : [H+'bookmark-kecil.gif', ':bookmarks', 'Bookmark (S)']
-,'5' : [H+'shutup-kecil.gif', ':shutups', 'Shutup (S)']
+  gvar.smiliekecil = [
+  
+ [H+'add-friend-kecil.gif', ':addfriends', 'Add Friends (S)']
+,[H+'berbusa-kecil.gif', ':berbusas', 'Berbusa (S)']
+,[H+'army-kecil.gif', ':armys', 'Army (S)']
+,[H+'bookmark-kecil.gif', ':bookmarks', 'Bookmark (S)']
+,[H+'shutup-kecil.gif', ':shutups', 'Shutup (S)']
+ 
+ 
+,[H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
+,[H+'mahos.gif', ':mahos', 'Maho (S)']
+,[H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
+,[H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
+,[H+'cendols.gif', ':cendols', 'Cendol (S)']
+,[H+'takuts.gif', ':takuts', 'Takut (S)']
+ 
+,[H+'batas.gif', ':batas', 'Bata (S)']
+,[H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
+,[H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
+,[H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
+,[H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
+,[H+'berdukas.gif', ':berdukas', 'Berduka (S)']
+,[H+'capedes.gif', ':capedes', 'Cape d... (S)']
+,[H+'bingungs.gif', ':bingungs', 'Bingung (S)']
+ 
+,[H+'malus.gif', ':malus', 'Malu (S)']
+,[H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
+,[H+'kisss.gif', ':kisss', 'Kiss (S)']
+,[H+'mads.gif', ':mads', 'Mad (S)']
+,[H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
+,[H+'najiss.gif', ':najiss', 'Najis (S)']
+,[H+'hammers.gif', ':hammers', 'Hammer (S)']
+,[H+'reposts.gif', ':reposts', 'Repost (S)']
+,[H+s+'004.gif', ':matabelo:', 'Belo']
+,[H+s+'q11.gif', ':nohope:', 'Nohope']
+,[H+s+'8.gif', ':hammer:', 'Hammer']
+,[H+s+'24.gif', ':army:', 'army']
+,[H+s+'005.gif', ':Peace:', 'Peace']
+,[H+s+'12.gif', ':mad:', 'Mad']
+ 
+,[H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
+,[H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
+,[H+s+'fuck-4.gif', ':fuck:', 'fuck']
+ 
+,[H+s+'7.gif', ':confused:', 'Confused']
+,[H+s+'34.gif', ':rose:', 'rose']
+,[H+s+'35.gif', ':norose:', 'norose']
+,[H+s+'017.gif', ':angel:', 'angel']
+,[H+s+'3.gif', ':kagets:', 'Kagets']
+,[H+s+'4.gif', ':eek:', 'EEK!']
+,[H+s+'014.gif', ':kissing:', 'kisssing']
+,[H+s+'q03.gif', ':genit:', 'Genit']
+ 
+,[H+s+'001.gif', ':wowcantik', 'Wowcantik']
+,[H+s+'amazed.gif', ':amazed:', 'Amazed']
+,[H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
+,[H+s+'crazy.gif', ':gila:', 'Gila']
+,[H+s+'shit-3.gif', ':tai:', 'Tai']
+,[H+s+'5.gif', ':shutup:', 'Shutup']
+,[H+s+'q20.gif', ':berbusa:', 'Busa']
+,[H+s+'49.gif', ':shakehand', 'shakehand']
+,[H+s+'48.gif', ':thumbdown', 'thumbdown']
+,[H+s+'47.gif', ':thumbup:', 'thumbsup']
+,[H+s+'020.gif', ':siul:', 'siul']
+,[H+s+'1.gif', ':malu:', 'Malu']
+,[H+s+'14.gif', ':D', 'Big Grin']
+ 
+,[H+s+'15.gif', ':)', 'Smilie']
+,[H+s+'06.gif', ':(', 'Frown']
+ 
+,[H+'ngacir.gif', ':ngacir:', 'Ngacir']
+,[H+s + '26.gif', ':linux2:', 'linux2']
+,[H+'bolakbalik.gif', ':bingung:', 'Bingung']
+,[H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
+ 
+,[H+s+'q17.gif', ':metal:', 'Metal']
+,[H+s+'05.gif', ':cool:', 'Cool']
+,[H+s+'hi.gif', ':hi:', 'Hi']
+,[H+s+'6.gif', ':p', 'Stick Out Tongue']
+,[H+s+'13.gif', ';)', 'Wink']
+ 
+,[H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
+,[H+s+'18.gif', ':doctor:', 'doctor']
+ 
+,[H+s+'006.gif', ':think:', 'Thinking']
+,[H+s+'07.gif', ':o', 'Embarrassment']
+,[H+s+'36.gif', ':kissmouth', 'kiss']
+,[H+s+'37.gif', ':heart:', 'heart']
+,[H+s+'e03.gif', ':flower:', 'flower']
+,[H+s+'e02.gif', ':rainbow:', 'rainbow']
+,[H+s+'008.gif', ':sun:', 'Matahari']
+,[H+s+'007.gif', ':moon:', 'Moon']
+,[H+s+'40.gif', ':present:', 'present']
+ 
+,[H+s+'41.gif', ':Phone:', 'phone']
+,[H+s+'42.gif', ':clock:', 'clock']
+,[H+s+'44.gif', ':tv:', 'televisi']
+,[H+s+'39.gif', ':table:', 'table']
+,[H+s+'32.gif', ':ricebowl:', 'ricebowl']
+,[H+s+'rice.gif', ':Onigiri:', 'Onigiri']
+,[H+s+'31.gif', ':coffee:', 'coffee']
+,[H+s+'33.gif', ':medicine:', 'medicine']
+,[H+s+'43.gif', ':email:', 'mail']
+ 
+,[H+s+'paw.gif', ':Paws:', 'Paw']
+,[H+s+'29.gif', ':anjing:', 'anjing']
+,[H+s+'woof.gif', ':buldog:', 'Buldog']
+,[H+s+'28.gif', ':kucing:', 'kucing']
+,[H+s+'frog.gif', ':frog:', 'frog']
+,[H+s+'27.gif', ':babi:', 'babi']
+,[H+s+'52.gif', ':exclamati', 'exclamation']
 
+  ];
+  
+  gvar.smiliebesar = [
+  
+ [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
+,[H+s+'kribo.gif', ':afro:', 'afro']
+,[H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
+,[H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
+,[H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
 
-,'6' : [H+'ngakaks.gif', ':ngakaks', 'Ngakak (S)']
-,'7' : [H+'mahos.gif', ':mahos', 'Maho (S)']
-,'8' : [H+'s_sm_cendol.gif', ':cendolb', 'Blue Guy Cendol (S)']
-,'9' : [H+'s_sm_batamerah.gif', ':bata', 'Blue Guy Bata (S)']
-,'10' : [H+'cendols.gif', ':cendols', 'Cendol (S)']
-,'11' : [H+'takuts.gif', ':takuts', 'Takut (S)']
+ /* New Big Smilies */
+,[H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
 
-,'12' : [H+'batas.gif', ':batas', 'Bata (S)']
-,'13' : [H+'s_sm_smile.gif', ':)bs', 'Blue Guy Smile (S)']
-,'14' : [H+'s_sm_peace.gif', ':Yb', 'Blue Guy Peace']
-,'15': [H+'iloveindonesias.gif', ':iloveindonesias', 'I Love Indonesia (S)']
-,'16': [H+'cekpms.gif', ':cekpms', 'Cek PM (S)']
-,'17': [H+'berdukas.gif', ':berdukas', 'Berduka (S)']
-,'18': [H+'capedes.gif', ':capedes', 'Cape d... (S)']
-,'19': [H+'bingungs.gif', ':bingungs', 'Bingung (S)']
+,[H+'najis.gif', ':najis', 'Najis']
+,[H+'s_sm_maho.gif', ':maho', 'Maho']
+,[H+'hoax.gif', ':hoax', 'Hoax']
+,[H+'marah.gif', ':marah', 'Marah']
+,[H+'nosara.gif', ':nosara', 'No Sara Please']
+,[H+'berduka.gif', ':berduka', 'Turut Berduka']
 
-,'20': [H+'malus.gif', ':malus', 'Malu (S)']
-,'21': [H+'iluvkaskuss.gif', ':ilovekaskuss', 'I Love Kaskus (S)']
-,'22': [H+'kisss.gif', ':kisss', 'Kiss (S)']
-,'23': [H+'mads.gif', ':mads', 'Mad (S)']
-,'24': [H+'sundulgans.gif', ':sundulgans', 'Sundul Gan (S)']
-,'25': [H+'najiss.gif', ':najiss', 'Najis (S)']
-,'26': [H+'hammers.gif', ':hammers', 'Hammer (S)']
-,'27': [H+'reposts.gif', ':reposts', 'Repost (S)']
-,'28': [H+s+'004.gif', ':matabelo:', 'Belo']
-,'29': [H+s+'q11.gif', ':nohope:', 'Nohope']
-,'30': [H+s+'8.gif', ':hammer:', 'Hammer']
-,'31': [H+s+'24.gif', ':army:', 'army']
-,'32': [H+s+'005.gif', ':Peace:', 'Peace']
-,'33': [H+s+'12.gif', ':mad:', 'Mad']
+,[H+'sorry.gif', ':sorry', 'Sorry']
+,[H+'capede.gif', ':cd', 'Cape d...']
+,[H+'nohope.gif', ':nohope', 'No Hope']
+,[H+'bingung.gif', ':bingung', 'Bingung']
+,[H+'malu.gif', ':malu', 'Malu']
 
-,'34': [H+s+'fuck-8.gif', ':fuck3:', 'fuck3']
-,'35': [H+s+'fuck-6.gif', ':fuck2:', 'fuck2']
-,'36': [H+s+'fuck-4.gif', ':fuck:', 'fuck']
+,[H+'hammer.gif', ':hammer', 'Hammer2']
+,[H+'dp.gif', ':dp', 'DP']
+,[H+'takut.gif', ':takut', 'Takut']
+,[H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
 
-,'37': [H+s+'7.gif', ':confused:', 'Confused']
-,'38': [H+s+'34.gif', ':rose:', 'rose']
-,'39': [H+s+'35.gif', ':norose:', 'norose']
-,'40': [H+s+'017.gif', ':angel:', 'angel']
-,'41': [H+s+'3.gif', ':kagets:', 'Kagets']
-,'42': [H+s+'4.gif', ':eek:', 'EEK!']
-,'43': [H+s+'014.gif', ':kissing:', 'kisssing']
-,'44': [H+s+'q03.gif', ':genit:', 'Genit']
+,[H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
+,[H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
+,[H+'toastcendol.gif', ':toast', 'Toast']
+,[H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
 
-,'45': [H+s+'001.gif', ':wowcantik', 'Wowcantik']
-,'46': [H+s+'amazed.gif', ':amazed:', 'Amazed']
-,'47': [H+s+'vana-bum-vanaweb-dot-com.gif', ':bikini:', 'Bikini']
-,'48': [H+s+'crazy.gif', ':gila:', 'Gila']
-,'49': [H+s+'shit-3.gif', ':tai:', 'Tai']
-,'50': [H+s+'5.gif', ':shutup:', 'Shutup']
-,'51': [H+s+'q20.gif', ':berbusa:', 'Busa']
-,'52': [H+s+'49.gif', ':shakehand', 'shakehand']
-,'53': [H+s+'48.gif', ':thumbdown', 'thumbdown']
-,'54': [H+s+'47.gif', ':thumbup:', 'thumbsup']
-,'55': [H+s+'020.gif', ':siul:', 'siul']
-,'56': [H+s+'1.gif', ':malu:', 'Malu']
-,'57': [H+s+'14.gif', ':D', 'Big Grin']
+,[H+'s_sm_repost2.gif', ':repost2', 'Purple Repost']
+,[H+'matabelo1.gif', ':matabelo', 'Matabelo']
+,[H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
 
-,'91': [H+s+'15.gif', ':)', 'Smilie']
-,'92': [H+s+'06.gif', ':(', 'Frown']
+,[H+'mewek.gif', ':mewek', 'Mewek']
+,[H+'sundul.gif', ':sup2:', 'Sundul']
+,[H+'ngakak.gif', ':ngakak', 'Ngakak']
 
-,'58': [H+'ngacir.gif', ':ngacir:', 'Ngacir']
-,'59': [H+s + '26.gif', ':linux2:', 'linux2']
-,'60': [H+'bolakbalik.gif', ':bingung:', 'Bingung']
-,'61': [H+'tabrakan.gif', ':tabrakan:', 'Ngacir Tubrukan']
+,[H+'recseller.gif', ':recsel', 'Recommended Seller']
+,[H+'jempol2.gif', ':2thumbup', '2 Jempol']
+,[H+'jempol1.gif', ':thumbup', 'Jempol']
+,[H+'selamat.gif', ':selamat', 'Selamat']
 
-,'62': [H+s+'q17.gif', ':metal:', 'Metal']
-,'63': [H+s+'05.gif', ':cool:', 'Cool']
-,'64': [H+s+'hi.gif', ':hi:', 'Hi']
-,'65': [H+s+'6.gif', ':p', 'Stick Out Tongue']
-,'66': [H+s+'13.gif', ';)', 'Wink']
+,[H+'ultah.gif', ':ultah', 'Ultah']
+,[H+'rate5.gif', ':rate5', 'Rate 5 Star']
+,[H+'request.gif', ':request', 'Request']
+,[H+'cekpm.gif', ':cekpm', 'Cek PM']
+,[H+'cystg.gif', ':cystg', 'cystg']
 
-,'67': [H+s+'01.gif', ':rolleyes:', 'Roll Eyes (Sarcastic)']
-,'68': [H+s+'18.gif', ':doctor:', 'doctor']
+,[H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
+,[H+'ngacir3.gif', ':ngacir', 'Ngacir']
+,[H+'babyboy.gif', ':babyboy', 'Baby Boy']
+,[H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
+,[H+'babygirl.gif', ':babygirl', 'Baby Girl']
+,[H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
+,[H+'hotnews.gif', ':hn', 'Hot News']
+,[H+'games.gif', ':games', 'Games']
+,[H+'traveller.gif', ':travel', 'Traveller']
 
-,'69': [H+s+'006.gif', ':think:', 'Thinking']
-,'70': [H+s+'07.gif', ':o', 'Embarrassment']
-,'71': [H+s+'36.gif', ':kissmouth', 'kiss']
-,'72': [H+s+'37.gif', ':heart:', 'heart']
-,'73': [H+s+'e03.gif', ':flower:', 'flower']
-,'74': [H+s+'e02.gif', ':rainbow:', 'rainbow']
-,'75': [H+s+'008.gif', ':sun:', 'Matahari']
-,'76': [H+s+'007.gif', ':moon:', 'Moon']
-,'77': [H+s+'40.gif', ':present:', 'present']
+,[H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
+,[H+'cewek.gif', ':kiss', 'Kiss']
+,[H+'peluk.gif', ':peluk', 'Peluk']
+,[H+'cool2.gif', ':cool', 'Cool']
+,[H+'bola.gif', ':bola', 'Bola']
 
-,'78': [H+s+'41.gif', ':Phone:', 'phone']
-,'79': [H+s+'42.gif', ':clock:', 'clock']
-,'80': [H+s+'44.gif', ':tv:', 'televisi']
-,'81': [H+s+'39.gif', ':table:', 'table']
-,'82': [H+s+'32.gif', ':ricebowl:', 'ricebowl']
-,'83': [H+s+'rice.gif', ':Onigiri:', 'Onigiri']
-,'84': [H+s+'31.gif', ':coffee:', 'coffee']
-,'85': [H+s+'33.gif', ':medicine:', 'medicine']
-,'86': [H+s+'43.gif', ':email:', 'mail']
+ // -- OLD ---
+,[H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
+,[H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
+,[H+'fd_5.gif', ':sup:', 'Sundul Up']
+,[H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
+,[H+'fd_8.gif', ':kacau:', 'Thread Kacau']
+,[H+'fd_3.gif', ':bigo:', 'Bukan IGO']
+,[H+'fd_7.gif', ':repost:', 'Repost']
+,[H+'fd_2.gif', ':cd:', 'Cape deeehh']
 
-,'87': [H+s+'paw.gif', ':Paws:', 'Paw']
-,'88': [H+s+'29.gif', ':anjing:', 'anjing']
-,'89': [H+s+'woof.gif', ':buldog:', 'Buldog']
-,'90': [H+s+'28.gif', ':kucing:', 'kucing']
-,'91': [H+s+'frog.gif', ':frog:', 'frog']
-,'92': [H+s+'27.gif', ':babi:', 'babi']
-,'93': [H+s+'52.gif', ':exclamati', 'exclamation']
-
-  };
-  gvar.smiliebesar = {
- '291': [H+s+'smiley_beer.gif', ':beer:', 'Angkat Beer']
-,'292': [H+s+'kribo.gif', ':afro:', 'afro']
-,'293': [H+'smileyfm329wj.gif', ':fm:', 'Forum Music']
-,'294': [H+s+'kaskuslove.gif', ':ck', 'Kaskus Lovers']
-,'295': [H+'s_sm_ilovekaskus.gif', ':ilovekaskus', 'I Love Kaskus']
-
-/* New Big Smilies */
-,'500': [H+'I-Luv-Indonesia.gif', ':iloveindonesia', 'I Love Indonesia']
-
-,'501': [H+'najis.gif', ':najis', 'Najis']
-,'502': [H+'s_sm_maho.gif', ':maho', 'Maho']
-,'503': [H+'hoax.gif', ':hoax', 'Hoax']
-,'504': [H+'marah.gif', ':marah', 'Marah']
-,'505': [H+'nosara.gif', ':nosara', 'No Sara Please']
-,'506': [H+'berduka.gif', ':berduka', 'Turut Berduka']
-
-,'507': [H+'sorry.gif', ':sorry', 'Sorry']
-,'508': [H+'capede.gif', ':cd', 'Cape d...']
-,'509': [H+'nohope.gif', ':nohope', 'No Hope']
-,'510': [H+'bingung.gif', ':bingung', 'Bingung']
-,'511': [H+'malu.gif', ':malu', 'Malu']
-
-,'512': [H+'hammer.gif', ':hammer', 'Hammer2']
-,'513': [H+'dp.gif', ':dp', 'DP']
-,'514': [H+'takut.gif', ':takut', 'Takut']
-,'515': [H+'salah_kamar.gif', ':salahkamar', 'Salah Kamar']
-
-,'516': [H+'s_big_batamerah.gif', ':batabig', 'Blue Guy Bata (L)']
-,'517': [H+'s_big_cendol.gif', ':cendolbig', 'Blue Guy Cendol (L)']
-,'518': [H+'toastcendol.gif', ':toast', 'Toast']
-,'519': [H+'s_sm_repost1.gif', ':repost', 'Blue Repost']
-
-,'520': [H+'s_sm_repost2.gif', ':repost2', 'Purple Repost']
-,'521': [H+'matabelo1.gif', ':matabelo', 'Matabelo']
-,'522': [H+'shakehand2.gif', ':shakehand2', 'Shakehand2']
-
-,'523': [H+'mewek.gif', ':mewek', 'Mewek']
-,'524': [H+'sundul.gif', ':sup2:', 'Sundul']
-,'525': [H+'ngakak.gif', ':ngakak', 'Ngakak']
-
-,'526': [H+'recseller.gif', ':recsel', 'Recommended Seller']
-,'527': [H+'jempol2.gif', ':2thumbup', '2 Jempol']
-,'528': [H+'jempol1.gif', ':thumbup', 'Jempol']
-,'529': [H+'selamat.gif', ':selamat', 'Selamat']
-
-,'530': [H+'ultah.gif', ':ultah', 'Ultah']
-,'531': [H+'rate5.gif', ':rate5', 'Rate 5 Star']
-,'532': [H+'request.gif', ':request', 'Request']
-,'533': [H+'cekpm.gif', ':cekpm', 'Cek PM']
-,'534': [H+'cystg.gif', ':cystg', 'cystg']
-
-,'535': [H+'ngacir2.gif', ':ngacir2', 'Ngacir2']
-,'536': [H+'ngacir3.gif', ':ngacir', 'Ngacir']
-,'537': [H+'babyboy.gif', ':babyboy', 'Baby Boy']
-,'538': [H+'babyboy1.gif', ':babyboy1', 'Baby Boy 1']
-,'539': [H+'babygirl.gif', ':babygirl', 'Baby Girl']
-,'540': [H+'kaskus_radio.gif', ':kr', 'Kaskus Radio']
-,'541': [H+'hotnews.gif', ':hn', 'Hot News']
-,'542': [H+'games.gif', ':games', 'Games']
-,'543': [H+'traveller.gif', ':travel', 'Traveller']
-
-,'544': [H+'kimpoi.gif', ':kimpoi', 'Kimpoi']
-,'545': [H+'cewek.gif', ':kiss', 'Kiss']
-,'546': [H+'peluk.gif', ':peluk', 'Peluk']
-,'547': [H+'cool2.gif', ':cool', 'Cool']
-,'548': [H+'bola.gif', ':bola', 'Bola']
-
-// -- OLD ---
-,'901': [H+'fd_1.gif', ':jrb:', 'Jangan ribut disini']
-,'901': [H+'fd_6.gif', ':kts:', 'Kemana TSnya?']
-,'902': [H+'fd_5.gif', ':sup:', 'Sundul Up']
-,'903': [H+'fd_4.gif', ':kbgt:', 'Kaskus Banget']
-,'904': [H+'fd_8.gif', ':kacau:', 'Thread Kacau']
-,'905': [H+'fd_3.gif', ':bigo:', 'Bukan IGO']
-,'906': [H+'fd_7.gif', ':repost:', 'Repost']
-,'907': [H+'fd_2.gif', ':cd:', 'Cape deeehh']
-  };
+  ];
 
  }
 
