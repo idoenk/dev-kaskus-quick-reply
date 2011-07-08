@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
 // @dtversion     110709322
-// @timestamp     1310158371102
+// @timestamp     1310159715495
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,8 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-09 . 1310158371102
-//   Fix/Improve smileySets
+// v3.2.2 - 2011-07-09 . 1310159715495
+//   Fix/Improve smileySets.r2
 //   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
 //   Fix onchange hash & securitytoken, update when conditional meets.
 //   Fix QQ parse youtube 'dirty' tag, (again).
@@ -81,7 +81,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310158371102 // version.timestamp
+  timestamp: 1310159715495 // version.timestamp
 
  ,dtversion: 110709322 // version.date
  ,scriptID: 80409 // script-Id
@@ -4438,6 +4438,7 @@ var SML_LDR = {
             }
           
           }else{
+            if( isUndefined(img[1]) ) continue;
             Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
             imgEl = createEl('img',Attr);
           }          
@@ -4504,6 +4505,9 @@ var SML_LDR = {
               if(el) el.style.display='';
           }
        };
+
+       if(gvar.isOpera) showContent();
+       
        if( imgEl.firstChild && imgEl.firstChild.nodeName=='#text' || imgEl.height){
           showContent();
        }else{
@@ -4513,6 +4517,7 @@ var SML_LDR = {
           // obj has beed loaded before this line executed
           if(imgEl.height) showContent();
        }
+       
       } // end of imgEl (lastImg)
     }
     // custom images ?
