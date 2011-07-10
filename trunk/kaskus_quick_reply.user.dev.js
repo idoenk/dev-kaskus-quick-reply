@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110709322
-// @timestamp     1310159715495
+// @dtversion     110711322
+// @timestamp     1310320315477
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-09 . 1310159715495
+// v3.2.2 - 2011-07-11 . 1310320315477
+//   Fix again minor spoiler title thingie
 //   Fix/Improve smileySets.r2
 //   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
 //   Fix onchange hash & securitytoken, update when conditional meets.
@@ -81,9 +82,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310159715495 // version.timestamp
+  timestamp: 1310320315477 // version.timestamp
 
- ,dtversion: 110709322 // version.date
+ ,dtversion: 110711322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -653,19 +654,17 @@ function do_click_qqr(e, multi){
 		// parse code | spoiler
 		mct=$2.match(/\/?span(?:\srel=['"]([^'"]+))?/i);
         if(isDefined(mct[1])) {
-			if(mct[1].indexOf('spoiler')!=-1) {
+            if(mct[1].indexOf('spoiler')!=-1) {
 			  LT.sp.push('SPOILER');
 			  parts = mct[1].split('-');
 			  if( isDefined(parts[1]) && parts[1].length ){
-				sBox=createEl('div',{},parts[1]);
-				parts[1] = sBox.childNodes[0].nodeValue;
+				sBox=createEl('div',{},mct[1].replace(parts[0]+"-","") );
+				parts[1] = trimStr( sBox.childNodes[0].nodeValue );
 				try{Dom.remove(sBox)}catch(e){};
-			  }else{
-			    parts[1]='';
 			  }
-			  mct[1]='SPOILER='+parts[1];
-			}else{
-			  LT.sp.push(mct[1]);
+			  mct[1]='SPOILER='+(!parts[1] ? "" : parts[1]);
+			}else{			  
+              LT.sp.push(mct[1]);
 			}			
 		}else{
 		    mct[1]=false;
@@ -832,9 +831,11 @@ function do_click_qqr(e, multi){
             if( bSp.length ){
 				adaSpoiler = (bSp.length>0) || adaSpoiler;
                 iSp= getTag('i',el); // title spoiler
-                if(iSp.length)
-                iSp=iSp[0].innerHTML.toString();
-                
+                if(iSp.length){
+                    iSp=iSp[0].innerHTML.replace(/\"/g,"&quot;").replace(/\'/g, "&apos;");
+                    iSp = iSp.replace(/\&/g, "&amp;");
+                }
+
                 el2=el.parentNode;                
                 Dom.remove(el);                
                 el2.innerHTML = clearTag ( revealQuoteCode(el2.innerHTML), 'div' );                
@@ -855,8 +856,8 @@ function do_click_qqr(e, multi){
         }
 		
 		if(adaSpoiler){
-			var reSpoiler= function (S,$1){return '<span rel="spoiler-'+$1+'">'};
-			pCon.innerHTML = entity_decode( String(pCon.innerHTML).replace(/\{spoiler-([^\}]+)*\}/g, reSpoiler).replace(/\{\/spoiler\}/g, '</span>') );
+			var reSpoiler= function (S,$1){return '<span rel="spoiler-'+($1 ? $1 : " ")+'">'};
+			pCon.innerHTML = entity_decode( String(pCon.innerHTML).replace(/\{spoiler\-([^\}]+)?\}/g, reSpoiler).replace(/\{\/spoiler\}/g, '</span>') );
 		}
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
