@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
 // @dtversion     110711322
-// @timestamp     1310320315477
+// @timestamp     1310323298802
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-11 . 1310320315477
+// v3.2.2 - 2011-07-11 . 1310323298802
+//   Update several links (FF; Trick)
 //   Fix again minor spoiler title thingie
 //   Fix/Improve smileySets.r2
 //   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
@@ -82,7 +83,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310320315477 // version.timestamp
+  timestamp: 1310323298802 // version.timestamp
 
  ,dtversion: 110711322 // version.date
  ,scriptID: 80409 // script-Id
@@ -6746,7 +6747,7 @@ Format will be valid like this:
        +   '<span class="qrsmallfont"><span id="botgreet_text" style="cursor:help;float:left; width:70%;border-right:1px solid #A3A3A3;">'+rSRC.getBOT_greet(0, 10)+'</span>'
        +   '<span style="float:right;padding:auto 0;">'
        +  '<a href="http://'+'kask.us/5957067" target="_blank" title="Info, Tips, Suggestion, Digitalize">RTFM</a>&nbsp;&#8212;'
-       +  '<a href="http://'+'kask.us/5954390" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
+       +  '<a href="http://'+'kask.us/9177068" target="_blank" title="Nice Info, Tips-Trick">TRICK</a>'
        +  '</span>'
        +   '</div>'
         : ''
@@ -6821,7 +6822,7 @@ Format will be valid like this:
        'Quick Reply+':{t:6616714,tt:'Add-ons Kaskus Quick Reply + [QR]',tsl:1323912,ts:'Piluze'}
       ,'Emoticon Corner':{t:6849735,tt:'Emoticon Corner',tsl:572275,ts:'slifer2006'}
     },T={
-       'Firefox':{t:3170414,tt:'Add-Ons Firefox Plus Script - [UPDATE]',tsl:601361,ts:'thiaz4rhytem'}
+       'Firefox':{t:8689106,tt:'All About Mozilla Firefox (Add-ons, Scripts, Fans Club)',tsl:809411,ts:'p1nk3d_books'}
       ,'Opera':{t:6595796,tt:'[Rebuild] '+HtmlUnicodeDecode('&#187;')+' Opera Community',tsl:786407,ts:'ceroberoz'}
       ,'Google-Chrome':{t:3319338,tt:'[Updated] Extensions/ Addons Google Chrome',tsl:449547,ts:'Aerialsky'}
     },spacer = '<div style="height:3px;"></div>',mb='/member.php?u=',st='/showthread.php?t=',bl=' target="_blank" ',QT='<br><b>#QR</b> Topic<br>CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span>:<br>';
