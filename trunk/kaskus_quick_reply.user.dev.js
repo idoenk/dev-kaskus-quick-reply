@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110711322
-// @timestamp     1310323298802
+// @dtversion     110714322
+// @timestamp     1310578240469
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,10 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-11 . 1310323298802
+// v3.2.2 - 2011-07-14 . 1310578240469
+//   Improve decide isDonatur user
+//   Fix Kaskus-Fixup for Hi-Res Images, Thanks=[febrigaz,Piluze]
+//   Improve deprecate getByXPath_containing; optimize xpath scanning node;
 //   Update several links (FF; Trick)
 //   Fix again minor spoiler title thingie
 //   Fix/Improve smileySets.r2
@@ -83,9 +86,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310323298802 // version.timestamp
+  timestamp: 1310578240469 // version.timestamp
 
- ,dtversion: 110711322 // version.date
+ ,dtversion: 110714322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -491,12 +494,12 @@ function start_Main(){
         return;
     } // dead end-
     
-    var Attr,child,el,nodes,par,hr,bufftxt = '';
+    var Attr,child,el,nodes,nodel,leng,par,hr,bufftxt = '';
     
     if( !$D('#quickreply') ){
        el = createEl('div',{id:'quickreply',style:'visibility:hidden;'},rSRC.getTPL() );
-       nodes = getByXPath_containing('//script', false, 'mqlimit')[0];
-       nodes.parentNode.insertBefore(el, nodes.nextSibling);       
+       nodes = $D('//script[contains(.,"mqlimit")]', null, 1);
+       nodes.parentNode.insertBefore(el, nodes.nextSibling);
        // build tpl capcay 
        if(!gvar.user.isDonatur) create_tplcapcay();
     }
@@ -504,10 +507,12 @@ function start_Main(){
     
     // cuma untuk fresh load
     if(!gvar.restart) {
-     nodes = getByXPath_containing('//a', false, 'QUOTE');
-     for(var i=0; i<nodes.length; i++){
-       hr = nodes[i].href.split("&p=");      
-       nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
+     nodes = $D('//a[contains(.,"QUOTE")]', null);
+     leng= nodes.snapshotLength; 
+     if(leng) for(var i=0; i<leng; i++){
+       nodel = nodes.snapshotItem(i);
+       hr = nodel.href.split("&p=");      
+       nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
        // prep bulu pena
        child = '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" title="Quick Reply to this message" border=0 />';
        Attr = {href:'newreply.php?do=newreply&p='+hr[1],rel:'nofollow',id:'qr_'+hr[1],onclick:'return false'};
@@ -515,24 +520,26 @@ function start_Main(){
        on('click',el,function(e){do_click_qr(e)});
        // we remove existing node first
        if(gvar.user.isDonatur) Dom.remove('qr_'+hr[1]);
-       Dom.add(el, nodes[i].parentNode);
+       Dom.add(el, nodel.parentNode);
        
-       Dom.add(createTextEl(' '), nodes[i].parentNode);
+       Dom.add(createTextEl(' '), nodel.parentNode);
        
        // qqr
        child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
        Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
        el = createEl('a',Attr,child);
        on('click',el,function(e){proc_mquickquote(e)});
-       nodes[i].parentNode.insertBefore(el, nodes[i]);
-       nodes[i].parentNode.insertBefore(createTextEl(' '+"\n"), nodes[i]);
+       nodel.parentNode.insertBefore(el, nodel);
+       nodel.parentNode.insertBefore(createTextEl(' '+"\n"), nodel);
 	   
      } // end-for
-     nodes = getByXPath_containing('//a', false, 'EDIT');
-     for(var i=0; i<nodes.length; i++){
-        if(nodes[i].parentNode.nodeName != 'TD') continue;
-        hr = nodes[i].href.split("&p=");
-        nodes[i].innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
+     nodes = $D('//a[contains(.,"EDIT")]', null);
+     leng= nodes.snapshotLength; 
+     if(leng) for(var i=0; i<leng; i++){
+        nodel = nodes.snapshotItem(i);
+        if(nodel.parentNode.nodeName != 'TD') continue;
+        hr = nodel.href.split("&p=");
+        nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
 	 }
     }
 	Dom.add( createTextEl( '.btn_qqr{display:'+(gvar.settings.quick_quote?'inline':'none')+'!important;}' ), $D('#css_qqr') );
@@ -3583,12 +3590,11 @@ function delValueForId(userID, gmkey){
 
 // if type is not defined, return [id,username,isDonatur]
 function getUserId(type){
-  var ret=false;
-  var logusers = $D("//a[contains(@href, 'member.php')]", null, true);
+  var logusers = $D("//a[contains(@href, 'member.php')]", null, true), ret=false;
   if(logusers){
-    var cDonat = getByXPath_containing('//a', false, 'QUICK REPLY');    
+    var cDonat = $D('//a[contains(@id,"qr_")]', false, 1);
     var uid = logusers.href.match(/member\.php\?u=(\d+$)/);    
-    ret = {id:uid[1], name:logusers.innerHTML, isDonatur:(isUndefined(cDonat[0]) ? false:true)};
+    ret = {id:uid[1], name:logusers.innerHTML, isDonatur:(!cDonat ? false : true)};
   }
   return ret;
 }
@@ -3712,17 +3718,7 @@ function getTag(name, parent){
   var ret = (typeof(parent)!='object' ? document.getElementsByTagName(name) : parent.getElementsByTagName(name) );
   return (isDefined(ret[0]) ? ret : false);
 }
-function getByXPath_containing(xp, par, contain){
-  if(!par) par = document;
-  if(typeof(contain)!='string') return;
-  var rets=[];
-  var ev = document.evaluate(xp, par, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-  if(ev.snapshotLength)
-     for(var i=0;i<ev.snapshotLength;i++)
-       if(ev.snapshotItem(i).innerHTML.indexOf(contain)!=-1) 
-          rets.push(ev.snapshotItem(i));
-  return rets;  
-}
+
 function SimulateMouse(elem,event,preventDef) {
   if(typeof(elem)!='object') return;
   var evObj = document.createEvent('MouseEvents');
@@ -5712,9 +5708,10 @@ var rSRC = {
   +'#Textatas, #Middlehome021, #exp, #MiddleBanner, #Middle_blue, #MiddleBanner03, #MidGaris,'
   +'#advertisement, #MidGaris03, #RightNya, #MiddleBanner1, #JB_Middlehome021, #JB_Middlenahome1, #MidGaris1'
   +'#TextInfo > div > div.TextInterest'
-   +'{ display: none !important; }'
-  +'table[id^="post"] td.alt2 { max-width: 175px !important; min-width: 175px !important; overflow: hidden !important; }'
-  +'td.alt2 div.smallfont+div.smallfont div { overflow: hidden !important; }' 
+    +'{ display: none !important; }'
+  /* this overflow and max-width thingie is messing around with hi-res img */ 
+  +'table[id^="post"] td.alt2 { min-width: 175px !important; /* max-width: 175px !important; overflow: hidden !important; */}'
+  +'td.alt2 div.smallfont+div.smallfont div { /* overflow: hidden !important; */ }' 
   +'form > table.tborder > tbody > tr > td.panelsurround > div.panel > div { width: auto !important; margin: auto !important; }'
   +'td[id^="td_post"] { width: auto !important; }'   
   +'#Middlenahome, #InfoFoLeft, #InfoFoMid, #InfoFoRight, #Middlenahome1, .MenuBawahna, .LingBottom, #LingBawah, #navbawah ul li'
