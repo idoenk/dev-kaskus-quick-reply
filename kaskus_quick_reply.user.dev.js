@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
 // @dtversion     110714322
-// @timestamp     1310578240469
+// @timestamp     1310666195939
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-14 . 1310578240469
+// v3.2.2 - 2011-07-14 . 1310666195939
+//   Improve calibrate nextpost timer delay
 //   Improve decide isDonatur user
 //   Fix Kaskus-Fixup for Hi-Res Images, Thanks=[febrigaz,Piluze]
 //   Improve deprecate getByXPath_containing; optimize xpath scanning node;
@@ -86,7 +87,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310578240469 // version.timestamp
+  timestamp: 1310666195939 // version.timestamp
 
  ,dtversion: 110714322 // version.date
  ,scriptID: 80409 // script-Id
@@ -4229,7 +4230,7 @@ var DRAFT= {
 var QRdp = {
   // QR delay post 
   key: KS+"QR_LASTPOST"
- ,defDelay: 32 // seconds; assumed 32 sec; fact is 30 sec
+ ,defDelay: 29 // seconds; assumed 32 sec; fact is 30 sec; 29 is calibrated -Andreas.
  ,getLast:function(){return getValue(QRdp.key)}
  ,updLast:function(x){return setValue(QRdp.key, x)}
  ,check:function(tgt,delay){    
