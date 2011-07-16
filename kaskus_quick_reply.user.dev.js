@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110714322
-// @timestamp     1310666195939
+// @dtversion     110716322
+// @timestamp     1310832311094
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-14 . 1310666195939
+// v3.2.2 - 2011-07-16 . 1310832311094
+//   Improve 2-newline before add quote post. Thanks=[p1nk3d_books]
 //   Improve calibrate nextpost timer delay
 //   Improve decide isDonatur user
 //   Fix Kaskus-Fixup for Hi-Res Images, Thanks=[febrigaz,Piluze]
@@ -25,7 +26,7 @@
 //   Update several links (FF; Trick)
 //   Fix again minor spoiler title thingie
 //   Fix/Improve smileySets.r2
-//   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6]
+//   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thanks=[ketang6]
 //   Fix onchange hash & securitytoken, update when conditional meets.
 //   Fix QQ parse youtube 'dirty' tag, (again).
 //   Fix emote click (blame smileycustoom autotext)
@@ -87,9 +88,9 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.2b';
 gvar.scriptMeta = {
-  timestamp: 1310666195939 // version.timestamp
+  timestamp: 1310832311094 // version.timestamp
 
- ,dtversion: 110714322 // version.date
+ ,dtversion: 110716322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -618,7 +619,7 @@ function do_click_qqr(e, multi){
     if(e && parent_postbit && gvar.settings.dynamic) // is dynamic QR enabled
      Dom.add(qr,parent_postbit);
   }
-  var apr,elpm,el,did,msg;
+  var apr,elpm,el,did,msg,omsg,nl='\r\n';
   if(e.nodeName != 'A') apr = e.parentNode;
   
   var clearTag=function(h,tag){
@@ -934,9 +935,11 @@ function do_click_qqr(e, multi){
     // get inner post
     elpm=$D('#td_post_'+did, null, true);
     if(elpm) {
-      msg= '[QUOTE='+(el ? clearTag(el.innerHTML):'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]'+'\r\n\r\n';
-	  if(Dom.g(gvar.id_textarea).value != msg)
-         vB_textarea.add(msg);
+      omsg= Dom.g(gvar.id_textarea).value.trim();
+      msg= '[QUOTE='+(el ? clearTag(el.innerHTML):'')+';'+did+']'+ parseMSG(elpm.innerHTML) +'[/QUOTE]';
+	  if( omsg != msg){
+         vB_textarea.set(omsg + (omsg.length>0 ? nl+nl : '') + msg +nl+nl);
+      }
       vB_textarea.lastfocus();
       if(gvar.settings.textareaExpander[0])
         vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor); // retrigger autogrow now
@@ -3374,8 +3377,8 @@ function ajax_chk_newval(reply_html){
     clog(html);
     
     vB_textarea.init();
-    var notice = $D('#quoted_notice');
-    var re_event_btn = false;
+    var notice = $D('#quoted_notice'), re_event_btn = false, omsg, nl='\r\n';
+    
     if(vB_textarea.content==gvar.silahken) vB_textarea.set('');
     if(rets===null){
        addClass('g_notice-error', notice);
@@ -3384,7 +3387,9 @@ function ajax_chk_newval(reply_html){
        re_event_btn = true;
        
     }else{
-       vB_textarea.add(rets);     
+       omsg= Dom.g(gvar.id_textarea).value.trim();
+       vB_textarea.set(omsg + (omsg.length>0 ? nl+nl : '') + rets);
+       
        if(rets===''){
          addClass('g_notice-error', notice);
          notice.innerHTML = 'Nothing to fetch, quote post from another thread is not possible.'
