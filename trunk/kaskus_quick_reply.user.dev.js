@@ -4,7 +4,7 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.2
-// @dtversion     110716322
+// @dtversion     110730322
 // @timestamp     1310832311094
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-16 . 1310832311094
+// v3.2.2 - 2011-07-30 . 1312028304952
+//   Improve deprecate focus on saving Draft. Thanks=[andrypein]
 //   Improve 2-newline before add quote post. Thanks=[p1nk3d_books]
 //   Improve calibrate nextpost timer delay
 //   Improve decide isDonatur user
@@ -32,6 +33,10 @@
 //   Fix emote click (blame smileycustoom autotext)
 //   Improve smileycustom now support autotext (beta)
 //   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.2.1 - 2011-06-27 . 1309170789237
 //   Fix QQ parse align inside spoiler. Thanks=[ketang6]
@@ -52,20 +57,8 @@
 //   Fix minor draft thingie --enhance autosave on(set & add)
 //   Fix minor draft thingie
 //
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//
 // v3.2.0 - 2011-06-04
 //   Fix invalid input capcay. Thanks=[andrypein]
-//
-// v3.1.9 - 2011-06-04
-//   Switchable setting capctha mode.
-//   Shortcut for draft thingie. Thanks=[p1nky]
-//   Back to Recaptcha again. --". Thanks=[t0g3, skycreeper]
-//   Add HTML/PHP tag controllers. Thanks=[deodeye]
-//   Fix rate thread thingie. Thanks=[black341469]
-//
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -86,11 +79,11 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '3.2.2b';
+gvar.sversion = 'v' + '3.2.2';
 gvar.scriptMeta = {
-  timestamp: 1310832311094 // version.timestamp
+  timestamp: 1312028304952 // version.timestamp
 
- ,dtversion: 110716322 // version.date
+ ,dtversion: 110730322 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -4209,7 +4202,6 @@ var DRAFT= {
         $D('#draft_desc').innerHTML = 'Saved seconds ago';
         addClass('twbtn-disabled', $D('#save_draft'));
         if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
-        if( !$D('#hideshow') ) force_focus(10);
     }
     gvar.timeOld = new Date().getTime();
   }
