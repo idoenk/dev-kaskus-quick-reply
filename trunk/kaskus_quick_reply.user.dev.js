@@ -64,7 +64,7 @@ if( oExist(isQR_PLUS) ){
 // Initialize Global Variables
 var GM_isAddon, gvar=function() {};
 
-gvar.sversion = 'v' + '3.2.3ba';
+gvar.sversion = 'v' + '3.2.3';
 gvar.scriptMeta = {
   timestamp: 1312144343710 // version.timestamp
 
