@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.3
 // @dtversion     110801323
-// @timestamp     1312135055829
+// @timestamp     1312144343710
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,11 +17,16 @@
 //
 // -!--latestupdate
 //
-// v3.2.3 - 2011-08-01 . 1312135055829
+// v3.2.3 - 2011-08-01 . 1312144343710
+//   Fix wrap quote for spoiler title
 //   Fix avoid unexpected globalvar (partial)
 //   Fix load custom_smiley containing autotext
 //   Blame replacing on() become _o() destructing regex filter.
 //
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.2.2 - 2011-07-30 . 1312033765406
 //   Improve deprecate focus on saving Draft. Thanks=[andrypein]
@@ -39,32 +44,6 @@
 //   Fix emote click (blame smileycustoom autotext)
 //   Improve smileycustom now support autotext (beta)
 //   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//
-// v3.2.1 - 2011-06-27 . 1309170789237
-//   Fix QQ parse align inside spoiler. Thanks=[ketang6]
-//   Fix QQ clean-up KSA tags; identified starts-with[@id=KSA-]. Thanks=[arifhn]
-//   Fix QQ parse youtube 'dirty' tag, beta(Opera failed). Thanks=[farindiya]
-//   Fix failed wrap list controller on selected text. Thanks=[slifer2006]
-//   Fix QQ inconsistent side-effect of spoiler inside spoiler. Thanks=[skycreeper]
-//   Improve/Fix QQ parse youtube tag. Thanks=[farindiy,ketang6]
-//   Fix QQ preserve spoiler title w/o entities
-//   Fix QQ cleanup head postbit in FJB-SF. Thanks=[ketang6]
-//   Fix QQ cleanup kaskus-spoiler-alert (partial)
-//   Improve switchable recapcay theme. Thanks=[t0g3,Aerialsky]
-//   Fix QQ failed parse keep innerhtml unescaped. Thanks=[mentheleng]
-//   Fix QQ failed parse spoiler w/o title; Thanks [aadc, ketang6]
-//   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
-//   Fix xpath when finding edit link. Thank=[arifhn,ketang6]
-//   Fix notify on invalid security token
-//   Fix minor draft thingie --enhance autosave _o(set & add)
-//   Fix minor draft thingie
-//
-// v3.2.0 - 2011-06-04
-//   Fix invalid input capcay. Thanks=[andrypein]
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -87,7 +66,7 @@ var GM_isAddon, gvar=function() {};
 
 gvar.sversion = 'v' + '3.2.3ba';
 gvar.scriptMeta = {
-  timestamp: 1312135055829 // version.timestamp
+  timestamp: 1312144343710 // version.timestamp
 
  ,dtversion: 110801323 // version.date
  ,scriptID: 80409 // script-Id
@@ -671,7 +650,7 @@ function do_click_qqr(e, multi){
 				parts[1] = trimStr( sBox.childNodes[0].nodeValue );
 				try{Dom.remove(sBox)}catch(e){};
 			  }
-			  mct[1]='SPOILER='+(!parts[1] ? "" : parts[1]);
+			  mct[1]='SPOILER="'+(!parts[1] ? "" : parts[1])+'"';
 			}else{			  
               LT.sp.push(mct[1]);
 			}			
