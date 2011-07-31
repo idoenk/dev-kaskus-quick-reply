@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.2
-// @dtversion     110730322
-// @timestamp     1310832311094
+// @version       3.2.3
+// @dtversion     110801323
+// @timestamp     1312135055829
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,13 @@
 //
 // -!--latestupdate
 //
-// v3.2.2 - 2011-07-30 . 1312028304952
+// v3.2.3 - 2011-08-01 . 1312135055829
+//   Fix avoid unexpected globalvar (partial)
+//   Fix load custom_smiley containing autotext
+//   Blame replacing on() become _o() destructing regex filter.
+//
+//
+// v3.2.2 - 2011-07-30 . 1312033765406
 //   Improve deprecate focus on saving Draft. Thanks=[andrypein]
 //   Improve 2-newline before add quote post. Thanks=[p1nk3d_books]
 //   Improve calibrate nextpost timer delay
@@ -54,7 +60,7 @@
 //   Fix QQ spoiler inside spoiler. Thanks=[mentheleng,ketang6]
 //   Fix xpath when finding edit link. Thank=[arifhn,ketang6]
 //   Fix notify on invalid security token
-//   Fix minor draft thingie --enhance autosave on(set & add)
+//   Fix minor draft thingie --enhance autosave _o(set & add)
 //   Fix minor draft thingie
 //
 // v3.2.0 - 2011-06-04
@@ -77,13 +83,13 @@ if( oExist(isQR_PLUS) ){
 }
 
 // Initialize Global Variables
-var gvar=function() {};
+var GM_isAddon, gvar=function() {};
 
-gvar.sversion = 'v' + '3.2.2';
+gvar.sversion = 'v' + '3.2.3ba';
 gvar.scriptMeta = {
-  timestamp: 1312028304952 // version.timestamp
+  timestamp: 1312135055829 // version.timestamp
 
- ,dtversion: 110730322 // version.date
+ ,dtversion: 110801323 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -293,15 +299,15 @@ function outSideForumTreat(){
                lb[0].innerHTML='';
                et=rTitle('Direct Link'); Dom.add(et, lb[0]);
                ei = createEl('input',{type:'text',value:el.value,readonly:'readonly'});
-               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+               _o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
                try{ei.focus();selectAll(ei)}catch(e){}
                
                et=rTitle('BBCode IMG'); Dom.add(et, lb[0]);
                ei = createEl('input',{type:'text',value:BBCodeImg(el.value),readonly:'readonly'});
-               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+               _o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
                et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
                ei = createEl('input',{type:'text',value:BBCodeTh(el.value),readonly:'readonly'});
-               on('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+               _o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
             }
         }, 500);
       }else{
@@ -512,7 +518,7 @@ function start_Main(){
        child = '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" title="Quick Reply to this message" border=0 />';
        Attr = {href:'newreply.php?do=newreply&p='+hr[1],rel:'nofollow',id:'qr_'+hr[1],onclick:'return false'};
        el = createEl('a',Attr,child);
-       on('click',el,function(e){do_click_qr(e)});
+       _o('click',el,function(e){do_click_qr(e)});
        // we remove existing node first
        if(gvar.user.isDonatur) Dom.remove('qr_'+hr[1]);
        Dom.add(el, nodel.parentNode);
@@ -523,7 +529,7 @@ function start_Main(){
        child='<img src="'+gvar.B.qquote_gif+'" alt="QQ-Reply" title="Quick Quote this message" border=0 />';
        Attr = {href:'javascript:;',id:'qqr_'+hr[1],onclick:'return false','class':'btn_qqr','style':''}; //display:none;
        el = createEl('a',Attr,child);
-       on('click',el,function(e){proc_mquickquote(e)});
+       _o('click',el,function(e){proc_mquickquote(e)});
        nodel.parentNode.insertBefore(el, nodel);
        nodel.parentNode.insertBefore(createTextEl(' '+"\n"), nodel);
 	   
@@ -615,11 +621,11 @@ function do_click_qqr(e, multi){
   var apr,elpm,el,did,msg,omsg,nl='\r\n';
   if(e.nodeName != 'A') apr = e.parentNode;
   
-  var clearTag=function(h,tag){
+  var clearTag=function(h, tag){
 	if(isUndefined(tag)){
       return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||'';
 	}else{
-	  re = new RegExp('[\\r\\n\\t]?<\\\/?(?:'+tag+')(?:[^>]+)?.[\\r\\n\\t]?', "gim"); 
+	  var re = new RegExp('[\\r\\n\\t]?<\\\/?(?:'+tag+')(?:[^>]+)?.[\\r\\n\\t]?', "gim"); 
 	  return h.replace(re,'');
 	}	
   };
@@ -864,7 +870,19 @@ function do_click_qqr(e, multi){
 		}
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
-	
+	// need to clear this <div style="margin:20px; margin-top:5px">; or closed div will be parsed as closed [/center]
+    /*
+    els = $D(".//div[contains(@style,'20px')]", pCon);    
+    nLength=(els.snapshotLength-1)
+	if(els) {
+        for(var i=nLength; i>=0; i--){
+            el=els.snapshotItem(i);
+        
+        }
+    }
+    */
+    
+    
 	// reveal ol
 	els=$D('.//ol', pCon);
 	var sty,typ,ltag='[LIST=';
@@ -1035,7 +1053,7 @@ function additional_opt_parser(text){
      if(cucok && cucok[1]!='rating'){ // rating will be showed-up on qr-optional dropdown
        fdname = cucok[1];
        cucok = /<option\svalue\=\"([^\"]+)\"\sselected\=/.exec(selects[i]);
-       opt_val = (cucok ? cucok[1] : '0');
+       var opt_val = (cucok ? cucok[1] : '0');
        el = createEl('input', {name:fdname, value:opt_val, type:'hidden'});
        Dom.add(el, par_adt_opt);
      }
@@ -1187,7 +1205,7 @@ function create_kaskus_capcay( rets ){
         if( $D('#imagereg').getAttribute('src')=='' || isDefined(gvar.cache_rets_capcay) ){
             clickIt();
             if( isDefined(gvar.cache_rets_capcay) && $D('#imagereg') ) 
-                on("click", $D('#imagereg'), function(){ clickIt() });    
+                _o("click", $D('#imagereg'), function(){ clickIt() });    
         }else{
             hi.focus()
         }
@@ -1294,12 +1312,12 @@ function qr_preview(reply_html){
       
 	  msg='<div class="g_notice g_notice-error" style="display:block;">' + (erMsg ? erMsg : 'Upss, server might be busy. Please <a href="javascript:;" id="upss_preview">Try again</a> or <a href="javascript:;" id="upss_abort_preview">abort preview</a>.' ) + '</div>';
       $D('#preview_content').innerHTML = msg;
-       on('click',$D('#upss_preview'),function(e){
+       _o('click',$D('#upss_preview'),function(e){
         if($D('#preview_content'))
           $D('#preview_content').innerHTML='<div id="preview_loading"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>';
          qr_preview();
        });
-       on('click',$D('#upss_abort_preview'),function(e){SimulateMouse($D('#imghideshow'),'click',true)});
+       _o('click',$D('#upss_abort_preview'),function(e){SimulateMouse($D('#imghideshow'),'click',true)});
        return;
     }else{
       $D('#preview_content').innerHTML = rets;
@@ -1337,7 +1355,7 @@ function lockFields_forSubmit(flag){
             par=adv.parentNode;
             if($D('#cancel_post')) Dom.remove($D('#cancel_post'));
             ec = createEl('input', {id:'cancel_post',type:'button',value:'Cancel',style:'margin:0 10px',title:'Cancel Posting'});
-            on('click',ec,function(){ lockFields_forSubmit(false)});
+            _o('click',ec,function(){ lockFields_forSubmit(false)});
             par.insertBefore(ec, adv);
         }
       }    
@@ -1590,7 +1608,7 @@ function toogleLayerDiv(tgt) {
 
 function event_inputCapcay(txfield, btnsubmit, btn_reload){
     if( $D(txfield) )
-    on('keydown',$D(txfield),function(e){
+    _o('keydown',$D(txfield),function(e){
         var C = (!e ? window.event : e ), ab=false;
         var A = C.keyCode ? C.keyCode : C.charCode;
         if( A===13 ){ // mijit enter
@@ -1619,9 +1637,9 @@ function loadLayer_initTplCapcay(TPL){
     Dom.add(el, $D('#vbform') );
     
     // tpl events
-    on('click',$D("#imghideshow_precap"),function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
+    _o('click',$D("#imghideshow_precap"),function(){closeLayerBox('hideshow');closeLayerBox('hideshow_recaptcha');});
     // cancel
-    on('click',$D("#captcha_cancel"),function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
+    _o('click',$D("#captcha_cancel"),function(){ SimulateMouse($D("#imghideshow_precap"), 'click', true); });
 }
 
 function loadLayer_kaskusCaptcha(){
@@ -1648,7 +1666,7 @@ function loadLayer_kaskusCaptcha(){
         create_kaskus_capcay(gvar.cache_rets_capcay);
     
         // submit recaptcha
-    on('click',$D('#captcha_submit'),function(e){
+    _o('click',$D('#captcha_submit'),function(e){
         if( !is_capcay_filled($D('#humaninput')) ){
           e.preventDefault;
           return false;
@@ -1700,7 +1718,7 @@ function loadLayer_reCaptcha(){
     loadLayer_initTplCapcay(rSRC.getTPL_prompt_reCAPTCHA());    
 
     // submit recaptcha
-    on('click',$D('#captcha_submit'),function(e){
+    _o('click',$D('#captcha_submit'),function(e){
         if( !is_capcay_filled($D('#recaptcha_response_field')) ){
           e.preventDefault;
           return false;
@@ -1725,7 +1743,7 @@ function loadLayer_preview(){
     
     //submit from preview
     if($D('#preview_presubmit'))
-      on('click',$D('#preview_presubmit'),function(e){
+      _o('click',$D('#preview_presubmit'),function(e){
          if( !gvar.user.isDonatur ){
             if($D('#preview_loading')) return;
             if( gvar.settings.recaptcha ){
@@ -1750,13 +1768,13 @@ function loadLayer( theTPL, flag ){
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
     
     // event close button
-    if($D("#imghideshow")) on('click',$D("#imghideshow"),function(){closeLayerBox('hideshow');});
+    if($D("#imghideshow")) _o('click',$D("#imghideshow"),function(){closeLayerBox('hideshow');});
     
     // calibrate width container
     popupLayer_positioning()
           
     // cancel preview
-    if($D('#preview_cancel')) on('click',$D('#preview_cancel'),function(){ closeLayerBox('hideshow'); });
+    if($D('#preview_cancel')) _o('click',$D('#preview_cancel'),function(){ closeLayerBox('hideshow'); });
     
 }
 
@@ -1792,7 +1810,7 @@ function scustom_parser(msg){
 // eg. submit, preview, some of vb_Textarea element
 function initEventTpl(){
     
-	var nodes, node, nid, notice;
+	var nodes, node, notice;
     
     vB_textarea.init(); // need this coz if disable can not set
     // if qrdraft inactive recieve from tmp_text of reload of location.false
@@ -1812,7 +1830,7 @@ function initEventTpl(){
     if(dvacs){
       controler_resizer();
       dvacs.style.display='';
-      on('click',dvacs,function(){
+      _o('click',dvacs,function(){
         var etxta = Dom.g(gvar.id_textarea);
         if(etxta.getAttribute('readonly') || etxta.getAttribute('disabled')=='disabled'){
           if(!vB_textarea.Obj) vB_textarea.init();
@@ -1827,9 +1845,9 @@ function initEventTpl(){
       });
     }
 
-	on( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
+ _o( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
 	if(gvar.settings.qrdraft)
-        on( 'keypress' , Dom.g(gvar.id_textarea),function(e){
+        _o( 'keypress' , Dom.g(gvar.id_textarea),function(e){
             var A = e.keyCode ? e.keyCode : e.charCode;
             if( A>=37 && A<=40 ) return; // not an arrow
             if($D('#save_draft')) vB_textarea.saveDraft(e);
@@ -1837,7 +1855,7 @@ function initEventTpl(){
             gvar.isKeyPressed=1; DRAFT.quick_check();
         });
     
-    on('click',$D('#atitle'),function() {
+    _o('click',$D('#atitle'),function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
       var disp=$D('#titlecont');
       disp.style.display=(disp.style.display=='none' ? 'block':'none');
@@ -1862,18 +1880,18 @@ function initEventTpl(){
     if(!gvar.restart){
 
 	  // new version multi-quote (cookie based)
-      ck_mquote = $D('#tmp_chkVal').value;
+      var ck_mquote = $D('#tmp_chkVal').value;
 	  
 	  // this btn will remotely clicked after chk multiquote cookie from surface
-      on('click',$D('#qr_chkval'),function(){
+      _o('click',$D('#qr_chkval'),function(){
 	   chk_newval($D('#tmp_chkVal').value)
 	  });
-      on('click',$D('#qr_setting_btn'),function(){
+      _o('click',$D('#qr_setting_btn'),function(){
         ST.init_setting();
       });
-      on('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
+      _o('click',$D('#atoggle'),function(e){toogle_quickreply(); e.preventDefault();});
 
-      on('keydown',$D('#input_title'),function(e){
+      _o('keydown',$D('#input_title'),function(e){
         var C = window.event||e, A = C.keyCode ? C.keyCode : C.charCode;
         if(A===13){
           if(C.ctrlKey) SimulateMouse($D('#qr_prepost_submit'), 'click', true);
@@ -1883,7 +1901,7 @@ function initEventTpl(){
 
       });
       
-      on('click',$D('#chk_fixups'),function(e) {
+      _o('click',$D('#chk_fixups'),function(e) {
         e=e.target||e;
         var chk=e.getAttribute('checked');
         if(chk){
@@ -1897,7 +1915,7 @@ function initEventTpl(){
         controler_resizer(); // resize elements width
       });
       
-      on('submit',$D('#vbform'),function(e){
+      _o('submit',$D('#vbform'),function(e){
 
         if(gvar.settings.ajaxpost && $D('#clicker').value != 'Go Advanced' ) {
           clog('here and aborted');
@@ -1929,8 +1947,8 @@ function initEventTpl(){
 		  }
 		}
       });
-      on('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
-      on('click',$D('#qr_prepost_submit'),function(e){
+      _o('click',$D('#qr_advanced'),function(){$D('#clicker').setAttribute('value','Go Advanced');});
+      _o('click',$D('#qr_prepost_submit'),function(e){
          if( !gvar.user.isDonatur ){
             if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
             e=e.target||e;
@@ -1954,7 +1972,7 @@ function initEventTpl(){
       });
       // end of vb_Textarea submit Event ------
       
-      on('click',$D('#qr_preview_ajx'),function(e){
+      _o('click',$D('#qr_preview_ajx'),function(e){
         if(Dom.g(gvar.id_textarea).value==gvar.silahken || Dom.g(gvar.id_textarea).value=='') return;
         e=e.target||e;
         var msg = trimStr(Dom.g(gvar.id_textarea).value);
@@ -1973,10 +1991,10 @@ function initEventTpl(){
       });
 
       // detect window resize to resize textbox and controler wraper
-      on('resize',window,function(){controler_resizer()});
+      _o('resize',window,function(){controler_resizer()});
       // activate hotkey?
       if( gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' )
-        on('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
+        _o('keydown',window.document,function(e){return is_keydown_pressed_ondocument(e)});
       
 	  chk_newval(ck_mquote ? ck_mquote:'');
       nodes = $D('//img[contains(@id,"mq_")]');
@@ -1990,14 +2008,14 @@ function initEventTpl(){
         };        
         for(var i=0;i<nodes.snapshotLength; i++){
             node = nodes.snapshotItem(i);
-            nid=node.id.replace(/mq_(\d+)/, 'td_post_$1');
+            var nid=node.id.replace(/mq_(\d+)/, 'td_post_$1');
             colorize_td(node.src, nid);			
-            on('click',node,function(e){
+            _o('click',node,function(e){
                e=e.target||e;
 			   var ck_mquote = $D('#tmp_chkVal').value;
                chk_newval( ck_mquote ? ck_mquote :'' );
                //chk_newval();
-               nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
+               var nid=e.id.replace(/mq_(\d+)/, 'td_post_$1');
                colorize_td(e.src, nid);
             });
         }
@@ -2009,7 +2027,7 @@ function initEventTpl(){
           
           // event click for save_draft
           if($D("#save_draft"))
-            on("click", $D("#save_draft"), function(e){
+            _o("click", $D("#save_draft"), function(e){
                 e=e.target||e; 
                 var text=Dom.g(gvar.id_textarea).value;
                 if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
@@ -2232,9 +2250,9 @@ function insert_custom_control(){
             Attr={title:property["title"], alt:property["alt"],style:genProp["style"],src:property["src"]};
             el = createEl('img',Attr);
             if( property["alt"]=="[strike]" ) 
-                on('click',el, function(e){return property["eventClick"](e)} );
+                _o('click',el, function(e){return property["eventClick"](e)} );
             else
-                on('click',el, function(e){return genProp["eventClick"](e)} );
+                _o('click',el, function(e){return genProp["eventClick"](e)} );
             Dom.add(el, parent);
         }
     } // end for
@@ -2244,9 +2262,9 @@ function insert_custom_control(){
 // create event controler on vbEditor & settings
 function re_event_vbEditor(){
   // event reset / clear textarrea
-  on('click',$D('#textarea_clear'),function(){vB_textarea.clear()});
+  _o('click',$D('#textarea_clear'),function(){vB_textarea.clear()});
   // event reset draft
-  if($D('#draft_clear')) on('click',$D('#draft_clear'),function(){DRAFT.clear()});
+  if($D('#draft_clear')) _o('click',$D('#draft_clear'),function(){DRAFT.clear()});
   
   // event textarea autogrowth  
   if(gvar.settings.textareaExpander[0])
@@ -2264,20 +2282,20 @@ function re_event_vbEditor(){
     var el=imgs[i], alt=el.alt;
     switch(alt){
       case 'Align Left': case 'Align Center': case 'Align Right': case 'Bold': case 'Italic': case 'Underline':
-        on('click',el,function(e){do_align_BIU(e)});
+        _o('click',el,function(e){do_align_BIU(e)});
       break;
       case 'oList': case 'uoList':
-        on('click',el,function(e){do_btncustom_list(e)});
+        _o('click',el,function(e){do_btncustom_list(e)});
       break;
       case 'Insert Image': case 'Insert Link':
-        on('click',el,function(e){ return do_btncustom(e) });
+        _o('click',el,function(e){ return do_btncustom(e) });
       break;
       case 'Decrease Size': case 'Increase Size':
-        on('click',el,function(e){do_resize_editor(e)});
+        _o('click',el,function(e){do_resize_editor(e)});
       break;
       default:
        if(alt && (alt.indexOf('[quote]')!=-1 || alt.indexOf('[code]')!=-1 || alt.indexOf('[html]')!=-1|| alt.indexOf('[php]')!=-1) )
-        on('click',el,function(e){return do_btncustom(e)});
+        _o('click',el,function(e){return do_btncustom(e)});
       break;
     }
    }
@@ -2296,11 +2314,11 @@ function re_event_vbEditor(){
   if(par) Dom.add(el,par);
   
   el = $D('#pick_kolor');
-  if(el) on('click',el,function(e){clickpick(e, vB01+'_popup_forecolor_menu');});
+  if(el) _o('click',el,function(e){clickpick(e, vB01+'_popup_forecolor_menu');});
 
   el = $D(vB01+'_color_out');
   if(el)
-    on('click',el,function(){
+    _o('click',el,function(){
      var etitle = gvar.settings.lastused.color;
      if(etitle) {
        do_insertTag('color',etitle);
@@ -2315,11 +2333,11 @@ function re_event_vbEditor(){
   if(par) Dom.add(el,par);
   
   el = $D('#pick_font');
-  if(el) on('click',el,function(e){clickpick(e,vB01+'_popup_fontname_menu')});
+  if(el) _o('click',el,function(e){clickpick(e,vB01+'_popup_fontname_menu')});
    
   el = $D(vB01+'_font_parentout');
   if(el)
-    on('click',el,function(e){
+    _o('click',el,function(e){
      var etitle = gvar.settings.lastused.font;
      if(etitle) {
        do_insertTag('font',etitle);
@@ -2334,11 +2352,11 @@ function re_event_vbEditor(){
   if(par && el) Dom.add(el,par);
   
   el = $D('#pick_size');
-  if(el) on('click',el,function(e){clickpick(e,vB01+'_popup_size_menu')});
+  if(el) _o('click',el,function(e){clickpick(e,vB01+'_popup_size_menu')});
    
   el = $D(vB01+'_size_parentout');
   if(el)
-    on('click',el,function(e){
+    _o('click',el,function(e){
      var etitle = gvar.settings.lastused.size;
      if( etitle && !isNaN(parseFloat(etitle)) ) {
        do_insertTag('size',etitle);
@@ -2350,7 +2368,7 @@ function re_event_vbEditor(){
   var mouseEv = function(par,cmd,evt){
     window.setTimeout(function() {
       if(isUndefined(vB01)) vB01 = 'vB_Editor_001';
-	  obj = $D(vB01+cmd);
+	  var obj = $D(vB01+cmd);
       if($D('#'+par) && $D('#'+par).style.display!='') {
         obj.style.backgroundColor=(evt=='mouseout' ? 'transparent' : '#B0DAF2');
         obj.style.border='1px solid '+(evt=='mouseout' ? 'transparent' : '#2085C1');
@@ -2360,16 +2378,16 @@ function re_event_vbEditor(){
   // event buat smile  
    par = $D(vB01+'_cmd_insertsmile');   
    if(par) {
-     on('click',par,function(e){switch_upl_smiley(e)});
-     on('mouseout',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseout')});
-     on('mouseover',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseover')});
+     _o('click',par,function(e){switch_upl_smiley(e)});
+     _o('mouseout',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseout')});
+     _o('mouseover',par,function(){mouseEv('smile_cont','_cmd_insertsmile_img','mouseover')});
    }
   // event buat button uploader
    par = $D(vB01+'_cmd_uploader');
    if(par) {
-     on('click',par,function(e){switch_upl_smiley(e)});
-	 on('mouseout',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseout')});
-     on('mouseover',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseover')});   
+     _o('click',par,function(e){switch_upl_smiley(e)});
+	 _o('mouseout',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseout')});
+     _o('mouseover',par,function(){mouseEv('upl_cont','_cmd_uploader_img','mouseover')});   
    }
 }
 // end re_event_vbEditor
@@ -2421,7 +2439,7 @@ function create_upoader_tab(){
   
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close_uploader',title:'Close Uploader'},'&nbsp;<b>X</b>&nbsp;');
-  on('click',el2,function(){
+  _o('click',el2,function(){
     $D('#upl_cont').style.display='none';
     force_focus(10); 
     var obj = $D('#vB_Editor_001_cmd_uploader_img');
@@ -2461,7 +2479,7 @@ function create_smile_tab(){
   Dom.add(cont,parent);
   for(tab in mtab){
     el2 = createEl('a',{href:'javascript:;','class':'',id:'remote_'+tab},mtab[tab]);
-    on('click',el2,function(e){
+    _o('click',el2,function(e){
       var tt = (e.target||e).innerHTML, tgt='sTGT_container'.replace(/TGT/,tt),S=null;
       S=(tt=='besar' ? gvar.smiliebesar : (tt=='kecil' ? gvar.smiliekecil : (tt=='custom' ? gvar.smiliecustom : null) ));
       if(tt=='custom' && Dom.g(tgt) && Dom.g(tgt).innerHTML!=''){ // need to make sure about this, really
@@ -2486,7 +2504,7 @@ function create_smile_tab(){
   
   // tab close
   el2 = createEl('a',{href:'javascript:;',id:'tab_close',title:'Close Smiley'},'&nbsp;<b>X</b>&nbsp;');
-  on('click',el2,function(){
+  _o('click',el2,function(){
     $D('#smile_cont').style.display='none';
     force_focus(10); 
     var obj = $D('#vB_Editor_001_cmd_insertsmile_img');
@@ -2570,7 +2588,7 @@ function create_popup_size(){
     tCont = createEl('div',Attr);
     tFont = createEl('font',{size:size},size);
     Dom.add(tFont,tCont);
-    on('click',tCont,function(e){
+    _o('click',tCont,function(e){
       e=e.target||e;
       if(e.nodeName=='FONT') e=e.parentNode;      
       var cont=Dom.g(id);
@@ -2603,7 +2621,7 @@ function create_popup_font(){
     tClr = createEl('div',Attr);
     tFont = createEl('font',{face:font},font);
     Dom.add(tFont,tClr);
-    on('click',tClr,function(e){
+    _o('click',tClr,function(e){
       e=e.target||e;
       if(e.nodeName=='FONT') e=e.parentNode;      
       var cont=Dom.g(id);
@@ -2651,7 +2669,7 @@ function create_popup_color(){
     td.title = td.colorname = kolor;
     td.id = "pick_color_"+td.colorname;
     
-    on('click',td,function(e){
+    _o('click',td,function(e){
       e=e.target||e;
       if(e.nodeName=='DIV') e=e.parentNode;
       var etitle = e.id.replace('pick_color_','');
@@ -2673,7 +2691,7 @@ function create_dummy_input(parent, dumy_id){
        //clog('in create_dummy_input');
   var dumyEl = createEl('input',{id:dumy_id, style:'width:1px;height:0;margin-left:-99999px;',readonly:'readonly'});
   Dom.add(dumyEl,parent);
-  on('blur',dumyEl,function(ec){
+  _o('blur',dumyEl,function(ec){
       if(!gvar.stillOnIt) 
       window.setTimeout(function() {
           ec=ec.target||ec;
@@ -2681,7 +2699,7 @@ function create_dummy_input(parent, dumy_id){
           ec.style.display='none';
         }, 500);
   });  
-  on('mousedown',parent,function(ec){
+  _o('mousedown',parent,function(ec){
     gvar.stillOnIt=true;      
     window.setTimeout(function() {
       gvar.stillOnIt=false;
@@ -3116,7 +3134,7 @@ function chk_ckck(){
 }
 function event_ckck(){
   if($D('#quickreply')) gvar.motion_target=$D('#quickreply');
-  on('mousemove',gvar.motion_target,function(){
+  _o('mousemove',gvar.motion_target,function(){
       QRdp.check($D('#qr_delaycontainer'));	  
       chk_ckck();
       /*
@@ -3271,19 +3289,19 @@ function appendAvatar(){
        Dom.add(dv,dvCon);
        Dom.add(dvCon,$D('#qravatar_cont'));
        
-       on('mouseover',dvCon,function(){dv.style.display=''});
-       on('mouseout',dvCon,function(){dv.style.display='none';});
+       _o('mouseover',dvCon,function(){dv.style.display=''});
+       _o('mouseout',dvCon,function(){dv.style.display='none';});
        // change className behaviour when img is loaded
        if(Dom.g(avId))
-        on('load',Dom.g(avId),function(){
+        _o('load',Dom.g(avId),function(){
          var cls;
          if(Dom.g(avId).clientWidth > 0)
             $D('#qravatar_cont').style.minWidth=Dom.g(avId).clientWidth.toString()+'px';
-         on('mouseover',dvCon,function(){
+         _o('mouseover',dvCon,function(){
            cls = 'qravatar_refetch_hover' + (Dom.g(avId).clientHeight==0 ? '_0':'').toString();
            $D('#qravatar_refetch').setAttribute('class',cls);
          });
-         on('mouseout',dvCon,function(){
+         _o('mouseout',dvCon,function(){
            cls = 'qravatar_refetch_hover' + (Dom.g(avId).clientHeight==0 ? '_0':'').toString();
            removeClass(cls, $D('#qravatar_refetch'));
          });
@@ -3291,7 +3309,7 @@ function appendAvatar(){
         } );
       else
        controler_resizer();
-       on('click',$D('#refetch'),function(){
+       _o('click',$D('#refetch'),function(){
          if($D('#fetching_avatar')) return;
          refetch_avatar();
        });   
@@ -3400,14 +3418,14 @@ function ajax_chk_newval(reply_html){
     }
     if(re_event_btn){
        if($D('#quote_now'))
-        on('click',$D('#quote_now'),function(){         
+        _o('click',$D('#quote_now'),function(){         
          vB_textarea.readonly();
          removeClass('g_notice-error', notice);
          notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
          ajax_chk_newval();
         });
        if($D('#deselect_them'))
-        on('click',$D('#deselect_them'),function(){
+        _o('click',$D('#deselect_them'),function(){
          removeClass('g_notice-error', notice);
          deselect_it();
         });
@@ -3420,7 +3438,7 @@ function proc_mquickquote(e){
    if(nodes.snapshotLength>0){
       for(var i=0;i<nodes.snapshotLength; i++){
        var node = nodes.snapshotItem(i), parts, nod;
-	   nid=node.id.replace(/mq_(\d+)/, 'qqr_$1');
+	   var nid=node.id.replace(/mq_(\d+)/, 'qqr_$1');
 	   if(parts=getTag('IMG', $D(nid))) nod = parts[0];
 	   do_click_qqr(nod, true);
       }
@@ -3436,7 +3454,7 @@ function chk_newQQ(){
     if($D('#qq_now_cont') && mqs.snapshotLength>0 ) {
 	    $D('#qq_now_cont').innerHTML = ' <a href="javascript:;" id="quickquote_now" title="Quick Quote Posts">[QuickQuote]</a>';
 	    notice=$D('#qq_now_cont').parentNode;
-	    on('click',$D('#quickquote_now'),function(){
+	    _o('click',$D('#quickquote_now'),function(){
           if(notice) notice.innerHTML = '<span>Parsing...</span>';
           proc_mquickquote();
         });
@@ -3456,12 +3474,12 @@ function chk_newval(val){
       + (' or <a href="javascript:;" id="deselect_them" title="Deselect Quoted Post [Ctrl+Shift+Q]">deselect them</a>.');
     notice.setAttribute('style','display:block;');
 	
-	on('click',$D('#deselect_them'),function(){deselect_it();});
+ _o('click',$D('#deselect_them'),function(){deselect_it();});
     if(gvar.settings.quick_quote) chk_newQQ(); // fill in QQ now
 	
 	// dont give a damn with supplied val cookie; coz when use with Multi, it will never been grabbed	
     $D('#fetch_now_cont').innerHTML = '<a href="javascript:;" id="quote_now" title="Fetch Quoted Post ['+(!gvar.isOpera?'Alt+Q':'Ctrl+Alt+Q')+']">Quote these posts now</a>';
-    on('click',$D('#quote_now'),function(){
+    _o('click',$D('#quote_now'),function(){
       vB_textarea.init();
       vB_textarea.readonly();      
       notice.innerHTML = '<span id="current_fetch_post">Fetching...</span>';
@@ -3480,7 +3498,7 @@ function deselect_it(){
 function do_deselect(mqs) {
   if(isUndefined(mqs)) 
     mqs = $D('#tmp_chkVal').value;
-  ids = mqs.split(',');
+  var ids = mqs.split(',');
   while(gvar.idx_mq > 0) {
     gvar.idx_mq--;
     if($D("#mq_"+ids[parseInt(gvar.idx_mq)])) {
@@ -3605,7 +3623,7 @@ function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return (typeof(x)=='string' && x ? x.replace(/^\s+|\s+$/g,"") : '') };
 function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
 
-function on(m,e,f){Dom.Ev(e,m,function(e){typeof(f)=='function'?f(e):void(0)});}
+function _o(m,e,f){Dom.Ev(e,m,function(e){typeof(f)=='function'?f(e):void(0)});}
 function basename(path, suffix) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -4025,7 +4043,7 @@ var vB_textarea = {
     var a=Dom.g(tid) || this.Obj;
     vB_textarea.oflow='hidden';
     a.setAttribute('style','overflow:'+vB_textarea.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
-    if( !winrez ) on('keyup',a,function(){setCols_Elastic(max)});
+    if( !winrez ) _o('keyup',a,function(){setCols_Elastic(max)});
     window.setTimeout(function(){setCols_Elastic(max)}, 110);
   },
   
@@ -4118,7 +4136,7 @@ var GM_XHR = {
         onload: function(ret) {
           if(ret.status==503){
             clog('Reach 503, retrying...');
-            setTimeout(GM_XHR.request(cdata,met,callback), 777);
+            window.setTimeout(GM_XHR.request(cdata,met,callback), 777);
           }else{
             var rets=ret;
             if(callback!=null)
@@ -4307,10 +4325,10 @@ var Updater = {
       +'<div style="float:right;margin-top:9px;"><a id="do_update" class="qbutton" href="javascript:;"><b>Update</b></a></div>'
       +'<div style="margin-left:22px;">Wanna make an action?</div>'
     );
-    on('click',$D('#upd_close'),function(){
+    _o('click',$D('#upd_close'),function(){
        Dom.remove('upd_cnt');
     });    
-    on('click',$D('#upd_notify_lnk'),function(){
+    _o('click',$D('#upd_notify_lnk'),function(){
        if($D('#upd_cnt'))
          Dom.remove('upd_cnt');
        else{         
@@ -4318,7 +4336,7 @@ var Updater = {
          Updater.check(true);
        }
     });    
-    on('click',$D('#do_update'),function(){  
+    _o('click',$D('#do_update'),function(){  
       GM_openInTab('http://'+'userscripts.org'+'/scripts/source/'+gvar.scriptMeta.scriptID+'.user.js');
       window.setTimeout(function(){ Dom.remove('upd_cnt'); }, 1000);
     });    
@@ -4340,7 +4358,7 @@ var Updater = {
     if( Updater.meta.news ){
       $D('#nfo_version').setAttribute('title', 'What\' New...');
       $D('#nfo_version').style.setProperty('cursor', 'pointer', '');
-      on('click',$D('#nfo_version'),function(){ alert( gvar.titlename+'\n== Last LOG Update ==' + Updater.meta.news );});
+      _o('click',$D('#nfo_version'),function(){ alert( gvar.titlename+'\n== Last LOG Update ==' + Updater.meta.news );});
     }
     
     Updater.notify_done(true);
@@ -4379,7 +4397,7 @@ var Updater = {
 // global smiley loader
 var SML_LDR = {
   init: function(scID,smlset){
-    var dumycont, target=Dom.g(scID);
+    var realcont, dumycont, target=Dom.g(scID);
     target.innerHTML='';
     
     SML_LDR.scID = scID;
@@ -4438,7 +4456,7 @@ var SML_LDR = {
             Attr = {title:img[1]+' '+HtmlUnicodeDecode('&#8212;')+img[2],src:img[0],alt:img[1]};
             imgEl = createEl('img',Attr);
           }          
-          on('click',imgEl,function(e){
+          _o('click',imgEl,function(e){
              var C = e; e=e.target||e; do_smile(e); 
              try{do_an_e(C);return false;}catch(ev){} 
           });
@@ -4470,6 +4488,7 @@ var SML_LDR = {
  ,praload: function(countSmiley, lastEl){
     var RC=SML_LDR.realcont;
     //if(isUndefined(deadEnd)) deadEnd=false;
+    var imgEl2, imgEl=false;
     // make a dummy last-img that, avoid bad img on last element
     if( SML_LDR.scID=='scustom_container' && !gvar.settings.scustom_alt) {
         imgEl = createEl('a',{href:'javascript:;',style:'display:none;'});
@@ -4509,7 +4528,7 @@ var SML_LDR = {
        }else{
           // imgEl will be IMG when scustom_alt=0, and TEXT when scustom_alt=1 
           if(imgEl.nodeName=='A') imgEl=imgEl.firstChild;
-          on('load',imgEl,function(){showContent()});
+          _o('load',imgEl,function(){showContent()});
           // obj has beed loaded before this line executed
           if(imgEl.height) showContent();
        }
@@ -4532,20 +4551,20 @@ var SML_LDR = {
       
       el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
       Dom.add(el,cont);
-      on('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
+      _o('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
 	  el = createEl('span',{id:'title_group',style:'margin-left:8px;font-weight:bold'},(gvar.smiliegroup ? gvar.smiliegroup[0]:'') );
       Dom.add(el,cont);
 	  
       el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
       Dom.add(el,cont);
-      on('click',el,function(){
+      _o('click',el,function(){
         var mcPar=$D('#manage_container');
         if(mcPar) Dom.remove(mcPar);
         SML_LDR.custom.toggle_manage();
       });
       el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
       Dom.add(el,cont);
-      on('click',el,function(e){
+      _o('click',el,function(e){
       alert( ''
         +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
         +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
@@ -4564,13 +4583,13 @@ var SML_LDR = {
 	  
     }
    ,tab_menu_left: function(){
-      cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
+      var cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
       if(par=$D('#ul_group')) {
         clog('refresh group mnu');
        $D('#ul_group').innerHTML = '';
        el = createEl('li',{'class':'qrtab add_group'}); 
        el2 = createEl('a',{href:'javascript:;',title:'Add Group','class':'add_group'},'Add Group');
-       on('click',el,function(e){SML_LDR.custom.add_group(e)});
+       _o('click',el,function(e){SML_LDR.custom.add_group(e)});
        Dom.add(el2,el); Dom.add(el,par);
        el = createEl('li',{}); el2=createEl('div',{style:'height:2px'}); 
        Dom.add(el2,el); Dom.add(el,par);
@@ -4578,7 +4597,7 @@ var SML_LDR = {
        for(var i=0; i<cL;i++){
           el = createEl('li',{'class':'qrtab'+(i==0 ? ' current':'')}); 
           el2 = createEl('a',{id:'tbgrup_'+i,href:'javascript:;',title:gvar.smiliegroup[i]}, gvar.smiliegroup[i].substring(0,10)+(gvar.smiliegroup[i].length>10?'..':''));
-          on('click',el2,function(e){
+          _o('click',el2,function(e){
             e=e.target||e;
             if(e.nodeName!='A') return;
             try{if(e.parentNode.className.indexOf('current')!=-1)return;}catch(ei){};
@@ -4716,13 +4735,13 @@ var SML_LDR = {
           obj = createEl('div',Attr,'&nbsp;<b>'+($D('#current_grup') && $D('#current_grup').value==''?'Add ':'')+'Group</b>:&nbsp;');
           Attr = {id:'input_grupname','class':'input_title',title:'Group Name',style:'width:200px',value:generateGrup()};
           obj2 = createEl('input',Attr);
-          on('keydown',obj2,function(e){var C=(!e?window.event:e);if(C.keyCode==13){C = do_an_e(C);SML_LDR.custom.manage_save();}else{return C;}});
-          on('focus',obj2,function(e){selectAll(e)});
+          _o('keydown',obj2,function(e){var C=(!e?window.event:e);if(C.keyCode==13){C = do_an_e(C);SML_LDR.custom.manage_save();}else{return C;}});
+          _o('focus',obj2,function(e){selectAll(e)});
           Dom.add(obj2,obj);          
           if($D('#current_order').value!=''){ // not add group?
             Attr = {id:'delete_grupname',href:'javascript:;','class':'smallfont',style:'margin-left:20px;color:red;',title:'Delete this Group'};
             obj2 = createEl('a',Attr,'delete');
-            on('click',obj2,function(){SML_LDR.custom.delete_group()});
+            _o('click',obj2,function(){SML_LDR.custom.delete_group()});
             Dom.add(obj2,obj);
           }
           Dom.add(obj,mcPar);
@@ -4791,7 +4810,7 @@ var SML_LDR = {
            return ret;
         };
         if(isUndefined(todel)){
-          imgtxta = $D('#textarea_'+cont_id);
+          var imgtxta = $D('#textarea_'+cont_id);
           if(imgtxta) buff = do_filter_scustom(imgtxta.value).toString();
           gvar.settings.scustom_alt = ($D('#scustom_alt') && $D('#scustom_alt').checked);
           gvar.settings.scustom_noparse = ($D('#scustom_noparse') && $D('#scustom_noparse').checked);
@@ -4836,25 +4855,25 @@ var ST = {
     // main left-tab
     var elSet, par, el = $D('.qrtab');
     for(var i=0; i<el.length; i++)
-      if($D(el[i])) on('click',el[i],function(e){ ST.switch_tab(e); });
-    if($D('#tab_close')) on('click',$D('#tab_close'),function(){ ST.close_setting(); });
+      if($D(el[i])) _o('click',el[i],function(e){ ST.switch_tab(e); });
+    if($D('#tab_close')) _o('click',$D('#tab_close'),function(){ ST.close_setting(); });
     
     // general & controller
-    if($D('#save_settings')) on('click',$D('#save_settings'),function(){ ST.save_setting(); } );
-    if($D('#chk_select_all')) on('click',$D('#chk_select_all'),function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
+    if($D('#save_settings')) _o('click',$D('#save_settings'),function(){ ST.save_setting(); } );
+    if($D('#chk_select_all')) _o('click',$D('#chk_select_all'),function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
     
     // having child set
     elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey','misc_recaptcha_mode'], cL=elSet.length;
     for(var i=0;i<cL;i++)
-       if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.toggle_childs(e); });
+       if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.toggle_childs(e); });
     elSet = ['misc_autolayout_sigi','misc_autolayout_tpl'], cL=elSet.length;
     for(var i=0;i<cL;i++)
-       if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.toggle_autolayout(e); });
+       if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.toggle_autolayout(e); });
     
     elSet = ['edit_sigi','edit_tpl'], cL=elSet.length;
     for(var i=0;i<cL;i++)
-       if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.toggle_editLayout(e); });
-    if($D('#misc_hotkey')) on('click',$D('#misc_hotkey'),function(e){
+       if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.toggle_editLayout(e); });
+    if($D('#misc_hotkey')) _o('click',$D('#misc_hotkey'),function(e){
        e=e.target||e;
        if(e && !e.checked){
           var elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_shift'], cL=elSet.length;
@@ -4864,10 +4883,10 @@ var ST = {
     });
     elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_char'], cL=elSet.length;
     for(var i=0;i<cL;i++)
-       if(Dom.g(elSet[i])) on('click',Dom.g(elSet[i]),function(e){ ST.precheck_shift(e); });
+       if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.precheck_shift(e); });
        try { // check noCrossDomain and/or isOpera
      if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera still T_T
-      on('click',$D('#chk_upd_now'),  function(e){
+      _o('click',$D('#chk_upd_now'),  function(e){
         if($D('#fetch_update')) return; // there is a fetch update in progress
         if($D('#upd_cnt')) Dom.remove($D('#upd_cnt'));
         Updater.notify_progres('chk_upd_now');
@@ -4878,7 +4897,7 @@ var ST = {
     par = $D('#general_control');
     var alNod = getTag('input', par), aL=alNod.length;
     if(alNod && alNod.length > 0) for(var idx=0; idx<aL; idx++){
-        if(typeof(alNod[idx])=='object') on('keydown',alNod[idx],function(e){
+        if(typeof(alNod[idx])=='object') _o('keydown',alNod[idx],function(e){
           var C = (!e ? window.event : e );
           if(C.keyCode==13){ // mijit enter
             C = do_an_e(C);
@@ -4890,15 +4909,15 @@ var ST = {
     }
     
     // customable_btn jmp to #tab_general
-    if($D('#customable_btn')) on('click',$D('#customable_btn'),function(){
+    if($D('#customable_btn')) _o('click',$D('#customable_btn'),function(){
       var e=$D('#tab_general'), ea=getTag('a',e); if(ea.length>0) ST.switch_tab(ea[0]);
     });
     // ex-imp        
     if($D('#textarea_rawdata')) {
         el = $D('#textarea_rawdata');
-        on('focus',el,function(e){selectAll(e)});
-        on('dblclick',el,function(e){selectAll(e)});
-        on('keyup',el,function(){
+        _o('focus',el,function(e){selectAll(e)});
+        _o('dblclick',el,function(e){selectAll(e)});
+        _o('keyup',el,function(){
           if(isDefined(gvar.raw_data_changed) && gvar.raw_data_changed) return;
           var tgt=$D('#textarea_rawdata');
           if(tgt && gvar.buftxt && tgt.value!=gvar.buftxt){
@@ -4907,10 +4926,10 @@ var ST = {
           }
         });
     }
-    if($D('#fn_qr_set')) on('focus',$D('#fn_qr_set'),function(e){selectAll(e)});
-    if($D('#import_setting')) on('click',$D('#import_setting'), function(){ST.import_setting()});
-    if($D('#reset_default')) on('click',$D('#reset_default'),function(){ST.reset_setting()});
-    if($D('#exim_select_all')) on('click',$D('#exim_select_all'),function(){ 
+    if($D('#fn_qr_set')) _o('focus',$D('#fn_qr_set'),function(e){selectAll(e)});
+    if($D('#import_setting')) _o('click',$D('#import_setting'), function(){ST.import_setting()});
+    if($D('#reset_default')) _o('click',$D('#reset_default'),function(){ST.reset_setting()});
+    if($D('#exim_select_all')) _o('click',$D('#exim_select_all'),function(){ 
       var tgt=$D('#textarea_rawdata'); 
       if(tgt) {
         if(gvar.isBuggedChrome)
@@ -4924,7 +4943,7 @@ var ST = {
 	elSet = $D('.nostyle');
 	if(elSet){
 	  for(var i=0;i<elSet.length;i++)
-	    on('click',elSet[i],function(e){
+	    _o('click',elSet[i],function(e){
 	     var u=(e.target||e).getAttribute('rel');
 		 if(u) window.open(gvar.domain+'mem'+'ber.ph'+'p?u='+u);return;
 	    });
@@ -4989,7 +5008,10 @@ var ST = {
      ,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail; validValue=[1,0]'
      ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
      ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'
+     ,'QR_USE_RECAPCAY':'Mode reCaptcha; validValue=[1,0]'
+     ,'QR_RECAPCAY_PROP':'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]'
     };
+    /*
     if(gvar.user.isDonatur) {
         keys.push('QR_USE_RECAPCAY');
         keykomeng['QR_USE_RECAPCAY'] = 'Mode reCaptcha; validValue=[1,0]';
@@ -4997,6 +5019,7 @@ var ST = {
         keys.push('QR_RECAPCAY_PROP');
         keykomeng['QR_RECAPCAY_PROP'] = 'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]';
     }
+    */
     var kL=keys.length, getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
     var parse_UA_Vers = function(){
       return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/g,' ').replace(/\//g,'-') );
@@ -5312,7 +5335,7 @@ var ST = {
   // using onclick attribute identify that cancel event has been attached
   if(!el_cancel.getAttribute('onclick')){
     el_cancel.setAttribute('onclick','return false;');
-    on('click',el_cancel,function(ec){ 
+    _o('click',el_cancel,function(ec){ 
      ec=ec.target||ec; var tgt = ec.id.replace('_cancel','')+'_Editor';
      Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', ec );
      e.innerHTML='edit';
@@ -5340,7 +5363,7 @@ var ST = {
         cnt = el.length;
         for(var i=0; i<cnt; i++ ){
           if(!el[i] || !el[i].id) continue;
-          ccid = el[i].id.replace(/^tab_/, 'tbcon_');
+          var ccid = el[i].id.replace(/^tab_/, 'tbcon_');
           elc = $D('#'+ccid);
           if(el[i].id != cid){
             removeClass('current', el[i]);
@@ -5417,25 +5440,25 @@ var UPL = {
         Attr={id:'label_file','class':'cabinet'}; el=createEl('label',Attr);
         Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
         el2=createEl('input',Attr);
-        on('change',el2,function(e){
+        _o('change',el2,function(e){
           e=e.target||e;
           if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
         });
         Dom.add(el2,el); Dom.add(el,par);
         Attr={id:'btn_upload',value:'Upload','class':'twbtn',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
         el=createEl('input',Attr);
-        on('click',el,function(){UPL.prep_upload()});
+        _o('click',el,function(){UPL.prep_upload()});
         Dom.add(el,par);
         
         Attr={id:'cancel_upload',value:'Cancel','class':'twbtn',type:'button',style:'margin:1px 0 0 20px;display:none;'}
         el=createEl('input',Attr);
-        on('click',el,function(){UPL.cancel_upload()});
+        _o('click',el,function(){UPL.cancel_upload()});
         Dom.add(el,par);
       }
       
       Attr={style:'margin-top:7px;font-weight:bold;font-size:10px;'+(allow_cross ? 'float:right;':'display:inline')}; el=createEl('div',Attr);
       Attr={href:'javascript:;','class':'twbtn','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
-      on('click',el2,function(){return UPL.toogle_iframe()});
+      _o('click',el2,function(){return UPL.toogle_iframe()});
       Dom.add(el2,el); Dom.add(el,par);
 	  
 	  if(!allow_cross){
@@ -5446,7 +5469,7 @@ var UPL = {
       
       Attr={style:'display:none;',src:'about:blank',name:'target_upload',scrolling:'auto',id:'target_upload'};
       el=createEl('iframe',Attr);
-      on('load',el,function(){UPL.reset_onloadIframe()});
+      _o('load',el,function(){UPL.reset_onloadIframe()});
       Dom.add(el,par);
     }
   }
@@ -5537,7 +5560,7 @@ var UPL = {
       el=tgt[0]; Dom.remove(tgt[0]);
       Attr={id:'userfile',name:UPL.prop[gvar.upload_tipe]['ifile'],'class':'file',type:'file'};
       el=createEl('input',Attr);
-      on('change',el,function(e){
+      _o('change',el,function(e){
         e=e.target||e;
         if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
       });
@@ -5550,7 +5573,7 @@ var UPL = {
     var ret=createEl('div',{id:'par_sel_host',style:'display:inline-block;margin-right:5px;border:1px solid #BBC7CE;padding-left:3px;',});
     el=createEl('div',{style:'float:left;font-weight:bold;margin-top:4px;color:#0000FF'},'<a id="host_link" href="http://'+UPL.prop[gvar.upload_tipe]['src'].replace(/\?no_multi.+/i,'')+'">Host</a> :&nbsp;');
     Dom.add(el,ret);
-    on('change',sel,function(e){
+    _o('change',sel,function(e){
       e=e.target||e;
       var hl = $D('#host_link'),href=e.options[e.selectedIndex].value;
         if(hl) hl.setAttribute('href','http://'+href);
@@ -5623,8 +5646,8 @@ var ss = {
     
     // check is there any callback
     ss.callback = (typeof(cb)=='function' ? cb:null);
-    cypos = ss.getCurrentYPos();
-    ss_stepsize = parseInt((desty-cypos)/ss.STEPS);
+    var cypos = ss.getCurrentYPos();
+    var ss_stepsize = parseInt((desty-cypos)/ss.STEPS);
     
     ss.initPos = (cypos < desty);
     ss.INTERVAL = setInterval( function(){
@@ -5633,11 +5656,11 @@ var ss = {
     
   },
   scrollWindow: function(scramount,dest,anchor) {
-    wascypos = ss.getCurrentYPos();
-    isAbove = (wascypos < dest);
+    var wascypos = ss.getCurrentYPos();
+    var isAbove = (wascypos < dest);
     window.scrollTo(0,wascypos + scramount);
-    iscypos = ss.getCurrentYPos();
-    isAboveNow = (iscypos < dest);
+    var iscypos = ss.getCurrentYPos();
+    var isAboveNow = (iscypos < dest);
     //show_alert('wascypos:'+wascypos+'; '+'isAbove:'+isAbove+'; '+'iscypos:'+iscypos+'; '+'isAboveNow:'+isAboveNow);
     if ((isAbove != isAboveNow) || (wascypos == iscypos) || (isAbove == isAboveNow && (ss.initPos!=isAbove || ss.initPos!=isAboveNow)) ) {
       // if we've just scrolled past the destination, or
