@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.5
+// @version       0.7.6
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
@@ -14,12 +14,14 @@
 /*
 Kaskus Fix-ObfuscatorII 
 Created by Pandu E Poluan {http://userscripts.org/users/71414/}
-Credit: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/)
+Credit: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
 
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.6
+- mediafire..com,mediafire.com (thanks Piluze)
 0.7.5
 - roll back update from v0.7.2
 - full long url linkify
@@ -108,6 +110,7 @@ detik..com,detik.com
 detikhot..com,detikhot.com
 detikinet..com,detikinet.com
 detiknews..com,detiknews.com
+mediafire..com,mediafire.com
 file*den,fileden
 kaskus,anakayam
 kaskus,duniasex
@@ -122,6 +125,7 @@ yahoo,ueuo
 zid*du,ziddu
 dragon*adopters,dragonadopters
         */
+		"mediafire..com":"mediafire.com",
         "dragon\\*adopters": "dragonadopters",
         "tiny\\*url": "tinyurl",
         "file\\*den": "fileden",
