@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.3
-// @dtversion     110801323
-// @timestamp     1312144343710
+// @version       3.2.4
+// @dtversion     110806324
+// @timestamp     1312564430839
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -16,6 +16,12 @@
 // @include       http://photoserver.ws/*
 //
 // -!--latestupdate
+//
+// v3.2.4 - 2011-08-06 . 1312564430839
+//   Improve counterdown on page title. Thanks=[kusnady]
+//   Fix gvar is underfined. Thanks=[Piluze]
+//   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
+//   Fix more strict find EDIT & QUOTE links. Thanks=[ketang.klimax]
 //
 // v3.2.3 - 2011-08-01 . 1312144343710
 //   Fix wrap quote for spoiler title
@@ -56,19 +62,19 @@
 */
 (function () {
 
+// Initialize Global Variables
+var GM_isAddon, gvar=function() {};
+
 const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) ){
   delete gvar; return;
 }
 
-// Initialize Global Variables
-var GM_isAddon, gvar=function() {};
-
-gvar.sversion = 'v' + '3.2.3';
+gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1312144343710 // version.timestamp
+  timestamp: 1312564430839 // version.timestamp
 
- ,dtversion: 110801323 // version.date
+ ,dtversion: 110806323 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -173,7 +179,7 @@ function init(){
   gvar.user= getUserId(); //will be [gvar.user.id, gvar.user.name, gvar.user.avatar, gvar.user.isDonatur ]
   gvar.ck.bbuserid_currentpage = gvar.ck.bbuserid = gvar.user.id;
   
-  gvar.isPosting= gvar.restart= false;
+  gvar.maintitle=gvar.isPosting= gvar.restart= false;
   
   // get saved settings to gvar
   getSettings();
@@ -412,6 +418,10 @@ function getSettings(){
      setValue(KS+'TMP_TEXT', ''); //set blank to nulled it
 
   getUploaderSetting();
+  
+  // get current page title
+  hVal = getTag('title');
+  gvar.maintitle = hVal[0].textContent;
 }
 
 function getUploaderSetting(){
@@ -487,11 +497,12 @@ function start_Main(){
     
     // cuma untuk fresh load
     if(!gvar.restart) {
-     nodes = $D('//a[contains(.,"QUOTE")]', null);
+     nodes = $D('//a[contains(.,"QUOTE") and not(contains(@class,"bigusername")) ]', null);
      leng= nodes.snapshotLength; 
      if(leng) for(var i=0; i<leng; i++){
        nodel = nodes.snapshotItem(i);
-       hr = nodel.href.split("&p=");      
+       if(nodel.parentNode.nodeName != 'TD') continue;
+       hr = nodel.href.split("&p=");
        nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
        // prep bulu pena
        child = '<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" title="Quick Reply to this message" border=0 />';
@@ -513,7 +524,7 @@ function start_Main(){
        nodel.parentNode.insertBefore(createTextEl(' '+"\n"), nodel);
 	   
      } // end-for
-     nodes = $D('//a[contains(.,"EDIT")]', null);
+     nodes = $D('//a[contains(.,"EDIT") and not(contains(@class,"bigusername")) ]', null);
      leng= nodes.snapshotLength; 
      if(leng) for(var i=0; i<leng; i++){
         nodel = nodes.snapshotItem(i);
@@ -849,18 +860,19 @@ function do_click_qqr(e, multi){
 		}
     }
 	clog('after spoiler done=\n'+pCon.innerHTML);
-	// need to clear this <div style="margin:20px; margin-top:5px">; or closed div will be parsed as closed [/center]
-    /*
-    els = $D(".//div[contains(@style,'20px')]", pCon);    
-    nLength=(els.snapshotLength-1)
-	if(els) {
-        for(var i=nLength; i>=0; i--){
+	
+    // need to clear this <div style="margin:20px; margin-top:5px">; or closed div will be parsed as closed [/center]
+    // fixing wrapped spoiler yg dijepit align [left|center|right]
+    els=$D(".//span[contains(@rel,'spoiler-')]", pCon);
+    nLength = els.snapshotLength;
+    if(nLength) {
+        for(var i=0; i<nLength; i++){
             el=els.snapshotItem(i);
-        
+            var epar = el.parentNode;
+            if(epar.nodeName=='DIV')
+                epar.parentNode.replaceChild(el, epar);
         }
     }
-    */
-    
     
 	// reveal ol
 	els=$D('.//ol', pCon);
@@ -898,7 +910,7 @@ function do_click_qqr(e, multi){
 	for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
 	  Dom.remove(el);
-	}    
+	}
 	x=pCon.innerHTML; delete pCon;
 
 	// serials parse
@@ -4242,6 +4254,10 @@ var QRdp = {
 
 
  }
+ ,updTitle:function(val){
+    var t = getTag('title');
+    if(t) t[0].textContent = (val > 0 ? '[ '+val+' ] ' : '') + gvar.maintitle;
+  }
  ,writeTgt:function(tgt,val){
     if(tgt) tgt.innerHTML = '[ <span class="qr-delaypost">'+val+'</span> ]';
   }
@@ -4254,12 +4270,12 @@ var QRdp = {
       if(tgt){
        tgt.innerHTML = '';
        tgt.style.display = 'none';
-	  }	  
-
+	  }
     }else{
       QRdp.countDown--;
       window.setTimeout( function(){QRdp.showCounter()}, 1000);
     }
+    QRdp.updTitle(QRdp.countDown);
  }
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
