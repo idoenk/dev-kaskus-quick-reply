@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
 // @dtversion     110807324
-// @timestamp     1312726895641
+// @timestamp     1312736203576
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-07 . 1312726895641
+// v3.2.4 - 2011-08-07 . 1312736203576
+//   Improve intercept in-delayed post (optimized for FF, Opera). Thanks=[tokekGaaaaaaul]
+//   Fix gvar.securitytoken is null (QR+)
 //   Fix spoiler title containing "font". Thanks=[orientalcaesar,ketang.klimax]
 //   Improve counterdown on page title. Thanks=[kusnady]
 //   Fix gvar is underfined. Thanks=[Piluze]
@@ -73,7 +75,7 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1312726895641 // version.timestamp
+  timestamp: 1312736203576 // version.timestamp
 
  ,dtversion: 110807323 // version.date
  ,scriptID: 80409 // script-Id
@@ -585,7 +587,6 @@ function start_Main(){
        controler_resizer();
 	   if($D('#qr_delaycontainer')) QRdp.check($D('#qr_delaycontainer'));
     }, 350);
-
 
     if( gvar.__DEBUG__ && $D('#dom_created') ){
      $D('#dom_created').innerHTML = ' | DOM Created: '+DOMTimer.get()+' ms; ver='+(function(){var d=new Date(); return(d.getFullYear().toString().substring(2,4)+((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+(d.getDate().toString().length==1 ? '0':'')+d.getDate()+'');})()+gvar.sversion.replace(/v|\.|\]/g,'')+'; timestamp='+(function(){return(new Date().getTime())})();
@@ -1716,6 +1717,13 @@ function loadLayer_reCaptcha(){
           e.preventDefault;
           return false;
         }
+        if($D('#qr_delaycontainer') && $D('#qr_delaycontainer').style.display!='none' ){
+            var delay = $D('.qr-delaypost', $D('#qr_delaycontainer'));
+            if(delay.length) delay = delay[0].textContent;
+            alert('Silahkan tunggu '+delay+' detik.');
+            e.preventDefault;
+            return false;
+        }
         do_an_e(e);
         return do_posting(e);
     } );
@@ -1838,6 +1846,7 @@ function initEventTpl(){
       });
     }
 
+ _o( 'focus', Dom.g(gvar.id_textarea),function(){ QRdp.check($D('#qr_delaycontainer')) });
  _o( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
 	if(gvar.settings.qrdraft)
         _o( 'keypress' , Dom.g(gvar.id_textarea),function(e){
@@ -3128,7 +3137,7 @@ function chk_ckck(){
 function event_ckck(){
   if($D('#quickreply')) gvar.motion_target=$D('#quickreply');
   _o('mousemove',gvar.motion_target,function(){
-      QRdp.check($D('#qr_delaycontainer'));	  
+      QRdp.check($D('#qr_delaycontainer'));
       chk_ckck();
       /*
        clog(gvar.ck.hotbb+' - '+gvar.ck.bbuserid);
@@ -3518,7 +3527,7 @@ function fetch_property(){
    var match=null;   
    gvar.page = gvar.newreply = match;
    gvar.securitytoken = $D('//input[@name="securitytoken"]', null, true);  
-   gvar.securitytoken = gvar.securitytoken.value;
+   if(gvar.securitytoken) gvar.securitytoken = gvar.securitytoken.value;
    if( !/\d{10}\-\w{40}/i.test(gvar.securitytoken) ) return false;
    
    gvar.threadid = $D('//a[contains(@href,"showthread.php?t=")]', null, true);
