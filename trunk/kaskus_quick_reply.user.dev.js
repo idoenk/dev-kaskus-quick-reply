@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110806324
-// @timestamp     1312564430839
+// @dtversion     110807324
+// @timestamp     1312726895641
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-06 . 1312564430839
+// v3.2.4 - 2011-08-07 . 1312726895641
+//   Fix spoiler title containing "font". Thanks=[orientalcaesar,ketang.klimax]
 //   Improve counterdown on page title. Thanks=[kusnady]
 //   Fix gvar is underfined. Thanks=[Piluze]
 //   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
@@ -72,9 +73,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1312564430839 // version.timestamp
+  timestamp: 1312726895641 // version.timestamp
 
- ,dtversion: 110806323 // version.date
+ ,dtversion: 110807323 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -630,29 +631,16 @@ function do_click_qqr(e, multi){
     };
     var parseSerials=function(S,$1,$2){
       var mct,parts,pRet,lastIdx,tag;
+
       // parse BIU
       if ( inArray(['B','I','U'], $2.toUpperCase()) !== false ){
         return '[' +($1?'/':'')+$2.toUpperCase()+ ']';
       
-      }else if( /\bfont\s{1,}/i.test($2) || $2.toUpperCase()=='FONT' ){
-	    // parse font;size;color
-        mct=$2.match(/\bfont(?:\s{1,}([^=]+).['"]([^'"]+))?/i); // $$1:type; $$2:value
-        if(isDefined(mct[1])){
-		   mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
-		   LT.font.push(mct[1]);
-		}
-		openTag= (isDefined(mct[2]) && mct[2]);
-		lastIdx=LT.font.length-1;
-		
-		pRet='[' +( openTag ? mct[1].toUpperCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toUpperCase():'???') ) +']';
-		if(!openTag) LT.font.splice(lastIdx,1);
-        return pRet;
-      
-      
-      }else if( /span\s/i.test($2) || $2.toUpperCase()=='SPAN' ){
-		// parse code | spoiler
-		mct=$2.match(/\/?span(?:\srel=['"]([^'"]+))?/i);
-        if(isDefined(mct[1])) {
+      }else if( /^span\s/i.test($2) || $2.toUpperCase()=='SPAN' ){
+		// parse code | spoiler        
+        mct=$2.match(/\/?span(?:\srel=['"]([^'"]+))?/i);
+        
+        if( isDefined(mct[1]) ){
             if(mct[1].indexOf('spoiler')!=-1) {
 			  LT.sp.push('SPOILER');
 			  parts = mct[1].split('-');
@@ -679,7 +667,21 @@ function do_click_qqr(e, multi){
 		if(!openTag) LT.sp.splice(lastIdx,1);
         return pRet;
       
-      }else if( /div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+      }else if( /^font\s{1,}/i.test($2) || $2.toUpperCase()=='FONT' ){
+	    // parse font;size;color
+        mct=$2.match(/\bfont(?:\s{1,}([^=]+).['"]([^'"]+))?/i); // $$1:type; $$2:value
+        if(isDefined(mct[1])){
+		   mct[1]=(mct[1]=='face' ? 'font' : mct[1] );
+		   LT.font.push(mct[1]);
+		}
+		openTag= (isDefined(mct[2]) && mct[2]);
+		lastIdx=LT.font.length-1;
+		
+		pRet='[' +( openTag ? mct[1].toUpperCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toUpperCase():'???') ) +']';
+		if(!openTag) LT.font.splice(lastIdx,1);
+        return pRet;      
+      
+      }else if( /^div\s/i.test($2) || $2.toUpperCase()=='DIV'){
 		if($2.indexOf('rel=')==-1 && $2.indexOf('style=')==-1){
           // parse align
 		  mct=$2.match(/\/?div(?:\salign=['"]([^'"]+))?/i);
@@ -716,7 +718,7 @@ function do_click_qqr(e, multi){
 		if(!openTag) LT.a.splice(lastIdx,1);
         return pRet;
       
-      }else if( /blockquote/i.test($2) ){
+      }else if( /^blockquote/i.test($2) ){
 	    // parse INDENT
 	    return '[' + ($1 ? '/':'') + 'INDENT]';
 
@@ -750,7 +752,7 @@ function do_click_qqr(e, multi){
 		}
       }else{
         return S;
-      }      
+      }
     };
 	// end parseSerials
 	
@@ -783,7 +785,7 @@ function do_click_qqr(e, multi){
 	// reveal quote
 	var revealQuoteCode=function(html){
 	  var els,el,el2,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
-	  if(isDefined(html)){
+	  if(isDefined(html)){        
         // fix align inside spoiler
         html = String(html).replace(/<(\/?)([^>]+)>/gm, parseSerials );
         rvCon=createEl('div',{},html);
@@ -912,9 +914,9 @@ function do_click_qqr(e, multi){
 	  Dom.remove(el);
 	}
 	x=pCon.innerHTML; delete pCon;
-
+    
 	// serials parse
-	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
+	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));    
     
     // clean rest (unparsed tags)
     return unescapeHtml(clearTag( ret ) );
