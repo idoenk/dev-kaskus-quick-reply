@@ -3,8 +3,10 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.10
+// @version       0.7.11
 // @include       http://www.kaskus.us/showthread.php?*
+// @include       http://www.kaskus.us/editpost.php?*
+// @include       http://www.kaskus.us/newthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
 // @include       http://www.kaskus.us/group.php?*
@@ -14,14 +16,19 @@
 /*
 Kaskus Fix-ObfuscatorII 
 Dibuat oleh Pandu E Poluan {http://userscripts.org/users/71414/}
-Credit			: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
-tempat diskusi	: daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
-				  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.us/showthread.php?t=8689106
+Credit            : Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
+tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
+                  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.us/showthread.php?t=8689106
 
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.11
+- wildcard character(*) in obfuscated links will be globally removed; entire for obfuscated with random shift, i guess;
+- (as above) link replacements list should no longer needed 
++ editpost.php?*
++ newthread.php?*
 0.7.10
 * "file\\*serve":"fileserve",
 * "file\\*sonic":"filesonic",
@@ -108,82 +115,84 @@ v0.1   : First release
     var gvar = function(){};
     gvar.__DEBUG__ = 1;
     
-	var replacements, regex, key, thenodes, node, s, z;
+    var replacements, lreplacements, regex, lregex, thenodes, node, s;
 
     // You can customize the script by adding new pairs of words.
     // First, let's build the "obfuscated":"de-obfuscated" words list
     // To prevent inadvertently using some regexp control modifiers,
     // prepend symbols (i.e. non-alphanumerics) with two backslashes ( i.e. \\ )
     replacements = {
-		"file\\*serve":"fileserve",
-		"file\\*sonic":"filesonic",
-		"hot\\*file":"hotfile",
-		"indo\\*web\\*ster":"indowebster",
-		"media\\*fire":"mediafire",
-		"media\\*fire":"mediafire",
-		"wup\\*load":"wupload",
-        "4\\*shared": "4shared",
-        "\\*Forbidden\\*": ".co.cc",
-        "dragon\\*adopters": "dragonadopters",
-        "file\\*den": "fileden",
         "kimpoi": "kawin",
         "krack": "crack",
         "paypai": "paypal",
         "pocongk": "pocong",
-        "rapid\\*share": "rapidshare",
-        "tiny\\*url": "tinyurl",
-        "zid\\*du": "ziddu"
+        "indo\\*web\\*ster\\.\\.":"indowebster",
     };
-    regex = {};
-    for (key in replacements) {
+    // This list is a complex obfuscated words that occur in links
+    lreplacements = {
+        "\\*Forbidden\\*": ".co.cc",
+    };
+    var fixme = function(s){
+        for (key in lreplacements) 
+            s = s.replace(lregex[key], lreplacements[key]);
+        return s.replace(/\*/g,'').replace(/\.{2,}com/gi, '.com');
+    };
+    lregex = regex = {};
+    
+    for (key in replacements) 
         regex[key] = new RegExp(key, 'gi');
-    }
+    for (key in lreplacements) 
+        lregex[key] = new RegExp(key, 'gi');
+    
 
-    // Now, retrieve the text nodes
-    thenodes = document.evaluate("//body//text()", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-
+    // Now, retrieve the text nodes. default: //body//text()
+    thenodes = document.evaluate('//body//text()', document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    
     // Perform a replacement over all the nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         s = node.data;
         if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
+        
         for (key in replacements) 
             s = s.replace(regex[key], replacements[key]);
-        if(/\w\.{2,}com/i.test(s))
-            s = s.replace(/\.{2,}com/gi, '.com');
+        if( s.indexOf('*')!= -1 || /\w{7,}\.{2,}com/i.test(s) )
+            s = fixme(s);
         node.data = s;
     }
 
-    // Now, retrieve the A nodes
-    thenodes = document.evaluate("//a", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-
+    // Now, retrieve the A nodes. default: //a
+    // Optimized, we just need all this specified href links
+    thenodes = document.evaluate('//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.us")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
+               document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    
     // Finally, perform a replacement over all A nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
-        s = unescape(node.href);
-        if(!s || s.match(/^https?:\/\/[^\.]+\.kaskus\.us|kaskusnetworks\.com/i) ) continue; // pre-check
-        for (key in replacements)
-			s = s.replace(regex[key], replacements[key]);
-        if(/\w\.{2,}com/i.test(s))
-            s = s.replace(/\.{2,}com/gi, '.com');
+        s = unescape(node.href); // GChrome needed escaped value for sure
+        
+        if( s.indexOf('*')!= -1 || /\w{7,}\.{2,}com/i.test(s) )
+            s = fixme(s);
         node.href = s;
     }
-	
-	var whereAmI = function(href){
-		var asocLoc = {
-		   'td_post_' : '/showthread.php'
-		  ,'blog_message' : '/blog.php'
-		  ,'gmessage_text_' : '/group.php'
-		};
-		for(var theID in asocLoc){
-		  if(href.indexOf(asocLoc[theID])!=-1) 
-		    return theID;
-		}
-	};	
-    var isBatman = function(inner){
-		return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
-    }, newHref = function(href){
+    
+    
+    var whereAmI = function(href){
+        var asocLoc = {
+           'td_post_' : '/showthread.php'
+          ,'blog_message' : '/blog.php'
+          ,'gmessage_text_' : '/group.php'
+        };
+        for(var theID in asocLoc){
+          if(href.indexOf(asocLoc[theID])!=-1) 
+            return theID;
+        }
+    }, 
+    isBatman = function(inner){
+        return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
+    }, 
+    newHref = function(href){
         var a = createEl('span', { 'rel':href, 'class':'smallfont','style':'color:red; cursor:pointer; margin-left:10px;', 'target':'_blank'}, 'Hidden Link &gt;&gt; '+href );
         a.addEventListener('click', function(e){
             e=e.target||e; e.style.color='black'
@@ -191,16 +200,14 @@ v0.1   : First release
             newWindow.focus(); return false;
         }, true);
         return a; 
-    };
+    };    
     
-    
-    var el, pnode, newEl, xID = whereAmI(location.href);
-    
-	// perform anti-batman @container id
-    var pnodes = document.evaluate("//*[contains(@id,'"+xID+"')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    var pnode, pnodes;
+    // perform anti-batman @container id
+    pnodes = document.evaluate("//*[contains(@id,'" + whereAmI(location.href) + "')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
     
     if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
-        pnode = pnodes.snapshotItem(i);		
+        pnode = pnodes.snapshotItem(i);        
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
         
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
@@ -215,19 +222,20 @@ v0.1   : First release
                }
                node.removeAttribute('href');
             }else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
-			   node.innerHTML = node.href;
-			}
+               node.innerHTML = node.href;
+            }
         }
     }
-
     //
+
     function createEl(type, attrArray, html) {
         var node = document.createElement(type);
         for (var attr in attrArray)
-			if (attrArray.hasOwnProperty(attr)) node.setAttribute(attr, attrArray[attr]);
+            if (attrArray.hasOwnProperty(attr)) node.setAttribute(attr, attrArray[attr]);
         if (html) node.innerHTML = html;
         return node;
     }
     //
+
     
 })();
