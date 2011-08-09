@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.7
+// @version       0.7.10
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
@@ -15,20 +15,45 @@
 Kaskus Fix-ObfuscatorII 
 Dibuat oleh Pandu E Poluan {http://userscripts.org/users/71414/}
 Credit			: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
-tempat diskusi	: http://www.kaskus.us/showthread.php?t=8689106
+tempat diskusi	: daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
+				  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.us/showthread.php?t=8689106
 
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.10
+* "file\\*serve":"fileserve",
+* "file\\*sonic":"filesonic",
+* "hot\\*file":"hotfile",
+* "indo\\*web\\*ster":"indowebster",
+* "media\\*fire":"mediafire",
+* "media\\*fire":"mediafire",
+* "wup\\*load":"wupload",
+- "detik..com": "detik.com",
+- "detikhot..com": "detikhot.com",
+- "detikinet..com": "detikinet.com",
+- "detiknews..com": "detiknews.com",
+- "maknyos..com":"maknyos.com",
+0.7.9
++ maknyos..com, maknyos.com
+0.7.8.1
++ indo*web*ster.., indowebster
+0.7.8
++ media*fire..com, mediafire.com
++ file*serve..com, fileserve.com
++ file*sonic..com, filesonic.com
++ hot*file..com, hotfile.com
++ indo*web*ster...com, indowebster.com
++ wup*load..com, wupload.com
 0.7.7
-- fileserve..com,fileserve.com
-- filesonic..com,filesonic.com
-- hotfile..com,hotfile.com
-- indowebster...com,indowebster.com
-- wupload..com,wupload.com 
++ fileserve..com,fileserve.com
++ filesonic..com,filesonic.com
++ hotfile..com,hotfile.com
++ indowebster...com,indowebster.com
++ wupload..com,wupload.com 
 0.7.6
-- mediafire..com,mediafire.com (thanks Piluze)
++ mediafire..com,mediafire.com
 0.7.5
 - roll back update from v0.7.2
 - full long url linkify
@@ -46,31 +71,23 @@ Changelog:
 - clearing up script
 0.6.7
 Rewrites dragon*adopters to dragonadopters
-
 0.6.6.2
 - use http://www.kaskus.us/showthread.php?* address
 - removed "** SENSOR **" 
-
 0.6.5
 - Rewrites tiny*url to tinyurl
-
 0.6.4
 - Rewrites file*den to fileden
-
 0.6.3
 - add domain wap.kaskus.us, opera.kaskus.us, blackberry.kaskus.us
-
 0.6.2
 - add domain m.kaskus.us
-
 0.6.1
 - add cite sign
 - fix autoupdate
-
 0.6
 - prefered using domain kaskus.us than IP
 - added from http://www.kaskus.us/showthread.php?t=4492393
-
 v0.5   : Rewrites "*Forbidden*" to ".co.cc"
        : Rewrites "pocongk" to "pocong"
 v0.4.x : Rewrites "detiknews..com" to "detiknews.com"
@@ -98,50 +115,23 @@ v0.1   : First release
     // To prevent inadvertently using some regexp control modifiers,
     // prepend symbols (i.e. non-alphanumerics) with two backslashes ( i.e. \\ )
     replacements = {
-/*
-sumber: http://www.kaskus.us/showthread.php?t=4492393, hasil laporan atau coba-coba sendiri
-*Forbidden*,.co.cc
-4*shared,4shared
-detik..com,detik.com
-detikhot..com,detikhot.com
-detikinet..com,detikinet.com
-detiknews..com,detiknews.com
-mediafire..com,mediafire.com
-file*den,fileden
-kimpoi,kawin
-krack,crack
-paypai,paypal
-pocongk,pocong
-rapid*share,rapidshare
-tiny*url,tinyurl
-zid*du,ziddu
-dragon*adopters,dragonadopters
-fileserve..com,fileserve.com
-filesonic..com,filesonic.com
-hotfile..com,hotfile.com
-indowebster...com,indowebster.com
-wupload..com,wupload.com 
-        */
-		"fileserve..com":"fileserve.com",
-		"filesonic..com":"filesonic.com",
-		"hotfile..com":"hotfile.com",
-		"indowebster...com":"indowebster.com",
-		"wupload..com":"wupload.com", 
-		"mediafire..com":"mediafire.com",
-        "dragon\\*adopters": "dragonadopters",
-        "tiny\\*url": "tinyurl",
-        "file\\*den": "fileden",
+		"file\\*serve":"fileserve",
+		"file\\*sonic":"filesonic",
+		"hot\\*file":"hotfile",
+		"indo\\*web\\*ster":"indowebster",
+		"media\\*fire":"mediafire",
+		"media\\*fire":"mediafire",
+		"wup\\*load":"wupload",
         "4\\*shared": "4shared",
         "\\*Forbidden\\*": ".co.cc",
-        "detik..com": "detik.com",
-        "detikhot..com": "detikhot.com",
-        "detikinet..com": "detikinet.com",
-        "detiknews..com": "detiknews.com",
+        "dragon\\*adopters": "dragonadopters",
+        "file\\*den": "fileden",
         "kimpoi": "kawin",
         "krack": "crack",
         "paypai": "paypal",
         "pocongk": "pocong",
         "rapid\\*share": "rapidshare",
+        "tiny\\*url": "tinyurl",
         "zid\\*du": "ziddu"
     };
     regex = {};
@@ -240,6 +230,4 @@ wupload..com,wupload.com
     }
     //
     
-
-
 })();
