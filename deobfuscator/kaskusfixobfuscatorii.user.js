@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.11
+// @version       0.7.12
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/editpost.php?*
 // @include       http://www.kaskus.us/newthread.php?*
@@ -24,6 +24,9 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.12
+- missed regular words replacements in links
+- avoid strip neutral wildcard
 0.7.11
 - wildcard character(*) in obfuscated links will be globally removed; entire for obfuscated with random shift, i guess;
 - (as above) link replacements list should no longer needed 
@@ -125,26 +128,29 @@ v0.1   : First release
         "kimpoi": "kawin",
         "krack": "crack",
         "paypai": "paypal",
-        "pocongk": "pocong",
+        "pocongk+": "pocong",
         "indo\\*web\\*ster\\.\\.":"indowebster",
-    };
-    // This list is a complex obfuscated words that occur in links
-    lreplacements = {
         "\\*Forbidden\\*": ".co.cc",
     };
-    var fixme = function(s){
-        for (key in lreplacements) 
-            s = s.replace(lregex[key], lreplacements[key]);
-        return s.replace(/\*/g,'').replace(/\.{2,}com/gi, '.com');
-    };
-    lregex = regex = {};
     
+    // reusable func to perform & manipulating in wildcard links or data value 
+    var fixme = function(s){
+        for (key in replacements) 
+            s = s.replace(regex[key], replacements[key]);
+            
+        if( /\w{1}\*\w{1}/.test(s) )
+            s = s.replace(/(\w{1})\*(\w{1})/g, function(S,$1,$2){return (!$1 || !$2 ? S : ''+$1+$2)} );
+            
+        if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )
+            s = s.replace(/\.{2,}([^\W]+)/g, '.$1' );
+        return s;
+    };
+    
+    regex = {};
     for (key in replacements) 
         regex[key] = new RegExp(key, 'gi');
-    for (key in lreplacements) 
-        lregex[key] = new RegExp(key, 'gi');
-    
-
+        
+        
     // Now, retrieve the text nodes. default: //body//text()
     thenodes = document.evaluate('//body//text()', document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
     
@@ -153,11 +159,7 @@ v0.1   : First release
         node = thenodes.snapshotItem(i);
         s = node.data;
         if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
-        
-        for (key in replacements) 
-            s = s.replace(regex[key], replacements[key]);
-        if( s.indexOf('*')!= -1 || /\w{7,}\.{2,}com/i.test(s) )
-            s = fixme(s);
+        s = fixme( s );
         node.data = s;
     }
 
@@ -170,11 +172,10 @@ v0.1   : First release
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
-        s = unescape(node.href); // GChrome needed escaped value for sure
-        
-        if( s.indexOf('*')!= -1 || /\w{7,}\.{2,}com/i.test(s) )
-            s = fixme(s);
+        s = fixme( unescape(node.href) );
         node.href = s;
+        if(node.textContent!=s) // force full linkify
+            node.textContent = s;
     }
     
     
@@ -236,6 +237,6 @@ v0.1   : First release
         return node;
     }
     //
-
+    
     
 })();
