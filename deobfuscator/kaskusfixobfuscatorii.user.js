@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.12
+// @version       0.7.11
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/editpost.php?*
 // @include       http://www.kaskus.us/newthread.php?*
@@ -24,14 +24,13 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
-0.7.12
-- missed regular words replacements in links
-- avoid strip neutral wildcard
 0.7.11
 - wildcard character(*) in obfuscated links will be globally removed; entire for obfuscated with random shift, i guess;
 - (as above) link replacements list should no longer needed 
 + editpost.php?*
 + newthread.php?*
+- missed regular words replacements in links
+- avoid strip neutral wildcard
 0.7.10
 * "file\\*serve":"fileserve",
 * "file\\*sonic":"filesonic",
