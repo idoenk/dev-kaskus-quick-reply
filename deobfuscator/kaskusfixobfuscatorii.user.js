@@ -174,8 +174,6 @@ v0.1   : First release
         // Here's the key! We must replace the "href" instead of the "data"
         s = fixme( unescape(node.href) );
         node.href = s;
-        if(node.textContent!=s) // force full linkify
-            node.textContent = s;
     }
     
     
