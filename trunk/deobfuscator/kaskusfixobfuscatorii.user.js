@@ -134,15 +134,16 @@ v0.1   : First release
     };
     
     // reusable func to perform & manipulating in wildcard links or data value 
-    var fixme = function(s){
+    var fixme = function(s, islink){
+        if(!islink) islink = false;
         for (key in replacements) 
             s = s.replace(regex[key], replacements[key]);
             
         if( /\w{1}\*\w{1}/.test(s) )
             s = s.replace(/(\w{1})\*(\w{1})/g, function(S,$1,$2){return (!$1 || !$2 ? S : ''+$1+$2)} );
             
-        if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )
-            s = s.replace(/\.{2,}([^\W]+)/g, '.$1' );
+        if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )        
+            s = s.replace(/\.{2,}(com|net|in|to|ly)\b/g, '.$1' );
         return s;
     };
     
@@ -159,7 +160,7 @@ v0.1   : First release
         node = thenodes.snapshotItem(i);
         s = node.data;
         if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
-        s = fixme( s );
+        s = fixme( s, true );
         node.data = s;
     }
 
@@ -236,5 +237,16 @@ v0.1   : First release
     }
     //
     
+// ----my ge-debug--------
+function show_alert(msg, force) {
+  if(arguments.callee.counter) { arguments.callee.counter++; } else { arguments.callee.counter=1; }
+  GM_log('('+arguments.callee.counter+') '+msg);
+  if(force==0) { return; }
+}
+function clog(msg) {
+  if(!gvar.__DEBUG__) return;
+  show_alert(msg);
+}
+
     
 })();
