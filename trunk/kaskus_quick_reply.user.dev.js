@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name          Kaskus Quick Reply
-// @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309314
+// @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110807324
-// @timestamp     1312736203576
+// @dtversion     110812324
+// @timestamp     1313099820287
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-07 . 1312736203576
+// v3.2.4 - 2011-08-12 . 1313099820287
+//   Improve setElastic onFocus
+//   Add QR container for Plugins
 //   Improve intercept in-delayed post (optimized for FF, Opera). Thanks=[tokekGaaaaaaul]
 //   Fix gvar.securitytoken is null (QR+)
 //   Fix spoiler title containing "font". Thanks=[orientalcaesar,ketang.klimax]
@@ -75,9 +77,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1312736203576 // version.timestamp
+  timestamp: 1313099820287 // version.timestamp
 
- ,dtversion: 110807323 // version.date
+ ,dtversion: 110812324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -104,7 +106,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
  ,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
- ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0'] // serial hide [controller]
+ ,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
@@ -403,7 +405,7 @@ function getSettings(){
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
-  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'htmlphp', 'spoiler', 'transparent', 'noparse', 'strikethrough'];
+  gvar.labelControl = ['textformat', 'align', 'list', 'font', 'size', 'color', 'link', 'image', 'youtube', 'smile', 'uploader', 'quote', 'code', 'htmlphp', 'spoiler', 'transparent', 'noparse', 'strikethrough',       'plugins']; // let plugins at the latest index
   if(hdc){
     gvar.settings.hidecontroll = hdc.toString().split(',');
   }else{
@@ -1846,7 +1848,11 @@ function initEventTpl(){
       });
     }
 
- _o( 'focus', Dom.g(gvar.id_textarea),function(){ QRdp.check($D('#qr_delaycontainer')) });
+ _o( 'focus', Dom.g(gvar.id_textarea),function(){ 
+        QRdp.check($D('#qr_delaycontainer')); 
+        if( gvar.settings.hidecontroll[gvar.settings.hidecontroll.length-1] == '1' ) // is there plugins ?
+            vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor) 
+    });
  _o( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
 	if(gvar.settings.qrdraft)
         _o( 'keypress' , Dom.g(gvar.id_textarea),function(e){
@@ -6663,6 +6669,10 @@ Format will be valid like this:
      +(gvar.settings.hidecontroll[12] == '1' && gvar.settings.hidecontroll[13] == '1' ? '' : konst.__sep__)
      
      +                '<td id="customed_control"></td>'
+     
+     // place for QR-Plugins
+     +(gvar.settings.hidecontroll[gvar.settings.hidecontroll.length-1] == '1' ?  '' : konst.__sep__ +'<td id="qr_plugins_container"></td>')
+     
      +                '<td width="100%"></td>'
      +(!gvar.settings.textareaExpander[0] ? ''
        +                '<td width="50px" style="padding-left:10px;">'
