@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis
-// @version       0.7.11
+// @version       0.7.12
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/editpost.php?*
 // @include       http://www.kaskus.us/newthread.php?*
@@ -24,6 +24,9 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
 and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.12
+- full-linkify on singlepost
+- Fix fixme for unicode href, (eg. wikiedia or Asian web)
 0.7.11
 - wildcard character(*) in obfuscated links will be globally removed; entire for obfuscated with random shift, i guess;
 - (as above) link replacements list should no longer needed 
@@ -133,8 +136,7 @@ v0.1   : First release
     };
     
     // reusable func to perform & manipulating in wildcard links or data value 
-    var fixme = function(s, islink){
-        if(!islink) islink = false;
+    var fixme = function(s){
         for (key in replacements) 
             s = s.replace(regex[key], replacements[key]);
             
@@ -159,7 +161,7 @@ v0.1   : First release
         node = thenodes.snapshotItem(i);
         s = node.data;
         if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
-        s = fixme( s, true );
+        s = fixme( s );
         node.data = s;
     }
 
@@ -172,7 +174,7 @@ v0.1   : First release
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
-        s = fixme( unescape(node.href) );
+        s = fixme( decodeURI( node.href ) );
         node.href = s;
     }
     
@@ -180,13 +182,16 @@ v0.1   : First release
     var whereAmI = function(href){
         var asocLoc = {
            'td_post_' : '/showthread.php'
+          ,'td_post_' : '/showpost.php'
           ,'blog_message' : '/blog.php'
           ,'gmessage_text_' : '/group.php'
-        };
+        }, ret='';
         for(var theID in asocLoc){
-          if(href.indexOf(asocLoc[theID])!=-1) 
-            return theID;
+          if(href.indexOf(asocLoc[theID])!=-1) {
+            ret = theID; break;
+          }
         }
+        return ret;
     }, 
     isBatman = function(inner){
         return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
@@ -221,7 +226,7 @@ v0.1   : First release
                }
                node.removeAttribute('href');
             }else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
-               node.innerHTML = node.href;
+               node.innerHTML = decodeURI(node.href);
             }
         }
     }
