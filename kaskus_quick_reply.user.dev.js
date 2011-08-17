@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110812324
-// @timestamp     1313099820287
+// @dtversion     110817324
+// @timestamp     1313582119614
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-12 . 1313099820287
+// v3.2.4 - 2011-08-17 . 1313582119614
+//   Fix more strict find EDIT & QUOTE links Lv2. Thanks=[Killua86,gun_gun]
 //   Improve setElastic onFocus
 //   Add QR container for Plugins
 //   Improve intercept in-delayed post (optimized for FF, Opera). Thanks=[tokekGaaaaaaul]
@@ -77,9 +78,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1313099820287 // version.timestamp
+  timestamp: 1313582119614 // version.timestamp
 
- ,dtversion: 110812324 // version.date
+ ,dtversion: 110817324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -506,7 +507,7 @@ function start_Main(){
      leng= nodes.snapshotLength; 
      if(leng) for(var i=0; i<leng; i++){
        nodel = nodes.snapshotItem(i);
-       if(nodel.parentNode.nodeName != 'TD') continue;
+       if(nodel.parentNode.nodeName != 'TD' || nodel.parentNode.id.indexOf('td_post_')!=-1 || nodel.parentNode.className!='alt1') continue;
        hr = nodel.href.split("&p=");
        nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/quote.gif" alt="Quote" title="Reply With Quote" border=0 />';      
        // prep bulu pena
@@ -533,7 +534,7 @@ function start_Main(){
      leng= nodes.snapshotLength; 
      if(leng) for(var i=0; i<leng; i++){
         nodel = nodes.snapshotItem(i);
-        if(nodel.parentNode.nodeName != 'TD') continue;
+        if(nodel.parentNode.nodeName != 'TD' || nodel.parentNode.id.indexOf('td_post_')!=-1 || nodel.parentNode.className!='alt1') continue;
         hr = nodel.href.split("&p=");
         nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
 	 }
