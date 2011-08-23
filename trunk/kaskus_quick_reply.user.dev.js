@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110817324
-// @timestamp     1313582119614
+// @dtversion     110823324
+// @timestamp     1314106569347
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-17 . 1313582119614
+// v3.2.4 - 2011-08-23 . 1314106569347
+//   Fix plugins container
+//   Fix when using QQ hide TM_tmp_xpath, (Tampermonkey)
 //   Fix more strict find EDIT & QUOTE links Lv2. Thanks=[Killua86,gun_gun]
 //   Improve setElastic onFocus
 //   Add QR container for Plugins
@@ -78,9 +80,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1313582119614 // version.timestamp
+  timestamp: 1314106569347 // version.timestamp
 
- ,dtversion: 110817324 // version.date
+ ,dtversion: 110823324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -966,6 +968,10 @@ function do_click_qqr(e, multi){
   }else{
 	 parseQQ();
   }
+  window.setTimeout(function(){
+    if($D('#'+'TM_tmp_xpath'))
+        showhide($D('#'+'TM_tmp_xpath'), false);
+  }, 1000);
   return false;
 }
 
@@ -5759,6 +5765,7 @@ var rSRC = {
   // CSS for Quick Reply
   return (''
   +'.qr_container{max-width:100%;width:auto !important;margin:5px;text-align:left;}'
+  +'#qr_plugins_container{width:100%;}'
   +'.normal_notice{background:transparent !important;color:#949494;}'
   +'.alt1{border-bottom:1px solid transparent;}'
   +'.quoteselected{background:#DFC;border-bottom:1px solid #CDA;}'
@@ -6672,7 +6679,7 @@ Format will be valid like this:
      +                '<td id="customed_control"></td>'
      
      // place for QR-Plugins
-     +(gvar.settings.hidecontroll[gvar.settings.hidecontroll.length-1] == '1' ?  '' : konst.__sep__ +'<td id="qr_plugins_container"></td>')
+     +(gvar.settings.hidecontroll[gvar.settings.hidecontroll.length-1] == '1' ?  '' : konst.__sep__ +'<td><div id="qr_plugins_container" class="customed_addcontroller"></div></td>')
      
      +                '<td width="100%"></td>'
      +(!gvar.settings.textareaExpander[0] ? ''
