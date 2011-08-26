@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110823324
-// @timestamp     1314106569347
+// @dtversion     110827324
+// @timestamp     1314383650478
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,9 +17,11 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-23 . 1314106569347
-//   Fix plugins container
-//   Fix when using QQ hide TM_tmp_xpath, (Tampermonkey)
+// v3.2.4 - 2011-08-27 . 1314383650478
+//   Fix clear <br> inside [list]. Thanks=[p1nky]
+//   Improve textcounter, *preview-galat-error=88char. Thanks=[Piluze]
+//   Improve ordered smileygroups
+//   Fix avoid onclick for cancel. Thanks=[Piluze]
 //   Fix more strict find EDIT & QUOTE links Lv2. Thanks=[Killua86,gun_gun]
 //   Improve setElastic onFocus
 //   Add QR container for Plugins
@@ -80,9 +82,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1314106569347 // version.timestamp
+  timestamp: 1314383650478 // version.timestamp
 
- ,dtversion: 110823324 // version.date
+ ,dtversion: 110827324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -165,7 +167,8 @@ function init(){
   gvar.vbul_multiquote= 'vbulletin_multiquote';
   
   gvar.offsetTop= -35; // buat scroll offset
-  gvar.idx_mq=0; // counter buat deselect multiquote
+  gvar.additionalLength = gvar.idx_mq=0; // counter buat deselect multiquote & tambahan length text
+  gvar.INTERVAL=null; // buat txt counter
   
   gvar.silahken= 'Silahkan post reply';
   gvar.tooshort= 'The message is too short. Your message should be at least 5 characters.';
@@ -812,8 +815,7 @@ function do_click_qqr(e, multi){
 	     }
 	  }
 	  return rvCon.innerHTML;
-	};
-    
+	};    
     
 	// reveal simple quote
 	pCon.innerHTML = revealQuoteCode();	
@@ -896,7 +898,7 @@ function do_click_qqr(e, multi){
 		  case "upper-alpha": ltag+= 'A'; break;
 		  case "lower-alpha": ltag+= 'a'; break;
 		} // switch		
-		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
+		el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]').replace(/<br\/?>/ig,"");
 	    el2 = createTextEl('\n'+ltag+']' + trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials )) + '[/LIST]\n');
         el2.nodeValue = entity_decode( el2.nodeValue );
 		el.parentNode.replaceChild(el2,el);
@@ -906,7 +908,7 @@ function do_click_qqr(e, multi){
 	els=$D('.//ul', pCon);
 	if(els) for(var i=0;i<els.snapshotLength; i++){
 	  el=els.snapshotItem(i);
-	  el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]');
+	  el.innerHTML = el.innerHTML.replace(/<\/li>/ig,'').replace(/<li>/ig,'[*]').replace(/<br\/?>/ig,"");
 	  el2 = createTextEl('\n[LIST]' + trimStr( String(el.innerHTML).replace(/<(\/?)([^>]+)>/gm, parseSerials )) + '[/LIST]\n');
 	  el.parentNode.replaceChild(el2,el);
 	}
@@ -968,10 +970,6 @@ function do_click_qqr(e, multi){
   }else{
 	 parseQQ();
   }
-  window.setTimeout(function(){
-    if($D('#'+'TM_tmp_xpath'))
-        showhide($D('#'+'TM_tmp_xpath'), false);
-  }, 1000);
   return false;
 }
 
@@ -1825,7 +1823,7 @@ function initEventTpl(){
     vB_textarea.init(); // need this coz if disable can not set
     // if qrdraft inactive recieve from tmp_text of reload of location.false
     if( !gvar.settings.qrdraft ){
-        if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){            
+        if( trimStr(gvar.tmp_text) && trimStr(gvar.tmp_text)!=gvar.silahken ){
             // load capcay
             if(capcay_notloaded()) ajax_buildcapcay();
             if(gvar.user.isDonatur && additional_options_notloaded()) 
@@ -1855,12 +1853,17 @@ function initEventTpl(){
       });
     }
 
- _o( 'focus', Dom.g(gvar.id_textarea),function(){ 
-        QRdp.check($D('#qr_delaycontainer')); 
+	var uL = gvar.settings.userLayout;
+	gvar.additionalLength = ( (gvar.settings.userLayout.config[0]=='1' ? uL.signature.length : 0) + (gvar.settings.userLayout.config[1]=='1' ? uL.template.length : 0) );
+	
+	//_o( 'change', Dom.g(gvar.id_textarea),function(){ updateCounter(gvar.additionalLength) });
+	_o( 'focus', Dom.g(gvar.id_textarea),function(){ 
+        updateCounter(gvar.additionalLength);
+		QRdp.check($D('#qr_delaycontainer'));
         if( gvar.settings.hidecontroll[gvar.settings.hidecontroll.length-1] == '1' ) // is there plugins ?
-            vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor) 
+            vB_textarea.setElastic(gvar.id_textarea, gvar.maxH_editor);		
     });
- _o( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
+	_o( 'keydown', Dom.g(gvar.id_textarea),function(e){return is_keydown_pressed(e)});
 	if(gvar.settings.qrdraft)
         _o( 'keypress' , Dom.g(gvar.id_textarea),function(e){
             var A = e.keyCode ? e.keyCode : e.charCode;
@@ -1868,8 +1871,9 @@ function initEventTpl(){
             if($D('#save_draft')) vB_textarea.saveDraft(e);
             clearTimeout( gvar.sITryLiveDrafting );
             gvar.isKeyPressed=1; DRAFT.quick_check();
+			updateCounter(gvar.additionalLength);
         });
-    
+
     _o('click',$D('#atitle'),function() {
       $D('#input_title').style.width=(Dom.g(gvar.id_textarea).clientWidth-80)+'px';
       var disp=$D('#titlecont');
@@ -2070,6 +2074,19 @@ function initEventTpl(){
 	  event_ckck();
 }
 // - end initEventTpl()
+
+function updateCounter(additionalLength){
+  // Stop any pending updating Counter value
+  clearInterval(gvar.INTERVAL);
+  gvar.INTERVAL = window.setInterval( function(){
+    var txt=String(Dom.g(gvar.id_textarea).value), realLen = txt.replace(/[\r\n]/g,'  ').length;
+	if( trimStr(txt)==gvar.silahken ) realLen = 0;
+	if($D('txta_counter')){
+	   $D('txta_counter').value = realLen+ (additionalLength ? ' +('+additionalLength+')' : '');
+	   $D('txta_counter').setAttribute('class', ( (realLen+additionalLength) >= 10000 ? 'txta_counter_red' : 'txta_counter') );	   
+	}	
+  }, 50);
+}
 
 function controler_resizer(){   
    gvar.maxH_editor = parseInt(GetHeight())-170;
@@ -4591,7 +4608,9 @@ var SML_LDR = {
         +'\n\nUse Custom Smiley BBCODE with this format:'
         +'\n eg.\n[[yourtag]'
         :'') + '')
-      });    
+      });
+	  el = createEl('span',{id:'position_group',style:'margin-left:10px'}, '');
+      Dom.add(el,cont);
       
       // bikin div kosong utk add group
       el = createEl('div',{id:'add_content_'+SML_LDR.scID,style:'display:none;'}); //No Images found
@@ -4602,9 +4621,10 @@ var SML_LDR = {
 	  
     }
    ,tab_menu_left: function(){
-      var cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
-      if(par=$D('#ul_group')) {
-        clog('refresh group mnu');
+      var par, el, el2, el3;
+	  var cL=(gvar.smiliegroup ? gvar.smiliegroup.length:0);
+      if( par=$D('#ul_group') ){
+       clog('refresh group mnu');
        $D('#ul_group').innerHTML = '';
        el = createEl('li',{'class':'qrtab add_group'}); 
        el2 = createEl('a',{href:'javascript:;',title:'Add Group','class':'add_group'},'Add Group');
@@ -4616,6 +4636,7 @@ var SML_LDR = {
        for(var i=0; i<cL;i++){
           el = createEl('li',{'class':'qrtab'+(i==0 ? ' current':'')}); 
           el2 = createEl('a',{id:'tbgrup_'+i,href:'javascript:;',title:gvar.smiliegroup[i]}, gvar.smiliegroup[i].substring(0,10)+(gvar.smiliegroup[i].length>10?'..':''));
+          
           _o('click',el2,function(e){
             e=e.target||e;
             if(e.nodeName!='A') return;
@@ -4636,7 +4657,8 @@ var SML_LDR = {
               }, 10);
             }
           });
-          Dom.add(el2,el); Dom.add(el,par);
+		  el3 = createEl('span',{'class':'num'}, (i+1) );
+		  Dom.add(el3, el2); Dom.add(el2,el); Dom.add(el,par);
           
           if(i>0){ //content_scustom_container
             el = createEl('div',{id:'content_scustom_container'+'_'+gvar.smiliegroup[i],style:'display:none;'});
@@ -4698,10 +4720,13 @@ var SML_LDR = {
         /*to hide*/
         if($D('#scustom_container')) $D('#scustom_container').style.display=(flag?'none':'');
         if($D('#title_group')) $D('#title_group').style.display=(flag?'none':'');		
-        if(!flag && $D('#current_grup') && $D('#current_grup').value==''){ // cancel from add grup
-           var L = (gvar.lastpost_grupmnu?gvar.lastpost_grupmnu:'0');
-           if($D('#tbgrup_'+L)) SimulateMouse($D('#tbgrup_'+L), 'click', true);
-        }
+        if( !flag ){ // cancel from add grup
+			if( $D('#current_grup') && $D('#current_grup').value=='' ){
+				var L = (gvar.lastpost_grupmnu?gvar.lastpost_grupmnu:'0');
+				if($D('#tbgrup_'+L)) SimulateMouse($D('#tbgrup_'+L), 'click', true);
+			}
+			if($D('#position_group')) $D('#position_group').innerHTML='';
+        }		
     }
    ,delete_group: function(){
       var cGrp=$D('#current_grup').value, yadeh=confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nAffirmative, proceed delete this group?\n');
@@ -4719,9 +4744,28 @@ var SML_LDR = {
             rSRC.getSmileySet(true);
             smlset = gvar.smiliecustom[gvar.smiliegroup[$D('#current_order').value].toString()];
           }
+          var generatePos = function(idx){
+			//e = $D('#pos_group_sets');
+			//neworder = e.options[e.selectedIndex].value;
+			//alert(gvar.smiliegroup.length);
+			
+			var el, Attr, tgt = $D('#position_group');
+			var par=createEl('select', {id:'pos_group_sets',style:'width:50px'});
+			if(tgt) {
+				for(var i=0; i<gvar.smiliegroup.length; i++){
+					Attr={'value':i};
+					if(idx==i) Attr['selected'] = "selected";
+					el=createEl('option', Attr, (i+1) );
+					Dom.add(el, par);
+				}
+				Dom.add(createTextEl('Position:'), tgt);
+				Dom.add(par, tgt);
+			}
+		  };
           var generateGrup = function(){
-            if($D('#current_order').value!='' && gvar.smiliegroup) 
-              return gvar.smiliegroup[$D('#current_order').value];
+            if($D('#current_order').value!='' && gvar.smiliegroup){				
+				return gvar.smiliegroup[$D('#current_order').value];
+			}
             var isAvail = function(g){
                 if(!gvar.smiliegroup) return true;
                 var ret=false;
@@ -4736,7 +4780,11 @@ var SML_LDR = {
             return nG;
           }; // end generateGrup
           if(smlset){
-            var ret;
+			
+			//alert(generatePos())
+			//alert(gvar.smiliegroup.length)
+			
+			var ret;
             for (var i in smlset) {
              img=smlset[i]; ret='';
              if( !isString(img) )
@@ -4747,6 +4795,12 @@ var SML_LDR = {
             }
             SML_LDR.custom.lastload=buff;
           }
+		  
+		  var cOrder = $D('#current_order');
+		  if( cOrder && $D('#position_group')){
+				generatePos( cOrder.value );
+				$D('#position_group').style.display=( cOrder.value ?'':'none');
+		  }
           
           var mcPar = createEl('div',{id:'manage_container'});
           Dom.add(mcPar, $D('#right_'+cont_id));
@@ -4792,40 +4846,64 @@ var SML_LDR = {
         // task save 
         var mcPar=$D('#manage_container'),buff=false,cont_id=SML_LDR.scID;
         var lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
+        var oldOrder = $D('#current_order').value;
+		var sEL = $D('#pos_group_sets'), newOrder = sEL.options[sEL.selectedIndex].value;
         var remixBuff = function(niubuf, nodel){
            // ['<!>','<!!>']; 
            var ret='',curG=[$D('#current_order').value, $D('#current_grup').value],grup;
+		   var sEL = $D('#pos_group_sets'), nOrder = sEL.options[sEL.selectedIndex].value;
            var cleanGrup = function(){
              return trimStr($D('#input_grupname').value.replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_'));
            };grup=cleanGrup();
-           var ch_grup, CS=getValue(KS+'CUSTOM_SMILEY'), CRaw=CS.split('<!>'), CR_OBJ={}, part;
+           var ch_grup, CS=getValue(KS+'CUSTOM_SMILEY'), CRaw=CS.split('<!>'), CR_OBJ={}, part, CR_OBJ_len, grupname;
            for(var n=0;n<CRaw.length;n++){
              part=CRaw[n].split('<!!>');
              CR_OBJ[String(part[0])]=String(part[1]);
            }
+		   
+		   // reorder-dahs
+		   if(curG[0]!="" && nOrder!=curG[0]){
+				var tomove=gvar.smiliegroup[curG[0]], newGrup=[];
+				gvar.smiliegroup[curG[0]] = null;
+				if(nOrder > curG[0])
+					gvar.smiliegroup.splice( curG[0], 1);
+				
+				gvar.smiliegroup.splice( nOrder, 0, tomove);
+				// rescan dah .. 
+				for(var i=0; i<gvar.smiliegroup.length; i++)
+					if(gvar.smiliegroup[i]) newGrup.push(gvar.smiliegroup[i]);
+				gvar.smiliegroup = newGrup;
+		   }
+		   
            ch_grup=(curG[1]!='' && grup!='' && grup!=curG[1]);
+		   var grlen = gvar.smiliegroup.length, degrup;
            if(curG[0]!='' && curG[1]!='' && gvar.smiliegroup){
-             for(var k=0;k<gvar.smiliegroup.length;k++){
-                if(gvar.smiliegroup[k]==curG[1]){
+			 for(var k=0; k<grlen; k++){
+                degrup = gvar.smiliegroup[k].toString();
+				if(degrup==curG[1]){
                   if(nodel){
-                   CR_OBJ[gvar.smiliegroup[k].toString()] = niubuf.toString();
+                   CR_OBJ[ degrup ] = niubuf.toString();
                    grup=trimStr(ch_grup ? cleanGrup() : curG[1]).replace(/\!/g,'\\!');
                   }else{
                    grup=false;
                   }
                 }else{
-                   grup=gvar.smiliegroup[k];
+                   grup=degrup;
                 }
-                ret+=(grup ? grup.toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()]+( (k+1)<gvar.smiliegroup.length?'<!>':'') : '');
+                ret+=(grup ? grup.toString()+'<!!>'+CR_OBJ[degrup]+( (k+1) < grlen?'<!>':'') : '');
              }
+			 // end for			 
+			 
            }else{
              var joined=false;
              if(gvar.smiliegroup) for(var k=0;k<gvar.smiliegroup.length;k++){
-                joined=joined||(gvar.smiliegroup[k]==grup);
-                ret+=gvar.smiliegroup[k].toString()+'<!!>'+CR_OBJ[gvar.smiliegroup[k].toString()] +(joined ? niubuf.toString():'') + ( (k+1)<gvar.smiliegroup.length?'<!>':'');
+                degrup = gvar.smiliegroup[k].toString();
+				joined=joined || ( degrup==grup );
+                ret+= degrup+'<!!>'+CR_OBJ[ degrup ] +(joined ? niubuf.toString():'') + ( (k+1) < grlen?'<!>':'');
              }
              if(!joined) ret+='<!>'+grup.toString()+'<!!>'+niubuf.toString();
            }
+		   niubuf = CR_OBJ = newGrup = null;
            return ret;
         };
         if(isUndefined(todel)){
@@ -4841,10 +4919,10 @@ var SML_LDR = {
            alert('Group Name can not be empty');
         } else
            //clog('lastsave=\n'+lastsave+'\n\ncurrent=\n'+buff+'\n\n\nchanged?\n'+(buff && lastsave!=buff));
-          if( (buff && SML_LDR.custom.lastload!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse ) {
+          if( (buff && SML_LDR.custom.lastload!=buff) || lastVal[0]!=gvar.settings.scustom_alt || lastVal[1]!=gvar.settings.scustom_noparse || (oldOrder && newOrder!=oldOrder) ) {
             setValue(KS+'SCUSTOM_ALT', (gvar.settings.scustom_alt ? '1':'0') ); //save custom alt
-            setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser            
-            setValue(KS+'CUSTOM_SMILEY', remixBuff(buff, (isUndefined(todel)) )); //save custom smiley            
+            setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
+            setValue(KS+'CUSTOM_SMILEY', remixBuff(buff, (isUndefined(todel)) )); //save custom smiley
         }
         // cold-boot
         delete(gvar.smiliegroup); // require to refresh left mnu
@@ -5351,15 +5429,15 @@ var ST = {
   }
   e.innerHTML = (todo=='edit' ? 'set' : 'edit');
   
-  // using onclick attribute identify that cancel event has been attached
-  if(!el_cancel.getAttribute('onclick')){
-    el_cancel.setAttribute('onclick','return false;');
-    _o('click',el_cancel,function(ec){ 
-     ec=ec.target||ec; var tgt = ec.id.replace('_cancel','')+'_Editor';
-     Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', ec );
-     e.innerHTML='edit';
+  // using rel attribute identify that cancel already has an event
+  if(!el_cancel.getAttribute('rel') ){
+    el_cancel.setAttribute('rel','relc_'+todo);
+    _o('click',el_cancel,function(ec){
+		ec=ec.target||ec; var tgt = ec.id.replace('_cancel','')+'_Editor';
+		Dom.g(tgt).innerHTML=''; addClass('cancel_layout-invi', ec );
+		e.innerHTML='edit';
     });
-  }  
+  }
  }
  ,chkbox_select_all: function(e, parent){
     var chk, els, par = Dom.g(parent);
@@ -5799,7 +5877,13 @@ var rSRC = {
   +'.icon-accessible{cursor:pointer;position:absolute;margin:-3px 0 0 5px;}'
   +'.txa_enable, .txa_readonly{border:1px solid #949494;}'
   +'.txa_enable{background-color:#FFF;color:#000;}'
-  +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'   
+  +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'
+  // text-counter
+  +'.float_counter{float:right;margin:-20px 18px 0 0;z-index:1;position:relative;}'  
+  +'.float_counter input{width:100px;border:1px solid #9E9E9E;text-align:right;font-weight:bold;cursor:default;padding:0 2px;filter:alpha(opacity=55); opacity:.55;}'
+  //background:#E0E0E0;
+  +'.txta_counter{background:#DFC;color:#3A3A3A;}'
+  +'.txta_counter_red{background:#FB0000;color:#FFF;}'
    
   +'.g_notice a, .qrsmallfont a, #capcay_header a{font-size:11px;text-decoration:none;}'
   +'#home_link{text-decoration:underline;}'
@@ -5900,6 +5984,7 @@ var rSRC = {
     +'li.qrset-lasttab { border-bottom:1px solid #ccc; }'
     +'li.qrset-close { position:absolute; bottom:22px; font-size:11px;width:150px;border-bottom:1px solid #ccc;}'
     +'li.qrset-close a{ text-align:center!important;font-weight:bold;}'
+    
     +'.qrtab a, li.qrset-close a{font-size:11px;}'
     +'.qroutline{ border:1px solid #9F9F9F; margin:-3px 5px; padding:5px; height:420px;}'
     +'.qrset-content{ display:none;}'
@@ -5917,7 +6002,10 @@ var rSRC = {
     +'#ul_group a.add_group{color:#0000E6;font-weight:bold;}'
     +'#ul_group a.add_group:hover{color:#E6E6E6;}'
     +'#ul_group{width:125px;}'
-    +'#ul_group li a{text-align:center;padding:3px 0.5em;}'
+    +'#ul_group li a{padding:3px 0.5em;}'
+	+'#ul_group li.qrtab a{text-align:left;}'
+    +'#ul_group li.add_group a{text-align:center;}'
+    +'#ul_group li .num {float:left;display:inline-block;width:20px}'
     
     /* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 -200px;font:11px/14px "Lucida Grande",sans-serif;width:auto;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;color:#333;cursor:pointer;line-height:10px!important;padding:5px 10px;font-size:12px;font-weight:bold;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} a.twbtn{text-decoration:none;color:#000080!important;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
@@ -6703,6 +6791,10 @@ Format will be valid like this:
      +''+gvar.settings.hotkeychar+'</b>' : '')
      +'</div>'
      +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" cols="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
+
+     +             '<div class="float_counter">'
+	 +					'<input value="0" readonly="readonly" id="txta_counter" class="txta_counter">'
+	 +				'</div>'
      +            '</td>'
      +        '</tr>'
      +        '</table>'
@@ -6710,7 +6802,7 @@ Format will be valid like this:
      +'<div id="upl_cont" style="display:none;"></div>'
      +    '</td>'
      +'</tr>'
-     +'</table>'
+     +'</table>'	 
     );
  }
 
