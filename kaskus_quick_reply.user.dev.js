@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110827324
-// @timestamp     1314383650478
+// @dtversion     110830324
+// @timestamp     1314642014194
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-27 . 1314383650478
+// v3.2.4 - 2011-08-30 . 1314642014194
+//   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
 //   Fix clear <br> inside [list]. Thanks=[p1nky]
 //   Improve textcounter, *preview-galat-error=88char. Thanks=[Piluze]
 //   Improve ordered smileygroups
@@ -82,9 +83,9 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1314383650478 // version.timestamp
+  timestamp: 1314642014194 // version.timestamp
 
- ,dtversion: 110827324 // version.date
+ ,dtversion: 110830324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -5879,11 +5880,10 @@ var rSRC = {
   +'.txa_enable{background-color:#FFF;color:#000;}'
   +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'
   // text-counter
-  +'.float_counter{float:right;margin:-20px 18px 0 0;z-index:1;position:relative;}'  
-  +'.float_counter input{width:100px;border:1px solid #9E9E9E;text-align:right;font-weight:bold;cursor:default;padding:0 2px;filter:alpha(opacity=55); opacity:.55;}'
-  //background:#E0E0E0;
+  +'.float_counter{position:absolute;margin:'+(gvar.isOpera ? '-1': '-2')+'px 28px 0 0;right:0;}'
+  +'.float_counter input{width:100px;border:1px solid #9E9E9E;text-align:right;font-size:15px;font-weight:bold;cursor:default;padding:0 2px;}'
   +'.txta_counter{background:#DFC;color:#3A3A3A;}'
-  +'.txta_counter_red{background:#FB0000;color:#FFF;}'
+  +'.txta_counter_red{background:#FB0000;color:#fff;}'
    
   +'.g_notice a, .qrsmallfont a, #capcay_header a{font-size:11px;text-decoration:none;}'
   +'#home_link{text-decoration:underline;}'
@@ -6782,7 +6782,7 @@ Format will be valid like this:
      
      +        '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
      +        '<tr valign="top">'
-     +            '<td class="controlbar">'
+     +            '<td class="controlbar" style="position:relative;display:block;">'
      +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
      +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
      +(gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
@@ -6791,13 +6791,11 @@ Format will be valid like this:
      +''+gvar.settings.hotkeychar+'</b>' : '')
      +'</div>'
      +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" cols="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-
-     +             '<div class="float_counter">'
-	 +					'<input value="0" readonly="readonly" id="txta_counter" class="txta_counter">'
-	 +				'</div>'
+	 +			   '<div class="float_counter"><input value="0" disabled="disabled" id="txta_counter" class="txta_counter"></div>'
      +            '</td>'
      +        '</tr>'
      +        '</table>'
+     
      +'<div id="smile_cont" style="display:none;"></div>'
      +'<div id="upl_cont" style="display:none;"></div>'
      +    '</td>'
