@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
 // @dtversion     110830324
-// @timestamp     1314642014194
+// @timestamp     1314654034643
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-30 . 1314642014194
+// v3.2.4 - 2011-08-30 . 1314654034643
+//   Fix failed get default value of OPTIONS_BOX when packed as addons
 //   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
 //   Fix clear <br> inside [list]. Thanks=[p1nky]
 //   Improve textcounter, *preview-galat-error=88char. Thanks=[Piluze]
@@ -83,7 +84,7 @@ if( oExist(isQR_PLUS) ){
 
 gvar.sversion = 'v' + '3.2.4b';
 gvar.scriptMeta = {
-  timestamp: 1314642014194 // version.timestamp
+  timestamp: 1314654034643 // version.timestamp
 
  ,dtversion: 110830324 // version.date
  ,scriptID: 80409 // script-Id
@@ -329,6 +330,14 @@ function oExist(P){
 
 // populate settings value
 function getSettings(){
+  // state should define initial value | might fail on addons
+  if( getValue(KS+'QR_COLLAPSE').length===0 ){
+	for(var key in OPTIONS_BOX){
+		if(typeof(key)!='string') continue;
+		setValue(key, OPTIONS_BOX[key][0]);
+	}
+  }
+  
   /** 
   eg. gvar.settings.qrdraft
   */
