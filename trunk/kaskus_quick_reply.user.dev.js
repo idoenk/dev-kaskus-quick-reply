@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
 // @dtversion     110830324
-// @timestamp     1314654034643
+// @timestamp     1314719813840
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,7 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-30 . 1314654034643
+// v3.2.4 - 2011-08-30 . 1314719813840
 //   Fix failed get default value of OPTIONS_BOX when packed as addons
 //   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
 //   Fix clear <br> inside [list]. Thanks=[p1nky]
@@ -35,33 +35,16 @@
 //   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
 //   Fix more strict find EDIT & QUOTE links. Thanks=[ketang.klimax]
 //
-// v3.2.3 - 2011-08-01 . 1312144343710
-//   Fix wrap quote for spoiler title
-//   Fix avoid unexpected globalvar (partial)
-//   Fix load custom_smiley containing autotext
-//   Blame replacing on() become _o() destructing regex filter.
-//
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
-// v3.2.2 - 2011-07-30 . 1312033765406
-//   Improve deprecate focus on saving Draft. Thanks=[andrypein]
-//   Improve 2-newline before add quote post. Thanks=[p1nk3d_books]
-//   Improve calibrate nextpost timer delay
-//   Improve decide isDonatur user
-//   Fix Kaskus-Fixup for Hi-Res Images, Thanks=[febrigaz,Piluze]
-//   Improve deprecate getByXPath_containing; optimize xpath scanning node;
-//   Update several links (FF; Trick)
-//   Fix again minor spoiler title thingie
-//   Fix/Improve smileySets.r2
-//   Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thanks=[ketang6]
-//   Fix onchange hash & securitytoken, update when conditional meets.
-//   Fix QQ parse youtube 'dirty' tag, (again).
-//   Fix emote click (blame smileycustoom autotext)
-//   Improve smileycustom now support autotext (beta)
-//   Fix keep update hash & securitytoken; force nativeXHR. Thanks=[klentingputih, p1nk3d_books]
+// v3.2.3 - 2011-08-01 . 1312144343710
+//   Fix wrap quote for spoiler title
+//   Fix avoid unexpected globalvar (partial)
+//   Fix load custom_smiley containing autotext
+//   Blame replacing on() become _o() destructing regex filter.
 //
 // -more: http://userscripts.org/topics/56051
 //
@@ -75,16 +58,16 @@
 (function () {
 
 // Initialize Global Variables
-var GM_isAddon, gvar=function() {};
+var gvar=function() {};
 
 const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
-if( oExist(isQR_PLUS) ){
-  delete gvar; return;
-}
+if( oExist(isQR_PLUS) )
+	return;
 
-gvar.sversion = 'v' + '3.2.4b';
+
+gvar.sversion = 'v' + '3.2.4';
 gvar.scriptMeta = {
-  timestamp: 1314654034643 // version.timestamp
+  timestamp: 1314719813840 // version.timestamp
 
  ,dtversion: 110830324 // version.date
  ,scriptID: 80409 // script-Id
@@ -3845,7 +3828,7 @@ function ApiBrowserCheck() {
 
   gvar.noCrossDomain = (gvar.isOpera || gvar.isBuggedChrome);
   if(needApiUpgrade) {
-    GM_isAddon=true; clog('Try to recreate needed GM Api...',0);
+    clog('Try to recreate needed GM Api...',0);
     //OPTIONS_BOX['FLASH_PLAYER_WMODE'][3]=2; OPTIONS_BOX['FLASH_PLAYER_WMODE_BCHAN'][3]=2; // Change Default wmode if there no greasemonkey installed
     var ws=null; try { ws=typeof(unsafeWindow.localStorage) } catch(e) { ws=null; } // Catch Security error
     if(ws=='object') {
