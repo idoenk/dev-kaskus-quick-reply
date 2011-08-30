@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.4
-// @dtversion     110830324
-// @timestamp     1314719813840
+// @dtversion     110831324
+// @timestamp     1314738816042
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,7 @@
 //
 // -!--latestupdate
 //
-// v3.2.4 - 2011-08-30 . 1314719813840
+// v3.2.4 - 2011-08-31 . 1314738816042
 //   Fix failed get default value of OPTIONS_BOX when packed as addons
 //   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
 //   Fix clear <br> inside [list]. Thanks=[p1nky]
@@ -67,9 +67,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.4';
 gvar.scriptMeta = {
-  timestamp: 1314719813840 // version.timestamp
+  timestamp: 1314738816042 // version.timestamp
 
- ,dtversion: 110830324 // version.date
+ ,dtversion: 110831324 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -6774,7 +6774,7 @@ Format will be valid like this:
      
      +        '<table cellpadding="0" cellspacing="0" border="0" width="100%">'
      +        '<tr valign="top">'
-     +            '<td class="controlbar" style="position:relative;display:block;">'
+     +            '<td class="controlbar">'
      +'<div id="dv_accessible" style="display:none;">'+gvar.qr_diakses
      +'<img src="'+gvar.domainstatic+'images/buttons/quickreply.gif" alt="Quick Reply" border="0" title="Quick Reply Now" class="icon-accessible" />'
      +(gvar.settings.hotkeychar && gvar.settings.hotkeykey.toString()!='0,0,0' ? ''
@@ -6782,8 +6782,11 @@ Format will be valid like this:
      +(gvar.settings.hotkeykey[0]=='1'?'Ctrl+':'')+(gvar.settings.hotkeykey[1]=='1'?'Shift+':'')+(gvar.settings.hotkeykey[2]=='1'?'Alt+':'')
      +''+gvar.settings.hotkeychar+'</b>' : '')
      +'</div>'
+
      +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" cols="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-	 +			   '<div class="float_counter"><input value="0" disabled="disabled" id="txta_counter" class="txta_counter"></div>'
+     +			   '<div style="position:relative;display:block;">'
+	 +			    '<div class="float_counter"><input value="0" disabled="disabled" id="txta_counter" class="txta_counter"></div>'
+     +			   '</div>'
      +            '</td>'
      +        '</tr>'
      +        '</table>'
@@ -7188,3 +7191,4 @@ init();
 
 })();
 /* Mod By Idx. */
+
