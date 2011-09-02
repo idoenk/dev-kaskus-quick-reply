@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.5
 // @dtversion     110901325
-// @timestamp     1314970374065
+// @timestamp     1314976444858
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.5 - 2011-09-01 . 1314970374065
+// v3.2.5 - 2011-09-01 . 1314976444858
+//   Add settings [TXTCOUNTER, COUNTDOWN]
 //   Improve minor textcounter css
 //   Improve activate last modified group
 //   Fix smileycustom undefined smileygroup (initial cond). Thanks=[blitzx,indramario,Williamzone,ketang.klimax]
@@ -71,7 +72,7 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.5';
 gvar.scriptMeta = {
-  timestamp: 1314970374065 // version.timestamp
+  timestamp: 1314976444858 // version.timestamp
 
  ,dtversion: 110901325 // version.date
  ,scriptID: 80409 // script-Id
@@ -104,6 +105,11 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
+ 
+ ,KEY_SAVE_TXTCOUNTER:       ['1'] // text counter flag
+ ,KEY_SAVE_COUNTDOWN:        ['1'] // counter down flag
+ ,KEY_SAVE_COUNTDOWN_POS:    ['1,0'] // counter down actpos [qrform, tab]
+
  ,KEY_SAVE_TEXTA_EXPANDER:   ['1'] // [flag,minHeight,maxHeight] of textarea_expander
  ,KEY_SAVE_SHOW_SMILE:       ['0,kecil']   // [flag,type] of autoshow_smiley
  ,KEY_SAVE_LAYOUT_CONFIG:    ['']       // flag of [signature_on, template_on], 
@@ -326,7 +332,7 @@ function getSettings(){
   }
   
   /** 
-  eg. gvar.settings.qrdraft
+  eg. gvar.settings.counterdown
   */
   var hVal,hdc;
   gvar.settings = {
@@ -354,6 +360,10 @@ function getSettings(){
     scustom_alt: (getValue(KS+'SCUSTOM_ALT')=='1'),
     scustom_noparse: (getValue(KS+'SCUSTOM_NOPARSE')=='1'), // dont parse?
     qrdraft: (getValue(KS+'QR_DRAFT')!='0'),
+    
+	txtcounter: (getValue(KS+'TXTCOUNTER')!='0'),
+	countdown: (getValue(KS+'COUNTDOWN')!='0'),
+	
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),    
     hotkeychar: getValue(KS+'QR_HOTKEY_CHAR'),
     hidecontroll: [],
@@ -405,6 +415,10 @@ function getSettings(){
   //SHOW_SMILE,autoload_smiley
   hVal=getValue(KS+'SHOW_SMILE');
   gvar.settings.autoload_smiley=(!hVal.match(/^([01]{1}),(kecil|besar|custom)+/) ? ['0,kecil'] : hVal.split(',') );  
+  
+  // countdown position
+  hVal=getValue(KS+'COUNTDOWN_POS');
+  gvar.settings.countdownpos=(!hVal.match(/^([01]{1}),([01]{1})/) ? ['1,0'] : hVal.split(',') );  
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
@@ -1853,7 +1867,6 @@ function initEventTpl(){
 	var uL = gvar.settings.userLayout;
 	gvar.additionalLength = ( (gvar.settings.userLayout.config[0]=='1' ? uL.signature.length : 0) + (gvar.settings.userLayout.config[1]=='1' ? uL.template.length : 0) );
 	
-	//_o( 'change', Dom.g(gvar.id_textarea),function(){ updateCounter(gvar.additionalLength) });
 	_o( 'focus', Dom.g(gvar.id_textarea),function(){ 
         updateCounter(gvar.additionalLength);
 		QRdp.check($D('#qr_delaycontainer'));
@@ -4288,9 +4301,7 @@ var QRdp = {
          QRdp.countDown = Math.abs(QRdp.selisih);
          window.setTimeout( function(){QRdp.showCounter()}, 1000);
 	  }
-	} 
-
-
+	}
  }
  ,updTitle:function(val){
     var t = getTag('title');
@@ -4313,7 +4324,8 @@ var QRdp = {
       QRdp.countDown--;
       window.setTimeout( function(){QRdp.showCounter()}, 1000);
     }
-    QRdp.updTitle(QRdp.countDown);
+    if(gvar.settings.countdown && gvar.settings.countdownpos[1]=='1')
+		QRdp.updTitle(QRdp.countDown);
  }
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
@@ -4963,7 +4975,7 @@ var ST = {
     if($D('#chk_select_all')) _o('click',$D('#chk_select_all'),function(e){ ST.chkbox_select_all(e, 'visibility_container'); });
     
     // having child set
-    elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey','misc_recaptcha_mode'], cL=elSet.length;
+    elSet = ['misc_updates','misc_autoshow_smile','misc_hotkey','misc_recaptcha_mode','misc_countdown'], cL=elSet.length;
     for(var i=0;i<cL;i++)
        if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.toggle_childs(e); });
     elSet = ['misc_autolayout_sigi','misc_autolayout_tpl'], cL=elSet.length;
@@ -4984,7 +4996,10 @@ var ST = {
     elSet = ['misc_hotkey_ctrl','misc_hotkey_alt','misc_hotkey_char'], cL=elSet.length;
     for(var i=0;i<cL;i++)
        if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.precheck_shift(e); });
-       try { // check noCrossDomain and/or isOpera
+    elSet = ['misc_countdown_form','misc_countdown_tabs'], cL=elSet.length;
+    for(var i=0;i<cL;i++)
+       if(Dom.g(elSet[i])) _o('click',Dom.g(elSet[i]),function(e){ ST.precheck_cntdown(e); });
+    try { // check noCrossDomain and/or isOpera
      if(!gvar.noCrossDomain && $D('#chk_upd_now') ) // unavailable on Chrome|Opera still T_T
       _o('click',$D('#chk_upd_now'),  function(e){
         if($D('#fetch_update')) return; // there is a fetch update in progress
@@ -5271,6 +5286,8 @@ var ST = {
       ,'misc_dynamic':KS+'DYNAMIC_QR'
       ,'misc_quickquote':KS+'QUICK_QUOTE'
       ,'misc_qrdraft':KS+'QR_DRAFT'
+      ,'misc_txtcounter':KS+'TXTCOUNTER'
+      ,'misc_countdown':KS+'COUNTDOWN'
       ,'misc_ajaxpost':KS+'AJAXPOST'
       ,'misc_recaptcha_mode':KS+'QR_USE_RECAPCAY'
     };
@@ -5313,6 +5330,17 @@ var ST = {
       }
     }
     setValue(KS+'SHOW_SMILE', value.toString());
+	
+	// saving countdown_pos
+    value = [];
+    misc = ['form','tabs'];
+    oL=misc.length;
+    for(var id=0; id<oL; id++){
+      if(!isString(misc[id])) continue;
+      par = $D('#misc_countdown'+'_'+misc[id]);
+      if( par ) value.push( (par.checked ? '1':'0') );      
+    }
+    setValue(KS+'COUNTDOWN_POS', value.toString());
     
     // saving autolayout
     misc = ['misc_autolayout_sigi','misc_autolayout_tpl'];
@@ -5347,6 +5375,13 @@ var ST = {
   var disp=e.checked, tgt=e.id+'_child';  
   if(Dom.g(tgt))
     Dom.g(tgt).style.setProperty('display',(disp ? '':'none'),'important');  
+ }
+ ,precheck_cntdown: function(e){
+  e=e.target||e;
+  if(typeof(e)!='object') return;
+  var hChk = !(!$D('#misc_countdown_form').checked && !$D('#misc_countdown_tabs').checked);
+  
+  $D('#misc_countdown').checked=(!hChk ? false : 'checked');
  }
  ,precheck_shift: function(e){
   e=e.target||e;
@@ -6570,7 +6605,7 @@ Format will be valid like this:
 
     +'<table class="tborder" cellpadding="6" cellspacing="1" border="0" align="center">'
     +'<thead><tr><td id="vB_Editor_001_parent" class="MYvBulletin_editor tcat" colspan="2">'
-    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
+    +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none;'+(gvar.settings.countdown && gvar.settings.countdownpos[0]=='1' ? '':'visibility:hidden;position:absolute;left:-999px;')+'" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span class="plain_notify">[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
     +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="" value="Draft" /></div>' : '')
@@ -6796,7 +6831,7 @@ Format will be valid like this:
      +'</div>'
 
      +             '<textarea name="message" id="vB_Editor_001_textarea" class="textarea" rows="10" cols="10" tabindex="1" dir="ltr" disabled="disabled"></textarea>'
-     +			   '<div style="position:relative;display:block;">'
+     +			   '<div style="position:relative;display:block;'+(gvar.settings.txtcounter ? '':'visibility:hidden')+'">'
 	 +			    '<div class="float_counter"><input value="0" disabled="disabled" id="txta_counter" class="txta_counter"></div>'
      +			   '</div>'
      +            '</td>'
@@ -7047,17 +7082,26 @@ Format will be valid like this:
     var theme = ['clean','red','white','blackglass'];
     return (''
      +'<div id="general_container" class="qrsmallfont">'
-     +'<table width="100%" cellpadding=0 cellspacing=0 class="qrsmallfont"><tr><td valign="top" class="qrsmallfont">'
+     +'<table width="100%" cellpadding=0 cellspacing=0 class="qrsmallfont"><tr><td valign="top" class="qrsmallfont" style="width:210px;">'
+	 // LEFT SIDE
+	 
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
      +spacer
      +'<input id="misc_quickquote" type="checkbox" '+(gvar.settings.quick_quote ? 'checked':'')+'/><label for="misc_quickquote">Quick Quote (<b class="opr" title="Quote directly from postbit on current page. Some tags may not parsed properly!" style="cursor:help">[!]</b>)</label>'
-     +spacer     
+	 +spacer
+     +'<input id="misc_countdown" type="checkbox" '+(gvar.settings.countdown ? 'checked':'')+'/><label for="misc_countdown">Countdown nextpost</label>'
+     +'<div id="misc_countdown_child" class="smallfont" style="margin:-3px 0 0 15px;'+(gvar.settings.countdown ? '':'display:none;')+'">&nbsp;'
+     +'<input id="misc_countdown_form" type="checkbox" '+(gvar.settings.countdownpos[0]=='1' ? 'checked':'')+'/><label for="misc_countdown_form">form</label>&nbsp;'
+     +'<input id="misc_countdown_tabs" type="checkbox" '+(gvar.settings.countdownpos[1]=='1' ? 'checked':'')+'/><label for="misc_countdown_tabs">tabs</label>'     
+     +'</div>'
+	 
+     +spacer
      +(!gvar.user.isDonatur ? ''
      +'<input id="misc_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/><label for="misc_recaptcha_mode">reCaptcha Mode On</label>'
-     +'<div id="misc_recaptcha_mode_child" class="smallfont" style="margin:2px 0 0 15px;'+(gvar.settings.recaptcha ? '':'display:none')+'">'
+     +'<div id="misc_recaptcha_mode_child" class="smallfont" style="margin:-3px 0 0 15px;'+(gvar.settings.recaptcha ? '':'display:none')+'">'
      +'&nbsp;<select id="misc_recaptcha_theme">'
      +(function(th){
         var ret='';
@@ -7070,6 +7114,7 @@ Format will be valid like this:
      +'</div>'
      +spacer : '' )
      +'</td><td valign="top" class="qrsmallfont" style="border-left:1px solid #bbb; padding-left:5px;">'
+	 // RIGHT SIDE 
      
      +'<input id="misc_qrdraft" type="checkbox" '+(gvar.settings.qrdraft ? 'checked':'')+'/><label for="misc_qrdraft">AutoSave Draft</label> *'
      +spacer
@@ -7080,14 +7125,16 @@ Format will be valid like this:
      +'<input id="misc_autoexpand_0" type="checkbox" '+(gvar.settings.textareaExpander[0] ? 'checked':'')+'/><label for="misc_autoexpand_0">AutoGrow Textarea</label>'
      +spacer
      +'<input id="misc_autoshow_smile" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
-     +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:0 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
+     +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:-3px 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_kecil">kecil</label>&nbsp;'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_besar">besar</label>&nbsp;'
      +'<input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_custom">custom</label>'
      +'</div>'
      +spacer
+	 +'<input id="misc_txtcounter" type="checkbox" '+(gvar.settings.txtcounter ? 'checked':'')+'/><label for="misc_txtcounter">Text Counter</label>'	 
+     +spacer
      +'<input id="misc_hotkey" type="checkbox" '+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? '':'checked')+'/><label for="misc_hotkey">QR-Hotkey</label>'
-     +'<div id="misc_hotkey_child" class="smallfont" style="margin:2px 0 0 15px;'+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? 'display:none;':'')+'">'
+     +'<div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px;'+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? 'display:none;':'')+'">'
      +'&nbsp;<input id="misc_hotkey_ctrl" type="checkbox" '+(gvar.settings.hotkeykey[0]=='1' ? 'checked':'')+'/><label for="misc_hotkey_ctrl">ctrl</label>&nbsp;'
      +'<input id="misc_hotkey_alt" type="checkbox" '+(gvar.settings.hotkeykey[2]=='1' ? 'checked':'')+'/><label for="misc_hotkey_alt">alt</label>&nbsp;'
      +'<input id="misc_hotkey_shift" type="checkbox" '+(gvar.settings.hotkeykey[1]=='1' ? 'checked':'')+(gvar.settings.hotkeykey.toString()=='0,0,0' || gvar.settings.hotkeychar=='' ? ' disabled="disabled"':'')+'/><label for="misc_hotkey_shift">shift</label>'
