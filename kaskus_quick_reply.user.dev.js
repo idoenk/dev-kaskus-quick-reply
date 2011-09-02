@@ -23,6 +23,10 @@
 //   Improve activate last modified group
 //   Fix smileycustom undefined smileygroup (initial cond). Thanks=[blitzx,indramario,Williamzone,ketang.klimax]
 //
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 // v3.2.4 - 2011-08-31 . 1314738816042
 //   Fix failed get default value of OPTIONS_BOX when packed as addons
 //   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
@@ -40,11 +44,6 @@
 //   Fix gvar is underfined. Thanks=[Piluze]
 //   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
 //   Fix more strict find EDIT & QUOTE links. Thanks=[ketang.klimax]
-//
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.2.3 - 2011-08-01 . 1312144343710
 //   Fix wrap quote for spoiler title
