@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.5
-// @dtversion     110901325
-// @timestamp     1314976444858
+// @dtversion     110902325
+// @timestamp     1314979251345
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,7 @@
 //
 // -!--latestupdate
 //
-// v3.2.5 - 2011-09-01 . 1314976444858
+// v3.2.5 - 2011-09-02 . 1314979251345
 //   Add settings [TXTCOUNTER, COUNTDOWN]
 //   Improve minor textcounter css
 //   Improve activate last modified group
@@ -45,12 +45,6 @@
 //   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
 //   Fix more strict find EDIT & QUOTE links. Thanks=[ketang.klimax]
 //
-// v3.2.3 - 2011-08-01 . 1312144343710
-//   Fix wrap quote for spoiler title
-//   Fix avoid unexpected globalvar (partial)
-//   Fix load custom_smiley containing autotext
-//   Blame replacing on() become _o() destructing regex filter.
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
@@ -71,9 +65,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.5';
 gvar.scriptMeta = {
-  timestamp: 1314976444858 // version.timestamp
+  timestamp: 1314979251345 // version.timestamp
 
- ,dtversion: 110901325 // version.date
+ ,dtversion: 110902325 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
