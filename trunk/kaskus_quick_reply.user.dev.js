@@ -417,7 +417,9 @@ function getSettings(){
   
   // countdown position
   hVal=getValue(KS+'COUNTDOWN_POS');
-  gvar.settings.countdownpos=(!hVal.match(/^([01]{1}),([01]{1})/) ? ['1,0'] : hVal.split(',') );  
+  gvar.settings.countdownpos=(!hVal.match(/^([01]{1}),([01]{1})/) ? ['1,0'] : hVal.split(',') );
+  if(gvar.settings.countdownpos[0]!='1' && gvar.settings.countdownpos[1]!='1')
+	gvar.settings.countdown=false;
   
   // controler setting
   hdc = getValue(KS+'HIDE_CONTROLLER');
@@ -5277,7 +5279,20 @@ var ST = {
       for(var i=0; i<oL; i++)
         value.push(par[i].checked ? '1' : '0');
       setValue(KS+'HIDE_CONTROLLER',value.toString());
+    }	
+	// saving countdown_pos
+    value = [];
+    misc = ['form','tabs'];
+    oL=misc.length;
+    for(var id=0; id<oL; id++){
+      if(!isString(misc[id])) continue;
+      par = $D('#misc_countdown'+'_'+misc[id]);
+      if( par ) value.push( (par.checked ? '1':'0') );      
     }
+    setValue(KS+'COUNTDOWN_POS', value.toString());
+	if(value.toString()=='0,0' && $D('#misc_countdown'))
+		$D('#misc_countdown').checked = false;
+	
     // saving updates; avatar; dynamic
     misc = {
        'misc_updates':KS+'UPDATES'
@@ -5329,17 +5344,6 @@ var ST = {
       }
     }
     setValue(KS+'SHOW_SMILE', value.toString());
-	
-	// saving countdown_pos
-    value = [];
-    misc = ['form','tabs'];
-    oL=misc.length;
-    for(var id=0; id<oL; id++){
-      if(!isString(misc[id])) continue;
-      par = $D('#misc_countdown'+'_'+misc[id]);
-      if( par ) value.push( (par.checked ? '1':'0') );      
-    }
-    setValue(KS+'COUNTDOWN_POS', value.toString());
     
     // saving autolayout
     misc = ['misc_autolayout_sigi','misc_autolayout_tpl'];
