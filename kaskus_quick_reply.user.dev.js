@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.4
-// @dtversion     110831324
-// @timestamp     1314738816042
+// @version       3.2.5
+// @dtversion     110901325
+// @timestamp     1314970374065
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -16,6 +16,11 @@
 // @include       http://photoserver.ws/*
 //
 // -!--latestupdate
+//
+// v3.2.5 - 2011-09-01 . 1314970374065
+//   Improve minor textcounter css
+//   Improve activate last modified group
+//   Fix smileycustom undefined smileygroup (initial cond). Thanks=[blitzx,indramario,Williamzone,ketang.klimax]
 //
 // v3.2.4 - 2011-08-31 . 1314738816042
 //   Fix failed get default value of OPTIONS_BOX when packed as addons
@@ -64,12 +69,11 @@ const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) )
 	return;
 
-
-gvar.sversion = 'v' + '3.2.4';
+gvar.sversion = 'v' + '3.2.5';
 gvar.scriptMeta = {
-  timestamp: 1314738816042 // version.timestamp
+  timestamp: 1314970374065 // version.timestamp
 
- ,dtversion: 110831324 // version.date
+ ,dtversion: 110901325 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -4425,12 +4429,13 @@ var Updater = {
 
 // global smiley loader
 var SML_LDR = {
-  init: function(scID,smlset){
+  init: function(scID, smlset, selTo){
     var realcont, dumycont, target=Dom.g(scID);
     target.innerHTML='';
     
     SML_LDR.scID = scID;
     SML_LDR.smlset = smlset;
+	SML_LDR.selTo = (selTo ? selTo : null);
     
     if(scID=='scustom_container')
       $D('#scustom_container').style.setProperty('max-width',(Dom.g(gvar.id_textarea).clientWidth-135)+'px','');
@@ -4452,6 +4457,7 @@ var SML_LDR = {
     };
     var adclass = (gvar.settings.scustom_alt ? 'ofont qrsmallfont nothumb' : 'scustom-thumb'), RC=SML_LDR.realcont;
     var Attr,img,imgEl2,imgEl=false,countSmiley=0, is_link=false;
+
     if(isUndefined(idx)) idx=0;
     if( SML_LDR.scID=='scustom_container' && gvar.smiliegroup && isDefined(smlset[gvar.smiliegroup[idx].toString()]) )
        smlset = smlset[gvar.smiliegroup[idx].toString()];
@@ -4570,7 +4576,7 @@ var SML_LDR = {
   
  ,custom:{
     initCustom: function(){
-      var par,cL,el,el2,tit,cont=createEl('div',{id:'custom_bottom',style:'margin:5px 0 8px 0;'});
+	  var par,cL,el,el2,tit,cont=createEl('div',{id:'custom_bottom',style:'margin:5px 0 8px 0;'});
       clog('initCustom');
       SML_LDR.smlset=gvar.smiliecustom;
       el = createEl('input',{id:'current_grup', type:'hidden',value:(gvar.smiliegroup ? gvar.smiliegroup[0]:'')}); Dom.add(el,cont);
@@ -4610,8 +4616,6 @@ var SML_LDR = {
       Dom.add(el,$D('#right_'+SML_LDR.scID));
       if($D('#right_'+SML_LDR.scID))
         $D('#right_'+SML_LDR.scID).insertBefore(cont,$D('#right_'+SML_LDR.scID).firstChild);
-	  
-	  
     }
    ,tab_menu_left: function(){
       var par, el, el2, el3;
@@ -4645,9 +4649,7 @@ var SML_LDR = {
               rSRC.getSmileySet(true);
               SML_LDR.smlset = gvar.smiliecustom[e.title.toString()];
               SML_LDR.realcont=tgt;
-              window.setTimeout(function() {
-                SML_LDR.load(SML_LDR.smlset, $D('#current_order').value);              
-              }, 10);
+              window.setTimeout(function() { SML_LDR.load( SML_LDR.smlset ) }, 10);
             }
           });
 		  el3 = createEl('span',{'class':'num'}, (i+1) );
@@ -4661,6 +4663,9 @@ var SML_LDR = {
        
       }
       if(!gvar.smiliegroup && $D('#manage_btn')) $D('#manage_btn').style.display='none';
+	  if( SML_LDR.selTo && $D('tbgrup_'+SML_LDR.selTo) ){
+		SimulateMouse($D('tbgrup_'+SML_LDR.selTo), 'click', true);
+	  }
     }
    ,close_edit: function(callback){
      // close manage activity || reqrite instead of simulate click on cancel
@@ -4732,19 +4737,16 @@ var SML_LDR = {
      if(task!='Manage'){
         SML_LDR.custom.manage_save();
      }else{
-          var smlset=false;
-          if($D('#current_order') && $D('#current_order').value!='' && gvar.smiliegroup){
+          var smlset=false, curOrder=$D('#current_order');
+          if(curOrder && curOrder.value!='' && gvar.smiliegroup){
             rSRC.getSmileySet(true);
-            smlset = gvar.smiliecustom[gvar.smiliegroup[$D('#current_order').value].toString()];
+            smlset = gvar.smiliecustom[gvar.smiliegroup[curOrder.value].toString()];
           }
           var generatePos = function(idx){
-			//e = $D('#pos_group_sets');
-			//neworder = e.options[e.selectedIndex].value;
-			//alert(gvar.smiliegroup.length);
 			
 			var el, Attr, tgt = $D('#position_group');
 			var par=createEl('select', {id:'pos_group_sets',style:'width:50px'});
-			if(tgt) {
+			if(tgt && gvar.smiliegroup) {
 				for(var i=0; i<gvar.smiliegroup.length; i++){
 					Attr={'value':i};
 					if(idx==i) Attr['selected'] = "selected";
@@ -4756,8 +4758,9 @@ var SML_LDR = {
 			}
 		  };
           var generateGrup = function(){
-            if($D('#current_order').value!='' && gvar.smiliegroup){				
-				return gvar.smiliegroup[$D('#current_order').value];
+            var curOrder=$D('#current_order');
+			if(curOrder && curOrder.value!='' && gvar.smiliegroup){				
+				return gvar.smiliegroup[curOrder.value];
 			}
             var isAvail = function(g){
                 if(!gvar.smiliegroup) return true;
@@ -4773,15 +4776,10 @@ var SML_LDR = {
             return nG;
           }; // end generateGrup
           if(smlset){
-			
-			//alert(generatePos())
-			//alert(gvar.smiliegroup.length)
-			
-			var ret;
+			var ret='';
             for (var i in smlset) {
-             img=smlset[i]; ret='';
+             img=smlset[i];
              if( !isString(img) )
-               //buff+=img[1]+'|'+img[0]+'\n';
                buff+=img[1]+'|'+( /^https?\:\/\/.+$/i.test(img[0]) ? img[0] : unescape(img[0]) )+'\n';
              else if(ret=validTag(img, false, 'editor') )
                buff+=ret;
@@ -4789,7 +4787,7 @@ var SML_LDR = {
             SML_LDR.custom.lastload=buff;
           }
 		  
-		  var cOrder = $D('#current_order');
+		  var cOrder = ($D('#current_order') ? $D('#current_order') : false);
 		  if( cOrder && $D('#position_group')){
 				generatePos( cOrder.value );
 				$D('#position_group').style.display=( cOrder.value ?'':'none');
@@ -4804,7 +4802,7 @@ var SML_LDR = {
           _o('keydown',obj2,function(e){var C=(!e?window.event:e);if(C.keyCode==13){C = do_an_e(C);SML_LDR.custom.manage_save();}else{return C;}});
           _o('focus',obj2,function(e){selectAll(e)});
           Dom.add(obj2,obj);          
-          if($D('#current_order').value!=''){ // not add group?
+          if( curOrder && curOrder.value!="" ){ // not add group?
             Attr = {id:'delete_grupname',href:'javascript:;','class':'smallfont',style:'margin-left:20px;color:red;',title:'Delete this Group'};
             obj2 = createEl('a',Attr,'delete');
             _o('click',obj2,function(){SML_LDR.custom.delete_group()});
@@ -4839,12 +4837,13 @@ var SML_LDR = {
         // task save 
         var mcPar=$D('#manage_container'),buff=false,cont_id=SML_LDR.scID;
         var lastVal = [getValue(KS+'SCUSTOM_ALT'), getValue(KS+'SCUSTOM_NOPARSE')];
-        var oldOrder = $D('#current_order').value;
-		var sEL = $D('#pos_group_sets'), newOrder = sEL.options[sEL.selectedIndex].value;
+		var curOrder=$D('#current_order');
+        var oldOrder = (curOrder ? curOrder.value : "");
+		var sEL = $D('#pos_group_sets'), newOrder = (sEL ? sEL.options[sEL.selectedIndex].value : 0);
         var remixBuff = function(niubuf, nodel){
            // ['<!>','<!!>']; 
-           var ret='',curG=[$D('#current_order').value, $D('#current_grup').value],grup;
-		   var sEL = $D('#pos_group_sets'), nOrder = sEL.options[sEL.selectedIndex].value;
+           var ret='',curG=[(curOrder ? curOrder.value : ""), $D('#current_grup').value],grup;
+		   var sEL = $D('#pos_group_sets'), nOrder = (sEL ? sEL.options[sEL.selectedIndex].value : 0);
            var cleanGrup = function(){
              return trimStr($D('#input_grupname').value.replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_'));
            };grup=cleanGrup();
@@ -4854,8 +4853,8 @@ var SML_LDR = {
              CR_OBJ[String(part[0])]=String(part[1]);
            }
 		   
-		   // reorder-dahs
-		   if(curG[0]!="" && nOrder!=curG[0]){
+		   // reorder-group (manage | not add)
+		   if(curG[0]!="" && nOrder!=curG[0] && gvar.smiliegroup){
 				var tomove=gvar.smiliegroup[curG[0]], newGrup=[];
 				gvar.smiliegroup[curG[0]] = null;
 				if(nOrder > curG[0])
@@ -4869,8 +4868,9 @@ var SML_LDR = {
 		   }
 		   
            ch_grup=(curG[1]!='' && grup!='' && grup!=curG[1]);
-		   var grlen = gvar.smiliegroup.length, degrup;
-           if(curG[0]!='' && curG[1]!='' && gvar.smiliegroup){
+		   var grlen, degrup;
+		   grlen = (gvar.smiliegroup ? gvar.smiliegroup.length : 0);
+           if(curG[0]!='' && curG[1]!='' && gvar.smiliegroup){			 
 			 for(var k=0; k<grlen; k++){
                 degrup = gvar.smiliegroup[k].toString();
 				if(degrup==curG[1]){
@@ -4917,14 +4917,24 @@ var SML_LDR = {
             setValue(KS+'SCUSTOM_NOPARSE', (gvar.settings.scustom_noparse ? '1':'0') ); //save custom parser
             setValue(KS+'CUSTOM_SMILEY', remixBuff(buff, (isUndefined(todel)) )); //save custom smiley
         }
+		
         // cold-boot
         delete(gvar.smiliegroup); // require to refresh left mnu
         rSRC.getSmileySet(true); // load only custom        
         SML_LDR.custom.toggle_manage();
         if($D('#right_scustom_container')) $D('#right_scustom_container').innerHTML='<div id="scustom_container"></div>';
+		
         window.setTimeout(function() {
-            SML_LDR.init(cont_id,gvar.smiliecustom);
-            SML_LDR.custom.tab_menu_left();
+			var seTo;
+			if( oldOrder ) {
+				seTo = parseInt(oldOrder);
+				if(newOrder!=oldOrder) seTo = parseInt(newOrder);
+			}else{
+				seTo = (gvar.smiliegroup ? gvar.smiliegroup.length-1 : 0);
+			}
+			SML_LDR.init(cont_id, gvar.smiliecustom, seTo);
+            
+			SML_LDR.custom.tab_menu_left();
         }, 200);
     } //end manage_save
  } // end custom
@@ -5873,7 +5883,9 @@ var rSRC = {
   +'.txa_readonly{background-color:#E8E8E8;color:#4F4F4F;}'
   // text-counter
   +'.float_counter{position:absolute;margin:'+(gvar.isOpera ? '-1': '-2')+'px 28px 0 0;right:0;}'
-  +'.float_counter input{width:100px;border:1px solid #9E9E9E;text-align:right;font-size:15px;font-weight:bold;cursor:default;padding:0 2px;}'
+  +'.float_counter input{width:100px;border:1px solid #9E9E9E;text-align:right;font-size:15px;font-weight:bold;cursor:default;padding:0 2px; '
+  +  'border-radius:0 0 10px 10px; -moz-border-radius:0 0 10px 10px; -khtml-border-radius:0 0 10px 10px; -webkit-border-radius:0 0 10px 10px;'
+  +'}'
   +'.txta_counter{background:#DFC;color:#3A3A3A;}'
   +'.txta_counter_red{background:#FB0000;color:#fff;}'
    
