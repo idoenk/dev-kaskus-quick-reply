@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.1.0
-// @dtversion     110605110
-// @timestamp     1307246266534
+// @version       1.1.1
+// @dtversion     110904111
+// @timestamp     1315075642884
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,26 +19,21 @@
 //
 // -!--latestupdate
 //
-//  v1.1.0 - 2011-06-05
-//    Fix freezed onclick menubwhjb navigation
-//    Fix isOrigin (anti jebmen for vBulletin Thread Preview)
-//    Fix Update Link. Thanks=[Ngentoad]
+//  v1.1.1 - 2011-09-04
+//    Improve scanBetmen with fixObfuscate2 ability
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
-///  v1.0.9 - 2011-06-04
+//  v1.1.0 - 2011-06-05
+//    Fix freezed onclick menubwhjb navigation
+//    Fix isOrigin (anti jebmen for vBulletin Thread Preview)
+//    Fix Update Link. Thanks=[Ngentoad]
+//
+//  v1.0.9 - 2011-06-04
 //    Switchable setting capctha mode.
 //    Back to Recaptcha again. --"
-//
-/  v1.0.8 - 2011-05-30
-//    Fix resolve behaviour with old kaskus capcay.
-//
-//  v1.0.7 - 2011-04-09
-//    Fix minor CSS; deprecate eval()
-//    Fix forceGM for updater
-//    Fix always use native-XHR.
 //
 //
 //  v1.0 - 2011-01-08
@@ -48,9 +43,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.1.0';
+gvar.sversion = 'v' + '1.1.1';
 gvar.scriptMeta = {
-  timestamp: 1307246266534 // version.timestamp
+  timestamp: 1315075642884 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -135,7 +130,7 @@ function init(){
   gvar.loc= location.href;
 
   GM_addGlobalStyle( rSRC.getCSS() );
-  GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 ); // to body for css-fixed
+  GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'xcss_position', 1 ); // to body for css-fixed
   
   if( gvar.settings.recaptcha )
     GM_addGlobalScript('http:\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax\.js');
@@ -526,7 +521,7 @@ var tTRIT = {
 	
 	// re-syncroning from storage avoid changed value when qr-click
 	gvar.settings.fixed_preview = (getValue(KEY_KTP+'FIXED_PREVIEW')=='1');
-	Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
+	if(Dom.g('xcss_position')) Dom.g('xcss_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
 	
 	// pre-check kfti position, walau udah di setting, this one is per-click.
 	// user might resize / change the state of kfti
@@ -599,36 +594,96 @@ var tTRIT = {
 	}
   }
 
- ,scanBetmen: function(text){
-  if(!text) return '';
-  var temp = createEl('div',{}, text), cleanRet=text;
-  var el, buff, aL, isClean, aTag = getTag('a', temp);
-  if(!aTag) return text;  
-  var newHref = function(inner, href){
-    //var isKaskus = ( /^http\:\/\/\w+\.kaskus\.us\//i.test(href) );
-    var re = new RegExp( "^"+String(gvar.prot).replace(/\:/,"\\\:")+"\\\/\\\/"+String(location.hostname).replace(/\./g,'\\\.')+"\\\/", "i")
-    ,isOrigin= re.test(href)
-    , nel = createEl('div', {}, (href ? '<div class="btman-suspect"><a href="'+href+'" target="_blank" '+(isOrigin?'':'title="BEWARE! This link is a trick for you, it may contain harmfull or annoying contents."')+'>[ <span>BETMEN-DETECTED</span> ]</a><span class="btman-href'+(isOrigin?'':' btman-strike')+'">'+href+'</span></div>':'') + inner );
-	return nel;
-  }
-  aL=aTag.length; isClean='';
-  while(isClean=='' || isClean.indexOf('0')!=-1 ){
-   isClean= '1';
-   for(var i=0; i<aL; i++){
-     if(isUndefined(aTag[i])) continue;
-     buff = aTag[i].innerHTML;
-	 
-	 if(buff.match(/<input\s*(?:(?:type|value|style)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i)){
-		el = newHref(buff, aTag[i].href);
-	 	temp.insertBefore(el, aTag[i].nextSibling);
-	 	temp.removeChild(aTag[i]);
-		isClean+= '0';
-	 }
-	 isClean+= '1';
-   }
-  }
-  cleanRet = temp.innerHTML;
-  return cleanRet;
+ ,fixObfuscate2: function(text){
+	/*
+	# snippet from Kaskus Fix-ObfuscatorII
+	# version:	0.7.12
+	# src:		http://userscripts.org/scripts/show/90164
+	# svn:		http://goo.gl/6scmO
+	# author:	hermawanadhis
+	*/
+	var replacements, thenodes, node, s, regex={};
+	var temp = createEl('div', {style:"display:none;"}, text);
+	
+	// You can customize the script by adding new pairs of words.
+	// First, let's build the "obfuscated":"de-obfuscated" words list
+	// To prevent inadvertently using some regexp control modifiers,
+	// prepend symbols (i.e. non-alphanumerics) with two backslashes ( i.e. \\ )
+	replacements = {
+		"kimpoi": "kawin",
+		"krack": "crack",
+		"paypai": "paypal",
+		"pocongk+": "pocong",
+		"indo\\*web\\*ster\\.\\.":"indowebster",
+		"\\*Forbidden\\*": ".co.cc",
+	};
+	
+	// reusable func to perform & manipulating in wildcard links or data value 
+	var fixme = function(s){
+		for (key in replacements) 
+			s = s.replace(regex[key], replacements[key]);
+			
+		if( /\w{1}\*\w{1}/.test(s) )
+			s = s.replace(/(\w{1})\*(\w{1})/g, function(S,$1,$2){return (!$1 || !$2 ? S : ''+$1+$2)} );
+			
+		if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )        
+			s = s.replace(/\.{2,}(com|net|in|to|ly)\b/g, '.$1' );
+		return s;
+	};
+	for (key in replacements) 
+		regex[key] = new RegExp(key, 'gi');        
+		
+	// Now, retrieve the text nodes. default: //body//text()
+	//thenodes = document.evaluate('//text()', temp, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	thenodes = $D('.//text()', temp);
+	
+	// Perform a replacement over all the nodes
+	for (var i = 0; i < thenodes.snapshotLength; i++) {
+		node = thenodes.snapshotItem(i);
+		s = node.data;
+		if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
+		s = fixme( s );
+		node.data = s;
+	}
+	
+	// Now, retrieve the A nodes. default: //a
+	// Optimized, we just need all this specified href links
+	thenodes = $D('.//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.us")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]', temp);
+	
+	// Finally, perform a replacement over all A nodes
+	for (var i = 0; i < thenodes.snapshotLength; i++) {
+		node = thenodes.snapshotItem(i);
+		// Here's the key! We must replace the "href" instead of the "data"
+		s = fixme( decodeURI( node.href ) );
+		node.href = s;
+	}
+	// --end fix-obfuscate
+	
+	
+	var isBatman = function(inner){
+		return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
+	}, 
+	newHref = function(href){
+		var a = createEl('span', { 'rel':href, 'class':'smallfont','style':'color:red; cursor:pointer; margin-left:10px;', 'onclick':'var nW = window.open(this.getAttribute(\'rel\'), \'_blank\');nW.focus();return false;'}, 'Hidden Link &gt;&gt; '+href );
+		return a; 
+	};
+	thenodes = $D('.//a', temp);
+	if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
+		node = thenodes.snapshotItem(j);
+		if(node.innerHTML.indexOf(' onclick="')!=-1 && isBatman(node.innerHTML)){
+			
+			var inps, inerDiv=node.getElementsByTagName('div');
+			if(inerDiv){
+				inps = inerDiv[0].getElementsByTagName('input');
+				if(inps.length)
+					inps[0].parentNode.appendChild( newHref(node.href) );
+			}
+			node.removeAttribute('href');
+		}else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
+			node.innerHTML = decodeURI(node.href);
+		}
+	}
+	return (temp.innerHTML).toString(); 
  }
  ,parse_preview: function(text){
    var isVBul4 = function(itext){
@@ -661,7 +716,8 @@ var tTRIT = {
    _ret = _ret.replace(/<input(?:.*)onclick=\"(?:(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*)(?:[^;]+).(?:[^;]+).\s*(this\.innerText\s*=\s*'';\s*))[^\>]+./gim, function(str,$1,$2){ return( str.replace($1,'').replace($2,'') ) });
    
    // simple anti-batman-trap
-   _ret = tTRIT.scanBetmen(_ret);   
+   //_ret = tTRIT.scanBetmen(_ret);   
+   _ret = tTRIT.fixObfuscate2(_ret);   
    _ret = tTRIT.parse_image(_ret);
    
    /*title*/
@@ -987,7 +1043,7 @@ var tPOP = {
 	getSettings();
 	
 	// reload css to body
-	GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'css_position', 1 );
+	GM_addGlobalStyle( rSRC.getCSS_fixed(gvar.settings.fixed_preview), 'xcss_position', 1 );
 	
     // done save then close layer
 	tPOP.closeLayerBox('hideshow');
@@ -1201,7 +1257,7 @@ var tPOP = {
     // flag ? doFixed :doAbs
     if(isUndefined(flag))
       flag = (gvar.settings.fixed_preview === false);
-    Dom.g('css_position').innerHTML = rSRC.getCSS_fixed(flag);
+    if(Dom.g('xcss_position')) Dom.g('xcss_position').innerHTML = rSRC.getCSS_fixed(flag);
     var yNow = parseInt(ss.getCurrentYPos());
     
     var newOfset = (yNow==0 ? gvar.offsetLayer : yNow+( ($D('#preview_content').clientHeight+$D('#qr_container').clientHeight) > (parseInt(getScreenHeight())-gvar.offsetMaxHeight-gvar.offsetLayer) ? 0 : gvar.offsetLayer) );
@@ -2442,7 +2498,7 @@ var tSTORAGE = {
 // common function
 function controler_resizer(){
   gvar.maxH_editor = parseInt(GetHeight())-170;
-  Dom.g('css_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
+  if(Dom.g('xcss_position')) Dom.g('xcss_position').innerHTML = rSRC.getCSS_fixed( gvar.settings.fixed_preview );
 }
 function getFetch(u, cb, cache){
   if(isUndefined(u)) return;
