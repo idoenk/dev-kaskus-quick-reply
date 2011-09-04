@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.6
+// @version       3.2.6b
 // @dtversion     110904326
-// @timestamp     1315105619585
+// @timestamp     1315106889462
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,7 +17,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-09-04 . 1315105619585
+// v3.2.6 - 2011-09-04 . 1315106889462
+//   Improve hide dirty TM_tmp_xpath (when xpath'ing nodes on tampermonkey --GC)
 //   Fix minor avoid local-time-system abuse;
 //
 // -/!latestupdate---
@@ -68,7 +69,7 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1315105619585 // version.timestamp
+  timestamp: 1315106889462 // version.timestamp
 
  ,dtversion: 110904326 // version.date
  ,scriptID: 80409 // script-Id
@@ -663,7 +664,7 @@ function do_click_qqr(e, multi){
 			  LT.sp.push('SPOILER');
 			  parts = mct[1].split('-');
 			  if( isDefined(parts[1]) && parts[1].length ){
-				sBox=createEl('div',{},mct[1].replace(parts[0]+"-","") );
+				sBox=createEl('div',{style:'display:none'},mct[1].replace(parts[0]+"-","") );
 				parts[1] = trimStr( sBox.childNodes[0].nodeValue );
 				try{Dom.remove(sBox)}catch(e){};
 			  }
@@ -781,7 +782,7 @@ function do_click_qqr(e, multi){
     ret=trimStr( String(x).replace(/<\!-{2}\s?\/?\s?[^\s]+\s?-{2}>/gm,'') )||'';        
 	
 	// clean all previous quote
-	pCon=createEl('div',{},x);
+	pCon=createEl('div',{style:'display:none'},x);
 	
 	// cleanup head in for FJB-SF (stop until found <hr>)
 	els = $D(".//div[contains(@id,'post_message_')]", pCon);
@@ -806,7 +807,7 @@ function do_click_qqr(e, multi){
 	  if(isDefined(html)){        
         // fix align inside spoiler
         html = String(html).replace(/<(\/?)([^>]+)>/gm, parseSerials );
-        rvCon=createEl('div',{},html);
+        rvCon=createEl('div',{style:'display:none'},html);
       }
 	  els=$D(XPathStr, rvCon);
 	  if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
