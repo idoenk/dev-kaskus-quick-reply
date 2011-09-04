@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.5
-// @dtversion     110902325
-// @timestamp     1314979251345
+// @version       3.2.6
+// @dtversion     110904326
+// @timestamp     1315105619585
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -17,15 +17,18 @@
 //
 // -!--latestupdate
 //
+// v3.2.6 - 2011-09-04 . 1315105619585
+//   Fix minor avoid local-time-system abuse;
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 // v3.2.5 - 2011-09-02 . 1314979251345
 //   Add settings [TXTCOUNTER, COUNTDOWN]
 //   Improve minor textcounter css
 //   Improve activate last modified group
 //   Fix smileycustom undefined smileygroup (initial cond). Thanks=[blitzx,indramario,Williamzone,ketang.klimax]
-//
-// -/!latestupdate---
-// ==/UserScript==
-/*
 //
 // v3.2.4 - 2011-08-31 . 1314738816042
 //   Fix failed get default value of OPTIONS_BOX when packed as addons
@@ -63,11 +66,11 @@ const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) )
 	return;
 
-gvar.sversion = 'v' + '3.2.5';
+gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1314979251345 // version.timestamp
+  timestamp: 1315105619585 // version.timestamp
 
- ,dtversion: 110902325 // version.date
+ ,dtversion: 110904326 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -4285,11 +4288,19 @@ var QRdp = {
  ,defDelay: 29 // seconds; assumed 32 sec; fact is 30 sec; 29 is calibrated -Andreas.
  ,getLast:function(){return getValue(QRdp.key)}
  ,updLast:function(x){return setValue(QRdp.key, x)}
- ,check:function(tgt,delay){    
-    delay=delay || QRdp.defDelay;
+ ,check:function(tgt,delay){
+    delay=Math.abs(delay) || QRdp.defDelay;
     var lastP = parseInt( QRdp.getLast() );    
     if(lastP > 0){
       QRdp.selisih = Math.floor( (new Date().getTime()-(lastP+(delay*1000)) ) / 1000 );
+	  // check, avoid local-time-system abuse;
+	  // correction when lastpost is further than current
+	  if( QRdp.selisih < delay){
+		QRdp.updLast( parseInt(new Date().getTime() + 4000) + '');
+		QRdp.selisih = (-1 * (delay-4) );
+	  }else{
+		delValue(QRdp.key);
+	  }
       if( isUndefined(QRdp.countDown) && tgt && tgt.style.display=='none' && QRdp.selisih <= 0 ){
          QRdp.tgt = tgt;
          tgt.style.display = '';
