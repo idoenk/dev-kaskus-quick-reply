@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.6b
-// @dtversion     110927326
-// @timestamp     1317079747157
+// @dtversion     111008326
+// @timestamp     1318035803017
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -14,10 +14,18 @@
 // @include       http://*.imageshack.us/*
 // @include       http://imgur.com/*
 // @include       http://photoserver.ws/*
+// @include       http://lulzimg.com/*
+// @include       http://*.imagedum.com/*
+// @include       http://imagedum.com/*
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-09-27 . 1317079747157
+// v3.2.6 - 2011-10-08 . 1318035803017
+//   Add [lulz,imgdum] image uploader. Thank=[ketang.klimax]
+//   Improve CSS (google-button-new-look)
+//   Improve (partial) adjusting k-capcay, seems still unreliable to serve
+//   Fix missed key for reset settings
+//   Fix minor CSS hide overflow body
 //   Fix defect smoothScroll callback Lv.2.1
 //   Fix defect smoothScroll callback (using GC with ABP+Easylist)
 //   Fix stripped url tag, using with KSA. Thanks=[p1nky,sicupuw]
@@ -73,9 +81,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1317079747157 // version.timestamp
+  timestamp: 1317431427540 // version.timestamp
 
- ,dtversion: 110927326 // version.date
+ ,dtversion: 111008326 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -125,7 +133,7 @@ const OPTIONS_BOX = {
  
  ,KEY_SAVE_QR_COLLAPSE:  ['1'] // initial state of qr
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
- ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer
+ ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp  
 };
@@ -213,13 +221,13 @@ function init(){
 // outside forum like u.kaskus.us || imageshack.us
 function outSideForumTreat(){
   var whereAmId=function(){
-    var ret=false,src;
+    var _src, ret=false;
     getUploaderSetting();
     for(var host in gvar.uploader){
-      src=gvar.uploader[host]['src']||null;
-      if(src && self.location.href.indexOf(src)!=-1){
-        ret= String(host); break;
-	  }
+		_src = gvar.uploader[host]['src'] || null;
+		if( _src && self.location.href.indexOf( _src )!=-1 ){
+			ret= String(host); break;
+		}
     }
     return ret;
   };
@@ -233,8 +241,8 @@ function outSideForumTreat(){
     case "kodok":
       CSS=''
          +'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
-         +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0;}'
-         +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt;}'
+         +'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0}'
+         +'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt}'
 	  ;break;
     case "imgur":
       CSS=''
@@ -250,6 +258,17 @@ function outSideForumTreat(){
       +'#footer{padding:0}'
       +'#overlay .content{top:3px'+i+'}'
       +'#overlay{position:absolute'+i+'}'
+	  ;break;
+    case "lul":
+	  CSS=''
+      +'#logo,#histats_counter{display:none}'
+	  ;break;
+    case "imgdum":
+	  CSS=''
+      +'#FFN_imBox_Container, div#full > div:last-child,#wrapper p:first-child,.addthis_toolbox'
+      + '{display:none!important}'
+      +'.nav{position:absolute;top:0;z-index:99}'
+      +'#content{position:absolute;top:0}'
 	  ;break;
   }; // end switch loc
   if(CSS!="") 
@@ -453,9 +472,11 @@ function getUploaderSetting(){
   // uploader properties
   gvar.upload_sel={
      kaskus:'u.kaskus.us'
+    ,imgdum:'imagedum.com'
     ,kodok:'imageshack.us'
     ,imgur:'imgur.com'
     ,ps:'photoserver.ws'
+    ,lul:'lulzimg.com/homelulz'
   };
   gvar.uploader={
      kaskus:{
@@ -466,6 +487,9 @@ function getUploaderSetting(){
          referer:'http://'+'u.kaskus.us'
        }
      }
+    ,imgdum:{
+        src:'imagedum.com',noCross:'1' 
+	}
     ,kodok:{
         src:'imageshack.us'
        ,post:'post.imageshack.us/'
@@ -478,9 +502,11 @@ function getUploaderSetting(){
     ,imgur:{
         src:'imgur.com',noCross:'1' 
 	 }
-
     ,ps:{
         src:'photoserver.ws',noCross:'1' 
+	 }
+    ,lul:{
+        src:'lulzimg.com/homelulz',noCross:'1' 
 	 }
   };
   // set last-used host
@@ -590,7 +616,7 @@ function start_Main(){
            force_focus(100);
          }else{
            vB_textarea.readonly();
-           removeClass('twbtn-disabled', $D('#save_draft'));
+		   DRAFT.switchClass('gbtn');
            DRAFT.title('continue');
            $D('#draft_desc').innerHTML = 'Available';
          }
@@ -1065,7 +1091,7 @@ function buildRate(){
   var el,par,sel;
   var rates = { '5':'5: Excellent', '4':'4: Good', '3':'3: Average', '2':'2: Bad', '1':'1: Terrible' };
   par = createEl('div', {style:'float:left'}, ' ');
-  sel = createEl('select', {id:'sel_rating',name:'rating',tabindex:'6',title:'Rate this Thread..'});
+  sel = createEl('select', {id:'sel_rating',name:'rating','class':'gbtn',tabindex:'6',title:'Rate this Thread..'});
    Dom.add(sel, par);
   el=createEl('option', {value:0}, 'Choose Rating');
    Dom.add(el, sel);
@@ -1120,7 +1146,7 @@ function capcay_parser(page){
     
   var rets = [false,false], match;
   if( match = /id=\"hash\".*value=\"(\w+)/im.exec(page) ){
-    if(gvar.settings.recaptcha)
+    if(gvar.settings.recaptcha && $D('#imgcapcay'))
         $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
     rets[0] = match[1];
   }
@@ -1224,14 +1250,14 @@ function create_kaskus_capcay( rets ){
     if(hi) {    
         hi.removeAttribute('disabled');
         addClass('idleinput', hi);
-        Dom.Ev(hi, 'focus', function(){removeClass('idleinput', hi);addClass('activeField', hi);});
-        Dom.Ev(hi, 'blur', function(){removeClass('activeField', hi);addClass('idleinput', hi);});
+        _o('focus', hi, function(){removeClass('idleinput', hi);addClass('activeField', hi);});
+        _o('blur', hi, function(){removeClass('activeField', hi);addClass('idleinput', hi);});
         
-        Dom.Ev($D('#refresh_capcay'), 'click', function(){ hi.value='';});
-        Dom.Ev($D('#remote_refresh_capcay'), 'click', function(){ 
+        _o('click', $D('#refresh_capcay'), function(){ hi.value='';});
+        _o('click', $D('#remote_refresh_capcay'), function(){ 
             SimulateMouse($D('#refresh_capcay'),'click',true); hi.focus(); hi.select();
         });
-        Dom.Ev($D('#imagereg'), 'click', function(){hi.value='';hi.focus();});
+        _o('click', $D('#imagereg'), function(){hi.value='';hi.focus();});
         
         event_inputCapcay('humaninput','captcha_submit','remote_refresh_capcay');
 
@@ -1630,6 +1656,7 @@ function closeLayerBox(tgt){
     }
     lockFields_forSubmit(false); // open locked; just incase
     Dom.remove( Dom.g(tgt) );
+	removeClass('hideflow', document.body);
 	
 	if($D('#dv_accessible') && $D('#dv_accessible').style.display!='none')
 	   $D('#controller_wraper').style.display='';
@@ -1668,8 +1695,10 @@ function loadLayer_initTplCapcay(TPL){
     var Attr,el;
     // require this transparent layer to be attached on body, to make it appear
     Attr = {id:'hideshow',style:'display:none;'};
-    el = createEl('div', Attr, rSRC.getTPL_layer_Only() );
+    //el = createEl('div', Attr, rSRC.getTPL_layer_Only() );
+    el = createEl('div', Attr);
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+	addClass('hideflow', document.body);
     
     // this container must inside form
     Attr = {id:'hideshow_recaptcha',style:'display:none;'};
@@ -1708,7 +1737,7 @@ function loadLayer_kaskusCaptcha(){
         // submit recaptcha
     _o('click',$D('#captcha_submit'),function(e){
         if( !is_capcay_filled($D('#humaninput')) ){
-          e.preventDefault;
+		  e.preventDefault;
           return false;
         }
         do_an_e(e);
@@ -1716,8 +1745,7 @@ function loadLayer_kaskusCaptcha(){
     } );
     
     // calibrate width/position container
-    $D('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
-    $D('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
+	repos_popup_container();
 }
 
 function loadLayer_reCaptcha(){
@@ -1775,8 +1803,7 @@ function loadLayer_reCaptcha(){
     } );
     
     // calibrate width/position container
-    $D('#popup_container_precap').style.top = (parseInt( ss.getCurrentYPos() )+ (document.documentElement.clientHeight/2)-200 ) + 'px';
-    $D('#popup_container_precap').style.left = parseInt( Math.round((document.documentElement.clientWidth/2)-200) ) + 'px';
+	repos_popup_container();
 
     window.setTimeout(function() {
         SimulateMouse($D('#hidrecap_btn'), 'click', true);
@@ -1813,6 +1840,7 @@ function loadLayer( theTPL, flag ){
     Attr = {id:'hideshow',style:'display:none;'};
     el = createEl('div', Attr, (typeof(theTPL)=='function' ? theTPL( isDefined(flag) ? flag : null ) : '') );
     getTag('body')[0].insertBefore(el, getTag('body')[0].firstChild);
+	addClass('hideflow', document.body);
     
     // event close button
     if($D("#imghideshow")) _o('click',$D("#imghideshow"),function(){closeLayerBox('hideshow');});
@@ -1827,14 +1855,15 @@ function loadLayer( theTPL, flag ){
 
 function popupLayer_positioning(){
     // calibrate width & left container
-    if($D('#popup_container')){
-      $D('#popup_container').style.top = (parseInt( ss.getCurrentYPos() )+25) + 'px';
-      if($D('#popup_container').clientWidth){ // only if width is defined; width:100% will return 0
-        var cW = Math.floor($D('#popup_container').clientWidth/2);
-        $D('#popup_container').style.left = (Math.floor(parseInt( GetWidth() )/2) - cW) + 'px';
-      }
-    }
- }
+	var el = $D('#popup_container');
+    if( el ) el.style.setProperty('margin-top', '20px','important');
+}
+
+function repos_popup_container(){
+    var el;
+	if( el = $D('#popup_container_precap') ) 
+		el.style.setProperty('margin-top',((document.documentElement.clientHeight/2)-200)+'px','important');
+}
 
 
 function scustom_parser(msg){
@@ -2087,7 +2116,7 @@ function initEventTpl(){
             _o("click", $D("#save_draft"), function(e){
                 e=e.target||e; 
                 var text=Dom.g(gvar.id_textarea).value;
-                if( e.className.indexOf('twbtn-disabled')!=-1 ) return;
+                if( e.className.indexOf('gdisabled')!=-1 ) return;
                 if(e.value=='Draft'){
                     vB_textarea.enabled();
                     vB_textarea.focus();
@@ -2099,7 +2128,7 @@ function initEventTpl(){
                     vB_textarea.adjustElastic();                
                     $D('#draft_desc').innerHTML='';
                     $D('#save_draft').value='Saved';
-                    addClass('twbtn-disabled', $D('#save_draft'));
+					DRAFT.switchClass('gdisabled');
                 }else{                
                     if( text!=gvar.silahken && text!="") DRAFT.save();
                 }
@@ -4132,7 +4161,7 @@ var vB_textarea = {
     if($D('#save_draft') && liveVal!=gvar.silahken && liveVal!="" ){
         DRAFT.title('save');
         $D('#save_draft').value='Save Now';
-        removeClass('twbtn-disabled', $D('#save_draft'));
+		DRAFT.switchClass('gbtn');
         $D('#draft_desc').innerHTML='';
         clearTimeout( gvar.sITryLiveDrafting ); 
         gvar.isKeyPressed=1;
@@ -4262,12 +4291,12 @@ var DRAFT= {
         if(gvar.tmp_text!=""){
             DRAFT.title('continue');
             $D('#draft_desc').innerHTML='Available';
-            removeClass('twbtn-disabled', $D('#save_draft'));
+            DRAFT.switchClass('gbtn');
             return true;
         }else{
             DRAFT.title();
             $D('#draft_desc').innerHTML = 'blank';
-            addClass('twbtn-disabled', $D('#save_draft'));
+            DRAFT.switchClass('gdisabled');
         }
     }
     return false;
@@ -4280,7 +4309,7 @@ var DRAFT= {
     if(isUndefined(txt)){
         $D('#save_draft').value='Saving ...';
         DRAFT.title();
-        addClass('twbtn-disabled', $D('#save_draft'));
+		DRAFT.switchClass('gdisabled');
         window.setTimeout(function() { DRAFT.save(Dom.g(gvar.id_textarea).value.toString())}, 600);
         return;
     }else{
@@ -4288,7 +4317,7 @@ var DRAFT= {
         setValue(KS+'TMP_TEXT', gvar.tmp_text);
         $D('#save_draft').value= 'Saved';
         $D('#draft_desc').innerHTML = 'Saved seconds ago';
-        addClass('twbtn-disabled', $D('#save_draft'));
+		DRAFT.switchClass('gdisabled');
         if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
     }
     gvar.timeOld = new Date().getTime();
@@ -4297,8 +4326,8 @@ var DRAFT= {
     gvar.tmp_text = '';
     setValue(KS+'TMP_TEXT', gvar.tmp_text);
     DRAFT.title('continue');
-    $D('#save_draft').value= 'Draft';
-    addClass('twbtn-disabled', $D('#save_draft'));
+    $D('#save_draft').value= 'Draft';    
+	DRAFT.switchClass('gdisabled');
     $D('#draft_desc').innerHTML = 'blank';
     force_focus(10);
   }
@@ -4309,6 +4338,12 @@ var DRAFT= {
     else
         $D('#save_draft').removeAttribute('title');
   }
+  ,switchClass: function(to_add){
+    var tgt=$D('#save_draft'), to_rem = (to_add=="gbtn" ? "gdisabled" : "gbtn" );
+	addClass(to_add, tgt);
+	removeClass(to_rem, tgt);
+  }
+  
 }; // - end DRAFT
 
 // utk delay post (30sec) notify
@@ -4632,20 +4667,20 @@ var SML_LDR = {
       // ekstrak all group
       SML_LDR.custom.tab_menu_left();
       
-      el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
+      el = createEl('a',{id:'manage_btn',href:'javascript:;','class':'gbtn gbtn-p3 lilbutton',style:'padding:1px 8px;'+(gvar.smiliegroup ? '':'display:none;')},'Manage');
       Dom.add(el,cont);
       _o('click',el,function(e){e=e.target||e;SML_LDR.custom.manage(e)});
 	  el = createEl('span',{id:'title_group',style:'margin-left:8px;font-weight:bold'},(gvar.smiliegroup ? gvar.smiliegroup[0]:'') );
       Dom.add(el,cont);
 	  
-      el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'twbtn lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
+      el = createEl('a',{id:'manage_cancel',href:'javascript:;','class':'gbtn lilbutton',style:'padding:1px 5px;margin-left:5px;display:none;'},'Cancel');
       Dom.add(el,cont);
       _o('click',el,function(){
         var mcPar=$D('#manage_container');
         if(mcPar) Dom.remove(mcPar);
         SML_LDR.custom.toggle_manage();
       });
-      el = createEl('a',{id:'manage_help',href:'javascript:;','class':'twbtn lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
+      el = createEl('a',{id:'manage_help',href:'javascript:;','class':'gbtn lilbutton', style:'padding:1px 5px;margin-left:20px;display:none;',title:'RTFM'}, '[ ? ]');
       Dom.add(el,cont);
       _o('click',el,function(e){
       alert( ''
@@ -4793,7 +4828,7 @@ var SML_LDR = {
           var generatePos = function(idx){
 			
 			var el, Attr, tgt = $D('#position_group');
-			var par=createEl('select', {id:'pos_group_sets',style:'width:50px'});
+			var par=createEl('select', {id:'pos_group_sets',style:'width:50px','class':'gbtn'});
 			if(tgt && gvar.smiliegroup) {
 				for(var i=0; i<gvar.smiliegroup.length; i++){
 					Attr={'value':i};
@@ -5261,7 +5296,7 @@ var ST = {
 	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
                   ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
-                  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE','QR_USE_RECAPCAY','QR_RECAPCAY_PROP'
+                  ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE','QR_USE_RECAPCAY','QR_RECAPCAY_PROP', 'COUNTDOWN_POS', 'QR_LASTPOST'
                  ];
       var kL=keys.length;
       for(var i=0; i<kL; i++){
@@ -5464,7 +5499,7 @@ var ST = {
   var el_cancel = Dom.g(task+'_cancel');  
   var genTxta = function(_task, value){
     var tgt = Dom.g(_task+'_Editor'); tgt.innerHTML='';
-    var el = createEl('textarea',{id:_task+'_txta'}, value);
+    var el = createEl('textarea',{id:_task+'_txta','class':'txta_editor'}, value);
     Dom.add(el, tgt); tgt.setAttribute('style','display:;margin-top:3px;');
     vB_textarea.setElastic(_task+'_txta',75);
     window.setTimeout(function(e) { try{Dom.g(_task+'_txta').focus();}catch(e){} }, 100);
@@ -5618,19 +5653,19 @@ var UPL = {
           if($D("#legend_subtitle")) $D("#legend_subtitle").innerHTML= ' '+HtmlUnicodeDecode('&#8592;') + ' ' + basename(e.value);
         });
         Dom.add(el2,el); Dom.add(el,par);
-        Attr={id:'btn_upload',value:'Upload','class':'twbtn',type:'button',title:'Upload now ..',style:'display:inline;margin:1px 0 0 10px;'};
+        Attr={id:'btn_upload',value:'Upload','class':'gbtn gbtn-p2',type:'button',title:'Upload now ..',style:'display:inline; margin:0 0 0 10px;'};
         el=createEl('input',Attr);
         _o('click',el,function(){UPL.prep_upload()});
         Dom.add(el,par);
         
-        Attr={id:'cancel_upload',value:'Cancel','class':'twbtn',type:'button',style:'margin:1px 0 0 20px;display:none;'}
+        Attr={id:'cancel_upload',value:'Cancel','class':'gbtn',type:'button',style:'margin:1px 0 0 20px;display:none;'}
         el=createEl('input',Attr);
         _o('click',el,function(){UPL.cancel_upload()});
         Dom.add(el,par);
       }
       
       Attr={style:'margin-top:7px;font-weight:bold;font-size:10px;'+(allow_cross ? 'float:right;':'display:inline')}; el=createEl('div',Attr);
-      Attr={href:'javascript:;','class':'twbtn','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
+      Attr={href:'javascript:;','class':'gbtn','onclick':'this.blur()'}; el2=createEl('a',Attr,'Toogle IFrame');
       _o('click',el2,function(){return UPL.toogle_iframe()});
       Dom.add(el2,el); Dom.add(el,par);
 	  
@@ -5919,6 +5954,7 @@ var rSRC = {
  ,getCSS: function(){
   // CSS for Quick Reply
   return (''
+  +'body.hideflow{overflow:hidden;margin-right:16px;}'
   +'.qr_container{max-width:100%;width:auto !important;margin:5px;text-align:left;}'
   +'#qr_plugins_container{width:100%;}'
   +'.normal_notice{background:transparent !important;color:#949494;}'
@@ -5975,6 +6011,7 @@ var rSRC = {
   +'.input_title:focus, .textarea:focus, .activeField:focus{border:1px solid #275C7C;}'
   +'#capcay_header{padding:0 2px;vertical-align:bottom;}'
   +'.fieldset{margin:0;padding:0;}'
+  +'textarea.txta_editor{max-width:480px;min-width:480px; max-height:140px}'
   
   +'.idleinput, .activeField'
   +'{font-size:22px;border:1px solid #B1B1B1;text-align:center;padding:2px;}'
@@ -6022,21 +6059,21 @@ var rSRC = {
    +'{border:1px solid #BBC7CE;background-color:#C4C4C4;padding:3px;text-decoration:none;border-bottom:0;font-size:8pt;outline:none}'
   +'.ul_tabsmile a:hover, #sel_host:hover{background-color:#B0DAF2;}'
   +'.ul_tabsmile a.current, .ul_tabsmile a.current:hover, .qbutton:hover{background-color:#DDDDDD;}'
+  
   +'.qbutton'
    +'{padding:1px 3px;border:1px solid #1E67C1;background-color:#C7C7C7; color:#000; text-decoration:none; border-radius:3px; -moz-border-radius:3px; -khtml-border-radius:3px; -webkit-border-radius:3px;}'
   +'#hideshow textarea{width:98%;font-family:"Courier New";font-size:9pt;}'
   +'.cancel_layout {margin-left:10px}'
-  +'.cancel_layout-invi {display:none;}'
+  +'.cancel_layout-invi {display:none!important;}'
   /* for delay */
   +'#qr_delaycontainer{padding-right:5px;color:#FFFF00}'
   /* for top title */
   +'#qrsetting, #qrdraft{vertical-align:top;}'
   +'#qrsetting{margin:-21px 5px 0 0;}'
-  +'#qrdraft{margin:-15px 5px 0 0;}'
+  +'#qrdraft{margin:-20px 5px 0 0;}'
   +'#qrdraft #draft_desc{font-size:10px;margin-right:3px}'
-  +'#save_draft{padding:'+(gvar.isBuggedChrome ? '4px ':'')+'2px;line-height:14px;width:70px;text-align:center;}'  
-  
-  
+  +'#save_draft{padding:2px;line-height:14px;width:70px;text-align:center;}'  
+    
   /* for updates */
   +'.qrdialog{border-bottom:1px transparent;width:100%;left:0px;bottom:0px;padding:3px;}'
   +'.qrdialog-close{padding:5px;margin:5px 15px 0 0;cursor:pointer;float:right;}'
@@ -6049,16 +6086,18 @@ var rSRC = {
     +'#target_upload{margin-top:2px;width:100%;height:318px;border: 2px outset;clear:left;display:block;}'    
     
   /* for popup new settings */ 
-      +'.qrset-alt2 {border-right: 1px solid rgb(209, 209, 225); border-left: 1px solid rgb(209, 209, 225); border-width: 0px 2px; border-style: none solid; border-color: -moz-use-text-color rgb(209, 209, 225); width:120px;padding:0!important;}'
-      +'qrset-alt1 {border-right: 1px solid rgb(209, 209, 225);}'
+    +'.qrset-alt1, .qrset-alt2 {border-right: 1px solid rgb(209, 209, 225);}'
+    +'.qrset-alt2 {border-left: 1px solid rgb(209, 209, 225); border-width: 0px 2px; border-style: none solid; border-color: -moz-use-text-color rgb(209, 209, 225); width:120px;padding:0!important;}'
     
-      +'ul.qrset-menu { margin:0; padding:0;  }'
-      +'ul.qrset-menu {width: 150px;}'
-      +'ul.qrset-menu li {list-style-type:none; border-top:1px solid #ccc; padding:0; }'
+    +'ul.qrset-menu { margin:0; padding:0;  }'
+    +'ul.qrset-menu {width: 150px;}'
+    +'ul.qrset-menu li {list-style-type:none; border-top:1px solid #ccc; padding:0; }'
     +'ul.qrset-menu li.current {padding:0;}'
-    +'ul.qrset-menu li.current a, ul.qrset-menu li.current a.add_group{background:#3b5998;color:#fff!important;font-weight:bold;}'
+    +'ul.qrset-menu li.current a, ul.qrset-menu li.current a.add_group{background:#9daccc;color:#17233c!important;font-weight:bold;}'
     +'ul.qrset-menu li a { background:#eee; display:block; padding:10px 0.5em; text-align:right; text-decoration:none; outline:none; color:#333;}'
-    +'ul.qrset-menu li a:hover { background:#0066CC; color:#fff;}'
+    +'ul.qrset-menu li a:hover { background:#d8dfea;}'
+    +'ul.qrset-menu li.current a:hover{background:#9daccc!important}'
+    +'ul.qrset-menu li.current a.add_group:hover{color:#0000E6!important;}'
     +'li.qrset-lasttab { border-bottom:1px solid #ccc; }'
     +'li.qrset-close { position:absolute; bottom:22px; font-size:11px;width:150px;border-bottom:1px solid #ccc;}'
     +'li.qrset-close a{ text-align:center!important;font-weight:bold;}'
@@ -6078,38 +6117,36 @@ var rSRC = {
     +'#custom_bottom {padding-top:2px;min-height:8px;}'
     +'#content_scustom_container {padding:2px 6px;}'
     +'#ul_group a.add_group{color:#0000E6;font-weight:bold;}'
-    +'#ul_group a.add_group:hover{color:#E6E6E6;}'
     +'#ul_group{width:125px;}'
-    +'#ul_group li a{padding:3px 0.5em;}'
-	+'#ul_group li.qrtab a{text-align:left;}'
+    +'#ul_group li a{padding:3px 0.5em;text-align:left;}'
     +'#ul_group li.add_group a{text-align:center;}'
     +'#ul_group li .num {float:left;display:inline-block;width:20px}'
+    	
+	/* google-btn */
+	+'.gbtn, .gdisabled{color:#6e6e6e;font:bold 11px Helvetica, Arial, sans-serif;text-decoration:none;padding:2px 12px;position:relative;display: inline-block;text-shadow:0 1px 0 #fff;-webkit-transition:border-color .218s;-moz-transition:border .218s;-o-transition:border-color .218s;transition:border-color .218s; background:#f3f3f3;background:-webkit-gradient(linear,0% 40%,0% 90%,from(#F5F5F5),to(#F1F1F1));background:-moz-linear-gradient(linear,0% 40%,0% 90%,from(#F5F5F5),to(#F1F1F1));border:solid 1px #d8dfea;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;margin-right:10px;cursor:pointer}'
+	+'.gbtn:hover, .gbtn:focus {color:#333;border-color:#999;-moz-box-shadow:0 2px 0 rgba(0, 0, 0, 0.2) -webkit-box-shadow:0 2px 5px rgba(0, 0, 0, 0.2);box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);}'
+	+'.gbtn:active {border-color:#444}'
+	+'.gbtn-p2,.gbtn-p3{color:#17233c;background:#b2d583;}'
+	+'.gbtn-p2{padding:5px 12px!important;}'
+	+'.gbtn:focus,.gdisabled:focus{outline:none} input.gbtn::-moz-focus-inner, input.gdisabled::-moz-focus-inner{border:0}'
+	+'select.gbtn{padding:0;text-shadow:none;font-weight:normal}'
+	+'.gdisabled{opacity:.75; filter:alpha(opacity=75);background:#f3f3f3;}'
+	+'.gdisabled:hover{box-shadow:none!important;-moz-box-shadow:none!important; -webkit-box-shadow:none!important;cursor:default}'
+	+''
     
-    /* twitter's button */
-    +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 -200px;font:11px/14px "Lucida Grande",sans-serif;width:auto;overflow:visible;padding:0;border-width:1px;border-style:solid;border-color:#999;border-bottom-color:#888;-moz-border-radius:5px;-khtml-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;margin:-4px 0 -3px 0;color:#333;cursor:pointer;line-height:10px!important;padding:5px 10px;font-size:12px;font-weight:bold;} .twbtn::-moz-focus-inner{padding:0;border:0;}.twbtn:hover,.twbtn:focus,button.twbtn:hover,button.twbtn:focus{border-color:#999 #999 #888;background-position:0 -6px;color:#000;text-decoration:none;} a.twbtn{text-decoration:none;color:#000080!important;} .twbtn:active,.twbtn:focus,button.twbtn:active{background-image:none!important;text-shadow:none!important;outline:none!important;}.twbtn-disabled{opacity:.6;filter:alpha(opacity=60);background-image:none;cursor:default!important;}'
-    
-    +'#draft_desc{color:#D4D4D4;font-size:11px;font-weight:normal;}'
+    +'#draft_desc{color:#D4D4D4;font-weight:normal;}'
   
-  /* for preview popup */ 
-    +'#hideshow, #hideshow_recaptcha{position:absolute; min-width:100%; min-height:100%; top:0; left:0;}'
-    +'.trfade, .fade{position:fixed; width:100%; height:100%; left:0;}'
-    +'.trfade {background:#000; z-index:99998;'
-    +  'filter:alpha(opacity=25); opacity: .25;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";'
+    /* for preview popup */  //
+    +'#hideshow, #hideshow_recaptcha{background-color:rgba(0, 0, 0, .25); bottom:0;left:0;overflow:scroll;overflow-x:hidden;position:fixed;right:0;top:0;z-index:99998}'
+    +'#popup_container, #popup_container_precap{box-shadow:0 0 1px rgba(0, 0, 0, .25), 0 1px 5px 3px rgba(0, 0, 0, .15), 0 5px 4px -3px rgba(0, 0, 0, .16); '
+	+'background: #ddd; color:black; padding: 5px; border: 5px solid #fff; margin:9px auto 40px auto; position:relative;'
+    +'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
     +'}'
-    +'.fade {background: transparent; z-index: 99990;'
-    +  'filter:alpha(opacity=60); opacity: .60;-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=60)";'
-    +'}'
-    +'#popup_container, #popup_container_precap{background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
-    +  'float: left; position: absolute; top: 10px;'
-    +  'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
-    +'}'
-    +'#popup_container {width:88%; left:5%}'
-    +'#popup_container_precap{left:50%}'
-    +'.popup_block .popup {float:left; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
+    +'#popup_container {width:88%}' //; left:5%
+    +'.popup_ckaskus{width:300px}'
+    +'.popup_block .popup {display:block; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
     +'.popup img.cntrl {position:absolute; right:-20px; top:-20px; border:0px;}'
     +'#button_preview {padding:3px;text-align:center;}'
-    +'*html .fade {position: absolute;}'
-    +'*html #popup_container, *html #popup_container_precap {position:absolute;}'
     +'');
  }
  ,getSCRIPT: function(){
@@ -6318,14 +6355,6 @@ var rSRC = {
         +"WJBFlts95dHenHbfmLvi3He1rxyeKw0FyZWzbO13tD7qRyQK1VDyTjyrTojIjRk4Vg4bWDOQYnevbtu/rSeacmXzj1FR4B2P76OX+7LZ4s6zyp+byJyvFCxItTA/abMK1"
         +"c76MKL3KHXw827/Ns117eqxx8qK/rNUe3NHpPZBw223RxNJYc3pcVGdCKdH17NYu1+tNmgY3K3J2PFrq5c6ghXj7mZy7wrFSFjIHIRKBkhw1MfLRL8kTY83/N/9b441Hs"
         +"rMzohEiErBtZtrNoVF/ueJ/AE95J7K8On4lAAAAAElFTkSuQmCC"
-      ,twbutton_gif : ""
-        +"data:image/gif;base64,R0lGODlhCgBYAsQfAPPz8+vr6/7+/uHh4fn5+eXl5d7e3vv7++jn6Ofo5/j4+Ojo6d/g4Ofn59/g3+Pk5OPj4/f29vv7+vz7/ODf3/"
-        +"Dw8Pb29vv8+/z8/ODf4O/v7+fn5unp6N/f3+Dg4P///yH5BAEAAB8ALAAAAAAKAFgCAAX/oCCOZGmeIqau7OG6UiwdRG3fSqTs/G79wCDAMiwSiYCkUllpOp+aqHQ"
-        +"a0FSvVmtgy+VyvoEvZxFeIBKLRQK93rg3hbf7UaAX6vQHZM/vD/6AgR6DhIUdBgaHHYuLiI6PkJEfk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2"
-        +"t7i5uru8vb6/wMHCw8TFxsfIycrLwijOz9DRLNMYEy8u1jAy2zM33gQ94TkR5OQW5UHpQElH7Evv8O9P8xVT9VL3U/pXW1ld/wABihko5kyDBAgaIFCTYEMDOQ7d3"
-        +"JlIEY+eBxgx9tm4J5DHAR4+hvSQoQMFDwwKzzFgtIiCA0aPDiGSGammJGY4c+rcybOnz59AgwodSrSo0aNIkypdyrRps2hQo0otoUIANRUTLhyYgOHAha4utIa9NkM"
-        +"GjAMxvEnAocBGW3A94O7QMW6ujwg/8ALRq+6HEXd+4wkeXGEJvcOH9SleLAWL44CQIwskGOZLmgVj0mQ+eDDhmYQNHoZ2M/oOHNMVU9/JmBGCRo4b//AZMPujx5CCc"
-        +"IMktLsDgwwOUHro4GAly+OJaM60yfyR0+fQo0ufTr269evYs2vfzr2791IhAAA7"
       ,qquote_gif : ""
         +"data:image/gif;base64,R0lGODlhNgAWALMAAIxeBPzmhMyiRLSGJPzadPz+/OS6XPz+tLySLJxyDPz2lNSmROy+XLSKJKUAAAEAACH5BAEAAAUALAAAAAA2ABYAAwT/sMh"
 		+"CQiAYm23wLIGhfGRpnpNyrGzLjlSyMAyB3jh1DAZNuKtArEZbCHPIj+GwICwUi6aRhUkQFw1jcltgHBRgIKthJTCwMo56zebYTIOE+LUqFxMDgX7P7/v1CIEfgXIKHRkYFwcNN"
@@ -6647,7 +6676,7 @@ Format will be valid like this:
     +'<a href="javascript:;" id="atoggle"><img id="collapseimg_quickreply" src="'+gvar.domainstatic+'images/buttons/collapse_tcat'+(gvar.settings.qrtoggle==1?'':'_collapsed')+'.gif" alt="" border="0" /></a><span id="qr_delaycontainer" style="display:none;'+(gvar.settings.countdown && gvar.settings.countdownpos[0]=='1' ? '':'visibility:hidden;position:absolute;left:-999px;')+'" title="Posting delay for next post"></span>'+gvar.titlename+' '+(isQR_PLUS==0?HtmlUnicodeDecode('&#8212;'):'&nbsp;&nbsp;')+' <a id="home_link" href="' + (isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptId.toString():'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/') + '" target="_blank" title="Home '+gvar.fullname+' - '+gvar.sversion+'">'+gvar.sversion+'</a>'
     +'<span id="upd_notify"></span>'
     +(gvar.__DEBUG__===true ? '<span class="plain_notify">[ [DEBUG Mode] <a href="javascript:;location.reload(false)">reload</a> <span id="dom_created"></span>]</span>':'')
-    +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton twbtn twbtn-disabled" type="button" title="" value="Draft" /></div>' : '')
+    +(gvar.settings.qrdraft ? '<div id="qrdraft" style="position:absolute;right:160px;"><span id="draft_desc">blank</span><input id="save_draft" class="lilbutton gbtn gdisabled" type="button" title="" value="Draft" /></div>' : '')
     
     +'<div id="qrsetting" style="position:absolute;right:57px;"><a id="qr_setting_btn" href="javascript:;" style="text-decoration:none;outline:none;" title="Settings '+gvar.fullname+'" ><img src="'+gvar.B.setting_gif+'" alt="S" border="0"/><div style="float:right;margin:0;margin-top:3px;padding:0 2px;">Settings</div></a></div>'
     +'</td></tr></thead>'
@@ -6722,11 +6751,11 @@ Format will be valid like this:
      
      +'<input id="qr_chk_ckck" type="button" style="display:none;" value="cck" onclick="if(typeof(checkCurrentCred)==\'function\')checkCurrentCred();"/>' // remote button to fetch ck.crecidential
      
-     +'<input id="qr_submit" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
-     +'<input id="qr_prepost_submit" class="button" type="button" title="(Alt + S)" tabindex="3" value="' + (gvar.user.isDonatur ? '' : 'pre-') + 'Post Quick Reply" />'
+     +'<input id="qr_submit" class="gbtn" type="submit" style="display:none;" name="sbutton" value="Post Quick Reply" />' // dummy button to trigger submit
+     +'<input id="qr_prepost_submit" class="gbtn gbtn-p3" type="button" title="(Alt + S)" tabindex="3" value="' + (gvar.user.isDonatur ? '' : 'pre-') + 'Post Quick Reply" />'
      +'&nbsp;&nbsp;'
-     +'<input id="qr_preview_ajx" class="button" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
-     +'<input id="qr_advanced" class="button" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
+     +'<input id="qr_preview_ajx" class="gbtn" type="button" title="(Alt + P)" name="sbutton" tabindex="4" value="Preview" />'
+     +'<input id="qr_advanced" class="gbtn" type="submit" title="(Alt + X)" name="preview" tabindex="5" value="Go Advanced" onclick="clickedelm(this.value)"/>'
      
      +'</div>'
     +'</div>' // end center    
@@ -6885,9 +6914,6 @@ Format will be valid like this:
     );
  }
 
- ,getTPL_layer_Only: function(){
-   return ('<div class="trfade"></div><div class="fade"></div>');
- }
  ,getBOT_greet: function(min, max){
     var c = [
       'Are you a robot? :o'
@@ -6917,7 +6943,7 @@ Format will be valid like this:
  ,getTPL_prompt_kaskusCAPTCHA: function(){
    return (''
     
-     +'<div id="popup_container_precap" class="popup_block">'
+     +'<div id="popup_container_precap" class="popup_ckaskus">'
      + '<div class="popup">'
      +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
      +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
@@ -6937,7 +6963,7 @@ Format will be valid like this:
        + '<div id="rating_onpop" style="float:left;min-width:120px;"></div>'
        )
      +    '<span id="remote_capcay"></span>'
-     +    '<input tabindex="211" id="captcha_submit" type="button" class="button" style="margin-left:-68px;" value=" Post " />&nbsp;&nbsp;'
+     +    '<input tabindex="211" id="captcha_submit" type="button" class="gbtn gbtn-p3" style="margin-left:-68px;" value=" Post " />&nbsp;&nbsp;'
      +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      +   '</div>'
      + '</div>'
@@ -6980,7 +7006,7 @@ Format will be valid like this:
        + '<div id="rating_onpop" style="float:left;min-width:120px;"></div>'
        )
      +    '<span id="remote_capcay"></span>'
-     +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="button" value=" Post " />&nbsp;&nbsp;'
+     +    '<img id="captcha_submit_load" src="'+gvar.B.throbber_gif+'" border="0" style="display:none"/>&nbsp;<input tabindex="211" id="captcha_submit" type="button" class="gbtn gbtn-p3" value=" Post " />&nbsp;&nbsp;'
      +    '<a tabindex="212" id="captcha_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      +   '</div>'
      + '</div>'
@@ -6995,8 +7021,6 @@ Format will be valid like this:
   };
   if( isUndefined(prop[tipe]) ) return;
   return (''
-     +'<div class="trfade"></div> '
-     +'<div class="fade"></div>'
      +'<div id="popup_container" class="popup_block" '+(tipe=='preview' ? '' :'style="max-width:700px;"')+'>'
      + '<div class="popup">'
      +  '<a tabindex="109" href="javascript:;"><img id="imghideshow" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
@@ -7007,8 +7031,8 @@ Format will be valid like this:
      +  '</td></tr>'
      +  '<tbody></table>'
      +   '<div id="button_preview">'
-     //<span id="remote_capcay"></span>
-     +(tipe=='preview' ? (gvar.settings.recaptcha ? '':'<span id="remote_capcay"></span>') + '<input tabindex="102" id="preview_presubmit" type="button" class="button" value=" working... " />&nbsp;&nbsp;'
+
+     +(tipe=='preview' ? (gvar.settings.recaptcha ? '':'<span id="remote_capcay"></span>') + '<input tabindex="102" id="preview_presubmit" type="button" class="gbtn gbtn-p3" value=" working... " />&nbsp;&nbsp;'
      +    '<a tabindex="103" id="preview_cancel" href="javascript:;" class="qrsmallfont"><b>Cancel</b></a>'
      : '' )
      +   '</div>'
@@ -7026,7 +7050,7 @@ Format will be valid like this:
      +'<textarea id="textarea_rawdata" class="textarea" style="height:335px;width:99%;overflow:auto;white-space:pre;"></textarea>'
      +'<div style="float:left;"><a id="exim_select_all" class="qrsmallfont" style="margin:10px 0 0 5px;text-decoration:none;" href="javascript:;"><b>'+HtmlUnicodeDecode('&#9650;')+' Select All</b></a></div>'
      +'<div style="float:right;"><a id="reset_default" class="qrsmallfont" style="margin:10px 10px 0 0;color:red;" href="javascript:;"><small>reset default</small></a></div>'
-     +'<div style="text-align:center;width:100%;margin:10px 0 5px 0;"><input type="button" id="import_setting" class="twbtn" value="Import.." /></div>'
+     +'<div style="text-align:center;width:100%;margin:6px 0 5px 0;"><input type="button" id="import_setting" class="gbtn gbtn-p2" value="Import.." /></div>'
      +'</div>'    
     );
  }
@@ -7124,7 +7148,7 @@ Format will be valid like this:
      +'<table width="100%" cellpadding=0 cellspacing=0 class="qrsmallfont"><tr><td valign="top" class="qrsmallfont" style="width:210px;">'
 	 // LEFT SIDE
 	 
-     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="twbtn lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
+     +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<input id="misc_updates" type="checkbox" '+(gvar.settings.updates=='1' ? 'checked':'')+'/><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>&nbsp;&nbsp;<a id="chk_upd_now" class="gbtn lilbutton" href="javascript:;" title="Check Update Now">check now</a>':'')
      +(!gvar.noCrossDomain && isQR_PLUS==0 ? '<div id="misc_updates_child" class="smallfont" style="margin:2px 0 0 20px;'+(gvar.settings.updates=='1' ? '':'display:none;')+'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>&nbsp;<input id="misc_updates_interval" type="text" value="'+gvar.settings.updates_interval+'" maxlength="5" style="width:40px; padding:0pt; margin-top:2px;"/>&nbsp;days</div>':'')
      +spacer
      +'<input id="misc_dynamic" type="checkbox" '+(gvar.settings.dynamic ? 'checked':'')+'/><label for="misc_dynamic">Dynamic QR'+(isQR_PLUS!==0?'+':'')+'</label>'
@@ -7141,7 +7165,7 @@ Format will be valid like this:
      +(!gvar.user.isDonatur ? ''
      +'<input id="misc_recaptcha_mode" type="checkbox" '+(gvar.settings.recaptcha ? 'checked':'')+'/><label for="misc_recaptcha_mode">reCaptcha Mode On</label>'
      +'<div id="misc_recaptcha_mode_child" class="smallfont" style="margin:-3px 0 0 15px;'+(gvar.settings.recaptcha ? '':'display:none')+'">'
-     +'&nbsp;<select id="misc_recaptcha_theme">'
+     +'&nbsp;<select id="misc_recaptcha_theme" class="gbtn">'
      +(function(th){
         var ret='';
         for(var i=0; i<th.length; i++) 
@@ -7182,18 +7206,17 @@ Format will be valid like this:
      +'</div>'
      +spacer
      +'</td></tr>'
-     +'<tr><td colspan="2" style="border-top:1px solid #bbb;padding:0 0 2px 15px;">'
-     + '&nbsp;<small>(*) <em>(reload required)</em></small>'
-     +'</td></tr>'
      
-     +'<tr><td valign="top" class="qrsmallfont" colspan="2" style="border-top:1px solid #bbb;">'
+     +'<tr><td valign="top" class="qrsmallfont" colspan="2" style="border-top:0;">'
+	 +'<div style="height:210px;overflow:auto;border:1px solid #E4E4E4;clip:rect(auto,auto,auto,auto);">'
      +'<input id="misc_autolayout_sigi" type="checkbox" '+(gvar.settings.userLayout.config[0]=='1' ? 'checked':'')+'/><label for="misc_autolayout_sigi">AutoSignature</label>&nbsp;'
-     +'<a id="edit_sigi" class="twbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn lilbutton"> cancel </a>'
+     +'<a id="edit_sigi" class="gbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_sigi_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi gbtn lilbutton"> cancel </a>'
      +'<div id="edit_sigi_Editor" style="display:none;"></div>'
      +spacer
      +'<input id="misc_autolayout_tpl" type="checkbox" '+(gvar.settings.userLayout.config[1]=='1' ? 'checked':'')+'/><label for="misc_autolayout_tpl">AutoLayout</label>&nbsp;'
-     +'<a id="edit_tpl" class="twbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi twbtn lilbutton"> cancel </a>'
+     +'<a id="edit_tpl" class="gbtn lilbutton" href="javascript:;">edit</a>&nbsp;&nbsp;<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout cancel_layout-invi gbtn lilbutton"> cancel </a>'
      +'<div id="edit_tpl_Editor" style="display:none;"></div>'
+	 +'</div>' // div-wraper
      +spacer
      +'</td></tr></table>'
      +'</div>' // #general_container
@@ -7220,7 +7243,7 @@ Format will be valid like this:
      +'</div>'
      +'</td>'
      +'<td class="alt1 qrset-alt1">'
-     +'<div id="general_control" class="qroutline">'
+     +'<div id="general_control" class="qroutline" style="position:relative">'
      + '<div id="tbcon_general" class="qrset-content qrset-show">'
         // GENERAL_CONTENT
      +  rSRC.getTPL_Settings_General()
@@ -7229,8 +7252,9 @@ Format will be valid like this:
         // CONTROLER
      +  rSRC.getTPL_Settings_Controller()
      + '</div>'
-     + '<div style="clear:both; text-align:center; width:100%; margin-top:5px; position:absolute; bottom:50px; left:11%;">'
-     +  '<input type="button" id="save_settings" class="twbtn" value="Save"/>'
+     + '<div style="position:absolute; text-align:center; width:100%; bottom:8px">'
+     +   '<div style="position:absolute;float:left;margin-top:10px"><small>(*) <em>(reload required)</em></small></div>'
+     +   '<input type="button" id="save_settings" class="gbtn gbtn-p2" value="Save"/>'
      + '</div>'
      +'</div>' // #general_control
      +'<div id="tbcon_eximp" class="qrset-content qroutline">'
