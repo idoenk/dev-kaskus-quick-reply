@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.6b
 // @dtversion     111008326
-// @timestamp     1318035803017
+// @timestamp     1318071676255
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,8 +20,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-10-08 . 1318035803017
-//   Add [lulz,imgdum] image uploader. Thank=[ketang.klimax]
+// v3.2.6 - 2011-10-08 . 1318071676255
+//   Fix undefined hVal[0] (FF 3.6.X) Thanks=[helmiajah]
+//   Add [lulz,imgdum] image uploader. Thanks=[ketang.klimax]
 //   Improve CSS (google-button-new-look)
 //   Improve (partial) adjusting k-capcay, seems still unreliable to serve
 //   Fix missed key for reset settings
@@ -43,24 +44,6 @@
 //   Improve activate last modified group
 //   Fix smileycustom undefined smileygroup (initial cond). Thanks=[blitzx,indramario,Williamzone,ketang.klimax]
 //
-// v3.2.4 - 2011-08-31 . 1314738816042
-//   Fix failed get default value of OPTIONS_BOX when packed as addons
-//   Improve TextCounter repositioning. Thanks=[p1nky,Piluze]
-//   Fix clear <br> inside [list]. Thanks=[p1nky]
-//   Improve textcounter, *preview-galat-error=88char. Thanks=[Piluze]
-//   Improve ordered smileygroups
-//   Fix avoid onclick for cancel. Thanks=[Piluze]
-//   Fix more strict find EDIT & QUOTE links Lv2. Thanks=[Killua86,gun_gun]
-//   Improve setElastic onFocus
-//   Add QR container for Plugins
-//   Improve intercept in-delayed post (optimized for FF, Opera). Thanks=[tokekGaaaaaaul]
-//   Fix gvar.securitytoken is null (QR+)
-//   Fix spoiler title containing "font". Thanks=[orientalcaesar,ketang.klimax]
-//   Improve counterdown on page title. Thanks=[kusnady]
-//   Fix gvar is underfined. Thanks=[Piluze]
-//   Fix QQ parsing wrapped spoiler within align. Thanks=[ketang.klimax]
-//   Fix more strict find EDIT & QUOTE links. Thanks=[ketang.klimax]
-//
 // -more: http://userscripts.org/topics/56051
 //
 // version 0.1 - 2010-06-29
@@ -81,7 +64,7 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1317431427540 // version.timestamp
+  timestamp: 1318071676255 // version.timestamp
 
  ,dtversion: 111008326 // version.date
  ,scriptID: 80409 // script-Id
@@ -465,7 +448,7 @@ function getSettings(){
   
   // get current page title
   hVal = getTag('title');
-  gvar.maintitle = hVal[0].textContent;
+  gvar.maintitle = (hVal ? hVal[0].textContent : "");
 }
 
 function getUploaderSetting(){
@@ -1480,13 +1463,10 @@ function qr_ajax_post(reply_html){
     GM_XHR.request(spost.toString(),'post', qr_ajax_post);
 
   }else{    
-    
     clog('here');
-    clog(reply_html.responseText);
+    //clog(reply_html.responseText);    
     
     if( !reply_html ) return;
-    
-    clog('here2');
     
     reply_html = reply_html.responseText;
     var parse_ajax_post = function(html){
