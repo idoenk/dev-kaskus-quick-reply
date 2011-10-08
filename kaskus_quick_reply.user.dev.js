@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.6b
 // @dtversion     111008326
-// @timestamp     1318071676255
+// @timestamp     1318094695985
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-10-08 . 1318071676255
+// v3.2.6 - 2011-10-08 . 1318094695985
+//   Fix undefined ss callback
 //   Fix undefined hVal[0] (FF 3.6.X) Thanks=[helmiajah]
 //   Add [lulz,imgdum] image uploader. Thanks=[ketang.klimax]
 //   Improve CSS (google-button-new-look)
@@ -64,7 +65,7 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1318071676255 // version.timestamp
+  timestamp: 1318094695985 // version.timestamp
 
  ,dtversion: 111008326 // version.date
  ,scriptID: 80409 // script-Id
@@ -5856,12 +5857,10 @@ var ss = {
       // bottom of the page) then scroll exactly to the link
       //  additional conditional if user scrolling will prevent of dead end scrollpage
       window.scrollTo(0,dest);
-      // cancel the repeating timer
       clearInterval(ss.INTERVAL);
       // and jump to the link directly so the URL's right
-      if(isString(anchor)) location.hash = anchor;
-      //if(ss.callback) ss.callback();
-      cb().apply();
+      //if(isString(anchor)) location.hash = anchor;
+      if(typeof(cb)=='function') cb();
       return;
     }
   },
@@ -7293,4 +7292,5 @@ init();
 
 })();
 /* Mod By Idx. */
+
 
