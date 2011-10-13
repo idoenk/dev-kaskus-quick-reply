@@ -2,8 +2,8 @@
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
 // @version       1.1.2
-// @dtversion     111008112
-// @timestamp     1318090864080
+// @dtversion     111014112
+// @timestamp     1318532031635
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,8 +19,8 @@
 //
 // -!--latestupdate
 //
-//  v1.1.2 - 2011-10-08
-//    Improve minor CSS
+//  v1.1.2 - 2011-10-14
+//    Improve minor CSS, -webkit-scrollbar
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -34,10 +34,6 @@
 //    Fix isOrigin (anti jebmen for vBulletin Thread Preview)
 //    Fix Update Link. Thanks=[Ngentoad]
 //
-//  v1.0.9 - 2011-06-04
-//    Switchable setting capctha mode.
-//    Back to Recaptcha again. --"
-//
 //
 //  v1.0 - 2011-01-08
 //    init recoded
@@ -48,7 +44,7 @@ var gvar=function() {};
 
 gvar.sversion = 'v' + '1.1.2';
 gvar.scriptMeta = {
-  timestamp: 1318090864080 // version.timestamp
+  timestamp: 1318532031635 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -828,11 +824,7 @@ var tPOP = {
 	tPOP.fillLayer(rets);
 	
 	tPOP.cont = $D('#preview_content');	
-	window.setTimeout(function(e) { 
-		if(tPOP.cont && tPOP.cont.scrollHeight > tPOP.cont.clientHeight)
-			addClass('ktpSnowBox', document.body);
-	}, 250);
-	
+	tPOP.bodySnowBox();	
   } 
  ,loadLayer: function(){
     var Attr = {id:'hideshow',style:'display:none;'};
@@ -1289,11 +1281,11 @@ var tPOP = {
     }
     gvar.settings.fixed_preview = (flag);
 	
-	if(!flag) { // going to no longer fixed?
-		removeClass('ktpSnowBox', document.body);
-	}else if(tPOP.cont && tPOP.cont.scrollHeight > tPOP.cont.clientHeight){
-		addClass('ktpSnowBox', document.body);
-	}
+	// going to no longer fixed?
+	if(!flag) 
+		tPOP.bodySnowBox( false );
+	else 
+		tPOP.bodySnowBox();
   }
  ,toggleCollapse: function(partial){
     var el, show, tohide = ['vbform','thread_tools','threadpost_navi','tbl_separator'];
@@ -1311,17 +1303,32 @@ var tPOP = {
 	    if(img){
 	      var src = img.getAttribute('src');
 	      img.setAttribute('src', (src && show ? src.replace('.gif','_collapsed') : src.replace('_collapsed.gif','') ) + '.gif' );
-	    }
+	    }		
 	}
 	if(!show && $D('#setting_container') && $D('#setting_container').style.display!='none'){
 	  $D('#setting_container').innerHTML = '';
 	  $D('#setting_container').style.display='none';
 	}
+	// going to no longer fixed?
+	if(show) 
+		tPOP.bodySnowBox(false);
+	else 
+		tPOP.bodySnowBox();	
   }
 
  ,imediateStop: function(){
     if(gvar.sITryBlinkRow) clearInterval(gvar.sITryBlinkRow);
 	if(!isString(gvar.current.cRow)) removeClass('selected_row', gvar.current.cRow);
+ }
+ ,bodySnowBox: function( activate ){
+	if(isUndefined(activate)) 
+		window.setTimeout(function(e) {
+			if(tPOP.cont && tPOP.cont.scrollHeight > tPOP.cont.clientHeight)
+				addClass('ktpSnowBox', document.body);
+		}, 250);		
+	else
+		removeClass('ktpSnowBox', document.body);
+		
  }
  ,closeLayerBox: function(tgt){
 	if(window.stop !== undefined){window.stop();}
@@ -1370,7 +1377,7 @@ var tPOP = {
 	  //Dom.add(gvar.meta_refresh, head[0]);
 	  head[0].appendChild( gvar.meta_refresh.cloneNode(true) );
 	}
-	removeClass('ktpSnowBox', document.body);
+	tPOP.bodySnowBox( false );
 	Dom.remove( Dom.g(tgt) );
 	if( gvar.isExpanded && !gvar.settings.thread_lastscroll ) 
 	  window.scrollTo(0,(isDefined(gvar.LastScrollTop) ? gvar.LastScrollTop:0) );
@@ -3572,15 +3579,14 @@ Format will be valid like this:
     +'.selected_row td{background-color:#D5FFD5!important;}'
     +'#thread_tools {padding:0 0 0 5px;}'
     +'#threadpost_navi {padding:0 5px 0 0;}'
-    +'#thread_tools input{display:none;}' //margin-left:5px;
-    +'#post_detail{border:0; border-bottom:1px solid #8B8B8B;padding-bottom:5px;margin-bottom:5px;display:none;}'
+    +'#thread_tools input{display:none;}'	
+    +'#row_content td.alt1{padding:1px}'
+    +'#post_detail{border:0; display:none;}' // padding:5px 0 5px 0;
     +'.g_notice{display:none;padding:.4em;margin-bottom:3px;background:#DFC;border:1px solid #CDA;line-height:16px;}'
     +'.g_notice-error{background:#FFD7FF!important;}'
     +'.hd_layer-right{float:right; margin-right:5px;}'
     +'.hd_layer-left{float:left; margin-left:5px;}'
 	+'.qr_button_cont{width:100%; text-align:center;}'
-	//+'#qr_button{margin-right:-40px;}'
-	//+'#qr_button{margin-right:40%;}'
 	+'#preview_cancel,#preview_setting{margin:2px 0 0 5px;font-size:13px;outline:none;}'
     +'#collapseimg_quickreply{border:0;}'
     +'#atoggle{outline:none;}'
@@ -3632,11 +3638,21 @@ Format will be valid like this:
     +'#img_ngaskuser{height:120px;}'
     +'#post_detail .powby{color:#363636;position:absolute;cursor:default;margin:88px 0 0 333px;font-size:10px;-moz-user-select:none;-webkit-user-select:none;}'
     +'#post_detail .powby .b,#post_detail .powby .or{font-weight:bold;}'
-    +'#post_detail .powby .b{color:#0000CE;}#post_detail .powby .or{color:#DD6F00;}'
+    +'#post_detail .powby .b{color:#0000CE;} #post_detail .powby .or{color:#DD6F00;}'
 
 /* ==preview popup== */ 
+	+'#preview_content::-webkit-scrollbar {background:transparent;overflow:visible; width:15px;}'
+	+'#preview_content::-webkit-scrollbar-thumb {background-color:rgba(0,0,0,0.2); border:solid #fff;}'
+	+'#preview_content::-webkit-scrollbar-thumb:hover {background:rgba(0,0,0,0.4);}'
+	+'#preview_content::-webkit-scrollbar-thumb:horizontal {border-width:4px 6px;min-width:40px;}'
+	+'#preview_content::-webkit-scrollbar-thumb:vertical {border-width:6px 4px;min-height:40px;}'
+	+'#preview_content::-webkit-scrollbar-track-piece{ background-color:#fff;}'
+	+'#preview_content::-webkit-scrollbar-corner {background:transparent;}'
+	+'#preview_content::-webkit-scrollbar-thumb {background-color: #DDD;}'
+	+'#preview_content::-webkit-scrollbar-thumb:hover {background-color: #999;}'
+  	+''
   	+'#hideshow {position:absolute;min-width:100%;top:0;left:0;}'
-  	+'#preview_content {overflow:auto;height:auto;padding-right:5px;}'
+  	+'#preview_content {overflow:auto; height:auto; padding-right:8px;}'
     +'#popup_container {'
     +  'z-index:'+gvar.zIndex+';'
     +  'background: #ddd; color:black; padding: 5px; border: 5px solid #fff;'
@@ -3648,7 +3664,7 @@ Format will be valid like this:
     +'.popup img.cntrl {right:-10px;top:-10px;}'
     +'.popup img.sticky {left:0;top:-3px;}'
     +'*html #popup_container{position: absolute}'
-	+'.blockbody{ padding:8px 5px 10px 10px;}'
+	+'.blockbody{ padding:5px 10px 10px 10px;}'
     
 	/* twitter's button */
     +'.twbtn{background:#ddd url("'+gvar.B.twbutton_gif+'") repeat-x 0 0;font:11px/14px "Lucida Grande",sans-serif;width:auto;margin:0;overflow:visible;padding:0;'
