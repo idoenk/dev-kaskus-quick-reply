@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.6b
-// @dtversion     111008326
-// @timestamp     1318094695985
+// @version       3.2.6
+// @dtversion     111016326
+// @timestamp     1318747380689
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-10-08 . 1318094695985
+// v3.2.6 - 2011-10-16 . 1318747380689
+//   Improve (beta) donatur may ignore rate thread w/o perform any xhr. Thanks=[takut.stress]
 //   Fix undefined ss callback
 //   Fix undefined hVal[0] (FF 3.6.X) Thanks=[helmiajah]
 //   Add [lulz,imgdum] image uploader. Thanks=[ketang.klimax]
@@ -65,9 +66,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1318094695985 // version.timestamp
+  timestamp: 1318747380689 // version.timestamp
 
- ,dtversion: 111008326 // version.date
+ ,dtversion: 111016326 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -115,6 +116,7 @@ const OPTIONS_BOX = {
  ,KEY_SAVE_QR_USE_RECAPCAY:  ['1'] // state of capcay mode
  ,KEY_SAVE_QR_RECAPCAY_PROP: ['clean,0'] // recapcay theme, is_simple_mode
  
+ ,KEY_SAVE_PRELOAD_RATE: ['0'] // whether donatur need to preload rate or not
  ,KEY_SAVE_QR_COLLAPSE:  ['1'] // initial state of qr
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
@@ -336,7 +338,7 @@ function getSettings(){
   }
   
   /** 
-  eg. gvar.settings.counterdown
+  eg. gvar.settings.preload_rate | PRELOAD_RATE
   */
   var hVal,hdc;
   gvar.settings = {
@@ -371,6 +373,7 @@ function getSettings(){
     hotkeykey: getValue(KS+'QR_HOTKEY_KEY'),    
     hotkeychar: getValue(KS+'QR_HOTKEY_CHAR'),
     hidecontroll: [],
+    preload_rate: (getValue(KS+'PRELOAD_RATE')=='1'),
     recaptcha: (getValue(KS+'QR_USE_RECAPCAY')=='1'),
     recaptcha_prop: {}
   };
@@ -1286,6 +1289,9 @@ function build_additional_opt(html){
 // make sure this func is called only by donatur, which never do prefetch for capcay
 // this will collecting additional opt like rating and/or subscriptions folderid
 function ajax_additional_opt(reply_html){
+  // temporary obeyed :: test for folderid to preserve
+  if(!gvar.settings.preload_rate) return true;
+  
   // not donatur | already do this ? get out ---> old version
   // not donatur ? will do on popup capcay via additional_opt_parser() (since 3.1.8)
   if(!gvar.user.isDonatur || !additional_options_notloaded() ) return;
@@ -5145,9 +5151,14 @@ var ST = {
                  ,'SAVED_AVATAR','HIDE_AVATAR','HIDE_CONTROLLER','TEXTA_EXPANDER','SHOW_SMILE'
                  ,'WIDE_THREAD','QR_COLLAPSE'
                  ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
-                 ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
-                 ,'SCUSTOM_ALT','CUSTOM_SMILEY','SCUSTOM_NOPARSE'
+                 ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','SCUSTOM_ALT'
                 ];
+	if(gvar.user.isDonatur) 
+		keys.push('PRELOAD_RATE');
+	else
+		keys.push('QR_USE_RECAPCAY','QR_RECAPCAY_PROP');
+	keys.push('SCUSTOM_NOPARSE','CUSTOM_SMILEY');
+
     var keykomeng = {
       'LAST_FONT':'Last Used Font'
      ,'LAST_COLOR':'Last Used Color'
@@ -5173,20 +5184,13 @@ var ST = {
      ,'LAYOUT_SIGI':'Layout Signature; [userid=SIGI];'
      ,'LAYOUT_TPL':'Layout Template; [userid=TEMPLATE]; TEMPLATE\'s validValue must contain escaped string {MESSAGE}'
      ,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail; validValue=[1,0]'
-     ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
-     ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'
+     ,'PRELOAD_RATE':'Preload Rate Thread; validValue=[1,0]'
      ,'QR_USE_RECAPCAY':'Mode reCaptcha; validValue=[1,0]'
      ,'QR_RECAPCAY_PROP':'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]'
+     ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'	 
+     ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
     };
-    /*
-    if(gvar.user.isDonatur) {
-        keys.push('QR_USE_RECAPCAY');
-        keykomeng['QR_USE_RECAPCAY'] = 'Mode reCaptcha; validValue=[1,0]';
-        
-        keys.push('QR_RECAPCAY_PROP');
-        keykomeng['QR_RECAPCAY_PROP'] = 'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]';
-    }
-    */
+
     var kL=keys.length, getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
     var parse_UA_Vers = function(){
       return ( window.navigator.userAgent.replace(/\s*\((?:[^\)]+).\s*/g,' ').replace(/\//g,'-') );
@@ -5276,9 +5280,9 @@ var ST = {
       var keys = ['SAVED_AVATAR','LAST_FONT','LAST_COLOR','LAST_SIZE','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','UPDATES_INTERVAL','UPDATES','DYNAMIC_QR'
 	              ,'QUICK_QUOTE','AJAXPOST','HIDE_CONTROLLER','CUSTOM_SMILEY','TMP_TEXT','SCUSTOM_ALT','SCUSTOM_NOPARSE','TEXTA_EXPANDER'
                   ,'SHOW_SMILE','QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
-                  ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL'
+                  ,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','PRELOAD_RATE'
                   ,'QR_LastUpdate','WIDE_THREAD','QR_COLLAPSE','QR_USE_RECAPCAY','QR_RECAPCAY_PROP', 'COUNTDOWN_POS', 'QR_LASTPOST'
-                 ];
+                 ];				 
       var kL=keys.length;
       for(var i=0; i<kL; i++){
         try{ if(isString(keys[i])) GM_deleteValue(KS + keys[i]); }catch(e){}        
@@ -5349,7 +5353,8 @@ var ST = {
        'misc_updates':KS+'UPDATES'
       ,'misc_hideavatar':KS+'HIDE_AVATAR'
       ,'misc_dynamic':KS+'DYNAMIC_QR'
-      ,'misc_quickquote':KS+'QUICK_QUOTE'
+      ,'misc_quickquote':KS+'QUICK_QUOTE'	  
+      ,'misc_preloadrate':KS+'PRELOAD_RATE'
       ,'misc_qrdraft':KS+'QR_DRAFT'
       ,'misc_txtcounter':KS+'TXTCOUNTER'
       ,'misc_countdown':KS+'COUNTDOWN'
@@ -6694,7 +6699,7 @@ Format will be valid like this:
      # flag to ignore thread subscription
      # additional options for subscription will be fetched on ajax build capcay
     */
-    //+'<input type="hidden" name="fromquickreply" value="1" />'
+    +(gvar.user.isDonatur && !gvar.settings.preload_rate ? '<input type="hidden" name="fromquickreply" value="1" />' : '')
     
     +'<input type="hidden" name="s" value="" />'
     +'<input type="hidden" name="securitytoken" value="'+gvar.securitytoken+'" id="qr_securitytoken"/>'
@@ -7139,6 +7144,10 @@ Format will be valid like this:
      +'<input id="misc_countdown_form" type="checkbox" '+(gvar.settings.countdownpos[0]=='1' ? 'checked':'')+'/><label for="misc_countdown_form">form</label>&nbsp;'
      +'<input id="misc_countdown_tabs" type="checkbox" '+(gvar.settings.countdownpos[1]=='1' ? 'checked':'')+'/><label for="misc_countdown_tabs">tabs</label>'     
      +'</div>'
+     +spacer
+     +(gvar.user.isDonatur ? ''
+	 +'<input id="misc_preloadrate" type="checkbox" '+(gvar.settings.preload_rate ? 'checked':'')+'/><label for="misc_preloadrate">Preload Rate-Thread</label>'
+	 :'')
 	 
      +spacer
      +(!gvar.user.isDonatur ? ''
