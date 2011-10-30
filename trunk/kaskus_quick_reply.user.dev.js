@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.6
-// @dtversion     111016326
-// @timestamp     1318747380689
+// @version       3.2.7
+// @dtversion     111030327
+// @timestamp     1319956616060
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,8 +20,12 @@
 //
 // -!--latestupdate
 //
-// v3.2.6 - 2011-10-16 . 1318747380689
-//   Improve (beta) donatur may ignore rate thread w/o perform any xhr. Thanks=[takut.stress]
+// v3.2.7 - 2011-10-30 . 1319956616060
+//   Fix early strip any tags start-with KSA. Thanks=[p1nky]
+//	 Fix missed parsing bbcode that might happen inside [code/]
+//
+// v3.2.6 - 2011-10-30 . 1319917890445
+//   Improve (beta) donatur may ignore rate thread w/o any xhr performed. Thanks=[takut.stress]
 //   Fix undefined ss callback
 //   Fix undefined hVal[0] (FF 3.6.X) Thanks=[helmiajah]
 //   Add [lulz,imgdum] image uploader. Thanks=[ketang.klimax]
@@ -66,9 +70,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.6b';
 gvar.scriptMeta = {
-  timestamp: 1318747380689 // version.timestamp
+  timestamp: 1319956616060 // version.timestamp
 
- ,dtversion: 111016326 // version.date
+ ,dtversion: 111030327 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -802,6 +806,14 @@ function do_click_qqr(e, multi){
 	
 	// clean all previous quote
 	pCon=createEl('div',{style:'display:none'},x);
+		
+	// clean messy from ksa, based on id=KSA-
+    els = $D('.//span[starts-with(@id,"KSA-")]', pCon);
+    nLength=(els.snapshotLength-1);
+    for(var i=nLength; i>=0; i--){
+        el=els.snapshotItem(i);
+        if( el ) Dom.remove(el);
+    }	
 	
 	// cleanup head in for FJB-SF (stop until found <hr>)
 	els = $D(".//div[contains(@id,'post_message_')]", pCon);
@@ -818,11 +830,11 @@ function do_click_qqr(e, multi){
 				}
 			}
 		}
-	}
+	}	
 	
 	// reveal quote
 	var revealQuoteCode=function(html){
-	  var els,el,el2,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
+	  var els,el,el2,el2tmp,tag, XPathStr='.//div[@class="smallfont"]',rvCon=pCon;
 	  if(isDefined(html)){        
         // fix align inside spoiler
         html = String(html).replace(/<(\/?)([^>]+)>/gm, parseSerials );
@@ -838,25 +850,21 @@ function do_click_qqr(e, multi){
 	     if(cucok=el.innerHTML.match(/(?:(HTML|PHP)\s{1})*Code:/)){
 		   el2=el.parentNode; Dom.remove(el);
 		   tag=(cucok && cucok[1] ? cucok[1] : 'CODE');
-		   el2.innerHTML=el2.innerHTML.replace(/\&nbsp;/gi,' ');		   
-		   el=createTextEl('['+tag+']'+unescapeHtml(clearTag(el2.innerHTML))+'[/'+tag+']\n');
+		   el2tmp = el2.innerHTML;
+		   if(tag=='CODE')
+				el2tmp = trimStr( String(el2tmp).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
+		   el2tmp = el2tmp.replace(/\&nbsp;/gi,' ');
+		   el=createTextEl('['+tag+']'+unescapeHtml(clearTag(el2tmp))+'[/'+tag+']\n');
+		   
 		   el2.parentNode.replaceChild(el,el2);
 	     }
 	  }
 	  return rvCon.innerHTML;
-	};    
+	};
     
 	// reveal simple quote
 	pCon.innerHTML = revealQuoteCode();	
 	clog('previous Quote&Code=\n'+pCon.innerHTML);
-    
-    // clean messy from ksa, based on id=KSA-
-    els = $D('.//span[starts-with(@id,"KSA-")]', pCon);
-    nLength=(els.snapshotLength-1);
-    for(var i=nLength; i>=0; i--){
-        el=els.snapshotItem(i);
-        if( el ) Dom.remove(el);
-    }
 	
 	// reveal spoiler inside
 	els=$D('.//div[@class="smallfont"]', pCon);
@@ -953,7 +961,7 @@ function do_click_qqr(e, multi){
 	x=pCon.innerHTML; delete pCon;
     
 	// serials parse
-	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));    
+	ret=trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
     
     // clean rest (unparsed tags)
     return unescapeHtml(clearTag( ret ) );
@@ -7301,5 +7309,3 @@ init();
 
 })();
 /* Mod By Idx. */
-
-
