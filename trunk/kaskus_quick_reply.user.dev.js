@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.7
-// @dtversion     111030327
-// @timestamp     1319956616060
+// @dtversion     111031327
+// @timestamp     1320091427099
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,9 @@
 //
 // -!--latestupdate
 //
-// v3.2.7 - 2011-10-30 . 1319956616060
+// v3.2.7 - 2011-10-31 . 1320091427099
+//   Fix QQ parse youtube inside spoiler
+//   Fix transparenize flash embed
 //   Fix early strip any tags start-with KSA. Thanks=[p1nky]
 //	 Fix missed parsing bbcode that might happen inside [code/]
 //
@@ -68,11 +70,11 @@ const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) )
 	return;
 
-gvar.sversion = 'v' + '3.2.6b';
+gvar.sversion = 'v' + '3.2.7b';
 gvar.scriptMeta = {
-  timestamp: 1319956616060 // version.timestamp
+  timestamp: 1320091427099 // version.timestamp
 
- ,dtversion: 111030327 // version.date
+ ,dtversion: 111031327 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -574,6 +576,7 @@ function start_Main(){
         hr = nodel.href.split("&p=");
         nodel.innerHTML = '<img src="'+gvar.domainstatic+'images/buttons/edit.gif" border="0" alt="Edit" title="Edit this Post" />';
 	 }
+	 flash_transparenize();
     }
 	Dom.add( createTextEl( '.btn_qqr{display:'+(gvar.settings.quick_quote?'inline':'none')+'!important;}' ), $D('#css_qqr') );
     
@@ -634,8 +637,33 @@ function start_Main(){
 
     if(!gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS==0)
         window.setTimeout(function(){ Updater.check(); }, 5000);
+	
 }
 // end start_Main()
+
+function flash_transparenize(){
+	var nL, mx=5, p, param, _src, el, els = $D("//embed");
+	nL=(els.snapshotLength);
+    for(var i=0; i<nL; i++){
+		el=els.snapshotItem(i);
+		p = el;
+		_src = el.getAttribute('src').replace(/\W/g,'');
+		for(var i=0; i<mx; i++)
+			if(p.nodeName=='OBJECT' || i>=mx)
+				break;
+			else
+				p = p.parentNode;
+		if(p.nodeName=='OBJECT'){
+			param = createEl('param', {name:"wmode", value:"transparent"});
+			p.insertBefore(param, p.firstChild);
+		}
+		el.setAttribute('wmode', 'transparent');
+		
+		p = p.parentNode;
+		if(p.nodeName=='DIV')
+			p.setAttribute('style', 'position:relative!important; z-index:1!important;');
+	}
+}
 
 // (quick-quote) qqr clicked
 function do_click_qqr(e, multi){
@@ -767,10 +795,10 @@ function do_click_qqr(e, multi){
         mct=$2.match(/\ssrc=['"]([^'"]+)/i);
 		
         if( mct && isDefined(mct[1]) ){
-		  // dirty-youtube || Opera is not supported yet or never --"		  
+		  // dirty-youtube || Opera is not supported yet or never --"
 		  if( /^embed\s*/i.test($2) ){
             cucok=mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');
-			if( cucok.match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ) {
+			if( mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ) {
                 cucok = entity_decode( entity_decode( unescape(cucok) ) ); // dua X decode coy
                 cucok = entity_encode(cucok);				
 				return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
@@ -906,7 +934,7 @@ function do_click_qqr(e, multi){
 			pCon.innerHTML = entity_decode( String(pCon.innerHTML).replace(/\{spoiler\-([^\}]+)?\}/g, reSpoiler).replace(/\{\/spoiler\}/g, '</span>') );
 		}
     }
-	clog('after spoiler done=\n'+pCon.innerHTML);
+	clog('after spoiler pre-span=\n'+pCon.innerHTML);
 	
     // need to clear this <div style="margin:20px; margin-top:5px">; or closed div will be parsed as closed [/center]
     // fixing wrapped spoiler yg dijepit align [left|center|right]
@@ -920,6 +948,7 @@ function do_click_qqr(e, multi){
                 epar.parentNode.replaceChild(el, epar);
         }
     }
+	clog('after spoiler done=\n'+pCon.innerHTML);
     
 	// reveal ol
 	els=$D('.//ol', pCon);
