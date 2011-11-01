@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.7
-// @dtversion     111031327
-// @timestamp     1320091427099
+// @dtversion     111102327
+// @timestamp     1320432401342
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.7 - 2011-10-31 . 1320091427099
+// v3.2.7 - 2011-11-02 . 1320432401342
+//   Fix / Improve countdown timer issue
 //   Fix QQ parse youtube inside spoiler
 //   Fix transparenize flash embed
 //   Fix early strip any tags start-with KSA. Thanks=[p1nky]
@@ -72,9 +73,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.7b';
 gvar.scriptMeta = {
-  timestamp: 1320091427099 // version.timestamp
+  timestamp: 1320432401342 // version.timestamp
 
- ,dtversion: 111031327 // version.date
+ ,dtversion: 111102327 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -4375,18 +4376,21 @@ var QRdp = {
   // QR delay post 
   key: KS+"QR_LASTPOST"
  ,defDelay: 29 // seconds; assumed 32 sec; fact is 30 sec; 29 is calibrated -Andreas.
- ,getLast:function(){return getValue(QRdp.key)}
- ,updLast:function(x){return setValue(QRdp.key, x)}
+ ,getLast:function(){var l=cK.g(QRdp.key); if(!l)l=QRdp._getLast();return l;}
+ ,_getLast:function(){return getValue(QRdp.key)}
+ ,updLast:function(x){ cK.s(QRdp.key, String(x), '/', 'www.kaskus.us'); QRdp._updLast( String(x) )}
+ ,_updLast:function(x){return setValue(QRdp.key, x)}
  ,check:function(tgt,delay){
-    delay=Math.abs(delay) || QRdp.defDelay;
-    var lastP = parseInt( QRdp.getLast() );    
+	delay=Math.abs(delay) || QRdp.defDelay;
+    // prefer dr ck
+	var lastP = parseInt( QRdp.getLast() );
     if(lastP > 0){
       QRdp.selisih = Math.floor( (new Date().getTime()-(lastP+(delay*1000)) ) / 1000 );
 	  // check, avoid local-time-system abuse;
 	  // correction when lastpost is further than current
 	  if( QRdp.selisih < delay){
 		QRdp.updLast( parseInt(new Date().getTime() + 4000) + '');
-		QRdp.selisih = (-1 * (delay-4) );
+		QRdp.selisih = (Math.abs(QRdp.selisih) < delay ? QRdp.selisih : (-1 * (delay-4) ) );
 	  }else{
 		delValue(QRdp.key);
 	  }
@@ -4394,6 +4398,7 @@ var QRdp = {
          QRdp.tgt = tgt;
          tgt.style.display = '';
          QRdp.countDown = Math.abs(QRdp.selisih);
+         QRdp.lp = lastP;
          window.setTimeout( function(){QRdp.showCounter()}, 1000);
 	  }
 	}
@@ -4407,6 +4412,7 @@ var QRdp = {
   }
  ,showCounter:function(){
     var tgt=QRdp.tgt;
+	QRdp.lp = parseInt( QRdp.getLast() - 1000 );
     QRdp.writeTgt(tgt,QRdp.countDown);
     if(QRdp.countDown == 0){
       delete QRdp.countDown;
@@ -4417,6 +4423,8 @@ var QRdp = {
 	  }
     }else{
       QRdp.countDown--;
+	  QRdp.updLast( QRdp.lp );
+	  cK.d(QRdp.key);
       window.setTimeout( function(){QRdp.showCounter()}, 1000);
     }
     if(gvar.settings.countdown && gvar.settings.countdownpos[1]=='1')
