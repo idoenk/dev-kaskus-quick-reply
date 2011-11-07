@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.7
-// @dtversion     111102327
-// @timestamp     1320432401342
+// @dtversion     111108327
+// @timestamp     1320688521166
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.7 - 2011-11-02 . 1320432401342
+// v3.2.7 - 2011-11-08 . 1320688521166
+//   Fix endless loop flash_transparenize
 //   Fix / Improve countdown timer issue
 //   Fix QQ parse youtube inside spoiler
 //   Fix transparenize flash embed
@@ -73,9 +74,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.7b';
 gvar.scriptMeta = {
-  timestamp: 1320432401342 // version.timestamp
+  timestamp: 1320688521166 // version.timestamp
 
- ,dtversion: 111102327 // version.date
+ ,dtversion: 111108327 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -543,7 +544,7 @@ function start_Main(){
     // cuma untuk fresh load
     if(!gvar.restart) {
      nodes = $D('//a[contains(.,"QUOTE") and not(contains(@class,"bigusername")) ]', null);
-     leng= nodes.snapshotLength; 
+     leng= nodes.snapshotLength;
      if(leng) for(var i=0; i<leng; i++){
        nodel = nodes.snapshotItem(i);
        if(nodel.parentNode.nodeName != 'TD' || nodel.parentNode.id.indexOf('td_post_')!=-1 || nodel.parentNode.className!='alt1') continue;
@@ -570,7 +571,7 @@ function start_Main(){
 	   
      } // end-for
      nodes = $D('//a[contains(.,"EDIT") and not(contains(@class,"bigusername")) ]', null);
-     leng= nodes.snapshotLength; 
+     leng= nodes.snapshotLength;
      if(leng) for(var i=0; i<leng; i++){
         nodel = nodes.snapshotItem(i);
         if(nodel.parentNode.nodeName != 'TD' || nodel.parentNode.id.indexOf('td_post_')!=-1 || nodel.parentNode.className!='alt1') continue;
@@ -643,27 +644,29 @@ function start_Main(){
 // end start_Main()
 
 function flash_transparenize(){
-	var nL, mx=5, p, param, _src, el, els = $D("//embed");
+  var nL, mx=5, p, param, _src, el, els;
+  try{  
+	els = $D("//embed");
 	nL=(els.snapshotLength);
     for(var i=0; i<nL; i++){
 		el=els.snapshotItem(i);
 		p = el;
 		_src = el.getAttribute('src').replace(/\W/g,'');
-		for(var i=0; i<mx; i++)
-			if(p.nodeName=='OBJECT' || i>=mx)
+		for(var j=0; j<mx; j++)
+			if(p.nodeName=='OBJECT')
 				break;
 			else
-				p = p.parentNode;
+				p = p.parentNode;				
 		if(p.nodeName=='OBJECT'){
 			param = createEl('param', {name:"wmode", value:"transparent"});
 			p.insertBefore(param, p.firstChild);
 		}
-		el.setAttribute('wmode', 'transparent');
-		
+		el.setAttribute('wmode', 'transparent');		
 		p = p.parentNode;
 		if(p.nodeName=='DIV')
 			p.setAttribute('style', 'position:relative!important; z-index:1!important;');
 	}
+  }catch(e){};
 }
 
 // (quick-quote) qqr clicked
@@ -7346,3 +7349,4 @@ init();
 
 })();
 /* Mod By Idx. */
+
