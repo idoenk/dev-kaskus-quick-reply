@@ -2,8 +2,8 @@
 // @name          Kaskus Fix-ObfuscatorII
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
-// @author        hermawanadhis
-// @version       0.7.12
+// @author        hermawanadhis, idx
+// @version       0.7.13
 // @include       http://www.kaskus.us/showthread.php?*
 // @include       http://www.kaskus.us/editpost.php?*
 // @include       http://www.kaskus.us/newthread.php?*
@@ -16,14 +16,16 @@
 /*
 Kaskus Fix-ObfuscatorII 
 Dibuat oleh Pandu E Poluan {http://userscripts.org/users/71414/}
-Credit            : Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
-tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
+Penghargaan kepada: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
+Tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
                   :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.us/showthread.php?t=8689106
 
-This script replaces all obfuscated words in kaskus (e.g., "rapid*share")
-and replaces it with the unobfuscated word.
+Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKus.us (misal: "rapid*share") menjadi sediakala.
+This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.13
+- linkify ftp
 0.7.12
 - full-linkify on singlepost
 - Fix fixme for unicode href, (eg. wikiedia or Asian web)
@@ -226,6 +228,9 @@ v0.1   : First release
                }
                node.removeAttribute('href');
             }else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
+               node.innerHTML = decodeURI(node.href);
+            }
+			else if(/^ftp?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
                node.innerHTML = decodeURI(node.href);
             }
         }
