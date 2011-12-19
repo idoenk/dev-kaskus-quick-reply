@@ -25,7 +25,7 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and re
 Changelog:
 ------------
 0.7.13
-- linkify ftp
+- linkify ftp or with (s) --inline-conditional :D
 0.7.12
 - full-linkify on singlepost
 - Fix fixme for unicode href, (eg. wikiedia or Asian web)
@@ -227,10 +227,7 @@ v0.1   : First release
                     inps[0].parentNode.appendChild( newHref(node.href) );                
                }
                node.removeAttribute('href');
-            }else if(/^https?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
-               node.innerHTML = decodeURI(node.href);
-            }
-			else if(/^ftp?\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
+            }else if(/^(?:ftps?|https?)\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
                node.innerHTML = decodeURI(node.href);
             }
         }
