@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.7
-// @dtversion     111108327
-// @timestamp     1320688521166
+// @dtversion     111229327
+// @timestamp     1325106301056
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.7 - 2011-11-08 . 1320688521166
+// v3.2.7 - 2011-12-29 . 1325106301056
+//   Adapt capcat-kaskus -red.
 //   Fix endless loop flash_transparenize
 //   Fix / Improve countdown timer issue
 //   Fix QQ parse youtube inside spoiler
@@ -72,11 +73,11 @@ const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) )
 	return;
 
-gvar.sversion = 'v' + '3.2.7b';
+gvar.sversion = 'v' + '3.2.7';
 gvar.scriptMeta = {
-  timestamp: 1320688521166 // version.timestamp
+  timestamp: 1325106301056 // version.timestamp
 
- ,dtversion: 111108327 // version.date
+ ,dtversion: 111229327 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -85,6 +86,8 @@ window.alert(new Date().getTime());
 //=-=-=-=--=
 //========-=-=-=-=--=========
 gvar.__DEBUG__ = false; // development debug
+gvar.CAPCAT = true; // verifikasi-fase-capcay-cacat
+gvar.CaPCat_aiBeta = null; // ai-cpcat
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -1166,7 +1169,7 @@ function additional_options_notloaded(){
 }
 
 // fetch only the hash of humaninput
-function capcay_parser(page){  
+function capcay_parser(page){
   // firstly conform user is the same and is not donat; else update hash & sec.token
   if( !/\bmember\.php\?u=(\d+)/.test(page) || page.indexOf('security token was invalid.<br')!=-1 || gvar.user.isDonatur ){
      return false;
@@ -1182,9 +1185,35 @@ function capcay_parser(page){
     // keep update hash & securitytoken
     gvar.securitytoken = rets[1] = match[1];
     $D('#qr_securitytoken').value = gvar.securitytoken;
-  }  
+  }
+  if( gvar.CAPCAT ){
+	if( match = /humanverify[^\>]+.Hitung\:\s?([^\=]+)/i.exec(page) ){
+		gvar.soal_cacats = match[1];
+		gvar.ans_cacats = try_solve( gvar.soal_cacats );
+	}
+  }
   return rets;
 }
+
+
+//====
+function try_solve(sol){
+	sol = sol.replace(/\s/g, '');
+	var a, r;
+	if( a = /(\d+)([\Wa-z])(\d+)/i.exec(sol) ){
+		a[1] = parseInt(a[1]); a[3] = parseInt(a[3]); 
+		switch( a[2] ){
+			case "+": r = (a[1]+a[3]); break;
+			case "x": r = (a[1]*a[3]); break;
+			case ":": r = (a[1]/a[3]); break;
+			case "-": r = (a[1]-a[3]); break;
+		}
+	}
+	return r;
+}
+
+//====
+
 
 function capcay_notloaded(){  
   return ( $D('#imgcapcay') && !Dom.g('hash', $D('#imgcapcay') ) );
@@ -1295,7 +1324,7 @@ function create_kaskus_capcay( rets ){
           if( $D('#'+reCp_field[i]) ) $D('#'+reCp_field[i]).setAttribute('tabindex', '20'+(i+1) + '');
           
     }
-    window.setTimeout(function() {        
+    window.setTimeout(function() {
         if( $D('#imagereg').getAttribute('src')=='' || isDefined(gvar.cache_rets_capcay) ){
             clickIt();
             if( isDefined(gvar.cache_rets_capcay) && $D('#imagereg') ) 
@@ -1311,6 +1340,23 @@ function create_kaskus_capcay( rets ){
         $D('#rate_thread').style.display = '';
     }
     $D('#button_preview').style.display = '';
+}
+
+function create_kaskus_capcat(){
+	if( !gvar.CAPCAT ) return;
+    
+    // pre tpl
+    if($D('#recaptcha_container')) $D('#recaptcha_container').innerHTML = ''        
+        +'<div id="imgcapcay" class="jwblah" style="margin:1px 0;">Jawablah Pertanyaan Dibawah Ini</div>'
+		+'<div id="soal_capcat" style="font-size:28px"></div>'
+        +'<input type="text" tabindex="2" class="bginput" name="humanverify[input]" id="humaninput" size="10" maxlength="3" autocomplete="off"/>';
+	if($D('#soal_capcat')) $D('#soal_capcat').innerHTML = gvar.soal_cacats.replace(/\:/,'&#247;');
+	if($D('#rating_onpop') && $D('#rating_onpop').innerHTML=='' && $D('#rate_thread')){
+        Dom.add($D('#rate_thread'), $D('#rating_onpop'));
+        $D('#rate_thread').style.display = '';
+    }
+	$D('#button_preview').style.display = '';
+	window.setTimeout(function() { $D('#humaninput').focus() }, 201);
 }
 
 // create rating, and hidden element of additional options
@@ -1489,7 +1535,7 @@ function qr_ajax_post(reply_html){
     var prep = prep_preview(), spost=buildQuery( true ); // isToPost
     if(!gvar.user.isDonatur){
       var ce,fld;
-      if( gvar.settings.recaptcha ){
+      if( gvar.settings.recaptcha && !gvar.CAPCAT ){
         // grab 2 captcha field
         ce,fld = ["recaptcha_challenge_field","recaptcha_response_field"];
         for(var i=0; i<fld.length; i++){
@@ -1529,8 +1575,12 @@ function qr_ajax_post(reply_html){
             }
             // grab and update hash
             var rets;
-            if( rets = capcay_parser(html) ) 
-                create_kaskus_capcay(rets);
+            if( rets = capcay_parser(html) ) {
+				if( gvar.CAPCAT )
+					create_kaskus_capcat();
+				else
+					create_kaskus_capcay(rets);
+			}
         }else if( cucok = html.match(/<meta\s*http\-equiv=[\"\']Refresh[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i) ){
           
             // NO-Error, grab redirect location
@@ -1840,6 +1890,42 @@ function loadLayer_reCaptcha(){
 
 } // end loadLayer_reCaptcha
 
+function loadLayer_capcat(){
+	var is_capcat_filled = function(tgt){
+        if( $D('#humaninput') && !$D('#humaninput').value ){
+          alert('Ayooo Sekolah... #Eh Soal belum dijawab ..!!');
+          try{ if(typeof(tgt)=='object') tgt.focus() }catch(e){}
+          return false;
+        }else{
+          return ($D('#humaninput').value);
+        }
+    };
+	
+	if(capcay_notloaded()) ajax_buildcapcay();
+	if($D('#hideshow'))
+		closeLayerBox('hideshow');
+	
+	loadLayer_initTplCapcay(rSRC.getTPL_prompt_kaskusCAPTCHA());
+	
+	create_kaskus_capcat();
+	
+	_o('click',$D('#captcha_submit'),function(e){
+        if( !is_capcat_filled($D('#humaninput')) ){
+		  e.preventDefault;
+          return false;
+        }
+        do_an_e(e);
+        return do_posting(e);
+    });
+	if(gvar.CaPCat_aiBeta && gvar.CaPCat_aiBeta=='CumiKerinG' && gvar.ans_cacats){
+		$D('#humaninput').value = gvar.ans_cacats;
+		SimulateMouse($D('#captcha_submit'), 'click', true);
+	}
+    
+    // calibrate width/position container
+	repos_popup_container();
+}
+
 function loadLayer_preview(){
     loadLayer( rSRC.getTPL_Preview, 'preview' );
     
@@ -2072,11 +2158,15 @@ function initEventTpl(){
                 alert(gvar.tooshort);
                 e.preventDefault(); return false;
             }
-            if( gvar.settings.recaptcha ){
-                loadLayer_reCaptcha();
-            }else{
-                loadLayer_kaskusCaptcha();
-            }
+			if(gvar.CAPCAT){
+				loadLayer_capcat();
+			}else{
+				if( gvar.settings.recaptcha ){
+					loadLayer_reCaptcha();
+				}else{
+					loadLayer_kaskusCaptcha();
+				}
+			}
             toogleLayerDiv('hideshow');
             toogleLayerDiv('hideshow_recaptcha');
          }else{
@@ -6179,6 +6269,15 @@ var rSRC = {
     +'.popup_block .popup {display:block; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
     +'.popup img.cntrl {position:absolute; right:-20px; top:-20px; border:0px;}'
     +'#button_preview {padding:3px;text-align:center;}'
+    +'.alt1.matheq{position:relative;min-height:90px;display:block;text-align:center;}'
+    +'.matheq .eqeq{z-index:0; width:290px;height:98px; background-image:url(http://goo.gl/HyY5D); margin-left:-5px; filter:alpha(opacity=45);-moz-opacity:.45;opacity:.45;}'
+	+'.matheq .eqeq, .matheq .spacer, .matheq #recaptcha_container{position:absolute;}'
+	+'.matheq input{filter:alpha(opacity=65);-moz-opacity:.65;opacity:.65; font-weight:bold;color:blue;text-align:center;padding:2px;}'
+	+'.matheq input:focus{filter:alpha(opacity=100);-moz-opacity:1;opacity:1}'
+    +'.matheq #recaptcha_container{width:100%;}'
+    +'.matheq #soal_capcat{margin-top:10px}'
+    +'.matheq input, .matheq .spacer, .matheq #recaptcha_container, .matheq #imgcapcay{z-index:10; clear:both: display:block;}'    
+    +'.matheq .jwblah{text-shadow:0 1px 1px rgba(0,0,0,0.375);transform: rotateZ(-5deg); -moz-transform: rotateZ(-5deg);-webkit-transform: rotateZ(-5deg); }'
     +'');
  }
  ,getSCRIPT: function(){
@@ -6980,13 +7079,14 @@ Format will be valid like this:
      +  '<a tabindex="213" href="javascript:;"><img id="imghideshow_precap" title="Close" class="cntrl" src="'+gvar.B.closepreview_png+'"/></a>'
      +  '<table class="tborder" align="center" border="0" cellpadding="6" cellspacing="1" width="100%">'
      +  '<tbody><tr>'
-     +   '<td class="tcat"><span id="nfolink">Image Verification</span></td>'
+     +   '<td class="tcat"><span id="nfolink">' + (gvar.CAPCAT ? 'Ayoo Sekolah' : 'Image Verification') + '</span></td>'
      +  '</tr><tr>'
-     +  '<td class="alt1">'
+     +  '<td class="alt1'+(gvar.CAPCAT ? ' matheq':'')+'">'
      +   '<div class="spacer" id="posting_notify"></div>'
      +   '<div id="recaptcha_container" style="text-align:center;">'
      +     '<div id="throbber_loader"><img src="'+gvar.B.throbber_gif+'" border="0"/>&nbsp;<small>loading...</small></div>'
      +   '</div>'
+     +   '<div class="eqeq"></div>'
      +  '</td></tr>'
      +  '<tbody></table>'
      +   '<div id="button_preview" style="display:none;">'
