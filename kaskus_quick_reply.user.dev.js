@@ -5,7 +5,7 @@
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.7
 // @dtversion     111229327
-// @timestamp     1325106301056
+// @timestamp     1325109344500
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.7 - 2011-12-29 . 1325106301056
+// v3.2.7 - 2011-12-29 . 1325109344500
+//   Fix capcat-kaskus; +minor css.
 //   Adapt capcat-kaskus -red.
 //   Fix endless loop flash_transparenize
 //   Fix / Improve countdown timer issue
@@ -75,7 +76,7 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.7';
 gvar.scriptMeta = {
-  timestamp: 1325106301056 // version.timestamp
+  timestamp: 1325109344500 // version.timestamp
 
  ,dtversion: 111229327 // version.date
  ,scriptID: 80409 // script-Id
@@ -1916,7 +1917,16 @@ function loadLayer_capcat(){
         }
         do_an_e(e);
         return do_posting(e);
+    });	
+	_o('keydown',$D('#humaninput'),function(e){
+        var C = window.event||e, A = C.keyCode ? C.keyCode : C.charCode;
+        if(A===13){
+          SimulateMouse($D('#captcha_submit'), 'click', true);
+          e.preventDefault(); // return false;
+          return false;
+		}
     });
+	
 	if(gvar.CaPCat_aiBeta && gvar.CaPCat_aiBeta=='CumiKerinG' && gvar.ans_cacats){
 		$D('#humaninput').value = gvar.ans_cacats;
 		SimulateMouse($D('#captcha_submit'), 'click', true);
@@ -1933,12 +1943,16 @@ function loadLayer_preview(){
     if($D('#preview_presubmit'))
       _o('click',$D('#preview_presubmit'),function(e){
          if( !gvar.user.isDonatur ){
-            if($D('#preview_loading')) return;
-            if( gvar.settings.recaptcha ){
-                loadLayer_reCaptcha();            
-            }else{
-                loadLayer_kaskusCaptcha();            
-            }
+            if($D('#preview_loading')) return;			
+			if(gvar.CAPCAT){
+				loadLayer_capcat();
+			}else{
+				if( gvar.settings.recaptcha ){
+					loadLayer_reCaptcha();
+				}else{
+					loadLayer_kaskusCaptcha();
+				}
+			}			
             toogleLayerDiv('hideshow');
             toogleLayerDiv('hideshow_recaptcha');
          }else{
@@ -6264,20 +6278,21 @@ var rSRC = {
 	+'background: #ddd; color:black; padding: 5px; border: 5px solid #fff; margin:9px auto 40px auto; position:relative;'
     +'border-radius:5px; -moz-border-radius:5px; -khtml-border-radius:5px; -webkit-border-radius:5px; z-index: 99999;'
     +'}'
-    +'#popup_container {width:88%}' //; left:5%
+    +'#popup_container {width:88%}'
     +'.popup_ckaskus{width:300px}'
     +'.popup_block .popup {display:block; width:100%; background:#D1D4E0; margin:0; padding:0; border:1px solid #bbb;}'
     +'.popup img.cntrl {position:absolute; right:-20px; top:-20px; border:0px;}'
     +'#button_preview {padding:3px;text-align:center;}'
-    +'.alt1.matheq{position:relative;min-height:90px;display:block;text-align:center;}'
-    +'.matheq .eqeq{z-index:0; width:290px;height:98px; background-image:url(http://goo.gl/HyY5D); margin-left:-5px; filter:alpha(opacity=45);-moz-opacity:.45;opacity:.45;}'
+    +'.alt1.matheq{position:relative;min-height:130px;display:block;text-align:center;padding-right:5px;}'
+    +'.matheq .eqeq{z-index:0; width:290px;height:135px; background-image:url(http://goo.gl/HyY5D); margin-left:-5px; filter:alpha(opacity=45);-moz-opacity:.45;opacity:.45;}'
 	+'.matheq .eqeq, .matheq .spacer, .matheq #recaptcha_container{position:absolute;}'
 	+'.matheq input{filter:alpha(opacity=65);-moz-opacity:.65;opacity:.65; font-weight:bold;color:blue;text-align:center;padding:2px;}'
 	+'.matheq input:focus{filter:alpha(opacity=100);-moz-opacity:1;opacity:1}'
     +'.matheq #recaptcha_container{width:100%;}'
-    +'.matheq #soal_capcat{margin-top:10px}'
+    +'.matheq #recaptcha_container{margin-top:40px;}'
+    +'.matheq #soal_capcat{10px}'
     +'.matheq input, .matheq .spacer, .matheq #recaptcha_container, .matheq #imgcapcay{z-index:10; clear:both: display:block;}'    
-    +'.matheq .jwblah{text-shadow:0 1px 1px rgba(0,0,0,0.375);transform: rotateZ(-5deg); -moz-transform: rotateZ(-5deg);-webkit-transform: rotateZ(-5deg); }'
+    +'.matheq .jwblah{text-shadow:0 1px 1px rgba(0,0,0,0.375);transform: rotateZ(-5deg); -moz-transform: rotateZ(-5deg);-webkit-transform: rotateZ(-5deg)}'
     +'');
  }
  ,getSCRIPT: function(){
@@ -7449,4 +7464,3 @@ init();
 
 })();
 /* Mod By Idx. */
-
