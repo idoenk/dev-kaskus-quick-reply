@@ -3,9 +3,9 @@
 // @icon          http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
-// @version       3.2.7
-// @dtversion     111229327
-// @timestamp     1325109344500
+// @version       3.2.8
+// @dtversion     120203328
+// @timestamp     1325540121816
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -19,6 +19,13 @@
 // @include       http://imagedum.com/*
 //
 // -!--latestupdate
+//
+// v3.2.8 - 2012-01-03 . 1325540121816
+//   Fix capcay-mode autodetect; *..
+//
+// -/!latestupdate---
+// ==/UserScript==
+/*
 //
 // v3.2.7 - 2011-12-29 . 1325109344500
 //   Fix capcat-kaskus; +minor css.
@@ -46,10 +53,6 @@
 //   Improve hide dirty TM_tmp_xpath (xpath'ing nodes on tampermonkey --GC)
 //   Fix minor avoid local-time-system abuse;
 //
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//
 // v3.2.5 - 2011-09-02 . 1314979251345
 //   Add settings [TXTCOUNTER, COUNTDOWN]
 //   Improve minor textcounter css
@@ -74,11 +77,11 @@ const isQR_PLUS      = 0; // purpose for QR+ pack, disable stated as = 0
 if( oExist(isQR_PLUS) )
 	return;
 
-gvar.sversion = 'v' + '3.2.7';
+gvar.sversion = 'v' + '3.2.8b';
 gvar.scriptMeta = {
-  timestamp: 1325109344500 // version.timestamp
+  timestamp: 1325540121816 // version.timestamp
 
- ,dtversion: 111229327 // version.date
+ ,dtversion: 120203328 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -87,8 +90,6 @@ window.alert(new Date().getTime());
 //=-=-=-=--=
 //========-=-=-=-=--=========
 gvar.__DEBUG__ = false; // development debug
-gvar.CAPCAT = true; // verifikasi-fase-capcay-cacat
-gvar.CaPCat_aiBeta = null; // ai-cpcat
 //========-=-=-=-=--=========
 //=-=-=-=--=
 
@@ -170,7 +171,8 @@ function init(){
   
   gvar.offsetTop= -35; // buat scroll offset
   gvar.additionalLength = gvar.idx_mq=0; // counter buat deselect multiquote & tambahan length text
-  gvar.INTERVAL=null; // buat txt counter
+  gvar.CAPCAT = gvar.INTERVAL = null;
+  gvar.CaPCat_aiBeta = HtmlUnicodeDecode('&#67;&#117;&#109;&#105;&#75;&#101;&#114;&#105;&#110;&#71;'); // ai-cpcat
   
   gvar.silahken= 'Silahkan post reply';
   gvar.tooshort= 'The message is too short. Your message should be at least 5 characters.';
@@ -1177,22 +1179,30 @@ function capcay_parser(page){
   }
     
   var rets = [false,false], match;
-  if( match = /id=\"hash\".*value=\"(\w+)/im.exec(page) ){
-    if(gvar.settings.recaptcha && $D('#imgcapcay'))
-        $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
-    rets[0] = match[1];
-  }
   if( match = /SECURITYTOKEN(?:[\s\=]+)\"([\w\-]+)/.exec(page) ) {
     // keep update hash & securitytoken
     gvar.securitytoken = rets[1] = match[1];
     $D('#qr_securitytoken').value = gvar.securitytoken;
   }
-  if( gvar.CAPCAT ){
-	if( match = /humanverify[^\>]+.Hitung\:\s?([^\=]+)/i.exec(page) ){
-		gvar.soal_cacats = match[1];
-		gvar.ans_cacats = try_solve( gvar.soal_cacats );
-	}
+  
+  // recaptcha autodetect | force gvar.settings.recaptcha value  
+  if( match = /recaptcha_response_field/i.exec(page) ){
+	gvar.settings.recaptcha = true;
+	clog('Forced gvar.settings.recaptcha ON');
   }
+  
+  if( match = /id=\"hash\".*value=\"(\w+)/im.exec(page) ){
+    if(gvar.settings.recaptcha && $D('#imgcapcay'))
+        $D('#imgcapcay').innerHTML = '<input id="hash" name="humanverify[hash]" value="'+match[1]+'" type="hidden">\n';
+    rets[0] = match[1];
+  }
+  
+  if( match = /humanverify[^\>]+.Hitung\:\s?([^\=]+)/i.exec(page) ){
+  	gvar.CAPCAT = true;
+  	gvar.soal_cacats = match[1];
+  	gvar.ans_cacats = try_solve( gvar.soal_cacats );
+  }else gvar.CAPCAT = false;
+  
   return rets;
 }
 
@@ -1345,6 +1355,11 @@ function create_kaskus_capcay( rets ){
 
 function create_kaskus_capcat(){
 	if( !gvar.CAPCAT ) return;
+	if( !gvar.soal_cacats ){
+		alert('Fail to get soal_cacats, or kaskus is not using this capcay method');
+		closeLayerBox('hideshow'); closeLayerBox('hideshow_recaptcha');
+		return;
+	}
     
     // pre tpl
     if($D('#recaptcha_container')) $D('#recaptcha_container').innerHTML = ''        
@@ -4207,7 +4222,7 @@ var vB_textarea = {
    this.saveDraft();
   },
   subStr: function(start, end){ return this.content.substring(start, end);},
-  getSelectedText : function() {    
+  getSelectedText : function() {
     return (this.cursorPos[0]==this.cursorPos[1]? '': this.subStr(this.cursorPos[0], this.cursorPos[1]) );
   },
   getCaretPos : function() {
