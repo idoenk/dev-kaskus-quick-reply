@@ -4,8 +4,8 @@
 // @namespace     http://userscripts.org/scripts/show/80409
 // @include       http://www.kaskus.us/showthread.php?*
 // @version       3.2.8
-// @dtversion     120203328
-// @timestamp     1325540121816
+// @dtversion     120215328
+// @timestamp     1329283360156
 // @description   provide a quick reply feature, under circumstances capcay required.
 // @author        idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license       (CC) by-nc-sa 3.0
@@ -20,7 +20,8 @@
 //
 // -!--latestupdate
 //
-// v3.2.8 - 2012-01-03 . 1325540121816
+// v3.2.8 - 2012-01-15 . 1329283360156
+//   dynamic session uri
 //   Fix capcay-mode autodetect; *..
 //
 // -/!latestupdate---
@@ -79,9 +80,9 @@ if( oExist(isQR_PLUS) )
 
 gvar.sversion = 'v' + '3.2.8b';
 gvar.scriptMeta = {
-  timestamp: 1325540121816 // version.timestamp
+  timestamp: 1329283360156// version.timestamp
 
- ,dtversion: 120203328 // version.date
+ ,dtversion: 120215328 // version.date
  ,scriptID: 80409 // script-Id
 };
 /*
@@ -3856,7 +3857,7 @@ function getUserId(type){
   var logusers = $D("//a[contains(@href, 'member.php')]", null, true), ret=false;
   if(logusers){
     var cDonat = $D('//a[contains(@id,"qr_")]', false, 1);
-    var uid = logusers.href.match(/member\.php\?u=(\d+$)/);    
+    var uid = logusers.href.match(/member\.php\?(?:s=[^\;]+.)?\&?u=(\d+$)/);
     ret = {id:uid[1], name:logusers.innerHTML, isDonatur:(!cDonat ? false : true)};
   }
   return ret;
