@@ -3,11 +3,14 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis, idx
-// @version       0.7.13
+// @version       0.7.2
+// @include       http://livebeta.kaskus.us/thread/*
+// @include       http://livebeta.kaskus.us/show_post/*
+// @include       http://livebeta.kaskus.us/edit_post/*
 // @include       http://www.kaskus.us/showthread.php?*
+// @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/editpost.php?*
 // @include       http://www.kaskus.us/newthread.php?*
-// @include       http://www.kaskus.us/showpost.php?*
 // @include       http://www.kaskus.us/blog.php?*
 // @include       http://www.kaskus.us/group.php?*
 // @include       http://archive.kaskus.us/thread/*
@@ -24,6 +27,8 @@ Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKu
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.2
+- tambahan darurat dukungan kaskus beta 
 0.7.13
 - linkify ftp or with (s) --inline-conditional :D
 0.7.12
