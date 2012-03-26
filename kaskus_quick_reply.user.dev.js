@@ -1,3 +1,58 @@
+// ==UserScript==
+// @name           Kaskus Quick Reply New
+// @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
+// @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
+// @include        *.kaskus.us/thread/*
+// @include        *.kaskus.us/post/*
+// @include        *.kaskus.us/group/discussion/*
+// @description    KQR
+// @version        4.0.1b
+// @dtversion      120325400
+// @timestamp      1332721590952
+// @description    provide a quick reply feature, under circumstances capcay required.
+// @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
+// @license        (CC) by-nc-sa 3.0
+// @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
+// @include        http://imageshack.us/*
+// @include        http://*.imageshack.us/*
+// @include        http://imgur.com/*
+// @include        http://photoserver.ws/*
+// @include        http://lulzimg.com/*
+// @include        http://*.imagedum.com/*
+// @include        http://imagedum.com/*
+//
+// -!--latestupdate
+//
+// v4.0.1b - 2012-03-24 . 1332721590952
+//	patch donatur w/o capcay
+//
+//
+// ==/UserScript==
+//
+// v4.0.0b - 2012-03-24 . 1332711152951
+//   init version for livebeta.kaskus.us (*)
+//   * !! this QR version is NOT support for old kaskus.us (vbulletin), please use v3.2.7 or v3.2.8 instead
+//   * QR v3.x.x will be discontinue and no longer maintained
+//   * QR v4 (beta) will be prep for kaskuser in new kaskus, as livebeta is already spread.
+//   * QR v4 (beta) with its primary functions is ready to be used but may still have some bugs and fewer feature
+//   * QR v4 (beta) is able to quick-edit; exists in discussion group as well.
+//
+// v3.2.7 - 2011-12-29 . 1325109344500
+//   Fix capcat-kaskus; +minor css.
+//   Adapt capcat-kaskus -red.
+//   Fix endless loop flash_transparenize
+//   Fix / Improve countdown timer issue
+//   Fix QQ parse youtube inside spoiler
+//   Fix transparenize flash embed
+//   Fix early strip any tags start-with KSA. Thanks=[p1nky]
+//	 Fix missed parsing bbcode that might happen inside [code/]
+//
+// v0.1 - 2010-06-29
+//	 Init
+// --
+// Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
+// http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
+// --------------------------------------------------------
 (function(){function ma(a){return 1==(""+b.settings.userLayout.config).split(",")[1]?b.settings.userLayout.template.replace(/{message}/gi,a):a}function s(a){return!(null==a&&null!==a)}function C(a){return null==a&&null!==a}function A(a){return"object"!=typeof a&&"function"!=typeof a}function v(a){return"string"==typeof a&&a?a.replace(/^\s+|\s+$/g,""):""}function V(a,b,c){B.Ev(b,a,function(a){"function"==typeof c&&c(a)})}function t(a){return document.getElementById(a)}function ca(a){if(a){for(var b=
 "",c=F("div",{},a),a=c.childNodes.length,e=0;e<a;e++)"object"==typeof c.childNodes[e]&&(b+=function(a){return a.replace(/\&\#(\d+);/g,function(a,b){return String.fromCharCode(parseInt(b))})}(c.childNodes[e].nodeValue));try{c.removeChild(c.firstChild)}catch(f){}return b}}function F(a,b,c){var a=document.createElement(a),e;for(e in b)b.hasOwnProperty(e)&&a.setAttribute(e,b[e]);c&&(a.innerHTML=c);return a}function W(a){var b="";if(null==a)return b;for(var c=a.length,e=0;e<c;e++){var f=a.charAt(e);if("&"==
 f){var i=a.indexOf(";",e+1);if(0<i){e=a.substring(e+1,i);if(1<e.length&&"#"==e.charAt(0))e=e.substring(1),f="x"==e.charAt(0).toLowerCase()?String.fromCharCode(parseInt("0"+e)):String.fromCharCode(parseInt(e));else switch(e){case "nbsp":f=String.fromCharCode(160)}e=i}}b+=f}return b}function na(a){var b=[],c,e;for(e=0;e<a.length;++e)c=a.charCodeAt(e),a[e].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\$\#\@\*\.\,\!\~\}\{\|\/\r\n]/)?b.push(a[e]):(55296<=c&&56319>=c&&(e++,c=9216+(c-55296<<10)+a.charCodeAt(e)),
