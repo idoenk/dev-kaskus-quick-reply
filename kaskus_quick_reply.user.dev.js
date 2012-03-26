@@ -1,54 +1,3 @@
-// ==UserScript==
-// @name           Kaskus Quick Reply New
-// @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @include        *.kaskus.us/thread/*
-// @include        *.kaskus.us/post/*
-// @include        *.kaskus.us/group/discussion/*
-// @description    KQR
-// @version        4.0.0b
-// @dtversion      120325400
-// @timestamp      1332711152951
-// @description    provide a quick reply feature, under circumstances capcay required.
-// @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
-// @license        (CC) by-nc-sa 3.0
-// @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
-// @include        http://imageshack.us/*
-// @include        http://*.imageshack.us/*
-// @include        http://imgur.com/*
-// @include        http://photoserver.ws/*
-// @include        http://lulzimg.com/*
-// @include        http://*.imagedum.com/*
-// @include        http://imagedum.com/*
-//
-// -!--latestupdate
-//
-// v4.0.0b - 2012-03-24 . 1332711152951
-//   init version for livebeta.kaskus.us (*)
-//   * !! this QR version is NOT support for old kaskus.us (vbulletin), please use v3.2.7 or v3.2.8 instead
-//   * QR v3.x.x will be discontinue and no longer maintained
-//   * QR v4 (beta) will be prep for kaskuser in new kaskus, as livebeta is already spread.
-//   * QR v4 (beta) with its primary functions is ready to be used but may still have some bugs and fewer feature
-//   * QR v4 (beta) is able to quick-edit; exists in discussion group as well.
-//
-// ==/UserScript==
-//
-// v3.2.7 - 2011-12-29 . 1325109344500
-//   Fix capcat-kaskus; +minor css.
-//   Adapt capcat-kaskus -red.
-//   Fix endless loop flash_transparenize
-//   Fix / Improve countdown timer issue
-//   Fix QQ parse youtube inside spoiler
-//   Fix transparenize flash embed
-//   Fix early strip any tags start-with KSA. Thanks=[p1nky]
-//	 Fix missed parsing bbcode that might happen inside [code/]
-//
-// v0.1 - 2010-06-29
-//	 Init
-// --
-// Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
-// http://creativecommons.org/licenses/by-nc-sa/3.0/deed.ms
-// --------------------------------------------------------
 (function(){function ma(a){return 1==(""+b.settings.userLayout.config).split(",")[1]?b.settings.userLayout.template.replace(/{message}/gi,a):a}function s(a){return!(null==a&&null!==a)}function C(a){return null==a&&null!==a}function A(a){return"object"!=typeof a&&"function"!=typeof a}function v(a){return"string"==typeof a&&a?a.replace(/^\s+|\s+$/g,""):""}function V(a,b,c){B.Ev(b,a,function(a){"function"==typeof c&&c(a)})}function t(a){return document.getElementById(a)}function ca(a){if(a){for(var b=
 "",c=F("div",{},a),a=c.childNodes.length,e=0;e<a;e++)"object"==typeof c.childNodes[e]&&(b+=function(a){return a.replace(/\&\#(\d+);/g,function(a,b){return String.fromCharCode(parseInt(b))})}(c.childNodes[e].nodeValue));try{c.removeChild(c.firstChild)}catch(f){}return b}}function F(a,b,c){var a=document.createElement(a),e;for(e in b)b.hasOwnProperty(e)&&a.setAttribute(e,b[e]);c&&(a.innerHTML=c);return a}function W(a){var b="";if(null==a)return b;for(var c=a.length,e=0;e<c;e++){var f=a.charAt(e);if("&"==
 f){var i=a.indexOf(";",e+1);if(0<i){e=a.substring(e+1,i);if(1<e.length&&"#"==e.charAt(0))e=e.substring(1),f="x"==e.charAt(0).toLowerCase()?String.fromCharCode(parseInt("0"+e)):String.fromCharCode(parseInt(e));else switch(e){case "nbsp":f=String.fromCharCode(160)}e=i}}b+=f}return b}function na(a){var b=[],c,e;for(e=0;e<a.length;++e)c=a.charCodeAt(e),a[e].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\$\#\@\*\.\,\!\~\}\{\|\/\r\n]/)?b.push(a[e]):(55296<=c&&56319>=c&&(e++,c=9216+(c-55296<<10)+a.charCodeAt(e)),
@@ -109,7 +58,7 @@ break;case "photoserver":e="body,.content{margin:0!important;margin-top:35px!imp
 e&&P(e,"inject_host_css",!0);a=I('//input[@wrap="off"]',null,!0);"imageshack"==c&&a&&(b.sITryKill=window.setInterval(function(){if(I(".ui-dialog")){clearInterval(b.sITryKill);var c;d=I('//div[contains(@style,"z-index")]',null);if(c=d.snapshotLength)for(var e=0;e<c;e++)B.remove(d.snapshotItem(e));I("#ad")&&B.remove(I("#ad"));window.setTimeout(function(){a.removeAttribute("disabled");var b=a.parentNode.parentNode;if(d=I(".tooltip",b))d[0].innerHTML=d[1].innerHTML="",B.add(a,b);var c,b=function(a){return F("div",
 {"class":"main-title"},a)},e=function(a){var b=a.lastIndexOf("."),b=a.substring(0,b)+".th"+a.substring(b);return"[URL="+a+"]"+("[IMG]"+b+"[/IMG]")+"[/URL]"};if(d=I(".right-col",null)){d[0].innerHTML="";c=b("Direct Link");B.add(c,d[0]);c=F("input",{type:"text",value:a.value,readonly:"readonly","class":"readonly"});V("focus",c,function(a){L(a)});B.add(c,d[0]);try{c.focus(),L(c)}catch(f){}c=b("BBCode IMG");B.add(c,d[0]);c=F("input",{type:"text",value:"[IMG]"+a.value+"[/IMG]",readonly:"readonly","class":"readonly"});
 V("focus",c,function(a){L(a)});B.add(c,d[0]);c=b("BBCode Thumbnail");B.add(c,d[0]);c=F("input",{type:"text",value:e(a.value),readonly:"readonly","class":"readonly"});V("focus",c,function(a){L(a)});B.add(c,d[0])}},500)}else 0<max||clearInterval(b.sITryKill)},50));return!1}}function ba(a,d){!$("#xhr_css").get(0)&&b.ix<b.mx?(y.engage||(y.init(),y.engage=1),b.$w.setTimeout(function(){ba(a,d)},200),b.ix++):(b.ix=0,y.engage=null,a||aa(),"function"==typeof d&&d())}function la(){"undefined"==typeof unsafeWindow.jQuery&&
-b.ix<b.mx?(b.$w.setTimeout(function(){la()},200),b.injected||(Q(location.protocol+"//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"),b.injected=!0),b.ix++):"undefined"!=typeof unsafeWindow.jQuery&&($=unsafeWindow.$=unsafeWindow.jQuery=unsafeWindow.jQuery.noConflict(!0),b.ix=0,b.isOpera?(P(b.kqr_static+b.css_default,"direct_css",!0),window.setTimeout(function(){aa()},350)):u(m+"CSS_BULK",function(a){a?y.set_css(a,aa):ba()}))}var b=function(){},K=0;b.sversion="v4.0.0b";b.scriptMeta={timestamp:1332711152951,
+b.ix<b.mx?(b.$w.setTimeout(function(){la()},200),b.injected||(Q(location.protocol+"//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"),b.injected=!0),b.ix++):"undefined"!=typeof unsafeWindow.jQuery&&($=unsafeWindow.$=unsafeWindow.jQuery=unsafeWindow.jQuery.noConflict(!0),b.ix=0,b.isOpera?(P(b.kqr_static+b.css_default,"direct_css",!0),window.setTimeout(function(){aa()},350)):u(m+"CSS_BULK",function(a){a?y.set_css(a,aa):ba()}))}var b=function(){},K=0;b.sversion="v4.0.1b";b.scriptMeta={timestamp:1332711152951,
 dtversion:120325400,scriptID:80409,titlename:"Quick Reply"+(0!==K?"+":"")};b.scriptMeta.fullname="Kaskus "+b.scriptMeta.titlename;b.__DEBUG__=0;b.$w=window;var O={KEY_SAVE_SAVED_AVATAR:[""],KEY_SAVE_LAST_UPLOADER:[""],KEY_SAVE_UPDATES:["1"],KEY_SAVE_UPDATES_INTERVAL:["1"],KEY_SAVE_HIDE_AVATAR:["1"],KEY_SAVE_DYNAMIC_QR:["1"],KEY_SAVE_QR_DRAFT:["1"],KEY_SAVE_CUSTOM_SMILEY:[""],KEY_SAVE_QR_HOTKEY_KEY:["1,0,0"],KEY_SAVE_QR_HOTKEY_CHAR:["Q"],KEY_SAVE_LAYOUT_CONFIG:[""],KEY_SAVE_LAYOUT_TPL:[""],KEY_SAVE_TMP_TEXT:[""],
 KEY_SAVE_QR_LastUpdate:["0"],KEY_SAVE_QR_LASTPOST:["0"],KEY_SAVE_UPLOAD_LOG:[""],KEY_SAVE_CSS_BULK:[""]},m="KEY_SAVE_",E="GM_",Q=function(a,d,c){var e=F("script",{type:"text/javascript"});s(d)&&A(d)&&e.setAttribute("id",d);a.match(/^https?:\/\/.+/)?e.setAttribute("src",a):e.appendChild(document.createTextNode(a));if(s(c)&&c)document.body.insertBefore(e,document.body.firstChild);else{var f=document.getElementsByTagName("head");s(f[0])&&"HEAD"==f[0].nodeName?b.$w.setTimeout(function(){f[0].appendChild(e)},
 100):document.body.insertBefore(e,document.body.firstChild)}return e},P=function(a,d,c){var e,f;a.match(/^https?:\/\/.+/)?e=F("link",{type:"text/css",rel:"stylesheet",href:a}):(e=F("style",{type:"text/css"}),e.appendChild(document.createTextNode(a)));s(d)&&A(d)&&e.setAttribute("id",d);s(c)&&c?document.body.insertBefore(e,document.body.firstChild):(f=document.getElementsByTagName("head"),s(f[0])&&"HEAD"==f[0].nodeName?b.$w.setTimeout(function(){f[0].appendChild(e)},100):document.body.insertBefore(e,
@@ -176,7 +125,7 @@ n(a);$("#box_preview").html(a);$("#cont_button").show()}$("#box_prepost").click(
 ($("#qr-recaptcha_response_field").val($("#recaptcha_response_field").val()),$("#qr-recaptcha_challenge_field").val($("#recaptcha_challenge_field").val()));var a=l.buildQuery(!0);a.sbutton="group"==b.thread_type?encodeURI("Post+Message"):encodeURI(b.edit_mode?"Save+Changes":"Submit+Reply");l.postloader(!0);try{""!=a&&(b.sTryRequest=$.post(l.e.boxaction,a,function(a){var d,f=false;R(a);a=decodeURIComponent(a.replace(/(?:\r|\n|\t|\s{2,})+/g,"").replace(/\"/g,'"'));if(d=/error-msg\spanel[^>].(?:<[^>]+.)+([^<]+)/i.exec(a.substring(0,
 a.indexOf(b.eof))))f=1;if(d=/[\'\"]err-msg[^>]+.([^<]+)/i.exec(a))f=1;if(f)if(b.user.isDonatur){G();f={mode:"error",msg:d[1]};if(!b.edit_mode)f.btnset=false;r.init(f)}else{$("#box_response_msg").html(d[1]).removeClass("ghost").addClass("g_notice").addClass("qrerror").show();l.postloader(false);$("#hidrecap_reload_btn").click()}else if(d=/<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i.exec(a))w(m+"TMP_TEXT","",function(){d[1]=d[1].replace(/\#/,"/?p"+(new Date).getTime()+
 "#");location.href=d[1]});else{n("redirect link not found, post might fail. please try again.");f={mode:"error",msg:d};if(!b.edit_mode)f.btnset=false;r.init(f)}}))}catch(d){}},postloader:function(a){var b=["recaptcha_widget","box_progress_posting","box_response_msg"],c=["recaptcha_is_building_widget","activate-disabled","activated"];a?($("#"+b[0]).addClass(c[0]),$("#"+b[1]).removeClass(c[1]).addClass(c[2]),$("#"+b[2]).hide()):($("#"+b[0]).removeClass(c[0]),$("#"+b[1]).removeClass(c[2]).addClass(c[1]))},
-presubmit:function(){l.e.ishalted||($("#"+l.e.dialogname).css("visibility","visible"),$("body").prepend(h.getBOX_RC(b.edit_mode)),J(),l.boxEvents(),$("#hidrecap_btn").click(),$("#"+l.e.boxcapcay).fadeIn(130),!b.edit_mode&&"group"!=b.thread_type?b.sITryFocusOnLoad=b.$w.setInterval(function(){var a=$("#recaptcha_response_field");1==a.length&&(clearInterval(b.sITryFocusOnLoad),$("#recaptcha_response_field").addClass("twt-glow"),$("#recaptcha_response_field").focus());$("#recaptcha_instructions_image, #recaptcha_image").click(function(){a.focus()});
+presubmit:function(){l.e.ishalted||($("#"+l.e.dialogname).css("visibility","visible"),$("body").prepend(h.getBOX_RC(b.edit_mode)),J(),l.boxEvents(),$("#hidrecap_btn").click(),$("#"+l.e.boxcapcay).fadeIn(130),!1===b.user.isDonatur&&!b.edit_mode&&"group"!=b.thread_type?b.sITryFocusOnLoad=b.$w.setInterval(function(){var a=$("#recaptcha_response_field");1==a.length&&(clearInterval(b.sITryFocusOnLoad),$("#recaptcha_response_field").addClass("twt-glow"),$("#recaptcha_response_field").focus());$("#recaptcha_instructions_image, #recaptcha_image").click(function(){a.focus()});
 $("#box_post").click(function(){if(a.val()==""){alert("Belum Masukin Capcay,...");a.focus()}else l.submit()});$(a).keydown(function(a){var b=a.keyCode,e=null;if(b===13){$("#box_post").click();e=1}else if(a.altKey&&b===82||b===33||b===34){$("#hidrecap_reload_btn").click();e=1}e&&a.preventDefault()})},200):l.submit())}},q={e:{task:"quote",ajaxrun:!1},init:function(){},ajaxPID:function(a,d){if(a){if(q.e.ajaxrun&&!1!==d)try{n("Other AJAX instance ["+q.e.ajaxrun+"] is currently running, killing him now."),
 b.sTryRequest.abort(),b.ajax_pid[q.e.ajaxrun]=0}catch(c){}b.ajax_pid[a]=!1===d?0:(new Date).getTime();q.e.ajaxrun=!1!==d&&!d?a:!1;n("ajaxrun = "+q.e.ajaxrun)}},quote:function(a,d,c){q.e.task="quote";var e=$("#formform").attr("action");(a=$("#tmp_chkVal").val())&&(a=a.split(","));e+=a[0];n("uri="+e);if(q.e.task&&b.ajax_pid[q.e.task]){n("AJAX "+q.e.task+" is currently running, abort previous...");try{b.ajax_pid[q.e.task].abort()}catch(f){}}try{q.ajaxPID("quote"),"function"==typeof d&&d(),b.sTryRequest=
 $.get(e,function(a){var b;b=decodeURIComponent(JSON.stringify(a).replace(/\\\"/g,"")).toString();if(R(a,"quote")){a=b.substring(0,b.indexOf("</textar"));if(a=/<textarea[^>]+.(.+)/im.exec(a))g.init(),g.add(ca(a[1].replace(/\\n|\\r\\n|\\r/g,"\n"))),g.pracheck();"function"==typeof c&&c()}else r.init({mode:"error",msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>',cb:function(){}});q.ajaxPID("quote",!1)})}catch(i){n("FAILED = "+e),q.ajaxPID("quote",!1)}},
