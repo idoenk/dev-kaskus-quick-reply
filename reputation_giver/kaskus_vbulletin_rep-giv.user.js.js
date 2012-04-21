@@ -2,9 +2,9 @@
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
 // @include       http://*.kaskus.us/usercp.php
-// @version       1.21
-// @dtversion     11040721
-// @timestamp     1302187638713
+// @version       1.23
+// @dtversion     12042223
+// @timestamp     1335047043780
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
 //
@@ -15,11 +15,17 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.21 : 2011-04-07
-// Fix always use native-XHR.
+// mod.R.23 : 2012-04-22
+// Fix bypass *llegal\sfunction for kaskus_id
 //
 // ==/UserScript==
 /*
+//
+// mod.R.22 : 2011-05-19
+// Fix stuck/failed show sender detail (co-admin|mimin|sumod)
+//
+// mod.R.21 : 2011-04-07
+// Fix always use native-XHR.
 //
 // mod.R.20 : 2011-03-26
 // Fix dashpoison sequence (location)
@@ -54,9 +60,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '21';
+gvar.sversion = 'R' + '23';
 gvar.scriptMeta = {
-  timestamp: 1302187638713 // version.timestamp
+  timestamp: 1335047043780 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -64,8 +70,8 @@ gvar.scriptMeta = {
 javascript:window.alert(new Date().getTime());
 */
 //========-=-=-=-=--=========
-gvar.__DEBUG__  = false; // development debug
-gvar._SIMULATE_ = false; // debug simulate sender
+gvar.__DEBUG__  = 0; // development debug
+gvar._SIMULATE_ = 0; // debug simulate sender
 //========-=-=-=-=--=========
 const OPTIONS_BOX = {
   // Color Loader
@@ -255,10 +261,15 @@ function start_Main() {
     if( gvar._SIMULATE_ ){
     
       // intercept to simulate ; 1174280
-      //dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,1174280'; // selected kaskuser just to simulate error
-      dstr = '3,446837,16644,232784,1817178,247123,507569,862335,196369,601934'; // selected kaskuser just to simulate error
+      // selected kaskuser just to simulate error
+      //dstr = '3,446837,16644,232784,1817178,247123,507569,265074,1726340,1174280'; 
+      // selected kaskuser just to simulate error
+      dstr = '40101,446837,16644,232784,1817178,247123,507569,862335,196369,601934'; 
+      // selected kaskuser just to simulate error from (killua)
+      //dstr = '3,40101,16644,232784,1817178,247123,507569,862335,196369,601934'; 
       gvar.userID = dstr.split(',');
-      dstr = '347914936,341574768,339584718,339584718,339584718,339584718,339584718,339584718,339584718,339584718'; // just a sample, not a major
+      // just a sample, not a major
+      dstr = '347914936,341574768,339584718,339584718,339584718,339584718,339584718,339584718,339584718,339584718'; 
       repID = dstr.split(',');
       
     }else{
@@ -325,11 +336,13 @@ function start_Main() {
     if( !gvar._SIMULATE_ && noneed_upd() ) {
 		loadstorage(); // load from availabe storage
      }else{
+        //drawLoaderImg( false ); option_turn(true);
         startDetail(gvar.userID, 0); // reload detail again
     }
     if(gvar.user.isDonatur)
       destroy_column(gvar.el_senders);
 	
+    
 	// rebuild subfolder subscription
 	var el = $D('nav_subsfolders_menu');
 	if(el) rebuild_subscription(el);	
@@ -487,36 +500,40 @@ function hideLoader(){
 // -- 
  
 function startDetail(userSets, x){
- var pReq_xhr ={
-      method: "get",
-      url: gvar.uri['user_link'] + userSets[x] + '?'+Math.random().toString().replace('0.',''),
-    onerror: function(result) { this.onload(result); },
-      onload: function(result) {
-      if(result.status!=200) { 
-        hideLoader();
-        show_alert('Err. status 200 failed', 0); 
-      }
-        res = result.responseText.replace(/\r|\n|\t|\r\n/g, '');
-      if(res!=""){
-         var dat = parseIt(res);
-         pushData(dat);
-         createSender(dat, x); 
-         x++;
-         if(x<userSets.length) {
-            startDetail(userSets, x);
-         }else{
-            // -- DONE fetching --
-            hideLoader();            
-            var tmp = gvar.userData;
-            tmp = tmp.substring(0,tmp.length-gvar.spliter.length);
-            gvar.userData = gvar.user.id.toString() + '{' + tmp + '}';
-            
-            doSaveDat(gvar.userData);
-         }
-         }
-    }
- };
- //GM_xmlhttpRequest( );
+	var pReq_xhr = {
+		method: "get",
+		url: gvar.uri['user_link'] + userSets[x] + '?'+Math.random().toString().replace('0.',''),
+		onerror: function(result) {
+			this.onload(result); 
+		},
+		onload: function(result) {
+			
+			if(result.status!=200) {
+				hideLoader();
+				show_alert('Err. status 200 failed', 0); 
+			}
+			res = result.responseText.replace(/\r|\n|\t|\r\n/g, '');
+			if( res!="" ){				
+				var dat = parseIt(res);
+				
+				pushData(dat);
+				createSender(dat, x); 
+				x++;
+				if(x<userSets.length) {
+					startDetail(userSets, x);
+				}else{
+					// -- DONE fetching --
+					hideLoader();            
+					var tmp = gvar.userData;
+					tmp = tmp.substring(0,tmp.length-gvar.spliter.length);
+					gvar.userData = gvar.user.id.toString() + '{' + tmp + '}';
+
+					doSaveDat(gvar.userData);
+				}
+			}
+		}
+	};
+ //GM_xmlhttpRequest( pReq_xhr );
  // try always use this native-XHR, incase supporting multifox
  NAT_xmlhttpRequest( pReq_xhr );
 }; 
@@ -545,15 +562,23 @@ function pushData(dat){
 }
  
 function parseIt(page){
-  var dpage; var result = {};
+  var dpage, result = {};
   
+  var get_kaskus_id = function(x){
+	/*== f*ck with *llegal\sfunction ==*/
+	var subC = x.match(/ion>([^\"\']+)/i), b='';
+	if(subC){
+		b = trimStr( subC[1].replace(/<[^>]+>/g,'').replace(/\s\<im.+/gi, '') );
+	}
+	return b;
+  };
+
   ret = page.match(/\?do=addlist[^\d]+(\d+)/i); // uid (number)
   if(ret) result[gvar.f[0]] = ret[1];
     
-  ret = page.match(/<h1>([^<]+)([^i]+)/i); // kaskus_id (string)  
-  if(ret) result[gvar.f[1]] = ret[1] + (ret[2].indexOf('[$]')!=-1?'[$]':'');
+  if(ret) result[gvar.f[1]] = get_kaskus_id(page);
   
-  ret = page.match(/<h2>(?:<b\s?[^>]*.)*([^<]+)/i); // tag_id (string)
+  ret = page.match(/<h2>(?:<b\s?[^>]*.)*(?:<font\s?[^>]*.)*([^<]+)/i); // tag_id (string)
   if(ret) result[gvar.f[2]] = ret[1];
   
   ret = page.match(/ocation<\/[^>]+..[^>]+.([^<]+)/i); // location (string | null)
@@ -602,6 +627,8 @@ function parseIt(page){
   var cucok = dpage.match(re);
   result[gvar.f[9]] = (cucok ? cucok[1].replace(/\s{2,}/g,' ') : result[gvar.f[1]] + '\'s reputation rank');  
   
+  clog(JSON.stringify(result));
+  
   return result;
 }
 // end parseIt
@@ -617,6 +644,13 @@ function ucendol(data){
 };
  
 function createSender(data, x){
+  
+  // safe proc, 
+  if(isUndefined(data["kaskus_id"])) {
+      show_alert('Ups failed with data ['+x+']');
+      return;
+  }
+  
   var replacer = function(text){
     if(!isString(text)) return text;
     var re, ret = text;
@@ -744,6 +778,10 @@ function getUserId(type){
 function isDefined(x){ return !(x == null && x !== null);}
 function isUndefined(x){ return x == null && x !== null;}
 function isString(x){return (typeof(x)!='object' && typeof(x)!='function'); }
+function trimStr(x) { return (typeof(x)=='string' && x ? x.replace(/^\s+|\s+$/g,"") : '') };
+
+function clearTag(h){ return trimStr( h.replace(/<\/?[^>]+>/gm,'') )||''};
+
 function basename(path, suffix) {
   // Returns the filename component of the path  
   // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
