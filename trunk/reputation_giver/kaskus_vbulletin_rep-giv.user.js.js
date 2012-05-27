@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name          Kaskus VBulletin Rep-Giver
 // @namespace     http://userscripts.org/scripts/show/65502
-// @include       http://*.kaskus.us/usercp.php
-// @version       1.23
-// @dtversion     12042223
+// @include       *.kaskus.co.id/usercp.php
+// @include       *.kaskus.us/usercp.php
+// @include       *.kaskus.com/usercp.php
+// @version       1.24
+// @dtversion     12052724
 // @timestamp     1335047043780
 // @description   (Kaskus Forum) automatically get (a|some) reputation(s) giver's link 
 // @author        idx (http://userscripts.org/users/idx)
@@ -15,11 +17,14 @@
 //
 // ----CHANGE LOG-----
 //
-// mod.R.23 : 2012-04-22
-// Fix bypass *llegal\sfunction for kaskus_id
+// mod.R.24 : 2012-05-27
+//  include domain .co.id
 //
 // ==/UserScript==
 /*
+//
+// mod.R.23 : 2012-04-22
+// Fix bypass *llegal\sfunction for kaskus_id
 //
 // mod.R.22 : 2011-05-19
 // Fix stuck/failed show sender detail (co-admin|mimin|sumod)
@@ -60,9 +65,9 @@
 // Global Variables
 var gvar=function(){};
 
-gvar.sversion = 'R' + '23';
+gvar.sversion = 'R' + '24';
 gvar.scriptMeta = {
-  timestamp: 1335047043780 // version.timestamp
+  timestamp: 1338128256648 // version.timestamp
 
  ,scriptID: 80409 // script-Id
 };
@@ -151,7 +156,7 @@ function delOldVal(all){
       try{ if( isString(todel[i]) ) delValue(todel[i])}catch(e){}
   }
 }
- 
+
 // initialize global var & const
 function init(){
   
@@ -163,12 +168,13 @@ function init(){
   gvar.home = 'http://'+'userscripts.org/scripts/show/65502';
   gvar.codeName = 'KVRG';
   gvar.titleName = 'Kaskus vBulletin Reputation Giver';
-  
+
+  var kdomain = domainParse();
   gvar.uri = {
-      'avatar' : 'http://'+'static.kaskus.us/customavatars',
-      'user_link' : 'http://'+'www.kaskus.us/member.php?u=',
-      'rep_link' : 'http://'+'www.kaskus.us/reputation.php?p=',
-      'cendol_img' : 'http://'+'static.kaskus.us/images/reputation/',
+      'avatar' : kdomain.prot + '//' + kdomain.statics + '/customavatars',
+      'user_link' : kdomain.prot + '//'+ kdomain.host + '/member.php?u=',
+      'rep_link' : kdomain.prot + '//'+ kdomain.host + '/reputation.php?p=',
+      'cendol_img' : kdomain.prot + '//'+ kdomain.statics + '/images/reputation/',
       'rep_img0' : 'reputation_balance.gif',
       'rep_offimg' : 'reputation_off.gif', // item
       
@@ -773,7 +779,13 @@ function getUserId(type){
   }
   return ret;
 }
- 
+
+// domain guest
+function domainParse(){
+	var r, l = location.hostname
+	return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'static.')};
+}
+
 // --- needed tool
 function isDefined(x){ return !(x == null && x !== null);}
 function isUndefined(x){ return x == null && x !== null;}

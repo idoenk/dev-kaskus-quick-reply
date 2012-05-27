@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name          Kaskus Enhanced Reply-Post
 // @namespace     http://userscripts.org/scripts/show/79879
-// @include       http://u.kaskus.us/*
-// @include       http://www.kaskus.us/newreply.php?*
-// @include       http://www.kaskus.us/editpost.php?*
-// @include       http://www.kaskus.us/visitormessage.php?*
-// @include       http://www.kaskus.us/group.php?*
-// @include       http://www.kaskus.us/blog_post.php?*
-// @include       http://www.kaskus.us/newthread.php?*
-// @version       2.27
-// @dtversion     110709227
-// @timestamp     1310157910717
+// @include       http://u.kaskus.co.id/*
+// @include       http://www.kaskus.co.id/newreply.php?*
+// @include       http://www.kaskus.co.id/editpost.php?*
+// @include       http://www.kaskus.co.id/visitormessage.php?*
+// @include       http://www.kaskus.co.id/group.php?*
+// @include       http://www.kaskus.co.id/blog_post.php?*
+// @include       http://www.kaskus.co.id/newthread.php?*
+// @version       2.28
+// @dtversion     120527228
+// @timestamp     1338131735993
 // @description   Integrate kaskus uploader; Show Mostly Used Smiley beside your vb_Textarea Editor; Integrate Custom Kaskus Smiley list; Set your fav image/smiley colection; Hover preview++
 // @author        idx (http://userscripts.org/users/idx)
 // @include       http://imageshack.us/*
@@ -20,6 +20,13 @@
 // --------------------------------------------------------
 // -!--latestupdate
 // 
+// v 2.28 - 2012-05-27
+// : include domain .co.id
+// 
+// -/!latestupdate---
+// ==/UserScript==
+/*
+//
 // v 2.27 - 2011-07-09
 // : Add new kaskus emoticons (addfriends,berbusas,armys,bookmarks,shutups). Thx=[ketang6,p1nky]
 // 
@@ -27,19 +34,6 @@
 // : Deprecate KERP in private message (due to disabled bbcode --")
 // : Fix Text Counter
 // : Add 2 new Kaskusemotes (Hot-News; Games)
-// 
-// -/!latestupdate---
-// ==/UserScript==
-/*
-//
-// v 2.25 - 2011-03-13
-// : Fix adapting FF4.0
-// : Improve Uploader
-//
-// v 2.24 - 2011-02-20
-// : Fix adapting FF4.0b12 (partial)
-// : Fix minor CSS (blog_post.php)
-// 
 //
 // v 0.1 - 2010-06-20
 // : Init
@@ -52,14 +46,14 @@
 var gvar=function() {}
 
 gvar.codename   = 'KERP'+HtmlUnicodeDecode('&#8482;');
-gvar.sversion   = 'v' + '2.27';
+gvar.sversion   = 'v' + '2.28';
 /* timestamp-GENERATOR
 javascript:window.alert(new Date().getTime());
 javascript:(function(){var d=new Date(); alert(d.getFullYear().toString().substring(2,4) +((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1) +(d.getDate().toString().length==1?'0':'')+d.getDate()+'');})()
 */
 gvar.scriptMeta = {
-  timestamp: 1310157910717 // version.timestamp
- ,dtversion : 110709227 // script-Id
+  timestamp: 1338131735993 // version.timestamp
+ ,dtversion : 120527228 // script-Id
  
  ,titlename : gvar.codename
  ,scriptID : 79879 // script-Id
@@ -489,11 +483,12 @@ function init(){
   
   //gvar.scriptInfo = ['79879','0',gvar.vversion.toString()]; // [scriptId,usoversion,vversion]
   
+  var kdomain = domainParse();
   gvar.loc = location.href;
-  gvar.dmkaskus = 'kaskus.us';
-  gvar.domainstatic = 'http://'+'static.'+gvar.dmkaskus+'/';
-  gvar.dmUploader = 'u.'+gvar.dmkaskus;
-  gvar.isUploader = (gvar.loc.match(/^http:\/\/u\.kaskus\.us\/.*/));
+
+  gvar.domain = kdomain.prot + '//' + kdomain.host + '/';
+  gvar.domainstatic = kdomain.prot + '//'+ kdomain.statics + '/';
+  gvar.isUploader = (gvar.loc.match(/^http:\/\/u\.kaskus\.[^\/]+\/.*/));
   
   gvar.id_smilebox = 'vB_Editor_001_smiliebox';
   gvar.id_textarea = 'vB_Editor_001_textarea';
@@ -531,7 +526,7 @@ function init(){
   
   // do check whether uploader or editor
   //precheck_location();
-  if( !location.href.match(/^http:\/\/w{3}\.kaskus\.us\/.*/) ) 
+  if( !/www\.kaskus\./.test(location.hostname) )
     return outSideForumTreat();
   else{
     getUploaderSetting();
@@ -540,20 +535,21 @@ function init(){
 }
 
 function getUploaderSetting(){
+  var ukaskus = 'u.' + gvar.domain.replace(/http\:\/\/|w{3}\.|\//gi,'');
   // uploader properties
   gvar.upload_sel={
-     kaskus:'u.kaskus.us'
+     kaskus:ukaskus
     ,kodok:'imageshack.us'
     ,imgur:'imgur.com'
     ,ps:'photoserver.ws'
   };
   gvar.uploader={
      kaskus:{
-        src:'u.kaskus.us'
-       ,post:'u.kaskus.us/upload/do_upload'
+        src:ukaskus
+       ,post:ukaskus + '/upload/do_upload'
        ,ifile:'userfile'
        ,hids:{
-         referer:'http://'+'u.kaskus.us'
+         referer:'http://' + ukaskus
        }
      }
     ,kodok:{
@@ -691,7 +687,7 @@ function start_routine(){
   GM_addGlobalStyle(getCSS());  
   
   // reorder tabIndex & stuff on newreply  
-  if( gvar.loc.match(/^https?\:\/\/w{3}\.kaskus\.us\/newreply\.php\?.*/i) ){
+  if( gvar.loc.match(/^https?\:\/\/w{3}\.kaskus\.[^\/]+\/newreply\.php\?.*/i) ){
     reorder_tabIndex();
   }
 
@@ -818,7 +814,7 @@ function init_smileyeditor(){
     Ev.add('help_manage', 'click', function(){
      alert(''
      +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
-     +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
+     +'\n eg.\ncheers|'+ gvar.domainstatic +'/images/smilies/sumbangan/smiley_beer.gif'
      );
     });
   if(Dom.get('manage-smiley'))
@@ -1260,7 +1256,7 @@ function spoiler_act(){
 		var Insert = {
 		  separator: function(){
 		    var p = mycreateElement('td', {});
-		    var g = mycreateElement('img', {src:'http:/'+'/www.'+gvar.dmkaskus+'/images/editor/separator.gif'});
+		    var g = mycreateElement('img', {src:gvar.domain +'images/editor/separator.gif'});
 		    p.appendChild(g);
 		    return p;
 		  },
@@ -2319,7 +2315,8 @@ return(''
 // =======================
 function getSmilieSets(){
   var http = 'http://';
-  var uks = gvar.dmUploader;
+  
+  var uks = 'u.' + gvar.domain.replace(/http\:\/\/|www\.|\//gi, '');
   var H = gvar.domainstatic + 'images/smilies/';
   var s = 'sumbangan/';
   
@@ -2522,16 +2519,22 @@ function getSmilieSets(){
   ];
   
   gvar.smiliecustom = {
- '11001': [http+'img.kaskus.us/images/kaskusmobile_bb.gif', 'right', 'kaskusmobile_bb']
-,'11002': [http+'img.kaskus.us/images/kaskusmobile_hp.gif', 'right', 'kaskusmobile_hp']
+ '11001': [http+'img.kaskus.co.id/images/kaskusmobile_bb.gif', 'right', 'kaskusmobile_bb']
+,'11002': [http+'img.kaskus.co.id/images/kaskusmobile_hp.gif', 'right', 'kaskusmobile_hp']
   };
  
 }
 // end getSmilieSets
 
+
+// domain guest
+function domainParse(){
+	var r, l = location.hostname
+	return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'static.')};
+}
+
 // =======================
 // my recent use - routine
-
 function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }

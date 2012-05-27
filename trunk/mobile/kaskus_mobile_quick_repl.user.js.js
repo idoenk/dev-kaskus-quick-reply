@@ -3,21 +3,26 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        0.3.4
-// @dtversion      110407034
-// @timestamp      1302188340771
+// @version        0.3.5
+// @dtversion      110527035
+// @timestamp      1338128187743
+// @include        http://m.kaskus.co.id/*
+// @include        http://opera.kaskus.co.id/*
 // @include        http://m.kaskus.us/*
 // @include        http://opera.kaskus.us/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v0.3.4 - 2011-04-07
-//  Fix always use native-XHR.
+// v0.3.5 - 2012-05-27
+//  include domain .co.id
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v0.3.4 - 2011-04-07
+//  Fix always use native-XHR.
 //
 // v0.3.3 - 2011-02-18
 //  Fix dump-redirect after editpost
@@ -51,9 +56,9 @@
 
 var gvar=function(){};
 
-gvar.sversion = 'v' + '0.3.4';
+gvar.sversion = 'v' + '0.3.5';
 gvar.scriptMeta = {
-  timestamp: 1302188340771 // version.timestamp
+  timestamp: 1338128187743 // version.timestamp
 
  ,scriptID: 91051 // script-Id
 };
@@ -61,7 +66,7 @@ gvar.scriptMeta = {
 javascript:window.alert(new Date().getTime());
 */
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug
+gvar.__DEBUG__ = 0; // development debug
 //========-=-=-=-=--=========
 
 const OPTIONS_BOX = {
@@ -73,7 +78,8 @@ const KS 			 = 'KEY_SAVE_';
 
 function init(){
  
-  gvar.domainstatic= 'http://'+'static.kaskus.us/';
+ var kdomain = domainParse();
+  gvar.domainstatic = kdomain.prot + '//'+ kdomain.statics + '/';
   gvar.msgID= 'message';  
   gvar.mode = 'qr';
 
@@ -158,7 +164,7 @@ function start_Main(){
     
     // di dalem thread ato bukan?
     if( !THREAD.isInside ) return; 
- 
+
     // initialize QR
     QR.init();
 }
@@ -459,6 +465,11 @@ function getCSS(additional){
    );
 }
 
+// domain guest
+function domainParse(){
+	var r, l = location.hostname
+	return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'static.')};
+}
 
 // static routine
 function isDefined(x) { return !(x == null && x !== null); }
@@ -886,12 +897,12 @@ var THREAD = {
     var match, hVal = getByXPath_containing('//a[@class="btn_link"]', false, 'REPLY');	
     THREAD.reply = (isDefined(hVal[0]) ? hVal[0] : null);
     if(THREAD.reply)
-       match = /(?:\w+)\.kaskus\.us\/reply\/(\d+)/i.exec(THREAD.reply);
+       match = /(?:\w+)\.kaskus\.[^\/]+\/reply\/(\d+)/i.exec(THREAD.reply);
     return (match ? match[1] : null);    
   }
   ,getUser: function (){
      var alogins = $D('//a[contains(@href, "#login")]', null);
-     if(alogins.snapshotLength > 0) {	   
+     if(alogins.snapshotLength > 0) {
 	   for(var i=0;i<alogins.snapshotLength; i++){
 			var el = alogins.snapshotItem(i);
 			el.setAttribute('onclick','return false');
@@ -899,9 +910,10 @@ var THREAD = {
 	   }
 	   return false;
      }else{
-	   var node = $D('.//div[@id="menu"]', null, true);
-       var html = node.innerHTML;
-       var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/(?:\w+)\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
+	   var match, html, node = $D('.//div[@id="menu"]', null, true);
+       html = node.innerHTML;
+       //var match = /Welcome[\!\s](?:[^\"]+).http\:\/\/(?:\w+)\.kaskus\.us\/user\/profile\/(\d+)\">(.+)<\/a/i.exec(html);
+       match = /Welcome[\!\s][^\"]+.+\/profile\/(\d+)[^\>]+.([^<]+)<\/a/i.exec(html);
        return (match ? {id:match[1], name:match[2], isDonatur:false} : false);
      }
    }
@@ -1129,7 +1141,6 @@ var THREAD = {
    }
   ,do_Parse: function(page){
      var match, parts, ret;
-	 //show_alert(page);	 
 	 
      var pos = [ page.indexOf('name="message"'), page.lastIndexOf('</textarea') ];
      parts = page.substring(pos[0], pos[1]);
