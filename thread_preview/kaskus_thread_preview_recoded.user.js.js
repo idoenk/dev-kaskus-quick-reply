@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.1.2
-// @dtversion     111014112
-// @timestamp     1318532031635
+// @version       1.1.3
+// @dtversion     120527113
+// @timestamp     1338128484073
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -13,18 +13,21 @@
 // @include       */member.php?*
 // @include       */search.php?do=finduser&u=*&starteronly=1
 // @include       */search_result.php?*
-// @include       http://www.kaskus.us/
-// @include       http://www.kaskus.us/index.php
-// @include       http://www.kaskus.us/come_inside.php
+// @include       *.kaskus.co.id/
+// @include       *.kaskus.co.id/index.php
+// @include       *.kaskus.co.id/come_inside.php
 //
 // -!--latestupdate
 //
-//  v1.1.2 - 2011-10-14
-//    Improve minor CSS, -webkit-scrollbar
+//  v1.1.3 - 2012-05-27
+//		include domain .co.id
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+//  v1.1.2 - 2011-10-14
+//    Improve minor CSS, -webkit-scrollbar
 //
 //  v1.1.1 - 2011-09-04
 //    Improve scanBetmen with fixObfuscate2 ability
@@ -42,9 +45,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.1.2';
+gvar.sversion = 'v' + '1.1.3';
 gvar.scriptMeta = {
-  timestamp: 1318532031635 // version.timestamp
+  timestamp: 1338128484073 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -53,7 +56,7 @@ javascript:window.alert(new Date().getTime());
 */
 //=-=-=-=--= 
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = false; // development debug| 
+gvar.__DEBUG__ = 0; // development debug| 
 //========-=-=-=-=--=========
 //=-=-=-=--=
 //
@@ -94,12 +97,10 @@ function init(){
   //------------
     ApiBrowserCheck();
   //------------
-  gvar.prot = String(location.protocol);
-  gvar.currentdomain = gvar.prot+'//'+location.hostname+'/';
-  
-  gvar.domain= gvar.prot+'//'+'www.kaskus.us/';
-  gvar.domainstatic= gvar.prot+'//'+'static.kaskus.us/';
-  gvar.ktpKaskus = gvar.prot+'//'+'www.idkaskus.com/'
+  var kdomain = domainParse();  
+  gvar.domain= kdomain.prot + '//' + kdomain.host + '/';
+  gvar.domainstatic= kdomain.prot + '//' + kdomain.statics + '/';
+  gvar.ktpKaskus = kdomain.prot + '//' + 'www.idkaskus.com/'
   
   gvar.isKaskus = (location.href.indexOf(gvar.domain)!=-1 ? 1:null);
   gvar.codename= (gvar.isKaskus ? 'Kaskus':'vBulletin') + ' Thread Preview';
@@ -241,8 +242,10 @@ var LINK = {
     return (cucok ? cucok[1] : false);
   }
  ,fixDomain: function(link){
-    if(link.match(/http\:\/\/kaskus\.us\/.+/))
-	  return link.replace(/\:\/\//,'://www.');
+	var rx, incdom = gvar.domain.replace(/\w{3}\./,'')
+	rx = new RegExp(incdom + '.+', '');
+	if( link.match(rx) )
+		return link.replace(/\:\/\//,'://www.');
   }
 };
 
@@ -638,7 +641,7 @@ var tTRIT = {
 		return s;
 	};
 	for (key in replacements) 
-		regex[key] = new RegExp(key, 'gi');        
+		regex[key] = new RegExp(key, 'gi');
 		
 	// Now, retrieve the text nodes. default: //body//text()
 	//thenodes = document.evaluate('//text()', temp, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
@@ -655,7 +658,7 @@ var tTRIT = {
 	
 	// Now, retrieve the A nodes. default: //a
 	// Optimized, we just need all this specified href links
-	thenodes = $D('.//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.us")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]', temp);
+	thenodes = $D('.//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.co\.id")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]', temp);
 	
 	// Finally, perform a replacement over all A nodes
 	for (var i = 0; i < thenodes.snapshotLength; i++) {
@@ -1058,7 +1061,7 @@ var tPOP = {
    }
    
    ,reset: function(){
-    var home=['http:/'+'/www.kaskus.us/showthread.php?t=3170414','http:/'+'/userscripts.org/topics/???'];
+    var home=['http:/'+'/www.kaskus.co.id/showthread.php?t=3170414','http:/'+'/userscripts.org/topics/???'];
 	var space='';for(var i=0;i<20;i++)space+=' ';
 	var msg = ''
      +'This will delete/reset all saved data.\nThings that might be conflict with your Kaskus Thread Preview.'     
@@ -2258,7 +2261,7 @@ var tQR = {
     on('click', el, function(){
 	  alert( ''
        +'Each Smiley separated by newline.\nFormat per line:\n tag|smileylink'
-       +'\n eg.\ncheers|http:/'+'/static.kaskus.us/images/smilies/sumbangan/smiley_beer.gif'
+       +'\n eg.\ncheers|http:/'+'/static.kaskus.co.id/images/smilies/sumbangan/smiley_beer.gif'
        +(!gvar.settings.scustom_noparse ? ''
        +'\n\nUse Custom Smiley BBCODE with this format:'
        +'\n eg.\n[[yourtag]' :'')
@@ -2576,6 +2579,12 @@ function force_focus(delay){
     }, delay); // rite after dumy created, lost its focus
 }
 // end-common function
+
+// domain guest
+function domainParse(){
+	var r, l = location.hostname
+	return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'static.')};
+}
 
 // static routine
 function isDefined(x)   { return !(x == null && x !== null); }
@@ -3342,7 +3351,7 @@ Format will be valid like this:
  eg. 
  ':yoyocici|http://foo'
 */
-  //var sample = 'lopeh|http://static.kaskus.us/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.us/images/smilies/sumbangan/06.gif';
+  //var sample = 'lopeh|http://static.kaskus.co.id/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.co.id/images/smilies/sumbangan/06.gif';
   gvar.smiliecustom = {};
   var buff = getValue(KEY_KTP+'CUSTOM_SMILEY');
   if(buff!=''){

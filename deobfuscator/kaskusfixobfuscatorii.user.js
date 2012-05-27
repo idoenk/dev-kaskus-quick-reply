@@ -3,30 +3,32 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis, idx
-// @version       0.7.2
-// @include       http://livebeta.kaskus.us/thread/*
-// @include       http://livebeta.kaskus.us/show_post/*
-// @include       http://livebeta.kaskus.us/edit_post/*
-// @include       http://www.kaskus.us/showthread.php?*
-// @include       http://www.kaskus.us/showpost.php?*
-// @include       http://www.kaskus.us/editpost.php?*
-// @include       http://www.kaskus.us/newthread.php?*
-// @include       http://www.kaskus.us/blog.php?*
-// @include       http://www.kaskus.us/group.php?*
-// @include       http://archive.kaskus.us/thread/*
-// @include       http://m.kaskus.us/thread/*
+// @version       0.7.3
+// @include       http://livebeta.kaskus.co.id/show_post/*
+// @include       http://livebeta.kaskus.co.id/edit_post/*
+// @include       http://livebeta.kaskus.co.id/thread/*
+// @include       *.kaskus.co.id/showthread.php?*
+// @include       *.kaskus.co.id/showpost.php?*
+// @include       *.kaskus.co.id/editpost.php?*
+// @include       *.kaskus.co.id/newthread.php?*
+// @include       *.kaskus.co.id/blog.php?*
+// @include       *.kaskus.co.id/group.php?*
+// @include       http://m.kaskus.co.id/thread/*
+// @include       http://archive.kaskus.co.id/thread/*
 // ==/UserScript==
 /*
 Kaskus Fix-ObfuscatorII 
 Dibuat oleh Pandu E Poluan {http://userscripts.org/users/71414/}
 Penghargaan kepada: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
-Tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.us/showthread.php?t=4492393 
-                  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.us/showthread.php?t=8689106
+Tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.co.id/showthread.php?t=4492393 
+                  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.co.id/showthread.php?t=8689106
 
-Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKus.us (misal: "rapid*share") menjadi sediakala.
+Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKus.co.id (misal: "rapid*share") menjadi sediakala.
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.3
+- replace include domain .co.id
 0.7.2
 - tambahan darurat dukungan kaskus beta 
 0.7.13
@@ -105,8 +107,8 @@ Rewrites dragon*adopters to dragonadopters
 - add cite sign
 - fix autoupdate
 0.6
-- prefered using domain kaskus.us than IP
-- added from http://www.kaskus.us/showthread.php?t=4492393
+- prefered using domain kaskus.co.id than IP
+- added from http://www.kaskus.co.id/showthread.php?t=4492393
 v0.5   : Rewrites "*Forbidden*" to ".co.cc"
        : Rewrites "pocongk" to "pocong"
 v0.4.x : Rewrites "detiknews..com" to "detiknews.com"
@@ -125,7 +127,7 @@ v0.1   : First release
 (function () {
     
     var gvar = function(){};
-    gvar.__DEBUG__ = 1;
+    gvar.__DEBUG__ = 0;
     
     var replacements, lreplacements, regex, lregex, thenodes, node, s;
 
@@ -174,7 +176,7 @@ v0.1   : First release
 
     // Now, retrieve the A nodes. default: //a
     // Optimized, we just need all this specified href links
-    thenodes = document.evaluate('//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.us")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
+    thenodes = document.evaluate('//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.co\.id")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
                document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
     
     // Finally, perform a replacement over all A nodes
