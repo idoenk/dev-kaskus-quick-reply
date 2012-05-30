@@ -1,14 +1,15 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name           Kaskus Quick Reply New
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @include        *.kaskus.co.id/thread/*
 // @include        *.kaskus.co.id/post/*
 // @include        *.kaskus.co.id/group/discussion/*
+// @include        *.kaskus.co.id/show_post/*
 // @description    KQR
 // @version        4.0.5
 // @dtversion      120531405
-// @timestamp      1338411888852
+// @timestamp      1338413166295
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -21,7 +22,8 @@
 //
 // -!--latestupdate
 //
-// v4.0.5b - 2012-05-31 . 1338411888852
+// v4.0.5b - 2012-05-31 . 1338413166295
+//  include show_post (code fixer purpose only)
 //  Fix parse inside spoiler Lv.4; adapting [webkit|opera]
 //  false-positive entity decode Lv.3; Fix parse inside spoiler
 //
@@ -63,7 +65,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.5b';
 gvar.scriptMeta = {
-	timestamp: 1338411888852 // version.timestamp
+	timestamp: 1338413166295 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 120531405 // version.date
@@ -5365,9 +5367,12 @@ function start_Main(){
 	gvar.bodywidth = $('#content-body').width();
 	gvar.user = get_userdetail();
 	
+	// do nothin if not login or dont meet user.id (show_post) page
 	if( gvar.user.name == "" || null == gvar.user.id || $('.closed-button').get(0) ) {
-		clog('Not login, get the "F"-out');
-		what_if_notlogin();
+		if($('.notification').get(0)){
+			clog('Not login, get the "F"-out');
+			what_if_notlogin();
+		}
 		return
 	}
 	gvar.thread_type = (location.href.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : 'forum');
@@ -5923,18 +5928,18 @@ function jQ_wait2(){
 function jQ_wait() {
     if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
         gvar.$w.setTimeout(function () { jQ_wait() }, 200);
-		if( !gvar.injected ){
-			GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
-			gvar.injected = true;
-		}
+				if( !gvar.injected ){
+						GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
+						gvar.injected = true;
+				}
         gvar.ix++;
     } else {
 
         if ("undefined" == typeof unsafeWindow.jQuery) return;
         $ = unsafeWindow.$ = unsafeWindow.jQuery = unsafeWindow.jQuery.noConflict(true);
-		gvar.ix = 0;
+				gvar.ix = 0;
 		
-		CSS_precheck();
+				CSS_precheck();
     }
 }
 
