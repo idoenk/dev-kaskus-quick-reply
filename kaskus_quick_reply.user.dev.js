@@ -6,9 +6,9 @@
 // @include        *.kaskus.co.id/post/*
 // @include        *.kaskus.co.id/group/discussion/*
 // @description    KQR
-// @version        4.0.4
-// @dtversion      120530404
-// @timestamp      1338330088458
+// @version        4.0.5
+// @dtversion      120531405
+// @timestamp      1338406098029
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -21,15 +21,18 @@
 //
 // -!--latestupdate
 //
+// v4.0.5b - 2012-05-31 . 1338406098029
+//  false-positive entity decode Lv.3; Fix parse inside spoiler
+//
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.0.4b - 2012-05-30 . 1338330088458
 //  Fix autoload smiley
 //  Fix selected tab smiley content
 //  Fix custom smiley BBCODE
 //  false-positive entity decode Lv.2
-//
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.0.3b - 2012-05-27 . 1338155933804
 //  rolled to decompresed-mode
@@ -42,37 +45,6 @@
 //  Fixer fonts/newline for pre ([code] tags)
 //  Fix fail encoding for autotext custom-smiley
 //  Fix custom smiley autotext (incomplete)
-//
-// v4.0.2b - 2012-04-08 . 1333837585608
-//	Script attach to page scope when cross-domain is not possible.
-//	Try fix avoid annoying confirm css_bulk (Opera); Thx: [andry_yosua,ceroberoz]
-//	Fix missed style btn post on preview (donatur)
-//	Fix misc btn controller [transparent;noparse]
-//	Fix missed parsing title msg, fix edit grab title; Thx: [andrypein]
-//	Fix get_quotefrom (again) post from moderator; Thx: [get_adien]
-//	Fix continuing on capcay mismatch, countdown to next post;
-//	Fix smiley custom, rephrase newline as it is, instead of {sctag:br}
-//	Fix get_quotefrom, avoid removing [$]
-//	Fix when nothin is to quote
-//	Patch css for selection, post-header, post-entry; Thx: [adamantoi]
-//	Fix (again) default value for layout_tpl; missed key on reset settings; highlight issue; Thx: [p1nky]
-//	Fix double layout hits; Thx: [get_adien,tae_yang]
-//	Enhance updater behaviour
-//	Fix missing add group button
-//	Fix edit popbox nfo case:(regular/donatur)
-//	Fix smiley custom, delete group visibility, tab sequences;
-//	Fix lastfocus after _TEXT.add
-//	Fix literal quote tag; fits & set max-width on large images; Thx: [Aa JaMbRoNg]
-//	Patch get_quotefrom literal name onleh
-//	Patch dismissed after QQ
-//	Fix fetch quote after fetch edit
-//	Fix partial (untested overall) quickquote
-//	Fix custom smiley; reuse old-school filter; Thx: [skycreeper,robertohongo]
-//	Fix ordering custom smiley;
-//	Fix default value for layout_tpl
-//
-// v4.0.1b - 2012-03-24 . 1332721590952
-//	patch donatur w/o capcay
 //
 //
 // v0.1 - 2010-06-29
@@ -88,12 +60,12 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.4b';
+gvar.sversion = 'v' + '4.0.5b';
 gvar.scriptMeta = {
-	timestamp: 1338330088458 // version.timestamp
+	timestamp: 1338406098029 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 120530404 // version.date
+	,dtversion: 120531405 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -3746,6 +3718,13 @@ var _QQparse = {
 			}else{
 				return S;
 			}
+		}
+		,double_encode= function(x){
+				return x
+						.replace(/\&amp;/gm,'&amp;amp;')
+						.replace(/\&lt;/gm,'&amp;lt;')
+						.replace(/\&gt;/gm,'&amp;gt;')
+						.replace(/<br\s*\/?>/g, "\n");
 		};
 		
 		// make a fake container for this inner x
@@ -3778,7 +3757,10 @@ var _QQparse = {
 			var title, newEl, newhtml, iner = $(this).find('#bbcode_inside_spoiler').html()
 			title = $(this).find('i').text();
 			newhtml = ('[SPOILER='+ title +']'+ iner +'[/SPOILER]');
-			newEl = ( createTextEl(newhtml) );
+			iner = double_encode( newhtml );
+			iner = _QQparse.parseMSG( iner );
+			
+			newEl = ( createTextEl(entity_decode(iner)) );
 			$(this).replaceWith( $(newEl) );
 		});
 		clog('pCon after spoiler=' + $(pCon).html() );
@@ -3787,11 +3769,7 @@ var _QQparse = {
 		$(pCon).html( revealCoders() );	
 		clog('pCon after coder / before x decoded =' + $(pCon).html() );
 		
-		x = ( $(pCon).html() )
-				.replace(/\&amp;/gm,'&amp;amp;')
-				.replace(/\&lt;/gm,'&amp;lt;')
-				.replace(/\&gt;/gm,'&amp;gt;');
-		x = x.replace(/<br\s*\/?>/g, "\n");
+		x = double_encode( $(pCon).html() );		
 		clog('x decoded ' + x);
 		delete pCon;
 		
