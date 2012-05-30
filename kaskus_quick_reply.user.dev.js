@@ -8,7 +8,7 @@
 // @description    KQR
 // @version        4.0.5
 // @dtversion      120531405
-// @timestamp      1338409134445
+// @timestamp      1338411888852
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -21,7 +21,7 @@
 //
 // -!--latestupdate
 //
-// v4.0.5b - 2012-05-31 . 1338409134445
+// v4.0.5b - 2012-05-31 . 1338411888852
 //  Fix parse inside spoiler Lv.4; adapting [webkit|opera]
 //  false-positive entity decode Lv.3; Fix parse inside spoiler
 //
@@ -63,7 +63,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.5b';
 gvar.scriptMeta = {
-	timestamp: 1338409134445 // version.timestamp
+	timestamp: 1338411888852 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 120531405 // version.date
@@ -3538,7 +3538,8 @@ var _QQparse = {
 			
 			if( /^pre\s/i.test($2) || $2.toUpperCase()=='PRE' ){
 				// parse code
-				mct = $2.match(/\/?pre(?:\srel=['"]([^'"]+))?/i);
+				mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
+				
 				if( isDefined(mct[1]) ){
 					LT.coder.push( mct[1].toUpperCase() );
 				}else{
@@ -3633,11 +3634,7 @@ var _QQparse = {
 			}else
 			if( /^div\s/i.test($2) || $2.toUpperCase()=='DIV'){
 				// parse html | php
-				//mct = $2.toLowerCase().match(/\/?div(?:\srel=['"]([^'"]+))?/i);
-				mct = $2.toLowerCase().match(/\/?div(?:(?:\s(?:style|dir|id|class)=['"][^'"]+.\s*)?\s?rel=['"]([^'"]+))?/i);
-				
-				clog('target= ' + $2.toLowerCase());
-				clog('html|php = ' + mct);
+				mct = $2.toLowerCase().match(/\/?div(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
 				
 				if( isDefined(mct[1]) ){
 					LT.coder.push( mct[1].toUpperCase() );
