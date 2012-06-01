@@ -190,12 +190,8 @@ v0.1   : First release
         s = fixme( decodeURI( node.href ) );
         node.href = s;
     }
-    
-	// retrieve A nodes of kaskus, make it consistent
-	thenodes = document.evaluate('//a[contains(@href,"\.kaskus\.")]',
-               document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-	
-	
+
+	// --
     // initiate additional features :: anti-batman, self-link
     var whereAmI = function(href){
 		var asocLoc = {
