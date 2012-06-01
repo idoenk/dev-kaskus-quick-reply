@@ -6,6 +6,7 @@
 // @version       0.7.3
 // @include       http://livebeta.kaskus.co.id/show_post/*
 // @include       http://livebeta.kaskus.co.id/edit_post/*
+// @include       http://livebeta.kaskus.co.id/post/*
 // @include       http://livebeta.kaskus.co.id/thread/*
 // @include       *.kaskus.co.id/showthread.php?*
 // @include       *.kaskus.co.id/showpost.php?*
@@ -29,6 +30,9 @@ Changelog:
 ------------
 0.7.3
 - replace include domain .co.id
+- self-link helper (avoid bouncing-link)
+- optimize node selection for livebeta
++/post/
 0.7.2
 - tambahan darurat dukungan kaskus beta 
 0.7.13
@@ -187,17 +191,28 @@ v0.1   : First release
         node.href = s;
     }
     
-    
+	// retrieve A nodes of kaskus, make it consistent
+	thenodes = document.evaluate('//a[contains(@href,"\.kaskus\.")]',
+               document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	
+	
+    // initiate additional features :: anti-batman, self-link
     var whereAmI = function(href){
-        var asocLoc = {
-           'td_post_' : '/showthread.php'
-          ,'td_post_' : '/showpost.php'
-          ,'blog_message' : '/blog.php'
-          ,'gmessage_text_' : '/group.php'
+		var asocLoc = {
+           '/showthread.php': 'td_post_'
+          ,'/showpost.php'	: 'td_post_'
+          ,'/blog.php'		: 'blog_message'
+          ,'/group.php'		: 'gmessage_text_'
+		  
+          ,'/thread/'		: 'post0'
+          ,'/post/'			: 'post0'
+          ,'/show_post/'	: 'post0'
+		  
         }, ret='';
+		
         for(var theID in asocLoc){
-          if(href.indexOf(asocLoc[theID])!=-1) {
-            ret = theID; break;
+          if(href.indexOf(theID)!=-1) {
+            ret = asocLoc[theID]; break;
           }
         }
         return ret;
@@ -213,13 +228,53 @@ v0.1   : First release
             newWindow.focus(); return false;
         }, true);
         return a; 
-    };    
+    },
+	linkConvert = function(link){
+		var ml_2old, ml_2new, bid, cucok, hn, prot, kb_maxlen, ret, posid;
+		ret = link;
+		prot = location.protocol;
+		hn = location.hostname;
+		
+		// kasbet_maxleng item-id
+		kb_maxlen = 24;
+		
+		ml_2old = {
+			 'thread'	: 'showthread.php?t='
+			,'post'		: 'showthread.php?p='
+			,'show_post': 'showpost.php?p='
+		};
+		ml_2new = {
+			 'showpost'		: 'show_post'
+			,'showthread'	: 'thread'
+		};
+		if( cucok = /(thread|show_post|post)\/([^\/]+)/i.exec(link) ){
+			bid = cucok[2].replace(/^0+/,'');
+			ret = prot + '//' + hn + '/' + ml_2old[cucok[1]] 
+				+ (cucok[1]=='post' ? bid + '#post' : '') + bid;
+				
+		}
+		else if( cucok = /(showpost|showthread)\.php\?(t|p)=([\d]+)(\#)?(?:\&postcount=(\d+))?/i.exec(link) ){
+			bid = (function(num){
+				var ret = '', add = (kb_maxlen - ('' + num).length);
+				for(var i=0; i<add; i++)
+					ret = '0' + String(ret);
+				return ret + num + '';
+			})(cucok[3]);
+			
+			posid = (cucok[2]=='p' && cucok[4]);
+			
+			ret = prot + '//' + hn + '/' + (posid ? 'post' : ml_2new[cucok[1]]) + '/'
+				+ (posid ? bid + '#post' : '') + bid
+				+ (cucok[5] ? '/' + parseInt(cucok[5]) : '')
+		}
+		return ret;
+	};
     
-    var pnode, pnodes;
+    var pnode, pnodes, cucok, newlink, ksa;
     // perform anti-batman @container id
     pnodes = document.evaluate("//*[contains(@id,'" + whereAmI(location.href) + "')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-    
-    if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
+	
+	if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
         pnode = pnodes.snapshotItem(i);        
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
         
@@ -237,6 +292,23 @@ v0.1   : First release
             }else if(/^(?:ftps?|https?)\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
                node.innerHTML = decodeURI(node.href);
             }
+			
+			
+			// self-link helper for kaskus domain (avoid bouncing around links)
+			if(cucok = /^https?\:\/\/((?:livebeta|www)\.kaskus\.[^\/]+).(?:thread|show_post|post|showthread|showpost)[\/\.]/i.exec(node.href)){
+				
+				if(location.hostname != cucok[1]){					
+					newlink = linkConvert(node.href);
+					
+					// should wrap it with //span#KSA incase it need to removed by QQ
+					ksa = createEl('span', {id:'KSA-selflink', title:'Self-Link :: ' + newlink, rel:newlink, style:'display:inline-block; background:url(http://static.kaskus.co.id/images/buttons/lastpost.gif) no-repeat; margin-right:5px; width:12px; height:12px;'}, '<a href="'+newlink+'" style="display:block;width:12px;line-height:12px;outline:none">&nbsp;</a>');
+					
+					node.style.color = 'red';
+					node.parentNode.insertBefore(ksa, node);
+				}
+			}
+			
+			
         }
     }
     //
