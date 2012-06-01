@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name          Kaskus Thread Preview - reCoded
 // @namespace     http://userscripts.org/scripts/show/94448
-// @version       1.1.3
-// @dtversion     120527113
-// @timestamp     1338128484073
+// @version       1.1.4
+// @dtversion     120601114
+// @timestamp     1338571635221
 // @description	  Preview vbuletin thread, without having to open the thread.
 // @author        Indra Prasetya (http://www.socialenemy.com/)
 // @moded         idx (http://userscripts.org/users/idx)
@@ -19,12 +19,15 @@
 //
 // -!--latestupdate
 //
-//  v1.1.3 - 2012-05-27
-//		include domain .co.id
+//  v1.1.4 - 2012-06-01
+//		fix isKaskus flag uri (minor)
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+//  v1.1.3 - 2012-05-27
+//		include domain .co.id
 //
 //  v1.1.2 - 2011-10-14
 //    Improve minor CSS, -webkit-scrollbar
@@ -45,9 +48,9 @@
 // Initialize Global Variables
 var gvar=function() {};
 
-gvar.sversion = 'v' + '1.1.3';
+gvar.sversion = 'v' + '1.1.4';
 gvar.scriptMeta = {
-  timestamp: 1338128484073 // version.timestamp
+  timestamp: 1338571635221 // version.timestamp
 
  ,scriptID: 94448 // script-Id
 };
@@ -102,7 +105,7 @@ function init(){
   gvar.domainstatic= kdomain.prot + '//' + kdomain.statics + '/';
   gvar.ktpKaskus = kdomain.prot + '//' + 'www.idkaskus.com/'
   
-  gvar.isKaskus = (location.href.indexOf(gvar.domain)!=-1 ? 1:null);
+  gvar.isKaskus = /www\.kaskus\.\w+/i.test(gvar.domain);
   gvar.codename= (gvar.isKaskus ? 'Kaskus':'vBulletin') + ' Thread Preview';
   gvar.id_textarea= 'vB_Editor_001_textarea';
   _LOADING = '<div class="ktp-loading" style="display:inline-block;padding-left:15px;">loading...</div>';
