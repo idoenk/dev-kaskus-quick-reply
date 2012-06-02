@@ -243,11 +243,11 @@ v0.1   : First release
 			 'showpost'		: 'show_post'
 			,'showthread'	: 'thread'
 		};
-		if( cucok = /(thread|show_post|post)\/([^\/]+)/i.exec(link) ){
+		if( cucok = /(thread|show_post|post)\/([^\/]+)(?:\/[^\/]+.(\d+))?/i.exec(link) ){
+			
 			bid = cucok[2].replace(/^0+/,'');
-			ret = prot + '//' + hn + '/' + ml_2old[cucok[1]] 
-				+ (cucok[1]=='post' ? bid + '#post' : '') + bid;
-				
+			ret = prot + '//' + hn + '/' + ml_2old[cucok[1]] + bid
+				+ (cucok[1]=='post' ? '#post' + bid : (cucok[3] ? '&page=' + cucok[3] : '') )
 		}
 		else if( cucok = /(showpost|showthread)\.php\?(t|p)=([\d]+)(\#)?(?:\&postcount=(\d+))?/i.exec(link) ){
 			bid = (function(num){
