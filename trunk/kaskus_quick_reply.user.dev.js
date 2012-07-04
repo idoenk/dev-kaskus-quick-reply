@@ -7,9 +7,9 @@
 // @include        *.kaskus.co.id/group/discussion/*
 // @include        *.kaskus.co.id/show_post/*
 // @description    KQR
-// @version        4.0.5
-// @dtversion      120531405
-// @timestamp      1338413166295
+// @version        4.0.6
+// @dtversion      120704406
+// @timestamp      1341353007926
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -22,14 +22,19 @@
 //
 // -!--latestupdate
 //
-// v4.0.5b - 2012-05-31 . 1338413166295
-//  include show_post (code fixer purpose only)
-//  Fix parse inside spoiler Lv.4; adapting [webkit|opera]
-//  false-positive entity decode Lv.3; Fix parse inside spoiler
+// v4.0.6b - 2012-07-04 . 1341353007926
+//  relayout old-like-keep-fresh
+//  deprecate what_if_notlogin
+//  kaskus-fresh
 //
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v4.0.5b - 2012-05-31 . 1338413166295
+//  include show_post (code fixer purpose only)
+//  Fix parse inside spoiler Lv.4; adapting [webkit|opera]
+//  false-positive entity decode Lv.3; Fix parse inside spoiler
 //
 // v4.0.4b - 2012-05-30 . 1338330088458
 //  Fix autoload smiley
@@ -63,16 +68,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.5b';
+gvar.sversion = 'v' + '4.0.6b';
 gvar.scriptMeta = {
-	timestamp: 1338413166295 // version.timestamp
+	timestamp: 1341353007926 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 120531405 // version.date
+	,dtversion: 120704406 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 120529404 // css revision date; only change this when you change your external css
+	,cssREV: 120704406 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -314,61 +319,65 @@ var rSRC = {
 	getTPL: function(){
 		var _sp = rSRC.mCls[2], lc=rSRC.mCls[0]
 		, iner_head = '<span class="inner_title">'+gvar.inner.reply.title+ '</span> &nbsp;<a class="qrlink" target="_blank" href="'+(isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID.toString() : 'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'">'+gvar.sversion+'</a>';
-        return ""
-			+ '<div id="' + gvar.qID + '">' 
-			+ '<div class="quick-reply">' 
+        return ''
+		+'<div id="' + gvar.qID + '" class="xkqr" style="clear:both">' 
+		+'<div class="xkqr-entry-content">'
+		+'<div class="xkqr-entry-head">'
+		+ '<div class="qrhead-title lefty">'+iner_head+'</div>'
+		+ '<div class="righty">'
+		+   '<span id="draft_desc" style="">blank</span>' 
+		+   '<div id="qrdraft" class="goog-inline-block jfk-button jfk-button-standard jfk-button-disabled" style="position:absolute; z-index:31; top:5px; right:45px; ">Draft</div>'
+		+  '<div id="settings-button" title="Settings"></div>'
+		+  '<div id="qrtoggle-button" title="Toggle QR" class="goog-inline-block jfk-button jfk-button-standard"> &#9650;</div>'
+		+ '</div>'
+		+'</div>'
+		
+		+ '<div id="formqr">' // === //
+		+ '<div id="notify_wrap" class="icon-button vcard" style="display:none; position:relative;">'
+		+  '<div class="qr-m-panel" style="display:block;">'
+		+   '<a id="scancel_edit" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="display:none;">Cancel Edit</a>'
+		+   '<span id="quote_btnset" style="display:none;">'
+		+    '<a id="squote_post" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="">Fetch Quote</a>&nbsp;&nbsp;'
+		+    '<a id="squick_quote" class="goog-inline-block jfk-button jfk-button-standard btnlink g_warn" style="display:">Quick Quote</a>'
+		+   '</span>'
+		+  '</div>'
+		+  '<div class="g_notice" id="notify_msg" style="display: block;"></div>'
+		+ '</div>' // notify_wrap
+		
+		+ '<form method="post" id="formform" name="postreply" action="#">'
+		+ '<input type="hidden" value="" name="securitytoken" id="qr-securitytoken"/>' 
+		+ '<input type="hidden" value="" name="recaptcha_challenge_field" id="qr-recaptcha_challenge_field"/>'
+		+ '<input type="hidden" value="" name="recaptcha_response_field" id="qr-recaptcha_response_field"/>'
 			
-			+ '<div class="qr-reply-header">' 
-			+   '<div id="dumy-title" class="reply-header" style="display:none;">' + iner_head + "</div>" //margin-right:16px; 
-			+   '<span id="draft_desc" style="position:absolute; right:122px; top:5px; font-size:11px; color:#999; padding:1px 3px;">blanky</span><div id="qrdraft" class="goog-inline-block jfk-button jfk-button-standard jfk-button-disabled" style="position:absolute; z-index:31; right:35px; top:1px; height:25px; line-height:25px; min-width:50px!important;">Draft</div>' 
-			+   '<div id="qrtoggle" class="pull-button-disabled" style="left:97%!important; top:1px; z-index:32;"><a title="Toggle QR" class="pull-disabled" href="javascript:;">pull</a></div>' 
-			+ "</div>" // qr-reply-header
+		+(gvar.thread_type == 'group' ? ''
+		+ '<input type="hidden" value="" name="discussionid" id="qr-discussionid" />'
+		+ '<input type="hidden" value="" name="groupid" id="qr-groupid" />'
+		: ''
+		)
+		+ '<input type="hidden" value="Preview Post" name="preview"/>' 
+		+ '<input type="hidden" value="1" name="parseurl"/>' 
+		+ '<input type="hidden" value="9999" name="emailupdate"/>' 
+		+ '<input type="hidden" value="0" name="folderid"/>' 
+		+ '<input type="hidden" value="0" name="rating"/>' 
+		+ '<input id="hid_iconid" type="radio" name="iconid" value="0" style="position:absolute!important; z-index:-1; top:40px; width:1px; cursor:none;"/>'
 			
-			+ '<div id="formqr">' // === //			
-			+ '<div id="notify_wrap" class="icon-button vcard" style="display:none; position:relative;">'
-			+  '<div class="qr-m-panel" style="display:block;">'
-			+   '<a id="scancel_edit" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="display:none;">Cancel Edit</a>'
-			+   '<span id="quote_btnset" style="display:none;">'
-			+    '<a id="squote_post" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="">Quote</a>&nbsp;&nbsp;'
-			+    '<a id="squick_quote" class="goog-inline-block jfk-button jfk-button-standard btnlink g_warn" style="display:">Quick Quote</a>'
-			+   '</span>'
-			+  '</div>'
-			+  '<div class="g_notice" id="notify_msg" style="display: block;"></div>'
-			+ '</div>'
-			
-			+ '<form method="post" id="formform" name="postreply" action="#">' 
-			+ '<input type="hidden" value="" name="securitytoken" id="qr-securitytoken"/>' 
-			+ '<input type="hidden" value="" name="recaptcha_challenge_field" id="qr-recaptcha_challenge_field"/>'
-			+ '<input type="hidden" value="" name="recaptcha_response_field" id="qr-recaptcha_response_field"/>'
-			
-			+(gvar.thread_type == 'group' ? ''
-			+ '<input type="hidden" value="" name="discussionid" id="qr-discussionid" />'
-			+ '<input type="hidden" value="" name="groupid" id="qr-groupid" />'
-			: ''
-			)
-			+ '<input type="hidden" value="Preview Post" name="preview"/>' 
-			+ '<input type="hidden" value="1" name="parseurl"/>' 
-			+ '<input type="hidden" value="9999" name="emailupdate"/>' 
-			+ '<input type="hidden" value="0" name="folderid"/>' 
-			+ '<input type="hidden" value="0" name="rating"/>' 
-			+ '<input id="hid_iconid" type="radio" name="iconid" value="0" style="position:absolute!important; z-index:-1; top:40px; width:1px; cursor:none;"/>' 
-			+ "" 
-			+ "<fieldset>" 
-			+ '<div class="reply-message">' 
-			+ '<div class="message">' 
+			+ ''
+			+ '<fieldset>'
+			+ '<div class="reply-message">'
+			+ '<div class="message">'
 			+ '<div class="markItUp" id="markItUpReply-messsage" style="display:none!important;">'
 			+ '<div class="markItUpContainer">' 
 			
-			+ '<div class="title-message" style="display:none;">' 
+			+ '<div class="title-message" style="display:none; position:relative;">' 
 			+ '<input id="fakefocus_icon" type="text" style="position:absolute!important; color:transparent; background:transparent; left:5px; top:20px; width:1px; border:0px;" value=""/>' 
 			
 			+ '<div class="title-message-sub condensed">' 
 			+  '<img id="img_icon" class="modal-dialog-title-imgicon" src="#" style="display:none;"/>' 
-			+  '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" title="Pick Icon"/>' 
+			+  '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" data-original-title="Pick Icon" rel="tooltip"/>' 
 			+ rSRC.menuIcon() 
 			+  '</li></ul>'
-			+  '<input id="title" type="text" class="twt-glow" value="' + gvar.def_title + '" name="title" title="(optional) Message Title" style="width:82%;"/>' 
-			+  '<span id="close_title" class="modal-dialog-title-close" title="Remove (optional) title-message" style="display:none;"/>' 
+			+  '<input id="form-title" type="text" class="twt-glow" value="' + gvar.def_title + '" name="title" title="(optional) Message Title" style="width:82%;"/>' 
+			+  '<span id="close_title" class="modal-dialog-title-close" data-original-title="Remove Title Message" style="display:none;" rel="tooltip"/>' 
 			+ "</div>" // condensed
 			+ "</div>" // title-message
 			
@@ -390,38 +399,21 @@ var rSRC = {
 			+ "</ul>" 
 			+ "</div>" // markItUpHeader			
 
-			+ '<div style="clear:left; position:relative;">'
-			+	'<div class="vertical-text toggle-sidebar" data-todo="avatar" style="display:'+ (gvar.settings.hideavatar ? '':'none') +';">'
-			+		'<span class="img-wrp"><img class="photo" src="'+ gvar.user.photo +'" border="0" style=""/></span>'
-			+ 		gvar.user.name + (gvar.user.isDonatur && gvar.thread_type != 'group' ? ' <span class="logged-isdonat">[$]</span>':'')
-			+	'</div>'
-
-			+	'<div class="sidebar-user" style="display:'+ (gvar.settings.hideavatar ? 'none':'') +'">'
-			+	 '<div class="toggle-sidebar-wrap" style="display:none">'
-			+	  '<span id="toggle-avatar" class="toggle-sidebar" data-todo="side">&lt;&lt;</span>'
-			+	  '&nbsp;<a class="change-avatar" href="'+ gvar.domain +'user/editprofile" target="_blank">change</a>'
-			+	 '</div>'
-			+	 '<img src="'+ gvar.user.photo +'" border="0" style="height:100px"/>'
-			+	 '<div id="logged-username"><a href="'+ gvar.domain +'profile/'+ gvar.user.id +'">'+ gvar.user.name + (gvar.user.isDonatur ? ' <span class="logged-isdonat">[$]</span>':'') +'</a></div>'
-			+	'</div>' // sidebar-user
-			
-			+	'<div class="qr-editor-wrap" style="">'
-			+    '<span id="clear_text" class="modal-dialog-title-close" title="Clear Editor" style="display:none;right:10px" />'
-			+    '<textarea id="' + gvar.tID + '" rows="50" name="message" class="markItUpEditor qr-editor twt-glow" style="width:100%;"/>'
+			+ '<div style="clear:left; position:relative;">'			
+			+	'<div class="qr-editor-wrap">'
+			+    '<span id="clear_text" class="modal-dialog-title-close" data-original-title="Clear Editor" style="display:none;right:10px" rel="tooltip" />'
+			+    '<textarea id="' + gvar.tID + '" rows="50" name="message" class="qr-editor twt-glow" style=""/>'
 			+	'<div>'
-
 			+ '</div>'
 			
 			+ '</div>' // markItUpContainer
 			+ '</div>' // markItUp
 			+ '</div>' // message
 			+ '</div>' // reply-message
-			+ '' 
+			+ ''
+			// ----=-=-=-=-=-
+			
 			+ '<div class="cont-bottom">'
-			//reply-header
-			
-			+ '<div class="thread-prevnext reply-header" style="display:">'
-			
 			+  '<div class="box-bottom" style="display:none">'
 			+  '<div class="box-smiley" style="display:none">'
 			+   '<div style="-moz-user-select:none" class="goog-tab-bar goog-tab-bar-top">'
@@ -437,44 +429,45 @@ var rSRC = {
 			+    '<div id="tabs-content-inner"></div>'
 			+   '</div>'
 			+  '</div>' //box-smiley
-
 			+  '<div class="box-upload" style="display:none">'
 			+   '<div style="-moz-user-select:none" class="goog-tab-bar goog-tab-bar-top">'
-			+    '<div style="-moz-user-select:none" id="tupload" class="goog-tab green-tab">Uploader</div>' 
+			+    '<div style="-moz-user-select:none" id="tupload" class="goog-tab green-tab goog-tab-selected">Uploader</div>' 
 			+    '<div style="-moz-user-select:none" class="goog-tab close-tab"><span class="tabclose" /></div>'
 			+   '</div>'
 			+   '<div class="goog-tab-bar-clear"></div>'
 			+   '<div id="tabs-content-upl" class="goog-tab-content"><div id="tabs-content-upl-inner" style="position:relative;" /></div>'
 			+  '</div>' // box-upload
-
 			+  '</div>' // box-bottom
-
-
-			+ '<div class="button-bottom">'
-			+  '<input id="qr_chkval" type="button" style="display:none;" value="cv" />' // remote button to chkVal
-			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="chkMultiQuote()" />' // remote button to chkVal
-			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="deleteMultiQuote()" />' // remote button to delete-mQ
-	 
-			+  '<div id="settings-button" title="Settings"></div>'
-			+  '<div class="qr-title" style="display:inline-block">' + iner_head + "</div>" 
+			// ========
+			+ '<div class="button-bottom" style="padding-bottom:5px">'
+			   // remote button to chkVal
+			+  '<input id="qr_chkval" type="button" style="display:none;" value="cv" />' 
+			   // remote to check MultiQuote
+			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="chkMultiQuote()" />'
+			   // remote button to delete-mQ
+			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="deleteMultiQuote()" />'
+			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			
 			+(gvar.__DEBUG__ ? '<br/>':'')
 			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" />\n\n'
-			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="current_ckck" />\n\n' // current ck.crecidential
+			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="current_ckck" />\n\n' // current ck.credential
 			+ '</div>' // button-bottom
-	
-			+  "</div>" // thread-prevnext reply-header
-			+ "</div>" // cont-bottom
-			+ "" 
-			+ "</fieldset>" 
-			+ "</form>" 
-			+ "</div>" // formqr
-			+ "</div>" // quick-reply
-			+ "</div>"; // gvar.qID
+			+ ''
+			+'</div>' // cont-bottom
 			
+			
+			+ ''
+			+ '</fieldset>'
+			+ "</form>"
+			
+		+'</div>' // formqr
+		
+		+''
+		+'</div>' // .quick-reply
+		+'</div>' // #qID
 	},
 	getBOX: function(){
 		// preview BOX
@@ -488,11 +481,12 @@ var rSRC = {
 		+'<div id="box_wrap">'
 		//+ '<h1 id="box_preview_title"></h1>'
 		+ '<div class="box_sp" style=""></div>'
-		+ '<div id="box_preview" class="entry-content" style=""><img src="'+gvar.B.throbber_gif+'" border=0/>&nbsp;<i style="font-size:10px">loading...</i></div>'
+		+ '<div id="box_preview" class="entry-content"><div style="margin:20px auto; text-align:center;"><img src="'+gvar.B.throbber_gif+'" border=0/>&nbsp;<i style="font-size:12px">loading...</i></div></div>'
 		+ '<div class="spacer"></div>'
 		+'</div>' // box_wrap
 		
-		+'<div id="cont_button" class="modal-dialog-buttons" style="display:none;">'
+		+'<div id="cont_button" class="modal-dialog-buttons preview_bottom" style="display:none; width:400px">'
+		+ '<span class="qr_current_user"></span>'
 		+ '<button id="box_prepost" class="goog-inline-block jfk-button '+(gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'" style="-moz-user-select: none;">'+(gvar.edit_mode ? gvar.inner.edit.submit : 'Post')+'</button>'
 		+ '<button id="box_cancel" class="goog-inline-block jfk-button jfk-button-standard" style="-moz-user-select: none;">Cancel</button>'
 		+'</div>'
@@ -504,7 +498,7 @@ var rSRC = {
 		return ''
 		// .modal-dialog diilangin biar gak ke
 		+'<div id="modal_capcay_box" class="capcay-dialog" style="display:none;">'
-		+'<div class="modal-dialog-title"><span class="modal-dialog-title-text">'+(gvar.edit_mode ? 'Saving Changes':'Image Verification')+'</span><span class="modal-dialog-title-close popbox"/></div>'
+		+'<div class="modal-dialog-title"><span class="modal-dialog-title-text">'+(gvar.edit_mode ? 'Saving Changes':'Verification')+'</span><span class="modal-dialog-title-close popbox"/></div>'
 		
 		// fake button create
 		+'<input id="hidrecap_btn" value="reCAPTCHA" type="button" style="display:" onclick="showRecaptcha(\'box_recaptcha_container\');" class="ninja" />' 
@@ -513,7 +507,7 @@ var rSRC = {
 
 		+'<div id="box_wrap" class="ycapcay">'
 		+(gvar.edit_mode ? 
-		 '' : '<div><label for="recaptcha_response_field">Prove you\'re not a robot</label></div>'
+		 '' : '<div><label for="recaptcha_response_field" style="width:100%!important; float:none!important;">Prove you\'re not a robot</label></div>'
 		 )
 		+ '<div id="box_response_msg" class="ghost"></div>'
 		+ '<div id="box_recaptcha_container" class="entry-content">'
@@ -524,6 +518,7 @@ var rSRC = {
 		+ '</div>'		
 		+ '<div id="cont_button" class="modal-dialog-buttons" '+(gvar.edit_mode ? ' style="visibility:hidden;"':'')+'>'
 		//+  '<div id="additional_opt" style="float:left; display:none;"></div>'
+		+  '<span class="qr_current_user"></span>'
 		+  '<button id="box_post" class="goog-inline-block jfk-button jfk-button-action" style="-moz-user-select: none;">Post</button>'
 		+ '</div>'
 		
@@ -535,7 +530,7 @@ var rSRC = {
 		return ''
 		+'<div id="recaptcha_image" style="width: 300px; height: 57px;"><img width="300" height="57" src="" style="display: block;"/></div>'
 		+'<div class="recaptcha-main">'
-		+'<label><strong>'
+		+'<label style="width:100%!important; float:none!important;"><strong>'
 		+ '<span class="recaptcha_only_if_image" id="recaptcha_instructions_image">Please Insert ReCapcay:</span>'
 		+ '</strong>'
 		+ '<span id="recaptcha_challenge_field_holder" style="display: none;"/><input type="text" name="recaptcha_response_field" id="recaptcha_response_field" autocomplete="off"/>'
@@ -563,10 +558,10 @@ var rSRC = {
 			+'<div id="custom_bottom" style="margin:8px 0; display:none;">'
 			+ '<input type="hidden" id="current_grup" value="" />'
 			+ '<input type="hidden" id="current_order" value="" />'
-			+ '<a id="manage_btn" tabindex="502" href="javascript:;" class="gbtn gbtn-p3 lilbutton" style="padding: 1px 8px;">Manage</a>'
+			+ '<a id="manage_btn" tabindex="502" href="javascript:;" class="button tinybutton small blue">Manage</a>'
 			+ '<span id="title_group" style="margin-left: 8px; font-weight: bold;"></span>'
-			+ '<a id="manage_cancel" tabindex="503" href="javascript:;" class="gbtn lilbutton" style="padding: 1px 5px; margin-left: 5px; display: none;">Cancel</a>'
-			+ '<a id="manage_help" tabindex="504" href="javascript:;" class="gbtn lilbutton" style="padding: 1px 5px; margin-left: 20px; display: none;" title="RTFM">[ ? ]</a>'
+			+ '<a id="manage_cancel" tabindex="503" href="javascript:;" class="button tinybutton small white" style="display: none;">Cancel</a>'
+			+ '<a id="manage_help" tabindex="504" href="javascript:;" class="button tinybutton small white" style="display: none;" title="RTFM">[ ? ]</a>'
 			+ '<span id="position_group" style="margin-left:10px; display:none"/>'
 			+'</div>' // #custom_bottom
 
@@ -620,23 +615,23 @@ var rSRC = {
 		return ''
 			+'<table border="0"><tr>'
 			+'<td style="width:45%">'
-			+'<input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' /><label for="misc_updates" title="Check Userscripts.org for QR latest update">Updates</label>'+nb+nb 
+			+'<input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' /><label for="misc_updates" class="stlmenu" title="Check Userscripts.org for QR latest update">Updates</label>'+nb+nb 
 			+ ( !gvar.noCrossDomain ? '<a id="chk_upd_now" class="gbtn" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking..&nbsp;<img src="'+gvar.B.throbber_gif+'" border=0/></span>' : '')
-			+ '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:<label>'+nb+'<input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</label></div><div style="height: 1px;"></div>'
+			+ '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:</label><input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</div><div style="height: 1px;"></div>'
 			
-     +'<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile">AutoLoad Smiley</label>'
+     +'<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile" class="stlmenu">AutoLoad Smiley</label>'
      +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:-3px 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
-     +'<input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_kecil">kecil</label>&nbsp;'
-     +'<input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_besar">besar</label>&nbsp;'
-     +'<input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/><label for="misc_autoshow_smile_custom">custom</label>'
+     +'<label for="misc_autoshow_smile_kecil">kecil <input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/></label>&nbsp;'
+     +'<label for="misc_autoshow_smile_besar">besar <input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/></label>&nbsp;'
+     +'<label for="misc_autoshow_smile_custom">custom <input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/></label>'
      +'</div>'
 			
 			+'</td><td>'
-			+'<input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/><label for="misc_hotkey">QR-Hotkey</label><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /><label for="misc_hotkey_ctrl">ctrl</label>'+nb+'<input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /><label for="misc_hotkey_alt">alt</label>'+nb+'<input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /><label for="misc_hotkey_shift">shift</label>'+nb+'+'+nb+'<label for="misc_hotkey_char">'+nb+'</label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></div>'
+			+'<input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/><label for="misc_hotkey" class="stlmenu">QR-Hotkey</label><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<label for="misc_hotkey_ctrl">ctrl <input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /></label>'+nb+'<label for="misc_hotkey_alt">alt <input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_shift">shift <input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'+'+nb+'<label for="misc_hotkey_char">'+nb+'</label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></div>'
 			+'</td>'
 			+'</tr></table>'
 			+'<div style="width:98%; padding-left:10px;">'
-			+'<input id="misc_autolayout" type="checkbox" class="optchk"'+ (cUL[1]=='1' ? ' checked="checked"':'') +' /><label for="misc_autolayout">AutoLayout</label>'+nb+nb+'<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout gbtn" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a><div id="misc_autolayout_child" style="margin-top:-3px; display:'+ (cUL[1]=='1' ? 'block' : 'none') +'"><textarea rows="3" style="overflow:auto; letter-spacing:0; line-height:14pt; height:28pt; max-width:95%; min-width:95%; max-height:280px; margin-left:20px;" class="txta_editor" id="edit_tpl_txta">'+ gvar.settings.userLayout.template +'</textarea></div>'
+			+'<input id="misc_autolayout" type="checkbox" class="optchk"'+ (cUL[1]=='1' ? ' checked="checked"':'') +' /><label for="misc_autolayout" class="stlmenu">AutoLayout</label>'+nb+nb+'<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout gbtn" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a><div id="misc_autolayout_child" style="margin-top:-3px; display:'+ (cUL[1]=='1' ? 'block' : 'none') +'"><textarea rows="3" style="overflow:auto; letter-spacing:0; line-height:14pt; height:28pt; max-width:92%; min-width:92%; max-height:280px; margin-left:20px;" class="txta_editor" id="edit_tpl_txta">'+ gvar.settings.userLayout.template +'</textarea></div>'
 			+'</div>'
 			;
 	},
@@ -687,33 +682,29 @@ var rSRC = {
 			+''
 			+'To export your settings, copy the text below and save it in a file.<br>'
 			+'To import your settings later, overwrite the text below with the text you saved previously and click "<b>Import</b>".'
-			+'<textarea id="textarea_rawdata" class="textarea" style="height: 335px; width: 99%; overflow: auto; white-space: pre;" readonly="readonly"></textarea>'
+			+'<textarea id="textarea_rawdata" class="textarea_rawdata" style="height: 335px; width: 98%; overflow: auto; white-space: pre;" readonly="readonly"></textarea>'
 			+'<div style="float: left;"><a id="exim_select_all" class="qrsmallfont" style="margin: 10px 0pt 0pt 5px; text-decoration: none;" href="javascript:;"><b>^ Select All</b></a></div>'
 			+''
 		;
 	},
 	getTPLShortcut: function(){
 		return ''
-			+'<em>Globaly on showthread page</em><br>'
+			+'<em>Global on thread page</em><br>'
 			+'<b>Esc</b> - Close Active-Popup<br>'
 			+'<b>Ctrl + Q</b> - Focus to Quick Reply Editor Now. (<a id="customable_btn" href="javascript:;">customable</a>)<br>'
-			+'<b>Alt + Q</b> - Fetch Quoted Post<br>'
-			+'<b>Ctrl + Alt + Q</b> - Fetch Quoted Post <span class="opr">(Opera)</span><br>'
+			+'<b>Alt + Q</b> - Fetch Quoted Post <small>(<b>Ctrl + Alt + Q</b> :: Opera)</small><br>'
 			+'<b>Ctrl + Shift + Q</b> - Deselect All Quoted Post<br>'
 			+'<b>Ctrl + Shift + D</b> - Load/Save Draft<br>'
 			+'<div style="height: 10px;"></div><em>While focus on Editor / textarea</em><br>'
-			+'<b>Ctrl + Enter</b> - Post Reply<br><b>Alt + S</b> - Post  Reply<br>'
-			+'<b>Shift + Alt + S</b> - Post Reply <span class="opr">(Opera)</span><br>'
-			+'<b>Alt + P</b> -  Preview Quick Reply<br>'
-			+'<b>Shift + Alt + P</b> -  Preview Quick Reply <span class="opr">(Opera)</span><br>'
-			+'<b>Alt + X</b> -  Go Advanced<br>'
-			+'<b>Shift + Alt + X</b> -  Go Advanced <span class="opr">(Opera)</span><br>'
+			+'<b>Ctrl + Enter</b> - Post Reply<br>'
+			+'<b>Alt + S</b> - Post  Reply <small>(<b>Shift + Alt + S</b> :: Opera)</small><br>'
+			+'<b>Alt + P</b> -  Preview Quick Reply <small>(<b>Shift + Alt + P</b> :: Opera)</small><br>'
+			+'<b>Alt + X</b> -  Go Advanced <small>(<b>Shift + Alt + X</b> :: Opera)</small><br>'
 			+'<div style="height: 10px;"></div><em>While focus on Input reCapctha</em><br>'
 			+'<b>Pg-Up</b> or <b>Pg-Down</b> - Reload reCaptcha<br>'
-			+'<b>Alt + R</b> - Reload reCaptcha<br>'
-			+'<b>Ctrl + Alt + R</b> - Reload reCaptcha <span class="opr">(Opera)</span><br>'
+			+'<b>Alt + R</b> - Reload reCaptcha <small>(<b>Ctrl + Alt + R</b> :: Opera)</small><br>'
 			+''
-			;
+		;
 	},
 	getTPLSetting: function(){
 		// setting BOX
@@ -764,10 +755,20 @@ var rSRC = {
 	
 	getCSS: function(){
 		return ""
+		+"#" + gvar.qID + '{}' // border:1px solid #000;
 		+"#box_preview {max-height:" + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + "px;}"
 		+".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
 		+".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
 		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
+		+""
+		// =====
+		
+/*
+
+.qr-entry-head .righty {text-align:right; position:relative; z-index:1; float:right; padding:5px 10px; }
+*/
+		+""
+		+""
 		+""
 		+""
 	},
@@ -789,7 +790,12 @@ var rSRC = {
 		+'function deleteMultiQuote(){$.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
 		+'function chkMultiQuote(){var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); $("#qr_chkval").click() }'
 		+'chkMultiQuote();'
-		+'';
+		+''
+		
+		+'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
+		+''
+		+''
+		;
 	},
 	getSCRIPT_UPL: function(){
 		return ''
@@ -872,7 +878,7 @@ var rSRC = {
 			case "button" :
 			return {
        news_png : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA14gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B207ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
-      ,throbber_gif : "data:image/gif;base64,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"
+      ,throbber_gif : "data:image/gif;base64,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%3D"
 			};
 			break;
 			
@@ -912,7 +918,6 @@ Format will be valid like this:
 	// gvar.smgroup it is all name of group of custom smiley
 	gvar.smcustom = {};
 	gvar.smgroup = [];
-	//var buff = getValue(KS+'CUSTOM_SMILEY');
 	getValue(KS+'CUSTOM_SMILEY',  function(buff){
 		
 		if( buff && isString(buff) && buff!='' ){			
@@ -956,7 +961,6 @@ Format will be valid like this:
 			}
 		} // end is buff
 		
-		//alert(JSON.stringify(gvar.smcustom)); alert(JSON.stringify(gvar.smgroup));
 		if(typeof cb == 'function') cb();
 	});
 	if(isDefined(custom) && custom) return;
@@ -1175,9 +1179,8 @@ var _BOX = {
 		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
 	},
 	buildQuery: function(topost){
-		//,"emailupdate","folderid","rating"
-		var fields = ["securitytoken", "title", "message", "iconid", "parseurl", "recaptcha_response_field", "recaptcha_challenge_field", "discussionid", "groupid"]
-			, url, name, val, query='', arquery={};
+		//,"emailupdate","folderid","rating", 
+		var fields = ["securitytoken", "title", "message", "iconid", "parseurl", "recaptcha_response_field", "recaptcha_challenge_field", "discussionid", "groupid"], url, name, val, query='', arquery={};
 		// &discussionid=6124&groupid=2261
 		
 		// &preview=Preview+Post&parseurl=1&emailupdate=9999&folderid=0&rating=0
@@ -1188,7 +1191,7 @@ var _BOX = {
 				name = encodeURIComponent( $(this).attr('name') );
 				
 				if( name=="title" ){
-					if( $('#title').parent().hasClass('condensed') )
+					if( $('#form-title').parent().hasClass('condensed') )
 						val = "";
 					else{
 						// autocut upto 85 only
@@ -1199,13 +1202,7 @@ var _BOX = {
 
 					val = wrap_layout_tpl( val.replace(/\r\n/g, '\n') );
 					clog('val message=\n' +  val );
-					if( !topost ){
-						
-						val = val.replace(/\[(\/)?quote(?:\=([^\;]+).([^\]]+))?./gi, function($,$1,$2,$3){
-							return ( ($3 ? '':'') + '___' + ($1 ? $1 : '') + 'QRQUOTE'+ ( $2 && $3 ? '|' + $2 + '|' + $3 + '|' : '') +'___' )
-						});
-						
-				    }
+					
 					val = ( toCharRef( val ) + "\n" ) + gvar.eof;
 					
 					// avoid fail encoding for autotext custom-smiley
@@ -1249,7 +1246,7 @@ var _BOX = {
 			try{
 			   if( query!="" )
 				gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
-					var valid, parsed, clean_text, cucok, sdata, mH, titleStr;
+					var valid, parsed, clean_text, cucok, sdata, mH, imgTitle, titleStr;
 					valid = tokcap_parser(data);
 					mH = ( parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer );
 					
@@ -1266,58 +1263,40 @@ var _BOX = {
 					}else{
 						
 						try{
-							//sdata = data.replace(/(\r\n|\n|\r|\t)+/gm, "").replace(/\s{2,}/gm,' ').replace(/\"/gm, '"').toString() + '\n\n';
 							sdata = data.replace(/\t/gm, " ").replace(/\s{2,}/gm,' ').replace(/(\r\n|\n|\r)/gm, '{{nn}}').replace(/\"/gm, '"').toString() + '\n\n';
 							
 						}catch(e){
 							clog('decodeURI in preview failed');							
 						}
 						
-						//clog( 'sdata=' + sdata );
+						parsed = sdata.substring( sdata.indexOf('<section') );
+						parsed = parsed.substring(0, parsed.indexOf('</section') );
+						var _dom = $(parsed);
 						
-						parsed = sdata.substring(0, sdata.indexOf(gvar.eof) );
-						clog('parsed='+ parsed );
-						
-						if(gvar.thread_type == 'group')
+						if(gvar.thread_type == 'group'){
 							cucok = /(?:[\'\"]post-header[\'\"]>\s?<h2\s+[^>]+.([^<]+).+)?[\'\"]entry-content[\'\"](?:[^>]+)?.(.*)/.exec(parsed);
-						else
-							cucok = /<div\sclass=[\"\']entry-content[\'\"](?:[^>]+)?>(?:[^<]+)?<h1>\s*((?:<img[^>]+>\s*)?(?:[^<]+)?)<\/h1>\s?(.*)/im.exec(parsed);
-
-						if( cucok ){
-							cucok[1] = String(cucok[1]);
-							titleStr = cucok[1].replace(/<[^>]+>/g,'');
-							if( titleStr.length > 77 ){
-								cucok[1] = cucok[1].replace(titleStr, '');
-								$('#box_preview_title').attr('title', titleStr);
-								titleStr = titleStr.substring(0, 77) + '...';
+						}
+						
+						if( $('.entry', $(_dom)).get(0) ){
+							if(gvar.thread_type == 'forum'){
+								imgTitle = $('h2', $(_dom)).html();
+								titleStr = imgTitle.replace(/<[^>]+>/g,'');
+								imgTitle = imgTitle.replace(titleStr, '');
+								if( titleStr.length > 77 ){								
+									$('#box_preview_title').attr('title', titleStr.replace(/\&nbsp;/,''));
+									titleStr = titleStr.substring(0, 77) + '...';
+								}
+								$('#box_preview_title').html( imgTitle + titleStr );
 							}
-							$('#box_preview_title').html( cucok[1] + titleStr );
-
-							// this a lil hack from above act, to makeit rite,
-							// is there a.darwis is prevent us for doing this? uhmm,.
-							clean_text = cucok[2]
-								.replace(/___\/QRQUOTE___/gi, '</div></div>')
-								.replace(/___QRQUOTE___/gi, function(S,$1,$2){
-									return ''
-										+'<div class="post-quote" style="width:100%; margin:auto; font-family:Helvetica,Arial,Sans-serif; font-size:14px; font-style:normal; font-weight:normal; text-align:left;color: #484848"><span style="padding-left: 15px; font-size: 8pt; display: block;">Quote:</span>'
-										+'<div style="width: 95%;margin:auto;border: 1px inset; background: #E1E4F2; padding: 5px; color: #484848;">'
-									;
-								})
-								.replace(/___QRQUOTE\|([^\|]+).([^\|]+).___/gi, function(S,$1,$2){
-									return ''
-										+'<div class="post-quote" style="width:100%; margin:auto; font-family:Helvetica,Arial,Sans-serif; font-size:14px; font-style:normal; font-weight:normal; text-align:left;color: #484848"><span style="padding-left: 15px; font-size: 8pt; display: block;">Quote:</span>'
-										+'<div style="width: 95%;margin:auto;border: 1px inset; background: #E1E4F2; padding: 5px; color: #484848;">Original Posted By <b>'+$1+'</b>'
-										+'<a href="/post/'+$2+'#post'+$2+'" class="jump">&#9658;</a><br/>'
-									;
-								});
 							
-							clog( clean_text.replace(/\{\{nn\}\}/g, '\n') );
-
+							_dom = $('.entry', $(_dom));
+							$('.preview-post', $(_dom)).remove();
+							clean_text = $(_dom).html().replace(gvar.eof, '');
+						
 							$('#box_preview').html( clean_text.replace(/\{\{nn\}\}/g, '\n') );
-							
+	
 							// resize image on its max fits
-							$('#box_preview').find('img').each(function(){ $(this).css('max-width', '790px') });
-							
+							$('#box_preview').find('img').each(function(){ $(this).css('max-width', '790px') });							
 							$('#cont_button').show();
 						}else{
 							clog('fail build clean_text');
@@ -1326,7 +1305,9 @@ var _BOX = {
 						$('#box_prepost').click(function(){
 							_BOX.init();
 							_BOX.presubmit();						
-						});						
+						});
+						
+						_BOX.attach_userphoto('#cont_button .qr_current_user', 'Signed in as ');
 						
 						if( !gvar.user.isDonatur ){
 							if(gvar.edit_mode == 1)					
@@ -1366,7 +1347,6 @@ var _BOX = {
 				
 				try{
 					// warning this may trigger error
-					//sdata = decodeURIComponent( (data).replace(/(?:\r|\n|\t|\s{2,})+/g, '').replace(/\"/g, '"') );
 					sdata = data.replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "").replace(/\"/g, '"').toString();
 					
 				}catch(e){
@@ -1513,6 +1493,8 @@ var _BOX = {
 					$('#recaptcha_response_field').addClass('twt-glow');
 					$('#recaptcha_response_field').focus();
 				}
+				_BOX.attach_userphoto('#cont_button .qr_current_user');
+				// events
 				$('#recaptcha_instructions_image, #recaptcha_image').click(function(){ field.focus() });
 				$('#box_post').click(function(){
 					if(field.val()==""){
@@ -1536,6 +1518,21 @@ var _BOX = {
 		}else{
 			//alert('submit halted')
 			_BOX.submit();
+		}
+	},
+	attach_userphoto: function(target, dt_ori){
+		var neim, $tgt = $(target), imgtip;
+		neim = gvar.user.name + (gvar.user.isDonatur ? ' [$]' : '');
+		!dt_ori && (dt_ori = 'Post as ');
+		$tgt.html('');
+		$tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" alt="" />');
+		imgtip = 'img[rel="tooltip"]';
+		if(gvar.isOpera){
+			window.setTimeout(function(){
+				xtip(target, imgtip);
+			}, 200);
+		}else{
+			$tgt.parent().find(imgtip).tooltip();
 		}
 	}
 };
@@ -1567,7 +1564,8 @@ var _AJAX = {
 		_AJAX.e.task = 'quote';
 		var post_ids, uri = $('#formform').attr('action');
 		post_ids = $('#tmp_chkVal').val();
-		if(post_ids) post_ids = post_ids.split(',');
+		if(post_ids)
+			post_ids = post_ids.split(',');
 		uri+= '/?post=' + post_ids[0];		
 		
 		clog('uri=' + uri);
@@ -1589,7 +1587,7 @@ var _AJAX = {
 					clog('decodeURI in fetch quote failed')
 				}
 				
-				//clog('QUOTE=' + sdata);				
+				//clog('QUOTE=' + sdata);
 				valid = tokcap_parser(data, 'quote');
 				
 				// is_error checking
@@ -1627,8 +1625,9 @@ var _AJAX = {
 			gvar.edit_mode = 0;
 			_AJAX.e.task = 'post';
 			var act = $('#formform').attr('action').toString();
-			$('#formform').attr('action', '/post_reply/' + gvar.pID );
-			$('#formform').attr('name', 'postreply' );
+			$('#formform')
+				.attr('action', '/post_reply/' + gvar.pID )
+				.attr('name', 'postreply' );
 			$('.inner_title').html( gvar.inner.reply.title );
 			$('#sbutton').val( gvar.inner.reply.submit );
 			if( !gvar.user.isDonatur )
@@ -1640,7 +1639,7 @@ var _AJAX = {
 			
 			// reset title
 			$("#hid_iconid").val(0);
-			$("#title").val("");
+			$("#form-title").val("");
 			$("#img_icon").attr("src", "#");
 			$("#img_icon, #close_title, .title-message").hide()
 		}
@@ -1688,8 +1687,9 @@ var _AJAX = {
 					_NOFY({mode:'error', msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>', cb:func});
 					
 				}else{				
-					$('#formform').attr('action', uri);
-					$('#formform').attr('name', 'edit_postreply');					
+					$('#formform')
+						.attr('action', uri)
+						.attr('name', 'edit_postreply');
 					
 					parsed = sdata.substring(0, sdata.indexOf('</textar'));					
 					clog('parsed=' + parsed)
@@ -1822,11 +1822,11 @@ var _AJAX = {
   }
 
 };
-		
+
 var _NOFY = {
-			// whether [quote, edit, error]
-			// ----
-  mode	: 'quote',
+	// whether [quote, edit, error]
+	// ----
+	mode	: 'quote',
 	btnset	: true,
 	msg		: '',
 	cb		: null,
@@ -1892,7 +1892,7 @@ var _TEXT = {
 	subStr: function(start, end){ return this.content.substring(start, end);},
 	set_title: function(data){
 		$('.title-message').slideDown(1, function(){
-			$('.title-message #title').focus().val( data.text );
+			$('.title-message #form-title').focus().val( data.text );
 			$('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).click();			
 		});
 	},
@@ -2253,13 +2253,16 @@ var _UPL_ = {
 					+'<div id="loading_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'			
 					+'<div id="image-control" class="">'
 					+ '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
-					+ '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse"/>'
+					+ '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse" class="small white"/>'
 					+'</div>'
 				;
 				$('#' + tgt ).html( tpl );
 				inteligent_width();
 
-				GM_addGlobalScript( gvar.kkcdn + 'css_v0.1/js/ajaxfileupload.js' );
+				//GM_addGlobalScript( gvar.kkcdn + 'css_v0.1/js/ajaxfileupload.js' );
+				
+				// http://kkcdn-static.kaskus.co.id/themes_2.0/js/ajaxfileupload.js
+				GM_addGlobalScript( gvar.kkcdn + 'themes_2.0/js/ajaxfileupload.js' );
 				GM_addGlobalScript( rSRC.getSCRIPT_UPL() );				
 				
 				$('#'+_UPL_.tcui+' #preview-image').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
@@ -2270,8 +2273,10 @@ var _UPL_ = {
 
 							P.find('img').click(function(){ do_smile( $(this) ) });
 							P.find('.'+tc).click(function(){
-								$(this).closest('.preview-image-unit').remove();
-								inteligent_width('remove');
+								if(confirm('Agan yakin mau delete gambar ini?')){
+									$(this).closest('.preview-image-unit').remove();
+									inteligent_width('remove');
+								}
 							});
 							P.addClass('event');
 						});
@@ -3236,35 +3241,21 @@ var _STG = {
 	}
 };
 
+
 var _CSS = {
 	engage:false,
 	init:function(){
 		_CSS.path_uri = gvar.kqr_static;
 		_CSS.css_name = '';
-		_CSS.run('', _CSS.callback);
+		_CSS.run(gvar.css_default, _CSS.callback);
 	},
 	run: function(fn, cb){
-		if( !fn ) fn = 'style.txt';
 		GM_XHR.uri = _CSS.path_uri + fn;
 
 		clog('fetch css: ' + GM_XHR.uri);
 		GM_XHR.cached = false;
 		GM_XHR.forceGM = true;
-		GM_XHR.request(null, 'GET', cb);
-	},
-	callback: function(x){
-		x = String( x.responseText );
-		if( x ){
-			var xname, xL, xparts = x.split('\n');
-			xL = xparts.length;
-			for(var i=0; i<xL; i++)
-				if(trimStr(xparts[i]) != "" ){
-					xname = trimStr(xparts[i]);
-					break;
-				}
-			_CSS.css_name = xname;
-			_CSS.run(x, _CSS.callback_fin);
-		}
+		GM_XHR.request(null, 'GET', _CSS.callback_fin);
 	},
 	callback_fin: function(x){
 		x = trimStr( String( x.responseText ) );
@@ -3272,9 +3263,8 @@ var _CSS = {
 	},
 	set_css: function(c, cb){
 		setValue(KS + 'CSS_BULK', c, function(){
-			GM_addGlobalStyle(c, 'xhr_css', 1);
-			
-			var metacss = _CSS.css_name + ';' + (new Date().getTime()).toString()
+			GM_addGlobalStyle(c, 'xhr_css', 1);			
+			var metacss = gvar.css_default + ';' + (new Date().getTime()).toString()
 
 			setValue(KS + 'CSS_META', metacss, function(){
 				if(typeof cb=='function') cb();
@@ -3282,7 +3272,6 @@ var _CSS = {
 		});
 	}
 };
-
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
 // previous name was : Updater
@@ -3334,8 +3323,13 @@ var _UPD = {
 	}
 	,initiatePopup: function(rt){
 
-		$('.button-bottom').append('<div class="baloon-update" style="display:none"><a href="javascript:;">&nbsp;</a></div>');		
-		$('.baloon-update').fadeIn(500, function(){
+		if($('.baloon-update').get(0))
+			$('.baloon-update').remove();
+		if($('#modal_update_box').get(0))
+			$('#modal_update_box').remove();
+			
+		$('.xkqr-entry-content').prepend('<div class="baloon-update" style="display:none"><a href="javascript:;">&nbsp;</a></div>');		
+		$('.baloon-update').fadeIn(1500, function(){
 			$('.baloon-update a').click(function(){
 				_UPD.meta = _UPD.mparser( rt );
 				$('#qr-modalBoxFaderLayer').css('visibility', 'visible').show();
@@ -3407,13 +3401,13 @@ var _QQparse = {
 	 init:function(calee, cb){
 		//_QQparse.pids = pids;
 		var par, mqs_id = [];
-		$('.multi-quote.active').each(function(){
-			par = $(this).closest('.post-wrapper');
+		$('.multi-quote.blue').each(function(){
+			par = $(this).closest('.row');
 			if( $(par).get(0) ) mqs_id.push( $(par).attr('id') );
 		});
 		if(mqs_id.length == 0){
 			clog('no multiquote, perform to this calee');
-			par = $(calee).closest('.post-wrapper');
+			par = $(calee).closest('.row');
 			if( $(par).get(0) ) mqs_id.push( $(par).attr('id') );
 		}else{
 			$('#sdismiss_quote').click();
@@ -3427,7 +3421,7 @@ var _QQparse = {
 		var ret, buff, entrycontent, post_id;
 		$.each( _QQparse.mqs_id, function(){
 			post_id = this;
-			entrycontent = $('#'+post_id).find('.entry-content');
+			entrycontent = $('#'+post_id).find('.entry');
 			if( $(entrycontent).get(0) ){
 				
 				buff = String( $(entrycontent).html() ).replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "");
@@ -3444,7 +3438,7 @@ var _QQparse = {
 		});
 	},
 	get_quotefrom: function(pid){
-		var nameStr, el = createEl('div', {}, $('#'+pid).find('.fn').html() );
+		var nameStr, el = createEl('div', {}, $('#'+pid).find('.nickname').html() );
 		nameStr = trimStr($(el).text().toString().replace(/\[\$\]$/, ''));
 		$(el).remove();
 		return trimStr( nameStr ) + ';' + pid.replace(/^post/i, '');
@@ -3993,6 +3987,7 @@ function basename(path, suffix) {
   return b;
 };
 function gID(x) { return document.getElementById(x) }
+function dump(x){return ("undefined" != typeof JSON ? JSON.stringify(x) : x)}
 
 // native clean-up fetched post
 function unescapeHtml(text){
@@ -4372,6 +4367,7 @@ function inteligent_width( mode ){
 		var ct, L, leb, upkey, imgs=[];
 		ct =' .clickthumb';
 		leb = parseInt($('#preview-image .preview-image-unit').length);
+		
 		L = ( leb > 0 ? (leb * 57)+'px' : '100%');
 		if( leb > 0 ) {
 			$(ct).show();
@@ -4412,34 +4408,27 @@ function inteligent_width( mode ){
 	}, 10);
 }
 
-function pos_verticalizing(){
-	if( $('.vertical-text').is(':visible') ){		
-		var vH, vW = Math.round(parseInt($('.vertical-text').width()) / 2) + 33;
-		vH = (vW / 2) + 10;
-		$('.vertical-text')
-			.css('margin-left', '-'+ vW +'px')
-			.css('bottom', '-'+ vH +'px')
-			.css('visibility', 'visible');
-	}
-}
-
 function clear_quoted(){
-	$('.active').each(function(){ $(this).click() });
+	$('.multi-quote.blue').removeClass('blue').addClass('white');
 	$('#qr_remoteDC').click();
 	_NOFY.dismiss();
 }
 
 function precheck_quoted( injected ){
-	var cb_after, no_mqs = ($('.active').length == 0);
+	var cb_after, no_mqs = ($('.multi-quote.blue').length == 0);
 	if(!injected && no_mqs && $("#tmp_chkVal").val()==""){
 		_NOFY.dismiss(); return;
 	}
 	cb_after = function(){
 		$('#sdismiss_quote').click(function(){ clear_quoted() });
-		//$('#squick_quote').css('display', (($('.active').length == 0) ? 'none':'') );
-		$('#squick_quote').css('display', 'none' ); // always as it is not functional yet
+		var mq_ids = $("#tmp_chkVal").val().split(',');
+		$.each(mq_ids, function(){
+			if( !$('#mq_' + this).hasClass('blue') )
+				$('#mq_' + this).addClass('blue').removeClass('white');
+		});
+		
 	};
-	_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" href="javascript:;">Deselect</a>', cb:cb_after, btnset:true});
+	_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" href="javascript:;">Dismiss</a>', cb:cb_after, btnset:true});
 }
 
 function close_popup(){
@@ -4630,9 +4619,8 @@ function click_BIU(title){
 }
 
 
-
 function eventsController(){
-	$('#title').focus(function(){
+	$('#form-title').focus(function(){
 		var T=$(this), par = T.parent();
 		if( par.attr('class').indexOf('condensed')!=-1 ){
 			par.removeClass('condensed');
@@ -4655,8 +4643,10 @@ function eventsController(){
 	$("#pick_icon").click(function () {
 		gvar.$w.clearTimeout(gvar.sTryEvent);
 		$("#menu_posticon").slideToggle(120, function () {
-			if ($("#menu_posticon").is(":visible")) $("#fakefocus_icon").focus();
-			else $("#title").focus()
+			if ($("#menu_posticon").is(":visible"))
+				$("#fakefocus_icon").focus();
+			else
+				$("#form-title").focus()
 		})
 	});
 	$("#fakefocus_icon").blur(function () {
@@ -4678,7 +4668,7 @@ function eventsController(){
 		})
 	});
 	$("#close_title").click(function () {
-		$("#title").val("").focus();
+		$("#form-title").val("").focus();
 		$("#close_title").hide()
 	});
 	
@@ -4688,10 +4678,10 @@ function eventsController(){
 			if( !$('.title-message').is(":visible") ){
 				$("#hid_iconid").val(0);
 				$("#img_icon").attr("src", "#").hide();
-				$("#title").val("");
+				$("#form-title").val("");
 				$("#close_title").hide()
 			}else{
-				$("#title").focus()
+				$("#form-title").focus()
 			}
 			$("#hid_iconid").attr("checked", true)
 		});
@@ -4903,8 +4893,8 @@ function eventsTPL(){
 	});
 	$('#sadvanced').click(function(ev){
 		do_an_e(ev);
-		if( $('#title').closest('div.condensed').length == 1 )
-			$('#title').val("");
+		if( $('#form-title').closest('div.condensed').length == 1 )
+			$('#form-title').val("");
 		$('#formform').submit();
 	});
 	$('#spreview').click(function(ev){
@@ -4912,7 +4902,7 @@ function eventsTPL(){
 		_BOX.init();
 		_BOX.preview();
 	});
-	$('#squote_post').click(function(){		
+	$('#squote_post').click(function(){
 		_AJAX.quote( $(this), function(){
 			var func = function(){
 				$('#dismiss_request').click(function(){ _NOFY.dismiss() });
@@ -4924,8 +4914,7 @@ function eventsTPL(){
 		});
 	});
 	$('#squick_quote').click(function(){
-		
-	
+		_QQparse.init();
 	});
 	
 	$('#scancel_edit').click(function(){ _AJAX.edit_cancel() });
@@ -4936,35 +4925,11 @@ function eventsTPL(){
 		$(this).hide()
 	});
 	$('#qr_chkval').click(function(){
-		precheck_quoted( $('#tmp_chkVal').val() );
+		precheck_quoted( $('#tmp_chkVal').val() );		
 	});
-	$('.sidebar-user').hover(function(){
-		gvar.sTryMenus = gvar.$w.setTimeout(function(){ $('.sidebar-user .toggle-sidebar-wrap').show() }, 600)
-	}, function(){
-		gvar.$w.clearTimeout(gvar.sTryMenus);
-		$(this).find('.toggle-sidebar-wrap').hide()
-	});
-	$('#toggle-avatar, .vertical-text').click(function(){
-		var todo = $(this).attr('data-todo');
-		if(todo=='avatar'){
-			$('.sidebar-user').show();
-			$('.vertical-text').hide();
-		}else if(todo=='side'){
-			$('.sidebar-user').hide();
-			var vW = $(this).width();
-			$('.vertical-text').show();
-			pos_verticalizing();
-		}
-		setValue(KS+'HIDE_AVATAR', String(todo!='avatar' ? '1':'0'), function(ret){
-			gvar.settings.hideavatar=(todo!='avatar' ? '1':'0');
-		});
-		
-		resize_popup_container();
-		_TEXT.focus();
-	});
-	$('#settings-button').click(function(){
-		_STG.init();
-	});
+
+	$('#settings-button').click(function(){ _STG.init(); });
+	
 	gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
 	_TEXT.setElastic(gvar.maxH_editor);
 	$('#'+gvar.tID).keydown(function(ev){
@@ -4973,8 +4938,7 @@ function eventsTPL(){
 		if(A === 9){
 			do_an_e(ev);
 			gvar.$w.setTimeout(function(){ $('#sbutton').focus() }, 50);
-		}
-		
+		}		
 		
 		// area kudu dg CSA
 		if( (pCSA=='0,0,0' || pCSA=='0,1,0') || (A < 65 && (A!=13 && A!=9)) || A > 90 )
@@ -5054,6 +5018,17 @@ function eventsTPL(){
 }
 
 function get_userdetail() {
+	var a={}, b, c;	
+	c = $(".vcard.user");
+	b = /\/profile\/(\d+)/.exec($(c).html());
+	d = $(c).find('.fig img');
+	a = {
+		 id: ("undefined" != typeof b[1] ? b[1] : null)
+		,name: $(c).find('.fn').text()
+		,photo:$(d).attr('src')
+		,isDonatur: ($('#quick-reply').get(0) ? true : false)
+	};
+	/*
     var a = {id: null, name: "", photo:null, isDonatur: false}
 	  , b, c = $("#profile-nav .m-panel .fn"), d = $('.img-wrp .photo');
     if( c.get(0) ){
@@ -5062,6 +5037,7 @@ function get_userdetail() {
     }
 	a["photo"] = ( d.get(0) ? d.attr('src') : gvar.kkcdn + 'user/avatar/male.jpg');
 	a["isDonatur"] = ($('.quick-reply').get(0) ? true : false);
+	*/
     return a
 }
 
@@ -5122,7 +5098,7 @@ function getSettings(stg){
 				
 				try{
 					// warning this may trigger error
-					settings.userLayout.template = decodeURIComponent(_hVal[1]).replace(/\\([\!\:])/g, "$1");					
+					settings.userLayout.template = decodeURIComponent(_hVal[1]).replace(/\\([\!\:])/g, "$1");
 					
 				}catch(e){
 					clog('decodeURI in get setting failed');
@@ -5216,18 +5192,14 @@ function getUploaderSetting(){
 
 function toggleTitle(){
 	if( $('#formqr').is(':visible') ){
-		$('#qrtoggle a').removeClass('down');
-		myfadeOut($('#dumy-title'), 'fast');
-		
+		$('#qrtoggle-button').html('&#9650;');		
 	}else{
-		$('#qrtoggle a').addClass('down');
-		myfadeIn($('#dumy-title'));
+		$('#qrtoggle-button').html('&#9660;');
 	}
 }
 
 function resize_popup_container(force_width){
-
-	var mW  = ( $('.post-wrapper').find('.entry-content').width() + ( $('.sidebar-user').is(":visible") ? 0 : 172) + 38 );
+	var mW  = ( $('.hfeed').find('.entry').width() + 163 );	
 	$('.qr-editor-wrap').css('width',  mW + 'px');
 	
 	var bW, bH = parseInt( getHeight() ), cTop=0;
@@ -5253,12 +5225,13 @@ function resize_popup_container(force_width){
 
 function finalizeTPL(){
 	var sec, cck, st='securitytoken', tt = gvar.thread_type;
-	if( cck = /hash=(.+)/i.exec( $('.m-panel a[href*="/logout/"]').attr('href')) ){
-		sec = (cck ? cck[1] : false);
-	}else{
-		alert('securitytoken not found');
+	sec = $('*[name="'+st+'"]' + (gvar.thread_type == 'group' ? ':last' : '') ).val();
+	if( !sec ){
+		// this might be inaccessible thread, wotsoever
+		clog('securitytoken not found, qr-halted');
 		return;
 	}
+	
 	gvar._securitytoken = String( sec );
 	$('#formform').attr('action', gvar.domain + (tt=='forum' ? 'post_reply' : 'group/reply_discussion' ) + '/' + gvar.pID + (tt=='forum' ? '/?post=' : '') );
 	$('#qr-'+st).val(gvar._securitytoken);
@@ -5269,7 +5242,9 @@ function finalizeTPL(){
 		$('#qr-groupid').val(gvar.pID);
 	}
 
-	$('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999; bottom:-9999;"></div>');
+	$('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999; bottom:-9999;"></div>')
+	$('body').append('<input id="remote_tooltip" type="button" value="rTip" style="position:absolute; left:-99999; bottom:-9999" onclick="remote_xtooltip(this)"/>');
+	
 	
 	if( !gvar.user.isDonatur ){
 		GM_addGlobalScript(location.protocol+ '\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax.js', 'recap', true);
@@ -5277,53 +5252,11 @@ function finalizeTPL(){
 	}
 }
 
-function what_if_notlogin(){
-	$('.quote').each(function(){
-		$(this).click(function(ev){
-			do_an_e(ev);
-			if( !$('.closed-button').get(0) ){
-				if( $('a.close').attr('class').indexOf('closed')!=-1) $('a.close').click();
-				
-				if($('.notification:eq(1)').attr('class').indexOf('show-panel')!=-1) {
-					$(this).removeClass('show-panel'); return;
-				}
-				$('.sign-reg').find('.m-panel').slideToggle(170, function(){
-					if( $(this).is(":visible") ){
-						$('.notification:eq(1)').addClass('show-panel');
-						$('#username').focus().delay(500);
-					}
-				});
-			}else{
-				alert('Sorry! This thread is closed!');
-			}
-		});
-	});
-	
-	$('#loginform').submit(function(e){
-		do_an_e(e);
-		$(this).hide();
-		$('#login_spinner').show().find('.mf-spinner').removeClass('transp');
-		$.post( $(this).attr('action'), $(this).serialize(), function(data) {
-			if( JSON.stringify(data).match(/<a\s+href=[\'\"\\]+([^\'\"]+)[^>]+.click\shere/i) ){
-				gvar.$w.setTimeout(function () { 
-					$('#login_spinner').find('p').html('Cekibrot Gan....');
-					gvar.$w.location.reload(false) 
-				}, 1000);
-			}else{
-				$('#login_spinner').hide();
-				$('#loginform').show();
-				$('#logwarn').html('Wrong user or password');
-			}
-		});
-	})
-	.after('<div style="display:none;" id="login_spinner"><div class="mf-spinner transp chrome-spinner-delay"></div><p>'+gvar.loging_in+'</p></div>')
-	.prepend('<div id="logwarn"/>');
-}
-
 function slideAttach(that, cb){
 	var landed, tgt, destination, scOffset, prehide, isclosed, delay;
-	tgt = $(that).closest('div.post-wrapper');
-	prehide = ($('#'+gvar.qID).parent().attr('id') != tgt.attr('id') );
+	tgt = $(that).closest('.row').find('.col:first');
+	
+	prehide = ($('#'+gvar.qID).closest('.row').attr('id') != tgt.parent().attr('id') );
 	isclosed = !$('#formqr').is(':visible');
 	delay = 350;
 	
@@ -5356,28 +5289,31 @@ function slideAttach(that, cb){
 }
 
 function scrollToQR(){
-	$('#qr-content-wrapper').closest('.post-wrapper').find('.quote').click();
+	$('#' + gvar.qID).closest('.row').find('.button_qr').click();
 }
 
+// eval tooltip crossed dom, due to issue Opera
+function xtip(sel, dofind){
+	var $tgt = $('#remote_tooltip');
+	$tgt.attr('data-selector', sel);
+	dofind && $tgt.attr('data-selector_find', dofind);
+	$tgt.click();
+}
 
 function start_Main(){
 	
-	GM_addGlobalStyle( rSRC.getCSS() );
-	
-	gvar.bodywidth = $('#content-body').width();
-	gvar.user = get_userdetail();
-	
-	// do nothin if not login or dont meet user.id (show_post) page
-	if( gvar.user.name == "" || null == gvar.user.id || $('.closed-button').get(0) ) {
-		if($('.notification').get(0)){
-			clog('Not login, get the "F"-out');
-			what_if_notlogin();
-		}
+	gvar.user = get_userdetail();	
+	// do nothin if not login | locked thread
+	if( !gvar.user.id || $('.icon-lock').get(0) || !$('*[name="securitytoken"]').val() ){
+		clog('Not login, no securitytoken, locked thread, wotever, get the "F"-out');
 		return
 	}
-	gvar.thread_type = (location.href.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : 'forum');
+	GM_addGlobalStyle( rSRC.getCSS() );	
+	gvar.bodywidth = $('#main .col:first').width();
 	
-	gvar.last_postwrap = $('.last').attr('id');
+	gvar.thread_type = (location.href.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : 'forum');	
+	gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
+	
 	// is aka to groupid
 	gvar.pID = (function get_thread_id(href){
 		// *.kaskus.*/group/reply_discussion/6124
@@ -5390,7 +5326,7 @@ function start_Main(){
 		}
 		cck = (tt == 'forum' ? /\/post_reply\/(\d+)/.exec( href ) : /\/reply_discussion\/(\d+)/.exec( href ) );
 		return (cck ? cck[1] : false);
-	})( $('.new-reply').attr('href') );	
+	})( $('#act-post').attr('href') );	
 	getSettings( gvar.settings );
 	
 	var maxTry = 50, iTry=0,
@@ -5399,168 +5335,134 @@ function start_Main(){
 			gvar.$w.setTimeout(function(){wait_settings_done() }, 100);
 			iTry++;
 		}else{
-	
+			var $_1stlanded, mq_class = 'multi-quote';
+			
 			// need a delay to get all this settings
-			gvar.$w.setTimeout(function(){
+			gvar.$w.setTimeout(function(){				
 				
-				// clean button_qr & qr original
-				$('.quick-reply').empty().remove();
-				$('.button_qr').each(function(){ $(this).remove() });
+				// push qr-tpl
+				if(gvar.last_postwrap){
+					$_1stlanded = $('#'+gvar.last_postwrap);
+				}else{
+					// di groups
+					$_1stlanded = $('.hfeed:last').closest('.row');
+				}
+				$_1stlanded.find('.col').append( rSRC.getTPL() );
+				// ignite show..
+				$('#markItUpReply-messsage').show();
 				
-				// pull tpl	
-				$('#'+gvar.last_postwrap).append( rSRC.getTPL() );
-				$('.action-button:eq(1)').css('position', 'absolute');
-				$('#markItUpReply-messsage').show();		
-				
-				if(gvar.thread_type=='forum'){
-					$('.quote').each(function(e){
-						var foo, par = $(this).parent();
-						$(this).before('<div class="qqwrap" style="position:relative;display:inline;" />');
-						$(this).appendTo( $(par).find('.qqwrap') );
+				$('.user-tools').each(function(idx){
+					if(gvar.thread_type == 'group')
+						$(this).closest('.row').attr('id', 'grpost_' + idx);
 						
-						$(this).click(function(ev){
-							do_an_e(ev);
-							var dothat = function(){
-								slideAttach(that)
-							}, that = $(this);
-							if( gvar.edit_mode == 1 ){
-								if( _AJAX.edit_cancel(false) )
-									dothat();
-								else
-									_TEXT.focus();
-							}else dothat();
-						})
-						.css('padding-right', '30px')
-						.after('<a href="javascript:;" style="" title="Quick Quote" class="qr-quick-quote" href="'+ $(this).attr('href') +'"></a>');
-						
-						//.before('<a style="display:none" class="button quick-quote" href="'+ $(this).attr('href') +'"><img alt="" src="'+ gvar.kkcdn +'css_v0.1/img/icon/quote.png"/> QuickQuote</a>');
-					});
-					$('.qr-quick-quote').each(function(){
-						$(this).click(function(event){
-							do_an_e(event);
-							var dothat = function(that){
-								slideAttach(that, function(el){
-									_QQparse.init(el, function(){
-										_TEXT.lastfocus();
-									});
-									
-									// effect blink									
-									myfadeOut($(that), 210, function(){
-										myfadeIn($(that), 360);
-									});									
-								});
-							}, that = $(this)
-							
-							if( gvar.edit_mode == 1 ){
-								if( _AJAX.edit_cancel(false) )
-									dothat( $(this) );
-								else
-									//_TEXT.focus();
-									_TEXT.lastfocus();
-							}else dothat( $(this) );
-							
-						});
-					});
-					$('.multi-quote').each(function(e){
-						$(this).click(function(event){
-							do_an_e(event);
-							if(gvar.sTry_canceling){
-								delete(gvar.sTry_canceling);
-								return;
-							}
-							if( gvar.edit_mode == 1 ){
-								if( _AJAX.edit_cancel(false) ){
-									$('#qr_chkcookie').click();
-								}else{
-									gvar.sTry_canceling = 1;
-									$(this).click();
-								}
-							}else{
-								$('#qr_chkcookie').click();
-							}
-						});
+					var qqid, entry_id = $(this).closest('.row').attr('id');
+					
+					// leave quote button alone
+					$(this).find('.button_qr').remove();
+
+					$(this)
+						.append('<a href="#" id="button_qr_'+ entry_id +'" class="button small white button_qr button_qrmod" rel="nofollow" onclick="return false" style="margin-left:5px;"> Quick Reply</a>')
+						.append('<a href="#" id="button_qq_'+ entry_id +'" class="button small green button_qq" data-original-title="Quick Quote" rel="tooltip" onclick="return false" style="margin-left:-7px; padding:0 10px 0 12px;"><i class="icon-share-alt icon-large"></i> </a>')
+					;
+					// event for quick reply
+					$(this).find('.button_qr').click(function(ev){
+						do_an_e(ev);
+						var dothat = function(){
+							slideAttach(that)
+						}, that = $(this);
+						if( gvar.edit_mode == 1 ){
+							if( _AJAX.edit_cancel(false) )
+								dothat();
+							else
+								_TEXT.focus();
+						}else dothat();
 					});
 					
-					//-end of thread_type='forum'
-				}
-				else{
-					$('.post-entry').each(function(){
-						var him = $(this).find('.entry-footer');
-						if( !$(him).get(0) )
-							$(this).append('<div class="entry-footer" />');
-						$(him).append('<a href="javascript:;" class="button quote reply"><img src="'+ gvar.kkcdn +'css_v0.1/img/icon/quote.png" alt="" /> Reply</a>');
-						$(this).find('.reply').click(function(ev){
-							do_an_e(ev);
-							var that = $(this), dothat = function(){
-								slideAttach(that, function(){
-									var usr, par = $(that).closest('.post-wrapper');
-									if(par.attr('id'))
-									usr = {
-										profile_uri: gvar.domain + $(par).find('a.fn').attr('href').substring(1)
-										,name: $(par).find('a.fn').html()
-										,gmid: $(par).attr('id')
-									};									
-									_TEXT.init();
-									_TEXT.set(''
-										+'[URL='+ gvar.domain + 'group/discussion/'+ gvar.discID +'/'+ gvar.pID +'/'+ usr.gmid.replace(/gm/gi,'') +'/1/gm/?#'
-										+ usr.gmid +'][B]re[/B][/URL]: '
-										+'[URL='+ usr.profile_uri + ']@'+ usr.name +'[/URL]\n'
-									);
-									window.setTimeout(function(){ selectAll( $('#'+gvar.tID).get(0) ) }, 20);
+					// event for quote-quote
+					$(this).find('.button_qq').click(function(ev){
+						do_an_e(ev);
+						var dothat = function(that){
+							slideAttach(that, function(el){
+								_QQparse.init(el, function(){
+									_TEXT.lastfocus();
 								});
-							};
-							if( gvar.edit_mode == 1 ){
-								if( _AJAX.edit_cancel(false) )
-									dothat();
-								else
-									_TEXT.focus();
-							}else dothat();
-						})
+							});
+						}, that = $(this);
 						
+						if( gvar.edit_mode == 1 ){
+							if( _AJAX.edit_cancel(false) )
+								dothat( $(this) );
+							else
+								_TEXT.lastfocus();
+						}else dothat( $(this) );
 					});
-					//-end of thread_type='group'
-				}
-				
-				// berlaku di group & forum
-				$('.edit').each(function(){
-					$(this).click(function(event){
-						do_an_e(event);
-						_AJAX.edit( $(this), function(){
-							var func = function(){
-								$('#dismiss_request').click(function(){ _NOFY.dismiss() });
-							};
-							_NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
-						}, function(){
-							_NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
-							
-							_TEXT.lastfocus();
+					
+					// add-event to multi-quote
+					$(this).find('a[id^="mq_"]').click(function(ev){						
+						if(gvar.sTry_canceling){
+							delete(gvar.sTry_canceling);
+							return;
+						}
+						if( gvar.edit_mode == 1 ){
+							if( _AJAX.edit_cancel(false) ){
+								//$('#qr_chkcookie').click();
+								window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+							}else{
+								gvar.sTry_canceling = 1;
+								$(this).click();
+							}
+						}else{
+							//$('#qr_chkcookie').click();
+							window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+						}
+						if(!$(this).hasClass(mq_class))
+							$(this).addClass(mq_class)
+					}).addClass(mq_class);
+					
+					// event for quick edit
+					$(this).find('a[href*="/edit_post/"]').each(function(){
+						$(this).click(function(ev){
+							do_an_e(ev);
+							_AJAX.edit( $(this), function(){
+								var func = function(){
+									$('#dismiss_request').click(function(){ _NOFY.dismiss() });
+								};
+								_NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
+							}, function(){
+								_NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
+								_TEXT.lastfocus();
+							});
+							slideAttach( $(this) );
 						});
-						slideAttach( $(this) );
 					});
 				});
+				// end each of user-tools
 				
 				// kill href inside markItUpHeader
 				$('.markItUpHeader a').each(function(){
 					$(this).attr('href', 'javascript:;'); 
 					$(this).click(function(e){ do_an_e(e) });
-				});
+				});				
 				
 				finalizeTPL();
-				eventsTPL();				
+				$('#quick-reply').remove();
 				
-				// finishing kill pull down
+				eventsTPL();
+				
+				// almost done, later do. delayed and give a time for rendering
+				// give events for another node
 				$(document).ready(function(){
-					$('#qrtoggle a').removeClass('pull-disabled').addClass('pull');
-					$('#qrtoggle').removeClass('pull-button-disabled').addClass('pull-button');
-					$('#qrtoggle a').click(function(){
-						
+					
+					
+					$('#qrtoggle-button').click(function(){
 						$('#formqr').toggle(180, function(){
 							toggleTitle();
 							$('#'+gvar.tID).focus();
 						});
-					});		
+					});
 					
-					$(gvar.$w).keydown(function (ev) {
+					// global-shortcut
+					$(window).keydown(function (ev) {
 						var A = ev.keyCode, doThi=0, CSA_tasks, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
 						
 						if( A == 27 && $("#" + _BOX.e.dialogname).is(":visible") && $("#" + _BOX.e.dialogname).css('visibility')=='visible' ){
@@ -5615,51 +5517,58 @@ function start_Main(){
 						resize_popup_container();
 					});
 					
-					
 					if( trimStr(gvar.tmp_text) && gvar.settings.qrdraft ){
 						_DRAFT.switchClass('gbtn');
 						_DRAFT.title('continue');
 						$('#draft_desc').html( '<a href="javascript:;" id="clear-draft" title="Clear Draft">clear</a> | available' );
 						$('#draft_desc #clear-draft').click(function(){ _DRAFT.clear() });
 					}
-		
-					// repositionin vertical-text
-					window.setTimeout(function(){ pos_verticalizing(); }, 888);
+					
 					
 					// sense of fail css
 					var w_text, w_field, txa = $('#reply-messsage');
 					w_text = $(txa).width()
 					w_field = $(txa).closest('fieldset').width();
-					
 					if( ((w_text*2) - 10) < w_field ){
-						
 						if( gvar.noCrossDomain ){
 							GM_addGlobalStyle(gvar.kqr_static + gvar.css_default + '?' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV), 'direct_css', true);
-						}else if(!gvar.isOpera/*&& confirm('Your QR CSS_BULK seems not loaded properly\nReload page to refetch them now?') */ ){
-							//$('#qr-content-wrapper').hide();
+						}else if( !gvar.isOpera/*&& confirm('Your QR CSS_BULK seems not loaded properly\nReload page to refetch them now?') */ ){
 							//delValue('CSS_BULK', function(){ location.reload(false) })
 							clog('Your QR CSS_BULK seems not loaded properly. Try to reload page to refetch them.')
 						}
 					}
-					
+				
+					// infiltrate default script
 					GM_addGlobalScript( rSRC.getSCRIPT() );
 					
 					
 					(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){ $('.ev_smiley:first').click() }, 50);
-					
-					window.setTimeout(function(){
-						$('#hidrecap_btn').click(); // trigger preload recapcay
-					}, 100);
-					
-					if( !gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS == 0 )
+
+					// trigger preload recapcay
+					if(gvar.thread_type != 'group')
+						window.setTimeout(function(){ $('#hidrecap_btn').click(); }, 100);
+
+					if( !gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS == 0 ){
 						window.setTimeout(function(){
-								_UPD.check();
-								// dead-end marker, should set this up at the end of process
-								gvar.freshload=null;
+							_UPD.check();
+							// dead-end marker, should set this up at the end of process
+							gvar.freshload=null;
 						}, 2000);
+					}
+					$('.bottom-frame').is(':visible') && $('.btm-close').click();
 					
-					
+					// coz opera is too slow evaluating js
+					if(gvar.isOpera){
+						window.setTimeout(function(){
+							xtip('.user-tools', '*[rel="tooltip"]');
+							xtip('#'+gvar.qID, '*[rel="tooltip"]');
+						}, 1500);
+					}else{
+						$('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
+					}
 				});
+				// settimeout additional
+				
 			}, 50);
 			// settimeout pra-loaded settings 
 		}
@@ -5788,68 +5697,69 @@ function outSideForumTreat(){
 
 
 function init(){
-		gvar.inner = {
-				reply	: {
-						title	: "Quick Reply",
-						stoken	: "",
-						submit	: "Post Reply"
-				},
-				edit	: {
-						title	: "Quick Edit",
-						submit	: "Save Changes"
-				}
-		};
-		gvar.titlename= gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
-		
-		var kdomain = domainParse();		
-		gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
-		gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
-		gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-		gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
-		//gvar.kqr_static = 'http://labs.local/SVN/dev-kaskus-quick-reply/statics/kqr/';
-		
-		if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
-				return outSideForumTreat();
+	gvar.inner = {
+		reply	: {
+			title	: "Quick Reply",
+			stoken	: "",
+			submit	: "Post Reply"
+		},
+		edit	: {
+			title	: "Quick Edit",
+			submit	: "Save Changes"
 		}
-		
-		gvar.qID= 'qr-content-wrapper';
-		gvar.tID= 'reply-messsage';
-		gvar.def_title= 'Type new Title';
-		gvar.loging_in= 'Logging in..';
-		
-		gvar.B	= rSRC.getSetOf('button');
-		
-		gvar.freshload = 1;
-		gvar.uploader = gvar.upload_sel = gvar.settings = {};
-		gvar.user = {id:null, name:"", isDonatur:false};
-		gvar._securitytoken_prev = gvar._securitytoken= null;
-		gvar.ajax_pid= {}; // each ajax performed {preview: timestamp, post: timestamp, edit: timestamp }
-		gvar.MQ_count = gvar.edit_mode = gvar.pID = gvar.maxH_editor = gvar.bodywidth = 0;
-		gvar.upload_tipe = gvar.last_postwrap = "";
-		
-		
-		gvar.offsetEditorHeight = 160; // buat margin top Layer
-		gvar.offsetLayer = 10; // buat margin top Layer
-		gvar.offsetMaxHeight = 115; // buat maxHeight adjustment
-		
-		ApiBrowserCheck();
-		gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '')  +'.css';
-		
-		gvar.injected = false;
-		gvar.mx = 30; gvar.ix = 0;
-		
-		if('undefined' == typeof mothership){
-				gvar.noCrossDomain = gvar.isBuggedChrome = 1;
-				jQ_wait2();
-		
-		}else{
-				jQ_wait();
-		}
+	};
+	gvar.titlename= gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
+	
+	var kdomain = domainParse();		
+	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
+	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
+	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
+	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
+	//gvar.kqr_static = 'http://labs.local/SVN/dev-kaskus-quick-reply/statics/kqr/';
+	
+	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
+		return outSideForumTreat();
+	}
+	
+	gvar.qID= 'qr-content-wrapper';
+	gvar.tID= 'reply-messsage';
+	gvar.def_title= 'Type new Title';
+	gvar.loging_in= 'Logging in..';
+	
+	gvar.B	= rSRC.getSetOf('button');
+	
+	gvar.freshload = 1;
+	gvar.uploader = gvar.upload_sel = gvar.settings = {};
+	gvar.user = {id:null, name:"", isDonatur:false};
+	gvar._securitytoken_prev = gvar._securitytoken= null;
+	gvar.ajax_pid= {}; // each ajax performed {preview: timestamp, post: timestamp, edit: timestamp }
+	gvar.MQ_count = gvar.edit_mode = gvar.pID = gvar.maxH_editor = gvar.bodywidth = 0;
+	gvar.upload_tipe = gvar.last_postwrap = "";
+	
+	
+	gvar.offsetEditorHeight = 160; // buat margin top Layer
+	gvar.offsetLayer = 10; // buat margin top Layer
+	gvar.offsetMaxHeight = 115; // buat maxHeight adjustment
+	
+	ApiBrowserCheck();
+	//gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '')  +'.css';
+	gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '.' + gvar.scriptMeta.cssREV)  +'.css';
+	
+	gvar.injected = false;
+	gvar.mx = 30; gvar.ix = 0;
+	
+	if('undefined' == typeof mothership){
+		gvar.noCrossDomain = gvar.isBuggedChrome = 1;
+		jQ_wait2();	
+	}else{
+		/* default mostly for FF */
+		jQ_wait();
+	}
 }
 
 function CSS_precheck(){
 	if( !gvar.isOpera ){
-		getValue(KS + 'CSS_META', function(ret){			
+		getValue(KS + 'CSS_META', function(ret){
 			if( ret ){
 				// check expired dari lastupdate (atleast 1 week)
 				var one_week, cucok, parts = ret.split(';');
@@ -5928,18 +5838,17 @@ function jQ_wait2(){
 function jQ_wait() {
     if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
         gvar.$w.setTimeout(function () { jQ_wait() }, 200);
-				if( !gvar.injected ){
-						GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
-						gvar.injected = true;
-				}
+			if( !gvar.injected ){
+				GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
+				gvar.injected = true;
+			}
         gvar.ix++;
     } else {
-
         if ("undefined" == typeof unsafeWindow.jQuery) return;
         $ = unsafeWindow.$ = unsafeWindow.jQuery = unsafeWindow.jQuery.noConflict(true);
-				gvar.ix = 0;
+			gvar.ix = 0;
 		
-				CSS_precheck();
+			CSS_precheck();
     }
 }
 
