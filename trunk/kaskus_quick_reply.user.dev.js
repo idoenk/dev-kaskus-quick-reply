@@ -89,7 +89,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = 0; // development debug
+gvar.__DEBUG__ = 1; // development debug
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -607,7 +607,7 @@ var rSRC = {
 			+'</div>' // cs_left
 			+''
 			+'<div class="sidsid cs_right">'
-			+ '<div id="uploader_container" style="max-width: 829px;"></div>'
+			+ '<div id="uploader_container" style="max-width:100%;"></div>'
 			+'</div>' // .cs_right
 			+'<span id="toggle-sideuploader" class="toggle-sidebar" data-state="hide">&#9664;</span>'
 			+'</div>' // .wraper_custom
@@ -5739,7 +5739,9 @@ function init(){
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
+	//gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
+	gvar.kqr_static = 'http://labs.local/SVN/dev-kaskus-quick-reply/statics/kqr/';
+
 
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
 		return outSideForumTreat();
