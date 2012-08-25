@@ -9,7 +9,7 @@
 // @description    KQR
 // @version        4.0.7
 // @dtversion      120725407
-// @timestamp      1345915954354
+// @timestamp      1345922828720
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -22,7 +22,7 @@
 //
 // -!--latestupdate
 //
-// v4.0.7b - 2012-08-25 . 1345915954354
+// v4.0.7b - 2012-08-25 . 1345922828720
 //   fix onresize width
 //   add expand thread width (css widefix -by s4nji)
 //   deprecated uploader [lulzimg]
@@ -75,7 +75,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.7b';
 gvar.scriptMeta = {
-	timestamp: 1345915954354 // version.timestamp
+	timestamp: 1345922828720 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 120825407 // version.date
