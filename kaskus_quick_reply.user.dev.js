@@ -23,6 +23,8 @@
 // -!--latestupdate
 //
 // v4.0.7b - 2012-08-25 . 1345915954354
+//   fix onresize width
+//   add expand thread width (css widefix -by s4nji)
 //   deprecated uploader [lulzimg]
 //   add uploader postimage.org
 //
@@ -80,7 +82,7 @@ gvar.scriptMeta = {
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 120704406 // css revision date; only change this when you change your external css
+	,cssREV: 120825407 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -453,6 +455,9 @@ var rSRC = {
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
+			+  '<div class="sub-bottom sayapkanan">'
+			+  '<input type="checkbox" tabindex="4" id="chk_fixups"><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+			+  '</div>'
 			
 			+(gvar.__DEBUG__ ? '<br/>':'')
 			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" />\n\n'
@@ -762,18 +767,22 @@ var rSRC = {
 		+"#box_preview {max-height:" + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + "px;}"
 		+".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
 		+".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
-		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
-		+""
-		// =====
-		
-/*
+		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"		
+	},
 
-.qr-entry-head .righty {text-align:right; position:relative; z-index:1; float:right; padding:5px 10px; }
-*/
-		+""
-		+""
-		+""
-		+""
+	/*
+	 * Livebeta Widefix -by s4nji
+	 * userstyles.org/styles/68408
+	 */
+	getCSSWideFix: function(){
+		return ""
+		+"#main > .row, #main > .row .col { width: 98% !important;margin: 0 1% !important; }"
+		+"pre > br {display: none !important; }"
+		+"#forum-listing .row .col.grid-12 {width: 98% !important; margin: 0 1% !important}"
+		+"#forum-listing .author {width: 120px !important}"
+		+"#forum-listing .entry {width: auto !important; padding: 1% 0 5% 1% !important;margin-top: -1px !important; }"
+		+".bottom-frame, .ads300, .skin, .l-link, .r-link, .banner-top-ads {display: none !important; }"
+		+".footer .row .col.grid-8,#forum-listing > .row > .col.grid-12 > .header .thread-control .col.grid-8, #forum-listing > .row > .col.grid-12 > .header .thread-navigate .col.grid-8 {float: right !important; }"
 	},
 	getSCRIPT: function(){
 		return ''
@@ -3266,7 +3275,7 @@ var _CSS = {
 	},
 	set_css: function(c, cb){
 		setValue(KS + 'CSS_BULK', c, function(){
-			GM_addGlobalStyle(c, 'xhr_css', 1);			
+			GM_addGlobalStyle(c, 'xhr_css', 1);
 			var metacss = gvar.css_default + ';' + (new Date().getTime()).toString()
 
 			setValue(KS + 'CSS_META', metacss, function(){
@@ -4916,6 +4925,16 @@ function eventsTPL(){
 			_TEXT.lastfocus();
 		});
 	});
+	$('#chk_fixups').click(function(){
+		var cssid = 'css_inject_widefix';
+		if(!$(this).is(':checked')) {
+			$('#'+cssid).remove();
+		}else{
+			if($('#'+cssid).get(0))
+				$('#'+cssid).remove();
+			GM_addGlobalStyle(rSRC.getCSSWideFix(), cssid, 1);
+		}		
+	});
 	$('#squick_quote').click(function(){
 		_QQparse.init();
 	});
@@ -5192,7 +5211,6 @@ function toggleTitle(){
 
 function resize_popup_container(force_width){
 	var mW  = ( $('.hfeed').find('.entry').width() + 163 );	
-	$('.qr-editor-wrap').css('width',  mW + 'px');
 	
 	var bW, bH = parseInt( getHeight() ), cTop=0;
 	if( force_width )
@@ -5203,12 +5221,23 @@ function resize_popup_container(force_width){
 		bW = ( gvar.bodywidth-100 );
 	
 	if( $(".modal-dialog").length > 0){
-		
-		$('.modal-dialog').css('top', gvar.offsetLayer + 'px').css('width', bW + 'px').css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
+		var xleft = (document.documentElement.clientWidth/2) - ( (bW/2) + 50 );
+		clog('bW:'+bW);
+		clog('left:'+xleft);
+
+		$('.modal-dialog')
+			.css('top', gvar.offsetLayer + 'px')
+			.css('width', bW + 'px')
+			.css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
+
 		cTop = (bH/2) - ( $('.modal-dialog').height()  ) - 5;
 		bW = 305;
-		$('.capcay-dialog').css('top', cTop + 'px').css('width', bW + 'px').css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
-		$('#box_preview').css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
+		$('.capcay-dialog')
+			.css('top', cTop + 'px')
+			.css('width', bW + 'px')
+			.css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
+		$('#box_preview')
+			.css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
 	}
 	
 	gvar.maxH_editor = ( bH - gvar.offsetEditorHeight );	
@@ -5235,7 +5264,7 @@ function finalizeTPL(){
 	}
 
 	$('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999; bottom:-9999;"></div>')
-	$('body').append('<input id="remote_tooltip" type="button" value="rTip" style="position:absolute; left:-99999; bottom:-9999" onclick="remote_xtooltip(this)"/>');
+	$('body').prepend('<input id="remote_tooltip" type="button" value="_" style="position:absolute!important; left:-9999; bottom:-9999; visibility:hidden; height:0;" onclick="remote_xtooltip(this)"/>');
 	
 	
 	if( !gvar.user.isDonatur ){
@@ -5503,7 +5532,7 @@ function start_Main(){
 						if(doThi) do_an_e(ev);
 						
 					}).resize(function () {
-						var b = $("#content-body").width();
+						var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
 						gvar.bodywidth = b;
 						gvar.maxH_editor = parseInt( getHeight() ) - gvar.offsetEditorHeight;
 						resize_popup_container();
@@ -5705,9 +5734,8 @@ function init(){
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
+	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
 
-	
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
 		return outSideForumTreat();
 	}
