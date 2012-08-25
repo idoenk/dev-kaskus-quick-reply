@@ -7,9 +7,9 @@
 // @include        *.kaskus.co.id/group/discussion/*
 // @include        *.kaskus.co.id/show_post/*
 // @description    KQR
-// @version        4.0.6
-// @dtversion      120704406
-// @timestamp      1341353007926
+// @version        4.0.7
+// @dtversion      120725407
+// @timestamp      1345915954354
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -18,18 +18,21 @@
 // @include        http://*.imageshack.us/*
 // @include        http://imgur.com/*
 // @include        http://photoserver.ws/*
-// @include        http://lulzimg.com/*
+// @include        http://postimage.org/*
 //
 // -!--latestupdate
+//
+// v4.0.7b - 2012-08-25 . 1345915954354
+//   deprecated uploader [lulzimg]
+//   add uploader postimage.org
+//
+// -/!latestupdate---
+// ==/UserScript==
 //
 // v4.0.6b - 2012-07-04 . 1341353007926
 //  relayout old-like-keep-fresh
 //  deprecate what_if_notlogin
 //  kaskus-fresh
-//
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.0.5b - 2012-05-31 . 1338413166295
 //  include show_post (code fixer purpose only)
@@ -68,12 +71,12 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.6b';
+gvar.sversion = 'v' + '4.0.7b';
 gvar.scriptMeta = {
-	timestamp: 1341353007926 // version.timestamp
+	timestamp: 1345915954354 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 120704406 // version.date
+	,dtversion: 120825407 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -5028,16 +5031,6 @@ function get_userdetail() {
 		,photo:$(d).attr('src')
 		,isDonatur: ($('#quick-reply').get(0) ? true : false)
 	};
-	/*
-    var a = {id: null, name: "", photo:null, isDonatur: false}
-	  , b, c = $("#profile-nav .m-panel .fn"), d = $('.img-wrp .photo');
-    if( c.get(0) ){
-        a["name"] = c.html();
-        if (b = /\/profile\/(\d+)/.exec(c.attr("href"))) a["id"] = b[1]
-    }
-	a["photo"] = ( d.get(0) ? d.attr('src') : gvar.kkcdn + 'user/avatar/male.jpg');
-	a["isDonatur"] = ($('.quick-reply').get(0) ? true : false);
-	*/
     return a
 }
 
@@ -5153,11 +5146,10 @@ function getSettings(stg){
 function getUploaderSetting(){
 	// uploader properties
 	gvar.upload_sel={
-		// imagedum:'imagedum.com'
 		 photoserver:'photoserver.ws'
-		,lulzimg:'lulzimg.com/homelulz'
 		,imageshack:'imageshack.us'
 		,imgur:'imgur.com'
+    	,postimage:'postimage.org'
 	};
 	gvar.uploader={
 		// imagedum:{ src:'imagedum.com',noCross:'1'  }
@@ -5176,9 +5168,9 @@ function getUploaderSetting(){
 		,photoserver:{
 			src:'photoserver.ws',noCross:'1' 
 		}
-		,lulzimg:{
-			src:'lulzimg.com/homelulz',noCross:'1' 
-		}
+    	,postimage:{
+        	src:'postimage.org',noCross:'1' 
+    	}
 	};
 	// set last-used host
 	try{
@@ -5618,17 +5610,16 @@ function outSideForumTreat(){
 		+'#overlay .content{top:3px'+i+'}'
 		+'#overlay{position:absolute'+i+'}'
 		;break;
-    case "lulzimg":
-		CSS=''
-		+'#logo,#histats_counter{display:none}'
-		;break;
-    case "imagedum":
-		CSS=''
-		+'#FFN_imBox_Container, div#full > div:last-child,#wrapper p:first-child,.addthis_toolbox'
-		+ '{display:none!important}'
-		+'.nav{position:absolute;top:0;z-index:99}'
-		+'#content{position:absolute;top:0}'
-		;break;
+    case "postimage":
+	    CSS=''
+	    +'* html, body{background-color:#fff;padding:0;margin:0}'
+	    +'center, p:first-child{display:none'+i+'}'
+	    +'#footer{margin-top:2px}'
+	    +'#footer p{margin-top:-18px}'
+	    +'#center{width:70%'+i+'}'
+	    +'#content{padding:0 5px;height:180px'+i+'}'
+	    +'.box{margin-top:-30px}'
+	    ;break;
   }; // end switch loc
   if( CSS!="" ) 
     GM_addGlobalStyle(CSS,'inject_host_css', true);
@@ -5715,7 +5706,7 @@ function init(){
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
 	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
-	//gvar.kqr_static = 'http://labs.local/SVN/dev-kaskus-quick-reply/statics/kqr/';
+
 	
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
 		return outSideForumTreat();
