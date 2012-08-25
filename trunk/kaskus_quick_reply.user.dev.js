@@ -89,7 +89,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = 1; // development debug
+gvar.__DEBUG__ = 0; // development debug
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -5739,8 +5739,7 @@ function init(){
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	//gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
-	gvar.kqr_static = 'http://labs.local/SVN/dev-kaskus-quick-reply/statics/kqr/';
+	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
 
 
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
