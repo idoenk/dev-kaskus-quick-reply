@@ -9,7 +9,7 @@
 // @description    KQR
 // @version        4.0.7
 // @dtversion      120725407
-// @timestamp      1345922828720
+// @timestamp      1345923808642
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -22,7 +22,7 @@
 //
 // -!--latestupdate
 //
-// v4.0.7b - 2012-08-25 . 1345922828720
+// v4.0.7b - 2012-08-25 . 1345923808642
 //   fix onresize width
 //   add expand thread width (css widefix -by s4nji)
 //   deprecated uploader [lulzimg]
@@ -75,7 +75,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.7b';
 gvar.scriptMeta = {
-	timestamp: 1345922828720 // version.timestamp
+	timestamp: 1345923808642 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 120825407 // version.date
@@ -131,7 +131,7 @@ var OPTIONS_BOX = {
  
  //,KEY_SAVE_PRELOAD_RATE: ['0'] // whether donatur need to preload rate or not
  //,KEY_SAVE_QR_COLLAPSE:  ['1'] // initial state of qr
- //,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, wider by Kaskus Fixups - chaox
+ ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -s4nji
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
@@ -456,7 +456,7 @@ var rSRC = {
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<div class="sub-bottom sayapkanan">'
-			+  '<input type="checkbox" tabindex="4" id="chk_fixups"><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+			+  '<input type="checkbox" tabindex="4" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
 			+  '</div>'
 			
 			+(gvar.__DEBUG__ ? '<br/>':'')
@@ -919,12 +919,11 @@ var rSRC = {
 	},
 	getSmileySet: function(custom, cb){
 
-/**
-Format will be valid like this:
- 'keyname1|link1,keyname2|link2'
- eg. 
- ':yoyocici|http://foo'
-*/
+
+	//Format will be valid like this:
+	// 'keyname1|link1,keyname2|link2'
+	//eg. 
+	// ':yoyocici|http://foo'
 	//var sample = 'lopeh|http://static.kaskus.us/images/smilies/sumbangan/001.gif,nangis|http://static.kaskus.us/images/smilies/sumbangan/06.gif';
 	// gvar.smcustom it is an associated object of all custom smiley
 	// gvar.smgroup it is all name of group of custom smiley
@@ -3133,7 +3132,7 @@ var _STG = {
 				+ HtmlUnicodeDecode('&#187;')+' Continue with Reset?';				
 				if( confirm(msg) ){
 					keys = ['SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE','UPDATES_INTERVAL','UPDATES'
-					,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT'
+					,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
 					,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
 					,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','PRELOAD_RATE'
 					,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
@@ -3179,7 +3178,7 @@ var _STG = {
 	*/
 	load_rawsetting: function(){
 		// collect all settings from storage,. 
-		var keys  = ['UPDATES','UPDATES_INTERVAL'
+		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
 					,'HIDE_AVATAR','QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
 					,'LAYOUT_CONFIG','LAYOUT_TPL','CUSTOM_SMILEY'
 		];
@@ -3204,7 +3203,7 @@ var _STG = {
 			//,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
 			//,'TEXTA_EXPANDER':'Textarea Expander preferences; [isEnabled]; validValue1=[1,0]'
 			//,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
-			//,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
+			,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
 			//,'QR_COLLAPSE':'Mode QR collapsed; validValue=[1,0]'
 			,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
 			,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
@@ -4926,14 +4925,15 @@ function eventsTPL(){
 		});
 	});
 	$('#chk_fixups').click(function(){
-		var cssid = 'css_inject_widefix';
-		if(!$(this).is(':checked')) {
-			$('#'+cssid).remove();
-		}else{
+		var chk, cssid = 'css_inject_widefix';
+		if( chk = $(this).is(':checked')) {
 			if($('#'+cssid).get(0))
 				$('#'+cssid).remove();
 			GM_addGlobalStyle(rSRC.getCSSWideFix(), cssid, 1);
-		}		
+		}else{
+			$('#'+cssid).remove();
+		}
+		setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
 	});
 	$('#squick_quote').click(function(){
 		_QQparse.init();
@@ -5090,6 +5090,7 @@ function getSettings(stg){
 	getValue(KS+'UPDATES', function(ret){ settings.updates=(ret=='1') });
 	getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
 	getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
+	getValue(KS+'WIDE_THREAD', function(ret){ settings.widethread=(ret=='1') });
 	
 	gvar.$w.setTimeout(function(){
 	getValue(KS+'UPDATES', function(ret){
@@ -5270,6 +5271,10 @@ function finalizeTPL(){
 	if( !gvar.user.isDonatur ){
 		GM_addGlobalScript(location.protocol+ '\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax.js', 'recap', true);
 		$('#wraper-hidden-thing').append( rSRC.getBOX_RC() );
+	}
+
+	if( gvar.settings.widethread ){
+		GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
 	}
 }
 
