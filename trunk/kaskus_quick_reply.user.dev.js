@@ -7,9 +7,9 @@
 // @include        *.kaskus.co.id/group/discussion/*
 // @include        *.kaskus.co.id/show_post/*
 // @description    KQR
-// @version        4.0.7
-// @dtversion      120725407
-// @timestamp      1345923808642
+// @version        4.0.8
+// @dtversion      121023408
+// @timestamp      1351009527727
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -22,42 +22,25 @@
 //
 // -!--latestupdate
 //
-// v4.0.7b - 2012-08-25 . 1345923808642
+// v4.0.8b - 2012-10-23 . 1351009527727
+//   fix recaptcha public-key, Thx=[ceroberoz, Sanjito, Ndilallah]
+//   fix css (settings)
+//   fix get action form for post_reply
+//   fix get error message (delay post)
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
+// v4.0.7b - 2012-08-25 . 1351009229054
 //   fix onresize width
 //   add expand thread width (css widefix -by s4nji)
 //   deprecated uploader [lulzimg]
 //   add uploader postimage.org
 //
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v4.0.6b - 2012-07-04 . 1341353007926
 //  relayout old-like-keep-fresh
 //  deprecate what_if_notlogin
 //  kaskus-fresh
-//
-// v4.0.5b - 2012-05-31 . 1338413166295
-//  include show_post (code fixer purpose only)
-//  Fix parse inside spoiler Lv.4; adapting [webkit|opera]
-//  false-positive entity decode Lv.3; Fix parse inside spoiler
-//
-// v4.0.4b - 2012-05-30 . 1338330088458
-//  Fix autoload smiley
-//  Fix selected tab smiley content
-//  Fix custom smiley BBCODE
-//  false-positive entity decode Lv.2
-//
-// v4.0.3b - 2012-05-27 . 1338155933804
-//  rolled to decompresed-mode
-//  include domain .co.id
-//  deprecate imagedum service
-//  false-positive entity decode
-//  Fix failed get news latestupdate, (for next check)
-//  Improve auto-cut title post upto 80 chars
-//  Fix qparse html|php|code, align
-//  Fixer fonts/newline for pre ([code] tags)
-//  Fix fail encoding for autotext custom-smiley
-//  Fix custom smiley autotext (incomplete)
 //
 //
 // v0.1 - 2010-06-29
@@ -73,16 +56,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.7b';
+gvar.sversion = 'v' + '4.0.8b';
 gvar.scriptMeta = {
-	timestamp: 1345923808642 // version.timestamp
+	timestamp: 1351009527727 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 120825407 // version.date
+	,dtversion: 121023408 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 120825407 // css revision date; only change this when you change your external css
+	,cssREV: 121023408 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -562,7 +545,7 @@ var rSRC = {
 			+ '</ul>'
 			+'</div>' // cs_left
 
-			+'<div class="sidsid cs_right">'
+			+'<div class="sidsid cs_right sid_beloweditor">'
 			+'<div id="custom_bottom" style="margin:8px 0; display:none;">'
 			+ '<input type="hidden" id="current_grup" value="" />'
 			+ '<input type="hidden" id="current_order" value="" />'
@@ -606,7 +589,7 @@ var rSRC = {
 			+ '</ul>'
 			+'</div>' // cs_left
 			+''
-			+'<div class="sidsid cs_right">'
+			+'<div class="sidsid cs_right sid_beloweditor">'
 			+ '<div id="uploader_container" style="max-width:100%;"></div>'
 			+'</div>' // .cs_right
 			+'<span id="toggle-sideuploader" class="toggle-sidebar" data-state="hide">&#9664;</span>'
@@ -721,7 +704,7 @@ var rSRC = {
 		+'<div class="modal-dialog-title"><span class="modal-dialog-title-text">Settings<span id="box_preview_subtitle"></span></span><span class="modal-dialog-title-close popbox"/></div>'
 		
 		+'<div id="box_wrap">'
-		+ '<div id="box_setting" class="entry-content wraper_custom" style="position:relative; ">' //overflow:hidden;
+		+ '<div id="qr-box_setting" class="entry-content wraper_custom" style="position:relative; ">' //overflow:hidden;
 		+  '<div class="sidsid cs_left" style="position:relative; height:100%!important;"></div>'		
 		+  '<div class="sidsid cs_right" style="width:540px;"></div>'
 		+  '<div class="sidcorner" style=""><a href="javascript:;" id="reset_settings">reset settings</a></div>'
@@ -792,8 +775,7 @@ var rSRC = {
 		+ 	'window.setTimeout(function () { showRecaptcha() }, 200);'
 		+ 	'return;'
 		+ '}else{'
-		    //+	'Recaptcha.create("6Lf8xr4SAAAAAJXAapvPgaisNRSGS5uDJzs73BqU", '
-		+ 	'Recaptcha.create("6LfHgr0SAAAAAJpO_2DyRtpHECySrGkF_XINc5-d", '
+		+ 	'Recaptcha.create("6Lc7C9gSAAAAAMAoh4_tF_uGHXnvyNJ6tf9j9ndI", '
 		+ 	'element, {theme:"custom", lang:"en", custom_theme_widget:"recaptcha_widget"});'
 		+ '}'
 		+'}'
@@ -978,187 +960,185 @@ var rSRC = {
 
 {
 gvar.smbesar = [
-// old medium-smiley
- ["sumbangan/smiley_beer.gif", ":beer:", "Angkat Beer"]
-,["sumbangan/kribo.gif", ":afro:", "afro"]
-,["smileyfm329wj.gif", ":fm:", "Forum Music"]
-,["sumbangan/smiley_couple.gif", ":kimpoi:", "Pasangan Smiley"]
-,["sumbangan/kaskuslove.gif", ":ck", "Kaskus Lovers"]
+  // old medium-smiley
+  ["sumbangan/smiley_beer.gif", ":beer:", "Angkat Beer"]
+ ,["sumbangan/kribo.gif", ":afro:", "afro"]
+ ,["smileyfm329wj.gif", ":fm:", "Forum Music"]
+ ,["sumbangan/smiley_couple.gif", ":kimpoi:", "Pasangan Smiley"]
+ ,["sumbangan/kaskuslove.gif", ":ck", "Kaskus Lovers"] 
 
-,["ultah.gif", ":ultah", "Ultah"]
-,["traveller.gif", ":travel", "Traveller"]
-,["toastcendol.gif", ":toast", "Toast"]
-,["jempol1.gif", ":thumbup", "Jempol"]
-,["takut.gif", ":takut", "Takut"]
-,["fd_5.gif", ":sup:", "Sundul Up"]
-,["sundul.gif", ":sup2", "Sundul"]
-,["sorry.gif", ":sorry", "Sorry"]
-,["shakehand2.gif", ":shakehand2", "Shakehand2"]
-,["selamat.gif", ":selamat", "Selamat"]
-,["salah_kamar.gif", ":salahkamar", "Salah Kamar"]
-,["request.gif", ":request", "Request"]
-,["fd_7.gif", ":repost:", "Repost"]
-,["s_sm_repost2.gif", ":repost2", "Purple Repost"]
-,["s_sm_repost1.gif", ":repost", "Blue Repost"]
-,["recseller.gif", ":recsel", "Recommended Seller"]
-,["rate5.gif", ":rate5", "Rate 5 Star"]
-,["peluk.gif", ":peluk", "Peluk"]
-,["nosara.gif", ":nosara", "No Sara Please"]
-,["nohope.gif", ":nohope", "No Hope"]
-,["ngakak.gif", ":ngakak", "Ngakak"]
-,["ngacir2.gif", ":ngacir2", "Ngacir2"]
-,["ngacir3.gif", ":ngacir", "Ngacir"]
-,["najis.gif", ":najis", "Najis"]
-,["mewek.gif", ":mewek", "Mewek"]
-,["matabelo1.gif", ":matabelo", "Matabelo"]
-,["marah.gif", ":marah", "Marah"]
-,["malu.gif", ":malu", "Malu"]
-,["fd_6.gif", ":kts:", "Kemana TSnya?"]
-,["kaskus_radio.gif", ":kr", "Kaskus Radio"]
-,["cewek.gif", ":kiss", "Kiss"]
-,["kimpoi.gif", ":kimpoi", "Kimpoi"]
-,["fd_4.gif", ":kbgt:", "Kaskus Banget"]
-,["fd_8.gif", ":kacau:", "Thread Kacau"]
-,["fd_1.gif", ":jrb:", "Jangan ribut disini"]
-,["s_sm_ilovekaskus.gif", ":ilovekaskus", "I Love Kaskus"]
-,["I-Luv-Indonesia.gif", ":iloveindonesia", "I Love Indonesia"]
-,["hoax.gif", ":hoax", "Hoax"]
-,["hotnews.gif", ":hn", "Hot News"]
-,["hammer.gif", ":hammer", "Hammer2"]
-,["games.gif", ":games", "Games"]
-,["dp.gif", ":dp", "DP"]
-,["cystg.gif", ":cystg", "cystg"]
-,["cool2.gif", ":cool", "Cool"]
-,["s_big_cendol.gif", ":cendolbig", "Blue Guy Cendol (L)"]
-,["cekpm.gif", ":cekpm", "Cek PM"]
-,["fd_2.gif", ":cd:", "Cape deeehh"]
-,["capede.gif", ":cd", "Cape d..."]
-,["bola.gif", ":bola", "Bola"]
-,["bingung.gif", ":bingung", "Bingung"]
-,["fd_3.gif", ":bigo:", "Bukan IGO"]
-,["s_sm_maho.gif", ":betty", "Betty"]
-,["berduka.gif", ":berduka", "Turut Berduka"]
-,["s_big_batamerah.gif", ":batabig", "Blue Guy Bata (L)"]
-,["babygirl.gif", ":babygirl", "Baby Girl"]
-,["babyboy1.gif", ":babyboy1", "Baby Boy 1"]
-,["babyboy.gif", ":babyboy", "Baby Boy"]
-,["angel1.gif", ":angel", "Angel"]
-,["jempol2.gif", ":2thumbup", "2 Jempol"]
-
+ ,["ultah.gif", ":ultah", "Ultah"]
+ ,["traveller.gif", ":travel", "Traveller"]
+ ,["toastcendol.gif", ":toast", "Toast"]
+ ,["jempol1.gif", ":thumbup", "Jempol"]
+ ,["takut.gif", ":takut", "Takut"]
+ ,["fd_5.gif", ":sup:", "Sundul Up"]
+ ,["sundul.gif", ":sup2", "Sundul"]
+ ,["sorry.gif", ":sorry", "Sorry"]
+ ,["shakehand2.gif", ":shakehand2", "Shakehand2"]
+ ,["selamat.gif", ":selamat", "Selamat"]
+ ,["salah_kamar.gif", ":salahkamar", "Salah Kamar"]
+ ,["request.gif", ":request", "Request"]
+ ,["fd_7.gif", ":repost:", "Repost"]
+ ,["s_sm_repost2.gif", ":repost2", "Purple Repost"]
+ ,["s_sm_repost1.gif", ":repost", "Blue Repost"]
+ ,["recseller.gif", ":recsel", "Recommended Seller"]
+ ,["rate5.gif", ":rate5", "Rate 5 Star"]
+ ,["peluk.gif", ":peluk", "Peluk"]
+ ,["nosara.gif", ":nosara", "No Sara Please"]
+ ,["nohope.gif", ":nohope", "No Hope"]
+ ,["ngakak.gif", ":ngakak", "Ngakak"]
+ ,["ngacir2.gif", ":ngacir2", "Ngacir2"]
+ ,["ngacir3.gif", ":ngacir", "Ngacir"]
+ ,["najis.gif", ":najis", "Najis"]
+ ,["mewek.gif", ":mewek", "Mewek"]
+ ,["matabelo1.gif", ":matabelo", "Matabelo"]
+ ,["marah.gif", ":marah", "Marah"]
+ ,["malu.gif", ":malu", "Malu"]
+ ,["fd_6.gif", ":kts:", "Kemana TSnya?"]
+ ,["kaskus_radio.gif", ":kr", "Kaskus Radio"]
+ ,["cewek.gif", ":kiss", "Kiss"]
+ ,["kimpoi.gif", ":kimpoi", "Kimpoi"]
+ ,["fd_4.gif", ":kbgt:", "Kaskus Banget"]
+ ,["fd_8.gif", ":kacau:", "Thread Kacau"]
+ ,["fd_1.gif", ":jrb:", "Jangan ribut disini"]
+ ,["s_sm_ilovekaskus.gif", ":ilovekaskus", "I Love Kaskus"]
+ ,["I-Luv-Indonesia.gif", ":iloveindonesia", "I Love Indonesia"]
+ ,["hoax.gif", ":hoax", "Hoax"]
+ ,["hotnews.gif", ":hn", "Hot News"]
+ ,["hammer.gif", ":hammer", "Hammer2"]
+ ,["games.gif", ":games", "Games"]
+ ,["dp.gif", ":dp", "DP"]
+ ,["cystg.gif", ":cystg", "cystg"]
+ ,["cool2.gif", ":cool", "Cool"]
+ ,["s_big_cendol.gif", ":cendolbig", "Blue Guy Cendol (L)"]
+ ,["cekpm.gif", ":cekpm", "Cek PM"]
+ ,["fd_2.gif", ":cd:", "Cape deeehh"]
+ ,["capede.gif", ":cd", "Cape d..."]
+ ,["bola.gif", ":bola", "Bola"]
+ ,["bingung.gif", ":bingung", "Bingung"]
+ ,["fd_3.gif", ":bigo:", "Bukan IGO"]
+ ,["s_sm_maho.gif", ":betty", "Betty"]
+ ,["berduka.gif", ":berduka", "Turut Berduka"]
+ ,["s_big_batamerah.gif", ":batabig", "Blue Guy Bata (L)"]
+ ,["babygirl.gif", ":babygirl", "Baby Girl"]
+ ,["babyboy1.gif", ":babyboy1", "Baby Boy 1"]
+ ,["babyboy.gif", ":babyboy", "Baby Boy"]
+ ,["angel1.gif", ":angel", "Angel"]
+ ,["jempol2.gif", ":2thumbup", "2 Jempol"]
 ];
 // smbesar
 
 /* Only di Kaskus (Small) */ // 
 gvar.smkecil = [
- ["s_sm_peace.gif", ":Yb", "Blue Guy Peace"]
-,["takuts.gif", ":takuts", "Takut (S)"]
-,["sundulgans.gif", ":sundulgans", "Sundul Gan (S)"]
-,["shutup-kecil.gif", ":shutups", "Shutup (S)"]
-,["reposts.gif", ":reposts", "Repost (S)"]
-,["ngakaks.gif", ":ngakaks", "Ngakak (S)"]
-,["najiss.gif", ":najiss", "Najis (S)"]
-,["malus.gif", ":malus", "Malu (S)"]
-,["mads.gif", ":mads", "Mad (S)"]
-,["kisss.gif", ":kisss", "Kiss (S)"]
-,["iluvkaskuss.gif", ":ilovekaskuss", "I Love Kaskus (S)"]
-,["iloveindonesias.gif", ":iloveindonesias", "I Love Indonesia (S)"]
-,["hammers.gif", ":hammers", "Hammer (S)"]
-,["cendols.gif", ":cendols", "Cendol (S)"]
-,["s_sm_cendol.gif", ":cendolb", "Blue Guy Cendol (S)"]
-,["cekpms.gif", ":cekpms", "Cek PM (S)"]
-,["capedes.gif", ":capedes", "Cape d... (S)"]
-,["bookmark-kecil.gif", ":bookmarks", "Bookmark (S)"]
-,["bingungs.gif", ":bingungs", "Bingung (S)"]
-,["mahos.gif", ":bettys", "Betty (S)"]
-,["berdukas.gif", ":berdukas", "Berduka (S)"]
-,["berbusa-kecil.gif", ":berbusas", "Berbusa (S)"]
-,["batas.gif", ":batas", "Bata (S)"]
-,["s_sm_batamerah.gif", ":bata", "Blue Guy Bata (S)"]
-,["army-kecil.gif", ":armys", "Army (S)"]
-,["add-friend-kecil.gif", ":addfriends", "Add Friend (S)"]
-,["s_sm_smile.gif", ":)b", "Blue Guy Smile (S)"]
+  ["s_sm_peace.gif", ":Yb", "Blue Guy Peace"]
+ ,["takuts.gif", ":takuts", "Takut (S)"]
+ ,["sundulgans.gif", ":sundulgans", "Sundul Gan (S)"]
+ ,["shutup-kecil.gif", ":shutups", "Shutup (S)"]
+ ,["reposts.gif", ":reposts", "Repost (S)"]
+ ,["ngakaks.gif", ":ngakaks", "Ngakak (S)"]
+ ,["najiss.gif", ":najiss", "Najis (S)"]
+ ,["malus.gif", ":malus", "Malu (S)"]
+ ,["mads.gif", ":mads", "Mad (S)"]
+ ,["kisss.gif", ":kisss", "Kiss (S)"]
+ ,["iluvkaskuss.gif", ":ilovekaskuss", "I Love Kaskus (S)"]
+ ,["iloveindonesias.gif", ":iloveindonesias", "I Love Indonesia (S)"]
+ ,["hammers.gif", ":hammers", "Hammer (S)"]
+ ,["cendols.gif", ":cendols", "Cendol (S)"]
+ ,["s_sm_cendol.gif", ":cendolb", "Blue Guy Cendol (S)"]
+ ,["cekpms.gif", ":cekpms", "Cek PM (S)"]
+ ,["capedes.gif", ":capedes", "Cape d... (S)"]
+ ,["bookmark-kecil.gif", ":bookmarks", "Bookmark (S)"]
+ ,["bingungs.gif", ":bingungs", "Bingung (S)"]
+ ,["mahos.gif", ":bettys", "Betty (S)"]
+ ,["berdukas.gif", ":berdukas", "Berduka (S)"]
+ ,["berbusa-kecil.gif", ":berbusas", "Berbusa (S)"]
+ ,["batas.gif", ":batas", "Bata (S)"]
+ ,["s_sm_batamerah.gif", ":bata", "Blue Guy Bata (S)"]
+ ,["army-kecil.gif", ":armys", "Army (S)"]
+ ,["add-friend-kecil.gif", ":addfriends", "Add Friend (S)"]
+ ,["s_sm_smile.gif", ":)b", "Blue Guy Smile (S)"] 
 
-	/* standart */
+ 	/* standart */ 
 
-,["sumbangan/13.gif", ";)", "Wink"]
-,["sumbangan/001.gif", ":wowcantik", "Wowcantik"]
-,["sumbangan/44.gif", ":tv", "televisi"]
-,["sumbangan/47.gif", ":thumbup", "thumbsup"]
-,["sumbangan/48.gif", ":thumbdown", "thumbdown"]
-,["sumbangan/006.gif", ":think:", "Thinking"]
-,["sumbangan/shit-3.gif", ":tai", "Tai"]
-,["tabrakan.gif", ":tabrakan:", "Ngacir Tubrukan"]
-,["sumbangan/39.gif", ":table:", "table"]
-,["sumbangan/008.gif", ":sun:", "Matahari"]
-,["sumbangan/020.gif", ":siul", "siul"]
-,["sumbangan/5.gif", ":shutup:", "Shutup"]
-,["sumbangan/49.gif", ":shakehand", "shakehand"]
-,["sumbangan/34.gif", ":rose:", "rose"]
-,["sumbangan/01.gif", ":rolleyes", "Roll Eyes (Sarcastic)"]
-,["sumbangan/32.gif", ":ricebowl:", "ricebowl"]
-,["sumbangan/e02.gif", ":rainbow:", "rainbow"]
-,["sumbangan/60.gif", ":rain:", "raining"]
-,["sumbangan/40.gif", ":present:", "present"]
-,["sumbangan/41.gif", ":Phone:", "phone"]
-,["sumbangan/005.gif", ":Peace:", "Peace"]
-,["sumbangan/paw.gif", ":Paws:", "Paw"]
-,["sumbangan/6.gif", ":p", "Stick Out Tongue"]
-,["sumbangan/rice.gif", ":Onigiri", "Onigiri"]
-,["sumbangan/07.gif", ":o", "Embarrassment"]
-,["sumbangan/35.gif", ":norose:", "norose"]
-,["sumbangan/q11.gif", ":nohope:", "Nohope"]
-,["ngacir.gif", ":ngacir:", "Ngacir"]
-,["sumbangan/007.gif", ":moon:", "Moon"]
-,["sumbangan/q17.gif", ":metal", "Metal"]
-,["sumbangan/33.gif", ":medicine:", "medicine"]
-,["sumbangan/004.gif", ":matabelo:", "Belo"]
-,["sumbangan/1.gif", ":malu", "Malu"]
-,["sumbangan/12.gif", ":mad", "Mad"]
-,["sumbangan/26.gif", ":linux2:", "linux2"]
-,["sumbangan/25.gif", ":linux1:", "linux"]
-,["sumbangan/28.gif", ":kucing:", "kucing"]
-,["sumbangan/36.gif", ":kissmouth", "kiss"]
-,["sumbangan/014.gif", ":kissing:", "kisssing"]
+ ,["sumbangan/13.gif", ";)", "Wink"]
+ ,["sumbangan/001.gif", ":wowcantik", "Wowcantik"]
+ ,["sumbangan/44.gif", ":tv", "televisi"]
+ ,["sumbangan/47.gif", ":thumbup", "thumbsup"]
+ ,["sumbangan/48.gif", ":thumbdown", "thumbdown"]
+ ,["sumbangan/006.gif", ":think:", "Thinking"]
+ ,["sumbangan/shit-3.gif", ":tai", "Tai"]
+ ,["tabrakan.gif", ":tabrakan:", "Ngacir Tubrukan"]
+ ,["sumbangan/39.gif", ":table:", "table"]
+ ,["sumbangan/008.gif", ":sun:", "Matahari"]
+ ,["sumbangan/020.gif", ":siul", "siul"]
+ ,["sumbangan/5.gif", ":shutup:", "Shutup"]
+ ,["sumbangan/49.gif", ":shakehand", "shakehand"]
+ ,["sumbangan/34.gif", ":rose:", "rose"]
+ ,["sumbangan/01.gif", ":rolleyes", "Roll Eyes (Sarcastic)"]
+ ,["sumbangan/32.gif", ":ricebowl:", "ricebowl"]
+ ,["sumbangan/e02.gif", ":rainbow:", "rainbow"]
+ ,["sumbangan/60.gif", ":rain:", "raining"]
+ ,["sumbangan/40.gif", ":present:", "present"]
+ ,["sumbangan/41.gif", ":Phone:", "phone"]
+ ,["sumbangan/005.gif", ":Peace:", "Peace"]
+ ,["sumbangan/paw.gif", ":Paws:", "Paw"]
+ ,["sumbangan/6.gif", ":p", "Stick Out Tongue"]
+ ,["sumbangan/rice.gif", ":Onigiri", "Onigiri"]
+ ,["sumbangan/07.gif", ":o", "Embarrassment"]
+ ,["sumbangan/35.gif", ":norose:", "norose"]
+ ,["sumbangan/q11.gif", ":nohope:", "Nohope"]
+ ,["ngacir.gif", ":ngacir:", "Ngacir"]
+ ,["sumbangan/007.gif", ":moon:", "Moon"]
+ ,["sumbangan/q17.gif", ":metal", "Metal"]
+ ,["sumbangan/33.gif", ":medicine:", "medicine"]
+ ,["sumbangan/004.gif", ":matabelo:", "Belo"]
+ ,["sumbangan/1.gif", ":malu", "Malu"]
+ ,["sumbangan/12.gif", ":mad", "Mad"]
+ ,["sumbangan/26.gif", ":linux2:", "linux2"]
+ ,["sumbangan/25.gif", ":linux1:", "linux"]
+ ,["sumbangan/28.gif", ":kucing:", "kucing"]
+ ,["sumbangan/36.gif", ":kissmouth", "kiss"]
+ ,["sumbangan/014.gif", ":kissing:", "kisssing"] 
 
-,["sumbangan/3.gif", ":kagets:", "Kagets"]
-,["sumbangan/hi.gif", ":hi:", "Hi"]
-,["sumbangan/37.gif", ":heart:", "heart"]
-,["sumbangan/8.gif", ":hammer:", "Hammer"]
-,["sumbangan/crazy.gif", ":gila:", "Gila"]
-,["sumbangan/q03.gif", ":genit", "Genit"]
-,["sumbangan/fuck-4.gif", ":fuck:", "fuck"]
-,["sumbangan/fuck-8.gif", ":fuck3:", "fuck3"]
-,["sumbangan/fuck-6.gif", ":fuck2:", "fuck2"]
-,["sumbangan/frog.gif", ":frog:", "frog"]
-,["sumbangan/e03.gif", ":flower:", "flower"]
-,["sumbangan/52.gif", ":exclamati", "exclamation"]
-,["sumbangan/43.gif", ":email", "mail"]
-,["sumbangan/4.gif", ":eek", "EEK!"]
-,["sumbangan/18.gif", ":doctor", "doctor"]
-,["sumbangan/14.gif", ":D", "Big Grin"]
-,["sumbangan/05.gif", ":cool:", "Cool"]
-,["sumbangan/7.gif", ":confused", "Confused"]
-,["sumbangan/31.gif", ":coffee:", "coffee"]
-,["sumbangan/42.gif", ":clock", "clock"]
-,["sumbangan/woof.gif", ":buldog", "Buldog"]
-,["sumbangan/38.gif", ":breakheart", "breakheart"]
-,["bolakbalik.gif", ":bingung:", "Bingung"]
-,["sumbangan/vana-bum-vanaweb-dot-com.gif", ":bikini", "Bikini"]
-,["sumbangan/q20.gif", ":berbusa", "Busa"]
-,["sumbangan/30.gif", ":baby:", "baby"]
-,["sumbangan/27.gif", ":babi:", "babi"]
-,["sumbangan/24.gif", ":army", "army"]
-,["sumbangan/29.gif", ":anjing:", "anjing"]
-,["sumbangan/017.gif", ":angel:", "angel"]
-,["sumbangan/amazed.gif", ":amazed:", "Amazed"]
-,["sumbangan/15.gif", ":)", "Smilie"]
-,["sumbangan/06.gif", ":(", "Frown"]
+ ,["sumbangan/3.gif", ":kagets:", "Kagets"]
+ ,["sumbangan/hi.gif", ":hi:", "Hi"]
+ ,["sumbangan/37.gif", ":heart:", "heart"]
+ ,["sumbangan/8.gif", ":hammer:", "Hammer"]
+ ,["sumbangan/crazy.gif", ":gila:", "Gila"]
+ ,["sumbangan/q03.gif", ":genit", "Genit"]
+ ,["sumbangan/fuck-4.gif", ":fuck:", "fuck"]
+ ,["sumbangan/fuck-8.gif", ":fuck3:", "fuck3"]
+ ,["sumbangan/fuck-6.gif", ":fuck2:", "fuck2"]
+ ,["sumbangan/frog.gif", ":frog:", "frog"]
+ ,["sumbangan/e03.gif", ":flower:", "flower"]
+ ,["sumbangan/52.gif", ":exclamati", "exclamation"]
+ ,["sumbangan/43.gif", ":email", "mail"]
+ ,["sumbangan/4.gif", ":eek", "EEK!"]
+ ,["sumbangan/18.gif", ":doctor", "doctor"]
+ ,["sumbangan/14.gif", ":D", "Big Grin"]
+ ,["sumbangan/05.gif", ":cool:", "Cool"]
+ ,["sumbangan/7.gif", ":confused", "Confused"]
+ ,["sumbangan/31.gif", ":coffee:", "coffee"]
+ ,["sumbangan/42.gif", ":clock", "clock"]
+ ,["sumbangan/woof.gif", ":buldog", "Buldog"]
+ ,["sumbangan/38.gif", ":breakheart", "breakheart"]
+ ,["bolakbalik.gif", ":bingung:", "Bingung"]
+ ,["sumbangan/vana-bum-vanaweb-dot-com.gif", ":bikini", "Bikini"]
+ ,["sumbangan/q20.gif", ":berbusa", "Busa"]
+ ,["sumbangan/30.gif", ":baby:", "baby"]
+ ,["sumbangan/27.gif", ":babi:", "babi"]
+ ,["sumbangan/24.gif", ":army", "army"]
+ ,["sumbangan/29.gif", ":anjing:", "anjing"]
+ ,["sumbangan/017.gif", ":angel:", "angel"]
+ ,["sumbangan/amazed.gif", ":amazed:", "Amazed"]
+ ,["sumbangan/15.gif", ":)", "Smilie"]
+ ,["sumbangan/06.gif", ":(", "Frown"]
 ]; // smkecil
 
 } // smbesar & smkecil
 
 	} // getSmileySet
-
 };
 //=== rSRC
 
@@ -1366,16 +1346,13 @@ var _BOX = {
 				clog('submited sdata:' + sdata );
 				
 				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));
-				if( cucok = /error-msg\spanel[^>]+>(?:<[^>]+>)+([^<]+)/i.exec(sdata) )
-					is_error = 1;
-				else if(cucok = /[\'\"]err-msg[^>]+>([^<]+)/i.exec(sdata))
+				if( cucok = />Error<\/h3>(?:<ul>|\s*|<li>)+([^<]+)/i.exec(sdata) )
 					is_error = 1;
 				
 				if( is_error ){
 					var args, txt_msg, re;
 					gvar.postlimit = false;
-					//re = /ry\sagain\sin\s(\d+)\ssec/i;
-					re = new RegExp('ry\\sagain\sin\\s(\\d+)\\ssec', "");
+					re = new RegExp('ry\\s*again\\s*in\\s*(\\d+)\\s*sec', "");
 
 					txt_msg = cucok[1];
 					if( cucok = re.exec(txt_msg) ){
@@ -1386,8 +1363,6 @@ var _BOX = {
 					if(!gvar.user.isDonatur){
 						_BOX.postloader(false);
 						$('#hidrecap_reload_btn').click();
-						
-						//$('#box_response_msg').html( cucok[1] ).removeClass('ghost').addClass('g_notice').addClass('qrerror').show();
 						
 						if( gvar.postlimit ){
 							_CTDOWN.init(gvar.postlimit, '#rspbox_cntdown');
@@ -1831,7 +1806,6 @@ var _AJAX = {
 		}
 		return paired;
   }
-
 };
 
 var _NOFY = {
@@ -2877,32 +2851,27 @@ var _STG = {
 		};
 		mL = 4; // banyak tab
 		tpl='<ul id="ul_group" class="qrset_mnu settingmnu">'
-		$('#box_setting .cs_right').html('');
+		$('#qr-box_setting .cs_right').html('');
 		for(tipe in mnus){
 			if(typeof tipe!='string') continue;
 			
 			tpl+= '<li data-ref="'+tipe+'" class="qrt'+(idx==0 ? ' curent': (idx==(mL-1) ? ' qrset_lasttab' : '')) +'"><div>'+mnus[tipe][0]+'</div></li>';
-			$('#box_setting .cs_right').append('<div class="stg_content'+(idx==0 ? ' isopen':'')+'" id="stg_content_'+tipe+'" style="display:none;">'+ (mnus[tipe][1] ? mnus[tipe][1] : '') +'</div>');
+			$('#qr-box_setting .cs_right').append('<div class="stg_content'+(idx==0 ? ' isopen':'')+'" id="stg_content_'+tipe+'" style="display:none;">'+ (mnus[tipe][1] ? mnus[tipe][1] : '') +'</div>');
 			idx++;
 		}
 		tpl+='</ul>'
-		$('#box_setting .cs_left').html( tpl );
-		$('#box_setting .st_contributor').scrollTop(0);
-		$('#modal_setting_box .modal-dialog-title-text').css('left', '0');		
-		
-		
-		$('#qr-modalBoxFaderLayer .cnv').remove();
-		$('#qr-modalBoxFaderLayer').append('<ca'+ 'nvas class="cnv" style="" />');
-		
+		$('#qr-box_setting .cs_left').html( tpl );
+		$('#qr-box_setting .st_contributor').scrollTop(0);
+		$('#modal_setting_box .modal-dialog-title-text').css('left', '0');
 	},
 
 	event_main:function(){
 		// menus
-		$('#box_setting .qrt').each(function(){
+		$('#qr-box_setting .qrt').each(function(){
 			$(this).click(function(){
 				var btn, disb, par, tipe = $(this).attr('data-ref');
 				par = $(this).parent();
-				$('#box_setting').find('.isopen').removeClass('isopen').hide();
+				$('#qr-box_setting').find('.isopen').removeClass('isopen').hide();
 				$('#stg_content_' + tipe).addClass('isopen').show();
 				$(this).parent().find('.curent').removeClass('curent');
 				$(this).addClass('curent');
@@ -2923,7 +2892,7 @@ var _STG = {
 				$(btn).attr('data-todo', tipe);
 			});
 		});
-		$('#box_setting .optchk').each(function(){
+		$('#qr-box_setting .optchk').each(function(){
 			$(this).click(function(){
 				var tgt, chked, id = $(this).attr('id');
 				tgt = $(this).parent().find('#'+id + '_child');
@@ -3157,9 +3126,8 @@ var _STG = {
 		
 		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
 		
-		$('#box_setting .curent').click();
+		$('#qr-box_setting .curent').click();
 		$('#'+gvar.tID).blur();
-		//_STG.cnv_motion();
 	},
 	cold_boot: function(){
 		var cscontainer = 'tabs-sb-tcustom';
@@ -3170,12 +3138,6 @@ var _STG = {
 		$('#'+cscontainer).html();
 		_SML_.load_smiley( cscontainer );
 	},
-	/*
-	cnv_motion: function(){
-		var xcr = 'var kqr={}; b=document.body;c=document.getElementsByTagName("canvas")[0];a=c.getContext("2d");document.body.clientWidth;(_(){_ l(b,d){return{x:b.x+d.x,y:b.y+d.y}}_ i(b,d){f++;e[f]||(e[f]=0);e[f]+=b;return{x:Math.cos(e[f])*d,y:Math.sin(e[f])*d}}_ r(){var b=i(n,s);a.beginPath();a.moveTo(g.x,g.y);h+=m?-1:1;if(123>=h||250<=h)m=!m;a.fillStyle="rgba(255,"+h+","+h+", .025)";for(var e=0;127>e;e++)f=-1,g=l(g,l(i(o,t),l(i(u,b.x),i(v,b.y)))),a.lineTo(g.x,g.y);a.stroke();a.fill();p=a.getImageData(0,0,c.width,c.height);a.clearRect(0,0,c.width,c.height);a.putImageData(p,d.x,d.y)}_ q(b){return{x:(b.pageX-c.offsetLeft-j)/j,y:(b.pageY-c.offsetTop-j)/j}}var j=300;c.width='+String((document.documentElement.clientWidth/2)+150)+';c.height='+String(getHeight()-2)+';a.lineWidth=0.25;var e=[],f=-1,g={x:450,y:300},k,n=0.005,s=8,o=0.1,t=8,u=-0.05,v=0.5,h=250,m=!0,p;a.strokeStyle="rgba(255,60,0,.15)";a.fillStyle="rgba(255,255,255,.001)";var d;c.onmousemove=_(b){b=q(b);n=0.01*(1-Math.abs(b.y));o=0.1+2.5E-4*b.x};c.onmousedown=_(b){k?k=d=clearInterval(k):(k=setInterval(r,1),d||(a.clearRect(0,0,c.width,c.height),d=q(b),d.x=Math.round(2*d.x),d.y=Math.round(2*d.y)))}})();eO=document.createEvent("MouseEvents"); eO.initEvent("mousedown",true,true);try{c.dispatchEvent(eO)}catch(e){}';
-		$.globalEval(xcr.replace(/_/g,'function'));
-	},
-	*/
 	load_rawsetting: function(){
 		// collect all settings from storage,. 
 		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
@@ -3790,7 +3752,6 @@ var _QQparse = {
 		// clean rest (unparsed tags)
 		return unescapeHtml( entity_decode(_QQparse.clearTag( ret )) );
 	}
-	
 };
 
 // cross-browser XHR method
@@ -4458,7 +4419,6 @@ function close_popup(){
 		
 	$('#'+_BOX.e.dialogname).css('visibility', 'hidden');
 	$('body > .modal-dialog').remove();
-	$('#qr-modalBoxFaderLayer .cnv').remove();
 	$('body').removeClass('hideflow');
 	$('#'+gvar.tID).focus();
 }
@@ -4889,8 +4849,6 @@ function eventsController(){
 
 		}
 	});
-	
-	
 }
 
 // proses event triger setelah start_main selesai me-layout template
@@ -5347,10 +5305,10 @@ function start_Main(){
 		
 		var cck, tt = gvar.thread_type;
 		if( tt == 'group' ){
-			cck = /\/group\/discussion\/(\d+)\//i.exec( location.href );
+			cck = /\/group\/discussion\/([^\/]+)\b/i.exec( location.href );
 			gvar.discID = (cck ? cck[1] : null);
 		}
-		cck = (tt == 'forum' ? /\/post_reply\/(\d+)/.exec( href ) : /\/reply_discussion\/(\d+)/.exec( href ) );
+		cck = (tt == 'forum' ? /\/post_reply\/([^\/]+)\b/.exec( href ) : /\/reply_discussion\/([^\/]+)\b/.exec( href ) );
 		return (cck ? cck[1] : false);
 	})( $('#act-post').attr('href') );	
 	getSettings( gvar.settings );
@@ -5739,7 +5697,7 @@ function init(){
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';	
+	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
 
 
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
