@@ -9,8 +9,8 @@
 // @include        *.kaskus.co.id/show_post/*
 // @description    KQR
 // @version        4.0.9
-// @dtversion      121029409
-// @timestamp      1351541327382
+// @dtversion      121030409
+// @timestamp      1351547273004
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -23,12 +23,14 @@
 //
 // -!--latestupdate
 //
-// v4.0.9b - 2012-10-29 . 1351541327382
+// v4.0.9b - 2012-10-30 . 1351547273004
 //   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
 //   +include /lastpost/*; Thx=[Aa JaMbRoNg]
 //   fix get_quotefrom (donatur user); Thx=[Ndilallah]
 //   keybords shortcuts (qr, kaskus)
 //   fix css, (ignite .listing-wrapper .jump)
+//   prep plugins_container
+//   fix toggle-sideuploader
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -61,10 +63,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1351541327382 // version.timestamp
+	timestamp: 1351547273004 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121029409 // version.date
+	,dtversion: 121030409 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -387,7 +389,8 @@ var rSRC = {
 			+ _sp + rSRC.menuCode([16, 50, 51]) 
 			+ _sp + rSRC.menuQuote([15, 21, 97, 52]) 
 			+ _sp + '<li class="' + lc + " " + lc + '53 "><a class="ev_misc" title="Strikethrough text" href="" data-bbcode="strike">Strikethrough text</a></li>'
-			+ "</ul>" 
+			+ "</ul>"
+			+ '<div id="qr_plugins_container"></div>'
 			+ "</div>" // markItUpHeader			
 
 			+ '<div style="clear:left; position:relative;">'			
@@ -713,7 +716,7 @@ var rSRC = {
 			+'<div id="tabs-itemkbd-kaskus" class="itemkbd" style="display: none;">'
 			+'<p><tt><kbd>J</kbd></tt><span>Jump to next post section</span></p>'
 			+'<p><tt><kbd>K</kbd></tt><span>Jump to previous post section</span></p>'
-			+'<p><tt><kbd>Shift</kbd> + <kbd>K</kbd></tt><span>Open all spoiler</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>X</kbd></tt><span>Open all spoiler</span></p>'
 			+'<p><tt><kbd>Shift</kbd> + <kbd>A</kbd></tt><span>Show/Hide All categories</span></p>'
 			+'<p><tt><kbd>Shift</kbd> + <kbd>S</kbd></tt><span>Search</span></p>'
 			+'<p><tt><kbd>Shift</kbd> + <kbd>1</kbd></tt><span>Go to Homepage</span></p>'
@@ -739,8 +742,8 @@ var rSRC = {
 		
 		+'<div id="box_wrap">'
 		+ '<div id="qr-box_setting" class="entry-content wraper_custom" style="position:relative; ">' //overflow:hidden;
-		+  '<div class="sidsid cs_left" style="position:relative; height:100%!important;"></div>'		
-		+  '<div class="sidsid cs_right" style="width:540px;"></div>'
+		+  '<div class="sidsid stfloat cs_left" style="position:relative; height:100%!important;"></div>'		
+		+  '<div class="sidsid stfloat cs_right" style="width:540px;"></div>'
 		+  '<div class="sidcorner" style=""><a href="javascript:;" id="reset_settings">reset settings</a></div>'
 		+ '</div>'
 		+ '<div class="spacer"></div>'
@@ -2222,7 +2225,7 @@ var _UPL_ = {
 			var el, uc, ucs, todo = $(this).attr('data-state'), wleft=131;
 			ucw = parseInt( $('#uploader_container').css('width').replace(/px/,'') );
 			el = $(this).closest('.wraper_custom').find('.cs_left');
-			uc = $('#uploader_container');
+			uc = '#uploader_container';
 			if(todo=='hide'){
 				$(el).hide();
 				$(uc).css('width', ucw + wleft ).css('max-width', ucw + wleft );
@@ -2230,7 +2233,7 @@ var _UPL_ = {
 				$(el).show();
 				$(uc).css('width', ucw - wleft ).css('max-width', ucw - wleft );
 			}
-			$(this).html(todo=='hide' ? '&#9658;' : '&#9664;' );
+			$(this).html( HtmlUnicodeDecode(todo=='hide' ? '&#9658;' : '&#9664;') );
 			$(this).attr('data-state', todo=='hide' ? 'show' : 'hide' );			
 		});
 	},
