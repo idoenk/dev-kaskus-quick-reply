@@ -10,7 +10,7 @@
 // @description    KQR
 // @version        4.0.9
 // @dtversion      121029409
-// @timestamp      1351504475814
+// @timestamp      1351541327382
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -23,11 +23,12 @@
 //
 // -!--latestupdate
 //
-// v4.0.9b - 2012-10-29 . 1351504475814
+// v4.0.9b - 2012-10-29 . 1351541327382
 //   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
 //   +include /lastpost/*; Thx=[Aa JaMbRoNg]
 //   fix get_quotefrom (donatur user); Thx=[Ndilallah]
 //   keybords shortcuts (qr, kaskus)
+//   fix css, (ignite .listing-wrapper .jump)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -60,7 +61,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1351504475814 // version.timestamp
+	timestamp: 1351541327382 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121029409 // version.date
@@ -465,7 +466,7 @@ var rSRC = {
 	getBOX: function(){
 		// preview BOX
 		return ''
-		+'<div id="modal_dialog_box" class="modal-dialog" style="left: 523px; top: 181px; display:none;">'
+		+'<div id="modal_dialog_box" class="modal-dialog listing-wrapper" style="left: 523px; top: 181px; display:none;">'
 		+'<div class="modal-dialog-title">'
 		+ '<span class="modal-dialog-title-text">Preview '+(gvar.edit_mode ? gvar.inner.edit.title : gvar.inner.reply.title)+'</span><span class="modal-dialog-title-close popbox"/>'
 		+ '<h1 id="box_preview_title"></h1>'
@@ -1469,12 +1470,7 @@ var _BOX = {
 		
 		$(parent).addClass('modal-dialog');
 		judulbox = parent + ' .modal-dialog-title-text';
-		// desain
-		/*
-		if( gvar.user.isDonatur && !gvar.edit_mode && gvar.thread_type != 'group' ){
-			$(judulbox).text('Posting....');
-		}
-		*/
+
 		if( gvar.user.isDonatur || gvar.thread_type == 'group' ){
 			$(judulbox).text('Posting....');
 		}
@@ -2897,28 +2893,6 @@ var _STG = {
 		$('#qr-box_setting .st_contributor').scrollTop(0);
 		$('#modal_setting_box .modal-dialog-title-text').css('left', '0');
 	},
-/*
-$(cbs + ' .goog-tab').each(function(){
-	var id, T = $(this);
-	$(this).hover(
-		function(){$(this).addClass('goog-tab-hover')},
-		function(){$(this).removeClass('goog-tab-hover')}
-	);
-	$(this).click(function(){
-		var tid = $(this).attr('id');
-		if( tid ){
-			$(this).parent().find('.goog-tab-selected').removeClass('goog-tab-selected');
-			$(this).addClass('goog-tab-selected');
-			
-			// switch to sandboxed
-			_SML_.load_smiley( 'tabs-sb-' + tid );
-		}else{
-			// it must be close tab //close-tab
-			_SML_.toggletab(false);
-		}
-	});
-});
-*/
 	event_main:function(){
 		// menus
 		$('#qr-box_setting .qrt').each(function(){
