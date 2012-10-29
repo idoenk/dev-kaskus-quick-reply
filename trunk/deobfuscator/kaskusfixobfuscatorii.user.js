@@ -4,16 +4,11 @@
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis, idx
 // @version       0.7.4
-// @include       http://livebeta.kaskus.co.id/show_post/*
-// @include       http://livebeta.kaskus.co.id/edit_post/*
-// @include       http://livebeta.kaskus.co.id/post/*
-// @include       http://livebeta.kaskus.co.id/thread/*
-// @include       *.kaskus.co.id/showthread.php?*
-// @include       *.kaskus.co.id/showpost.php?*
-// @include       *.kaskus.co.id/editpost.php?*
-// @include       *.kaskus.co.id/newthread.php?*
-// @include       *.kaskus.co.id/blog.php?*
-// @include       *.kaskus.co.id/group.php?*
+// @include       *.kaskus.co.id/thread/*
+// @include       *.kaskus.co.id/lastpost/*
+// @include       *.kaskus.co.id/post/*
+// @include       *.kaskus.co.id/show_post/*
+// @include       *.kaskus.co.id/edit_post/*
 // @include       http://m.kaskus.co.id/thread/*
 // @include       http://archive.kaskus.co.id/thread/*
 // ==/UserScript==
@@ -29,12 +24,10 @@ This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and re
 Changelog:
 ------------
 0.7.4
-- self-link helper some enhancements
+- (rollback from r338) redefine include domain
+- fix defect parser link inside [/code]
 0.7.3
 - replace include domain .co.id
-- self-link helper (avoid bouncing-link)
-- optimize node selection for livebeta
-+/post/
 0.7.2
 - tambahan darurat dukungan kaskus beta 
 0.7.13
@@ -136,7 +129,6 @@ v0.1   : First release
     gvar.__DEBUG__ = 0;
     
     var replacements, lreplacements, regex, lregex, thenodes, node, s;
-	var pnode, pnodes, cucok, newlink, par, newEl, ksa;
 
     // You can customize the script by adding new pairs of words.
     // First, let's build the "obfuscated":"de-obfuscated" words list
@@ -162,188 +154,77 @@ v0.1   : First release
         if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )        
             s = s.replace(/\.{2,}(com|net|in|to|ly)\b/g, '.$1' );
         return s;
-    },
-	linkConvert = function(link){
-		var ml_2old, ml_2new, bid, cucok, hn, prot, kb_maxlen, ret;
-		ret = link;
-		prot = location.protocol;
-		hn = location.hostname;
-		
-		// kasbet_maxleng item-id
-		kb_maxlen = 24;		
-		ml_2old = {
-			 'thread'	: 'showthread.php?t='
-			,'post'		: 'showthread.php?p='
-			,'show_post': 'showpost.php?p='
-			
-			,'profile'	: 'member.php?u='
-			,'forum'	: 'forumdisplay.php?f='
-			,'reputation': 'reputation.php?p='
-			,'myforum'	: 'usercp.php'
-		};
-		ml_2new = {
-			 'showpost'		: 'show_post'
-			,'showthread'	: 'thread'
-			,'member'		: 'profile'
-			,'forumdisplay'	: 'forum'
-			,'reputation'	: 'reputation'
-			,'usercp'	: 'myforum'
-		};
-		
-		if( cucok = /\/(thread|show_post|post|profile|forum|reputation|myforum)(?:[^\.\w]|$)(?:([^\/]+)(?:\/[^\/]+.(\d+))?)?/i.exec(link) ){
-			var cL = cucok.length;
-			for(var i=0; i<cL; i++)
-				("undefined" == typeof cucok[i]) && (cucok[i] = "");
-			bid = cucok[2].replace(/^0+/,'');
-			ret = prot + '//' + hn + '/' + ml_2old[cucok[1]] + bid
-				+ (bid && cucok[1]=='post' ? '#post' + bid : (cucok[3] ? '&page=' + cucok[3] : '') )
-		}
-		else if( cucok = /(showpost|showthread|member|forumdisplay|reputation|usercp)\.php(?:\?(t|p|u|f)=([\d]+)(\#)?(?:\&postcount=(\d+))?)?/i.exec(link) ){
-
-			var posid, cL = cucok.length;
-			for(var i=0; i<cL; i++)
-				("undefined" == typeof cucok[i]) && (cucok[i] = "");
-			// [1] is primary
-			bid = (function(num){
-				if(cucok[1]=='forumdisplay' || !num)
-					return num;
-				var ret = '', add = (kb_maxlen - ('' + num).length);
-				for(var i=0; i<add; i++)
-					ret = '0' + String(ret);
-				return ret + num + '';
-			})(cucok[3]);
-			
-			posid = (cucok[2]=='p' && cucok[4]);			
-			ret = prot + '//' + hn + '/' + (posid ? 'post' : ml_2new[cucok[1]]) + '/'
-				+ (posid ? bid + '#post' : '') + bid
-				+ (cucok[5] ? '/' + parseInt(cucok[5]) : '')
-		}
-		return ret;
-	},
-	sibl_link = function(x, doparse){
-		var rgx = /^https?\:\/\/((?:livebeta|www)\.kaskus\.[^\/]+).(?:thread|show_post|post|showthread|showpost|profile|member|forum|forumdisplay|reputation|myforum|usercp)[\/\.]?/i;
-		return (doparse ? rgx.exec(x) : rgx.test(x));
-	},
-	fixsibling_link = function(node, link){
-		// self-link helper for kaskus domain (avoid bouncing around links)
-		var ksa, par, newEl, newlink, href, cucok;
-		
-		href = (node.nodeType === 3 ? link : node.href);		
-		if( /^(?:https?)\:\/\/.+(\.\.\.).+/.test(href) )
-			return;
-
-		cucok = sibl_link(href, true);
-		if(location.hostname != cucok[1]){
-			
-			newlink = linkConvert(href);
-			if(newlink == href)
-				return;
-
-			par = node.parentNode;
-			// should wrap it with //span#KSA incase it need to removed by QQ
-			ksa = createEl('span', {id:'KSA-selflink', title:'Self-Link :: ' + newlink, rel:newlink, style:'display:inline-block; background:url(http://static.kaskus.co.id/images/buttons/lastpost.gif) no-repeat; margin-right:5px; width:12px; height:12px;'}, '<a href="'+newlink+'" style="display:block;width:12px;line-height:12px;outline:none;text-decoration:none;">&nbsp;</a>');
-			
-			par.insertBefore(ksa, node);
-			if (node.nodeType!=3) {
-				newEl = createEl('a', {href:href, title:'Self-Link :: ' + newlink, 'data-slink':newlink, 'data-rlink':href, style:'color:#FF4D4D'}, href);
-				par.replaceChild(newEl, node);
-			}
-		}
-	};
-	
+    };
+    
     regex = {};
     for (key in replacements) 
         regex[key] = new RegExp(key, 'gi');
-
-
+        
+        
     // Now, retrieve the text nodes. default: //body//text()
     thenodes = document.evaluate('//body//text()', document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-
+    
     // Perform a replacement over all the nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         s = node.data;
-        if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check
+        if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check        
         s = fixme( s );
         node.data = s;
-		if( sibl_link(s) )
-			fixsibling_link(node, s)
     }
 
     // Now, retrieve the A nodes. default: //a
     // Optimized, we just need all this specified href links
     thenodes = document.evaluate('//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.co\.id")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
                document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-
+    
     // Finally, perform a replacement over all A nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         // Here's the key! We must replace the "href" instead of the "data"
         s = fixme( decodeURI( node.href ) );
+
+        // fix defect parser on last link inside code
+        /\[\/CODE\]$/.test( s ) && ( s = s.replace(/\[\/CODE\]$/, '') );
         node.href = s;
     }
-
-	// --
-    // initiate additional features :: anti-batman, self-link
-    var whereAmI = function(href){
-		var asocLoc = {
-           '/showthread.php': 'td_post_'
-          ,'/showpost.php'	: 'td_post_'
-          ,'/blog.php'		: 'blog_message'
-          ,'/group.php'		: 'gmessage_text_'
-		  
-          ,'/thread/'		: 'post0'
-          ,'/post/'			: 'post0'
-          ,'/show_post/'	: 'post0'
-		  
-        }, ret='';
-		
-        for(var theID in asocLoc){
-          if(href.indexOf(theID)!=-1) {
-            ret = asocLoc[theID]; break;
-          }
-        }
-        return ret;
-    }, 
-    isBatman = function(inner){
-        return (inner.match(/<input\s*(?:(?:value|style|type)=[\'\"][^\'\"]+[\'\"]\s*)*onclick=[\'\"]/i));
+    
+    
+    var isBatman = function(inner){
+        return ( inner.match(/<div\s*class="spoiler">/i));
     }, 
     newHref = function(href){
-        var a = createEl('span', { 'rel':href, 'class':'smallfont','style':'color:red; cursor:pointer; margin-left:10px;', 'target':'_blank'}, 'Hidden Link &gt;&gt; '+href );
+        var a = createEl('span', {'rel':href, 'title' : 'Goto ' + href, 'class':'smallfont','style':'color:red; cursor:pointer; margin-left:10px;', 'target':'_blank'}, 'Hidden Link &gt;&gt; '+href );
         a.addEventListener('click', function(e){
             e=e.target||e; e.style.color='black'
             var newWindow = window.open(e.getAttribute('rel'), '_blank');
             newWindow.focus(); return false;
         }, true);
         return a; 
-    };
-
+    };    
     
+    var pnode, pnodes;
     // perform anti-batman @container id
-    pnodes = document.evaluate("//*[contains(@id,'" + whereAmI(location.href) + "')]", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-	
-	if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
+    pnodes = document.evaluate("//*[@class='entry']", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+    
+    if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
         pnode = pnodes.snapshotItem(i);        
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-
+        
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
-			
-            if(node.innerHTML.indexOf(' onclick="')!=-1 && isBatman(node.innerHTML)){
-
-               var inps, inerDiv=node.getElementsByTagName('div');
-               if(inerDiv){
-                inps = inerDiv[0].getElementsByTagName('input');
-                if(inps.length)
-                    inps[0].parentNode.appendChild( newHref(node.href) );                
-               }
-               node.removeAttribute('href');
+            if( isBatman(node.innerHTML) ){
+               
+                 var inps, inerDiv = node.getElementsByTagName('div');
+                 if(inerDiv){
+                    inps = inerDiv[0].getElementsByTagName('input');
+                    if(inps.length)
+                        inps[0].parentNode.appendChild( newHref(node.href) );                
+                }
+                node.removeAttribute('href');
             }else if(/^(?:ftps?|https?)\:\/\/.+(\.\.\.).+/.test(node.innerHTML)){ // full linkify
                node.innerHTML = decodeURI(node.href);
             }
-			
-			if (node.parentNode.id != 'KSA-selflink' && sibl_link(node.href))
-				fixsibling_link(node);
         }
     }
     //
