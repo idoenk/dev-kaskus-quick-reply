@@ -3,13 +3,14 @@
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @include        *.kaskus.co.id/thread/*
+// @include        *.kaskus.co.id/lastpost/*
 // @include        *.kaskus.co.id/post/*
 // @include        *.kaskus.co.id/group/discussion/*
 // @include        *.kaskus.co.id/show_post/*
 // @description    KQR
-// @version        4.0.8
-// @dtversion      121023408
-// @timestamp      1351009527727
+// @version        4.0.9
+// @dtversion      121029409
+// @timestamp      1351504475814
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -22,25 +23,26 @@
 //
 // -!--latestupdate
 //
+// v4.0.9b - 2012-10-29 . 1351504475814
+//   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
+//   +include /lastpost/*; Thx=[Aa JaMbRoNg]
+//   fix get_quotefrom (donatur user); Thx=[Ndilallah]
+//   keybords shortcuts (qr, kaskus)
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.0.8b - 2012-10-23 . 1351009527727
 //   fix recaptcha public-key, Thx=[ceroberoz, Sanjito, Ndilallah]
 //   fix css (settings)
 //   fix get action form for post_reply
 //   fix get error message (delay post)
 //
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v4.0.7b - 2012-08-25 . 1351009229054
 //   fix onresize width
 //   add expand thread width (css widefix -by s4nji)
 //   deprecated uploader [lulzimg]
 //   add uploader postimage.org
-//
-// v4.0.6b - 2012-07-04 . 1341353007926
-//  relayout old-like-keep-fresh
-//  deprecate what_if_notlogin
-//  kaskus-fresh
 //
 //
 // v0.1 - 2010-06-29
@@ -56,16 +58,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.8b';
+gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1351009527727 // version.timestamp
+	timestamp: 1351504475814 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121023408 // version.date
+	,dtversion: 121029409 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 121023408 // css revision date; only change this when you change your external css
+	,cssREV: 121030409 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -636,8 +638,8 @@ var rSRC = {
 			+ gvar.scriptMeta.fullname + ' (QR) is not related to or endorsed by '+ gvar.domain.replace(/^[^\.]+./gi,'') +' in any way.<br>'
 			+'QR+ (Add-ons) is ported from the original QR (@userscripts.org) as specified by author.<br><div style="height: 3px;"></div>'
 			+'<b>Founded By:</b> bimatampan<br>'
-			+'<b>Author By:</b> <a href="'+ gvar.domain +'profile/302101" class="nostyle" target="_blank"><b>Idx</b></a><br>'
-			+'<b>Addons Ported By:</b> <a href="'+ gvar.domain +'profile/1323912" class="nostyle" target="_blank"><b>Piluze</b></a><br>'
+			+'<b>Author By:</b> <a href="/profile/302101" class="nostyle" target="_blank"><b>Idx</b></a><br>'
+			+'<b>Addons Ported By:</b> <a href="/profile/1323912" class="nostyle" target="_blank"><b>Piluze</b></a><br>'
 			
 			+'<div class="st_contributor" style="height:190px; vertical-align:top; overflow:auto; border:1px solid rgb(228, 228, 228); clip: rect(auto, auto, auto, auto);">'
 			+'<b>Contributors</b><br>'
@@ -647,7 +649,7 @@ var rSRC = {
 			+'</div>'
 			+'<div class="contr_r" style="width:45%; float:left;">'
 			+'gr0<br>hermawan64<br>slifer2006<br>gzt<br>Duljondul<br>reongkacun<br>otnaibef<br>ketang8keting<br>farin<br>'
-			+'.Shana<br>t0g3<br>&amp;all-kaskuser@<a href="'+ gvar.olddomain + 'showthread.php?t=3170414" target="_blank">t=3170414</a>'
+			+'.Shana<br>t0g3<br>&amp;all-kaskuser@<a href="'+ gvar.kask_domain + '3170414" target="_blank">t=3170414</a>'
 			+'</div>'
 			+'<div style="clear:both"></div><br>'
 			+'<b>Snippet codes</b><br/>'
@@ -657,12 +659,12 @@ var rSRC = {
 			+'kakilangit, judotens, matriphe, mursid88, robee_, cheanizer<br/>'
 			+'<br/>'
 			+'<b>QR Topic</b><br>&nbsp;CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span><br>'
-			+' &#167;<a href="'+ gvar.olddomain +'showthread.php?t=8689106" target="_blank" title="All About Mozilla Firefox (Add-ons, Scripts, Fans Club)">Firefox</a> <a href="/profile/809411" target="_blank" title="TS: p1nk3d_books">*</a>'
-			+' &#167;<a href="'+ gvar.olddomain +'showthread.php?t=6595796" target="_blank" title="[Rebuild] ?Opera Community">Opera</a> <a href="/profile/786407" target="_blank" title="TS: ceroberoz"> * </a>'
-			+' &#167;<a href="'+ gvar.olddomain +'showthread.php?t=3319338" target="_blank" title="[Updated] Extensions/ Addons Google Chrome">Google-Chrome</a> <a href="/profile/449547" target="_blank" title="TS: Aerialsky"> * </a><br>'
+			+' &#167;<a href="'+ gvar.kask_domain +'16414069" target="_blank" title="All About Mozilla Firefox (Add-ons, Scripts, Fans Club)">Firefox</a> <a href="/profile/809411" target="_blank" title="TS: p1nk3d_books">*</a>'
+			+' &#167;<a href="'+ gvar.kask_domain +'6595796" target="_blank" title="[Rebuild] Opera Community">Opera</a> <a href="/profile/786407" target="_blank" title="TS: ceroberoz"> * </a>'
+			+' &#167;<a href="'+ gvar.kask_domain +'3319338" target="_blank" title="[Updated] Extensions/ Addons Google Chrome">Google-Chrome</a> <a href="/profile/449547" target="_blank" title="TS: Aerialsky"> * </a><br>'
 			+'&nbsp;Other</b><br>'
-			+' - <a href="'+ gvar.olddomain +'showthread.php?t=6616714" target="_blank" title="Add-ons Kaskus Quick Reply + [QR]">Quick Reply+</a> <a href="/profile/1323912" target="_blank" title="TS: Piluze"> * </a><br>'
-			+' - <a href="'+ gvar.olddomain +'showthread.php?t=6849735" target="_blank" title="Emoticon Corner">Emoticon Corner</a> <a href="/profile/572275" target="_blank" title="TS: slifer2006"> * </a><br><br>'
+			+' - <a href="'+ gvar.kask_domain +'6616714" target="_blank" title="Add-ons Kaskus Quick Reply + [QR]">Quick Reply+</a> <a href="/profile/1323912" target="_blank" title="TS: Piluze"> * </a><br>'
+			+' - <a href="'+ gvar.kask_domain +'6849735" target="_blank" title="Emoticon Corner">Emoticon Corner</a> <a href="/profile/572275" target="_blank" title="TS: slifer2006"> * </a><br><br>'
 			+'</div>'
 			+''
 			;
@@ -679,22 +681,53 @@ var rSRC = {
 		;
 	},
 	getTPLShortcut: function(){
+		var arr = {
+			right: HtmlUnicodeDecode('&#9654;'), left: HtmlUnicodeDecode('&#9664;')
+		};
 		return ''
-			+'<em>Global on thread page</em><br>'
-			+'<b>Esc</b> - Close Active-Popup<br>'
-			+'<b>Ctrl + Q</b> - Focus to Quick Reply Editor Now. (<a id="customable_btn" href="javascript:;">customable</a>)<br>'
-			+'<b>Alt + Q</b> - Fetch Quoted Post <small>(<b>Ctrl + Alt + Q</b> :: Opera)</small><br>'
-			+'<b>Ctrl + Shift + Q</b> - Deselect All Quoted Post<br>'
-			+'<b>Ctrl + Shift + D</b> - Load/Save Draft<br>'
-			+'<div style="height: 10px;"></div><em>While focus on Editor / textarea</em><br>'
-			+'<b>Ctrl + Enter</b> - Post Reply<br>'
-			+'<b>Alt + S</b> - Post  Reply <small>(<b>Shift + Alt + S</b> :: Opera)</small><br>'
-			+'<b>Alt + P</b> -  Preview Quick Reply <small>(<b>Shift + Alt + P</b> :: Opera)</small><br>'
-			+'<b>Alt + X</b> -  Go Advanced <small>(<b>Shift + Alt + X</b> :: Opera)</small><br>'
-			+'<div style="height: 10px;"></div><em>While focus on Input reCapctha</em><br>'
-			+'<b>Pg-Up</b> or <b>Pg-Down</b> - Reload reCaptcha<br>'
-			+'<b>Alt + R</b> - Reload reCaptcha <small>(<b>Ctrl + Alt + R</b> :: Opera)</small><br>'
-			+''
+			+'<div class="box-kbd" style="">'
+			+'<div style="-moz-user-select:none" class="goog-tab-bar goog-tab-bar-top">'
+			+ '<div style="-moz-user-select:none" id="tkbd-qr" class="goog-tab goog-tab-selected">QR Shortcut</div>'
+			+ '<div style="-moz-user-select:none" id="tkbd-kaskus" class="goog-tab">Kaskus <a target="_blank" href="http://support.kaskus.co.id/kaskus-basic/kaskus_hotkeys.html" style="float:right; margin-right:5px;" title="Kaskus Hotkeys - Help Center"> ? </a></div>'
+			+'</div>' // goog-tab-bar
+			+'<div class="goog-tab-bar-clear"></div>'
+			+'<div class="goog-tab-content">'
+			+'<div id="tabs-contentkbd-inner">'
+			+'<div id="tabs-itemkbd-qr" class="itemkbd active" style="display: block;">'
+			+'<em>Global on thread page</em>'
+			+'<p><tt><kbd>Esc</kbd></tt><span>Close Active Popup</span></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Q</kbd></tt><span>Focus to QR Editor</span></p>'
+			+'<p><tt><kbd>Alt</kbd> + <kbd>Q</kbd></tt><span>Fetch Quoted Post</span></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd></tt><span>Deselect All Quoted Post</span></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></tt><span>Load/Save Draft</span></p>'
+			+'<p><em>While focus on Editor / textarea</em></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Enter</kbd></tt><span>Post Reply</span></p>'
+			+'<p><tt><kbd>Alt</kbd> + <kbd>S</kbd></tt><span>Post Reply</span></p>'
+			+'<p><tt><kbd>Alt</kbd> + <kbd>P</kbd></tt><span>Preview Quick Reply</span></p>'
+			+'<p><tt><kbd>Alt</kbd> + <kbd>X</kbd></tt><span>Go Advanced</span></p>'
+			+'<p><em>While focus on Editor / textarea</em></p>'
+			+'<p><tt><kbd>Pg-Up</kbd> or <kbd>Pg-Down</kbd></tt><span>Reload reCaptcha</span></p>'
+			+'<p><tt><kbd>Alt</kbd> + <kbd>R</kbd></tt><span>Reload reCaptcha</span></p>'
+			+'</div>' // itemkbd
+			+'<div id="tabs-itemkbd-kaskus" class="itemkbd" style="display: none;">'
+			+'<p><tt><kbd>J</kbd></tt><span>Jump to next post section</span></p>'
+			+'<p><tt><kbd>K</kbd></tt><span>Jump to previous post section</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>K</kbd></tt><span>Open all spoiler</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>A</kbd></tt><span>Show/Hide All categories</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>S</kbd></tt><span>Search</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>1</kbd></tt><span>Go to Homepage</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>2</kbd></tt><span>Go to Forum landing page</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>3</kbd></tt><span>Go to Jual Beli landing page</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>4</kbd></tt><span>Go to Groupee landing page</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>R</kbd></tt><span>Reply Thread</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>'+arr['left']+'</kbd></tt><span>Go to previous page</span></p>'
+			+'<p><tt><kbd>Shift</kbd> + <kbd>'+arr['right']+'</kbd></tt><span>Go to next page</span></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>'+arr['left']+'</kbd></tt><span>Go to previous thread</span></p>'
+			+'<p><tt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>'+arr['right']+'</kbd></tt><span>Go to next thread</span></p>'
+			+'</div>'
+			+'</div>' // #tabs-contentkbd-inner
+			+'</div>' // .goog-tab-content
+			+'</div>' // .box-kbd
 		;
 	},
 	getTPLSetting: function(){
@@ -2823,7 +2856,7 @@ var _STG = {
 		 dialogname: 'qr-modalBoxFaderLayer'
 		,boxsetting: 'modal_setting_box'
 	},
-	init:function(){		
+	init:function(){
 		close_popup();
 		$('body.forum').addClass('hideflow');
 		_STG.main();
@@ -2864,7 +2897,28 @@ var _STG = {
 		$('#qr-box_setting .st_contributor').scrollTop(0);
 		$('#modal_setting_box .modal-dialog-title-text').css('left', '0');
 	},
-
+/*
+$(cbs + ' .goog-tab').each(function(){
+	var id, T = $(this);
+	$(this).hover(
+		function(){$(this).addClass('goog-tab-hover')},
+		function(){$(this).removeClass('goog-tab-hover')}
+	);
+	$(this).click(function(){
+		var tid = $(this).attr('id');
+		if( tid ){
+			$(this).parent().find('.goog-tab-selected').removeClass('goog-tab-selected');
+			$(this).addClass('goog-tab-selected');
+			
+			// switch to sandboxed
+			_SML_.load_smiley( 'tabs-sb-' + tid );
+		}else{
+			// it must be close tab //close-tab
+			_SML_.toggletab(false);
+		}
+	});
+});
+*/
 	event_main:function(){
 		// menus
 		$('#qr-box_setting .qrt').each(function(){
@@ -2904,6 +2958,27 @@ var _STG = {
 		});
 		$('#edit_tpl_cancel').click(function(){
 			$('#misc_autolayout').removeAttr('checked').click().removeAttr('checked')			
+		});
+		$('#qr-box_setting .goog-tab').each(function(){
+			var id, $T = $(this);
+			$T.hover(
+				function(){$(this).addClass('goog-tab-hover')},
+				function(){$(this).removeClass('goog-tab-hover')}
+			);
+			$T.click(function(){
+				var $par = $(this).parent();
+				$par.find('.goog-tab-selected').removeClass('goog-tab-selected');
+				$(this).addClass('goog-tab-selected');
+				$par.parent().find('.itemkbd').each(function(){
+					var $me = $(this);
+					if($me.hasClass('active')){
+						$me.removeClass('active').hide();
+					}
+					else{
+						$me.addClass('active').show();
+					}
+				});
+			});
 		});
 		
 		if( !gvar.noCrossDomain ) {// unavailable on Chrome|Opera still T_T
@@ -3089,7 +3164,7 @@ var _STG = {
 		$('#reset_settings').click(function(){
 			
 			getValue(KS+'CUSTOM_SMILEY', function(ret){
-				var msg, space, csmiley, keys, yakin, home=[gvar.olddomain + 'showthread.php?t=3170414','http:/'+'/userscripts.org/topics/58227'];
+				var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org/topics/58227'];
 				space = '';
 				for(var i=0;i<20;i++) space+=' ';
 				csmiley = ret.replace(/^\s+|\n|\s+$/g, "");
@@ -3412,7 +3487,7 @@ var _QQparse = {
 	},
 	get_quotefrom: function(pid){
 		var nameStr, el = createEl('div', {}, $('#'+pid).find('.nickname').html() );
-		nameStr = trimStr($(el).text().toString().replace(/\[\$\]$/, ''));
+		nameStr = trimStr($(el).text().toString()).replace(/\[\$\]$/, '');
 		$(el).remove();
 		return trimStr( nameStr ) + ';' + pid.replace(/^post/i, '');
 	},
@@ -3435,6 +3510,7 @@ var _QQparse = {
 		};
 	},
 	parseMSG: function(x){
+
 		var pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength,LT,pairedEmote;
 		var ret, contentsep, pos;
 		
@@ -3449,13 +3525,13 @@ var _QQparse = {
 				html = String(html).replace(/<(\/?)([^>]+)>/gm, parseSerials );
 				rvCon = createEl('div',{style:'display:none'},html);
 			}
-			clog('inside revealQuoteCode\n' + $(rvCon).html() )
+			//clog('inside revealQuoteCode\n' + $(rvCon).html() )
 			els = $D(XPathStr, rvCon);
-			clog(' quote objects len = ' + els.snapshotLength)
+			//clog(' quote objects len = ' + els.snapshotLength)
 			if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 				el = els.snapshotItem(i);
 				if( $(el).html().match(/Quote:/) ){
-					clog('ada Quote')
+					//clog('ada Quote')
 					el2 = createTextEl('\n');
 					el.parentNode.replaceChild(el2,el);
 					
@@ -3473,13 +3549,13 @@ var _QQparse = {
 				rvCon = createEl('div',{style:'display:none'},html);
 			}
 			
-			clog('inside revealCoders\n' + $(rvCon).html() )
+			//clog('inside revealCoders\n' + $(rvCon).html() )
 			els = $D(XPathStr, rvCon);
-			clog(' quote objects len = ' + els.snapshotLength)
+			//clog(' quote objects len = ' + els.snapshotLength)
 			if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 				el = els.snapshotItem(i);				
 				if(cucok = $(el).html().match(/(?:(HTML|PHP)\s{1})*Code:/)) {
-					clog('is coder..' + (cucok && cucok[1] ? cucok[1] : 'CODE') );
+					//clog('is coder..' + (cucok && cucok[1] ? cucok[1] : 'CODE') );
 					$(el).next().attr('rel', (cucok && cucok[1] ? cucok[1] : 'CODE') );
 					
 					if(cucok[1]=='PHP' || cucok[1]=='HTML'){
@@ -3497,14 +3573,12 @@ var _QQparse = {
 		,parseSerials = function(S,$1,$2){
 			var mct, parts, pRet, lastIdx, tag;
 
-			clog('inside parseSerials 2up=[' + $2.toUpperCase() + ']');
-			
+			//clog('inside parseSerials 2up=[' + $2.toUpperCase() + ']');
 			// parse BIU
 			if ( $.inArray($2.toUpperCase(), ['B','I','U']) != -1 ){
 				return '[' + ($1 ? '/' : '') + $2.toUpperCase() + ']';
 			
-			}else
-			
+			}else			
 			if( /^pre\s/i.test($2) || $2.toUpperCase()=='PRE' ){
 				// parse code
 				mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
@@ -3527,41 +3601,6 @@ var _QQparse = {
 				return pRet;
 			
 			}else
-			/*
-			if( /^span\s/i.test($2) || $2.toUpperCase()=='SPAN' ){
-				// parse code | spoiler        
-				mct = $2.match(/\/?span(?:\srel=['"]([^'"]+))?/i);
-				
-				if( isDefined(mct[1]) ){
-					if(mct[1].indexOf('spoiler')!=-1) {
-						LT.sp.push('SPOILER');
-						parts = mct[1].split('-');
-						if( isDefined(parts[1]) && parts[1].length ){
-							sBox=createEl('div',{style:'display:none'},mct[1].replace(parts[0]+"-","") );
-							parts[1] = trimStr( sBox.childNodes[0].nodeValue );
-							try{Dom.remove(sBox)}catch(e){};
-						}
-						mct[1]='SPOILER="'+(!parts[1] ? "" : parts[1])+'"';
-					}else{			  
-						LT.sp.push(mct[1]);
-					}			
-				}else{
-					mct[1]=false;
-				}
-				
-				openTag= (mct && mct[1]);
-				if( openTag && mct[1].indexOf('=')==-1 )
-				mct[1] = mct[1].toUpperCase();
-				lastIdx = LT.sp.length-1;
-		
-				pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.sp[lastIdx]) ? '['+'/'+LT.sp[lastIdx].toUpperCase()+']' : '') );
-				
-				if( !openTag )
-					LT.sp.splice( lastIdx, 1 );
-				return pRet;
-			
-			}else
-			*/
 			if( /^font\s+/i.test($2) || $2.toUpperCase()=='FONT' ){
 				// parse font;size;color
 				mct = $2.match(/\bfont(?:\s{1,}([^=]+).['"]([^'"]+))?/i); // $$1:type; $$2:value
@@ -3712,22 +3751,22 @@ var _QQparse = {
 		
 		// reveal simple quote
 		$(pCon).html( revealQuoteCode() );	
-		clog('pCon=' + $(pCon).html() );
+		//clog('pCon=' + $(pCon).html() );
 		
 		// reveal title post
 		el = $('h2', $(pCon));
-		if( $(el).get(0) ){
-			clog('judul=' + el.html() );
+		if( $(el).length ){
+			//clog('judul=' + el.html() );
 			_QQparse.parseTITLE( el );
 			$('h2', $(pCon) ).remove();
 		}
 		
 		// reveal spoiler inside
 		// bbcode_div
-		$('.spoiler', $(pCon)).each(function(){
-			
-			var title, newEl, newhtml, iner = $(this).find('#bbcode_inside_spoiler').html()
-			title = $(this).find('i').text();
+		$('> .spoiler', $(pCon)).each(function(){
+
+			var title, newEl, newhtml, iner = $(this).find('#bbcode_inside_spoiler:first').html()
+			title = $(this).find('i:first').html();
 			newhtml = ('[SPOILER='+ title +']'+ iner +'[/SPOILER]');
 			iner = double_encode( newhtml );
 			iner = _QQparse.parseMSG( iner );
@@ -3735,19 +3774,19 @@ var _QQparse = {
 			newEl = ( createTextEl(entity_decode(iner)) );
 			$(this).replaceWith( $(newEl) );
 		});
-		clog('pCon after spoiler=' + $(pCon).html() );
+		//clog('pCon after spoiler=' + $(pCon).html() );
 		
 		// reveal code inside
 		$(pCon).html( revealCoders() );	
-		clog('pCon after coder / before x decoded =' + $(pCon).html() );
+		//clog('pCon after coder / before x decoded =' + $(pCon).html() );
 		
 		x = double_encode( $(pCon).html() );		
-		clog('x decoded ' + x);
+		//clog('x decoded ' + x);
 		delete pCon;
 		
 		// serials parse
 		ret = trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
-		clog('ret=' + ret );
+		//clog('ret=' + ret );
 		
 		// clean rest (unparsed tags)
 		return unescapeHtml( entity_decode(_QQparse.clearTag( ret )) );
@@ -5696,9 +5735,12 @@ function init(){
 	var kdomain = domainParse();		
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
+	gvar.kask_domain = 'http://kask.us/';
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	gvar.kqr_static = 'http://dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/';
-
+	gvar.kqr_static = 'http://' + (gvar.__DEBUG__ ? 
+		'127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
+		'dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/'
+	);
 
 	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
 		return outSideForumTreat();
