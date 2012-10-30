@@ -3,26 +3,33 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis, idx
-// @version       0.7.4
+// @version       0.7.4.2
 // @include       *.kaskus.co.id/thread/*
 // @include       *.kaskus.co.id/lastpost/*
 // @include       *.kaskus.co.id/post/*
 // @include       *.kaskus.co.id/show_post/*
 // @include       *.kaskus.co.id/edit_post/*
-// @include       http://m.kaskus.co.id/thread/*
-// @include       http://archive.kaskus.co.id/thread/*
+// @include       *.kaskus.co.id/showthread.php?*
+// @include       *.kaskus.co.id/showpost.php?*
+// @include       *.kaskus.co.id/editpost.php?*
+// @include       *.kaskus.co.id/newthread.php?*
+// @include       *.kaskus.co.id/blog.php?*
+// @include       *.kaskus.co.id/group.php?*
 // ==/UserScript==
 /*
 Kaskus Fix-ObfuscatorII 
 Dibuat oleh Pandu E Poluan {http://userscripts.org/users/71414/}
 Penghargaan kepada: Chaox, D3v1love, hermawanadhis (from 0.6.x), idx (http://code.google.com/p/dev-kaskus-quick-reply/), Piluze
-Tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.co.id/showthread.php?t=4492393 
-                  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.co.id/showthread.php?t=8689106
+Tempat diskusi    : daftar kata kata yang disensor oleh Kaskus [Cekidot Gan!!!] - http://www.kaskus.co.id/thread/000000000000000004492393/daftar-kata-kata-yang-disensor-oleh-kaskus-cekidot-gan/ 
+                  :: All About Mozilla Firefox (Add-ons, Scripts, Fans Club) :: - http://www.kaskus.co.id/thread/000000000000000016414069/all-about-mozilla-firefox-add-ons-scripts-fans-club--part-3/
 
 Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKus.co.id (misal: "rapid*share") menjadi sediakala.
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.4.2
+- menambah dukungan old.kaskus.co.id, archive.kaskus.co.id, kaskus.co.id (baru)
+- mengurangi dukungan m.kaskus.co.id 
 0.7.4
 - (rollback from r338) redefine include domain
 - fix defect parser link inside [/code]
