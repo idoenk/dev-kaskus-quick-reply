@@ -2,15 +2,15 @@
 // @name           Kaskus Quick Reply New
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @include        *.kaskus.co.id/thread/*
-// @include        *.kaskus.co.id/lastpost/*
-// @include        *.kaskus.co.id/post/*
-// @include        *.kaskus.co.id/group/discussion/*
-// @include        *.kaskus.co.id/show_post/*
+// @include        /^https?://(|www\.)kaskus.co.id/thread/*/
+// @include        /^https?://(|www\.)kaskus.co.id/lastpost/*/
+// @include        /^https?://(|www\.)kaskus.co.id/post/*/
+// @include        /^https?://(|www\.)kaskus.co.id/group/discussion/*/
+// @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @description    KQR
 // @version        4.0.9
-// @dtversion      121030409
-// @timestamp      1351547273004
+// @dtversion      121111409
+// @timestamp      1352574445376
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -23,7 +23,9 @@
 //
 // -!--latestupdate
 //
-// v4.0.9b - 2012-10-30 . 1351547273004
+// v4.0.9b - 2012-11-11 . 1352574445376
+//   suggest reload on unknown_posterror; Thx=[faley.inluv,Sanjito]
+//   wider include for (|www\.)kaskus.co.id; Thx=[t0g3,faley.inluv,Sanjito]
 //   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
 //   +include /lastpost/*; Thx=[Aa JaMbRoNg]
 //   fix get_quotefrom (donatur user); Thx=[Ndilallah]
@@ -63,10 +65,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1351547273004 // version.timestamp
+	timestamp: 1352574445376 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121030409 // version.date
+	,dtversion: 121111409 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1859,7 +1861,15 @@ var _NOFY = {
 	},
 	exec: function(mode){
 		var emsg = $('#notify_msg');
-		if(_NOFY.msg) emsg.html(_NOFY.msg);
+		if(_NOFY.msg){
+			emsg.html(_NOFY.msg);
+		}
+		else { // if(null == _NOFY.msg)
+			emsg.html('Unknown error, please <a id="qr_unknown_posterror" href="javascript:;">reload the page</a>');
+			$('#qr_unknown_posterror').click(function(){
+				setTimeout(function(){ location.reload(false) }, 50);
+			});
+		}
 		
 		//neutralizing
 		emsg.removeClass('qrerror');
@@ -3121,7 +3131,6 @@ var _STG = {
 								// done ...
 								gvar.$w.setTimeout(function(){
 									getSettings( gvar.settings );
-									//window.setTimeout(function(){ $('#box_cancel').click() }, 10);
 									gvar.$w.setTimeout(function(){ location.reload(false) }, 50);
 								}, 200);
 							}
@@ -5719,7 +5728,7 @@ function init(){
 		'dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/'
 	);
 
-	if( !/www|livebeta\.kaskus\./.test(location.hostname) ){
+	if( !/(?:www\.|)kaskus\./.test(location.hostname) ){
 		return outSideForumTreat();
 	}
 	
