@@ -8,9 +8,10 @@
 // @include        /^https?://(|www\.)kaskus.co.id/group/discussion/*/
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @description    KQR
+// @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.0.9
 // @dtversion      121111409
-// @timestamp      1352574445376
+// @timestamp      1352643728102
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @license        (CC) by-nc-sa 3.0
@@ -23,7 +24,8 @@
 //
 // -!--latestupdate
 //
-// v4.0.9b - 2012-11-11 . 1352574445376
+// v4.0.9b - 2012-11-11 . 1352643728102
+//   parse err-msg invalid recapcay,. Thx=[Sanjito]
 //   suggest reload on unknown_posterror; Thx=[faley.inluv,Sanjito]
 //   wider include for (|www\.)kaskus.co.id; Thx=[t0g3,faley.inluv,Sanjito]
 //   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
@@ -65,7 +67,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1352574445376 // version.timestamp
+	timestamp: 1352643728102 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121111409 // version.date
@@ -1373,8 +1375,7 @@ var _BOX = {
 			gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
 				var parsed, cucok, sdata, is_error=false;
 				
-				//tokcap_parser(data);
-				
+				//tokcap_parser(data);				
 				try{
 					// warning this may trigger error
 					sdata = data.replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "").replace(/\"/g, '"').toString();
@@ -1383,13 +1384,12 @@ var _BOX = {
 					clog('decodeURI in submit post failed');					
 				}
 				clog('submited sdata:' + sdata );
-				
-				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));
-				if( cucok = />Error<\/h3>(?:<ul>|\s*|<li>)+([^<]+)/i.exec(sdata) )
+				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));				
+
+				var args, txt_msg, re;
+				// determine any error raises
+				if( cucok = />Error<\/h3>(?:<ul>|\s*|<li>)+([^<]+)/i.exec(sdata) ){
 					is_error = 1;
-				
-				if( is_error ){
-					var args, txt_msg, re;
 					gvar.postlimit = false;
 					re = new RegExp('ry\\s*again\\s*in\\s*(\\d+)\\s*sec', "");
 
@@ -1398,7 +1398,7 @@ var _BOX = {
 						gvar.postlimit = cucok[1];
 						txt_msg = txt_msg.replace(re, 'ry again in <span id="rspbox_cntdown">'+ gvar.postlimit +'</span> sec');
 					}
-					
+
 					if(!gvar.user.isDonatur){
 						_BOX.postloader(false);
 						$('#hidrecap_reload_btn').click();
@@ -1421,8 +1421,20 @@ var _BOX = {
 							args.btnset = false;
 						_NOFY.init(args);
 					}
-					tokcap_parser(data);
-				}else{					
+					
+				}else if( cucok = /[\'\"]err-msg[\'\"]+(?:[^>]+)?>([^<]+)/i.exec(sdata) ){
+					// find recapcay error | this only happen on nondonatur (assumed)
+					is_error = 1;
+
+					_BOX.postloader(false);
+					$('#hidrecap_reload_btn').click();
+					$('#box_response_msg').html( cucok[1] ).removeClass('ghost').addClass('g_notice').addClass('qrerror').show();
+					$('#recaptcha_response_field').val('').addClass('twt-glowerror');
+				}
+				// err-msg =====
+
+				
+				if( !is_error ){
 					
 					if( cucok = /<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i.exec(sdata) ){
 						// try to flush draft, before reload
@@ -1440,6 +1452,8 @@ var _BOX = {
 						_NOFY.init(args);
 					}
 				}
+				// update token
+				tokcap_parser(data);
 			});
 		}catch(e){};
 	},
@@ -1465,8 +1479,7 @@ var _BOX = {
 		var judulbox, isCloned, parent;
 		parent = 'body > #modal_capcay_box'
 		
-		isCloned = $('#modal_capcay_box').get(0);
-		if( isCloned ){
+		if( isCloned = $('#modal_capcay_box').length ){
 			$('#wraper-hidden-thing #modal_capcay_box').clone().prependTo( $('body') );
 		}else{
 			$('body').prepend( rSRC.getBOX_RC() );
@@ -1577,7 +1590,6 @@ var _AJAX = {
 		_AJAX.e.ajaxrun = (false !== running && !running ? mode : false);
 		
 		clog('ajaxrun = ' + _AJAX.e.ajaxrun);
-		
 	},
 	quote: function(obj, cb_before, cb_after ){
 		
@@ -1868,7 +1880,7 @@ var _NOFY = {
 			emsg.html('Unknown error, please <a id="qr_unknown_posterror" href="javascript:;">reload the page</a>');
 			$('#qr_unknown_posterror').click(function(){
 				setTimeout(function(){ location.reload(false) }, 50);
-			});
+			});			
 		}
 		
 		//neutralizing
@@ -1892,6 +1904,7 @@ var _NOFY = {
 			$('.qr-m-panel').show();
 		$('#notify_msg, #notify_wrap').show();
 		if(typeof(_NOFY.cb)=='function') _NOFY.cb();
+		close_popup();
 	},
 	dismiss: function(){
 		$('.qr-m-panel').show();
