@@ -7,24 +7,26 @@
 // @include        /^https?://(|www\.)kaskus.co.id/post/*/
 // @include        /^https?://(|www\.)kaskus.co.id/group/discussion/*/
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
-// @description    KQR
+// @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.0.9
-// @dtversion      121111409
-// @timestamp      1352643728102
+// @dtversion      121116409
+// @timestamp      1353009794656
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
-// @license        (CC) by-nc-sa 3.0
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include        http://imageshack.us/*
 // @include        http://*.imageshack.us/*
 // @include        http://imgur.com/*
-// @include        http://photoserver.ws/*
+// @include        http://imagevenue.com/*
+// @include        http://www.imgzzz.com/*
 // @include        http://postimage.org/*
 //
 // -!--latestupdate
 //
-// v4.0.9b - 2012-11-11 . 1352643728102
+// v4.0.9b - 2012-11-16 . 1353009794656
+//   +image-uploader-host [imagevenue,imgzzz]
+//   fix css imgur
 //   parse err-msg invalid recapcay,. Thx=[Sanjito]
 //   suggest reload on unknown_posterror; Thx=[faley.inluv,Sanjito]
 //   wider include for (|www\.)kaskus.co.id; Thx=[t0g3,faley.inluv,Sanjito]
@@ -67,10 +69,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.0.9b';
 gvar.scriptMeta = {
-	timestamp: 1352643728102 // version.timestamp
+	timestamp: 1353009794656 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121111409 // version.date
+	,dtversion: 121116409 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -2327,16 +2329,16 @@ var _UPL_ = {
 			{
 				var ifname = 'ifrm_' + gvar.upload_sel[target].replace(/\W/g,'');
 				tpl=''
-					+'<a style="position:absolute; top:10px; right:20px; height:16px; width:50px; border:0; font-weight:normal" href="javascript:;" id="ifrm_reload_'+target+'">reload</a>'
+					+'<a style="position:absolute; top:10px; right:20px; height:16px; width:50px; border:0; font-weight:normal" href="javascript:;" id="ifrm_reload_'+target+'" data-src="'+gvar.uploader[target]['src']+'">reload</a>'
 					+'<div style="margin:10px 3px 15px 30px; display:inline-block;">'
 					+'<a target="_blank" title="Goto '+ target +'" href="http://'+gvar.upload_sel[target]+'"><b>http://' + gvar.upload_sel[target] + '</b></a>'
 					+'</div>'
-					+'<ifr'+'ame id="'+ ifname +'" src="http://'+ gvar.upload_sel[target] +'" style="width:100%; height:300px"></if'+'rame>'
+					+'<ifr'+'ame id="'+ ifname +'" src="http://'+ gvar.uploader[target]['src'] +'" style="width:100%; height:300px"></if'+'rame>'
 				;
 				$('#'+tgt).html( tpl );
 				
 				$('#ifrm_reload_'+target).click(function(){
-					var itgt = $(this).attr('id').replace(/ifrm_reload_/,''), _src = gvar.upload_sel[itgt];
+					var itgt = $(this).attr('id').replace(/ifrm_reload_/,''), _src = $(this).data('src');
 					$('#' + 'ifrm_' + gvar.upload_sel[itgt].replace(/\W/g,'') ).attr('src', 'http://' + _src);
 				});
 				
@@ -5158,12 +5160,13 @@ function getSettings(stg){
 	return waitTillDone();
 }
 
-
+// 
 function getUploaderSetting(){
 	// uploader properties
 	gvar.upload_sel={
-		 photoserver:'photoserver.ws'
-		,imageshack:'imageshack.us'
+		 imageshack:'imageshack.us'
+		,imagevenue:'imagevenue.com'
+		,imgzzz:'imgzzz.com'
 		,imgur:'imgur.com'
     	,postimage:'postimage.org'
 	};
@@ -5181,8 +5184,11 @@ function getUploaderSetting(){
 		,imgur:{
 			src:'imgur.com',noCross:'1' 
 		}
-		,photoserver:{
-			src:'photoserver.ws',noCross:'1' 
+		,imgzzz:{
+			src:'imgzzz.com',noCross:'1' 
+		}
+		,imagevenue:{
+			src:'imagevenue.com/host.php',noCross:'1' 
 		}
     	,postimage:{
         	src:'postimage.org',noCross:'1' 
@@ -5612,11 +5618,12 @@ function outSideForumTreat(){
     return ret;
   };
   
-  var el,par,lb,m=20,loc = whereAmId(),CSS="",i="!important";
+  var el,els,par,lb,m=20,loc = whereAmId(),CSS="",i="!important";
   /*
     # do pre-check hostname on location
   */
   if( top === self ) return;
+ 
   
   switch(loc){
     case "imageshack":
@@ -5627,8 +5634,21 @@ function outSideForumTreat(){
 		;break;
     case "imgur":
 		CSS=''
-		+'div#logo{display:none'+i+'}' // ,.right .panel
-		+'#content{margin-top:15px}'
+		+'.panel.left #imagelist,#colorbox .top-tr, #upload-global-dragdrop,#upload-global-clipboard,#upload-global-form h1,#upload-global-queue-description{display:none'+i+'}'
+		+'#gallery-upload-buttons{width:50%}'
+		+'#upload-global-file-list{margin-top:-20px'+i+'}'
+		+'#colorbox{position:absolute'+i+';top:0'+i+'}'
+		+'.textbox.list{overflow-y:auto'+i+';max-height:100px}'
+		;break;		
+    case "imagevenue":
+		CSS=''
+		+'table td > table:first-child{display:none'+i+'}'		
+		;break;
+    case "imgzzz":
+		CSS=''
+		+'#toper,#mem-info,#bottom, .mainbox, .imargin h4{display:none'+i+'}'
+		+'body > div{position:absolute;}'
+		+'#mid-part{width:30px; background:#ddd; color:transparent;}'
 		;break;
     case "photoserver":
 		CSS=''
@@ -5710,7 +5730,17 @@ function outSideForumTreat(){
 				clearInterval(gvar.sITryKill);
 		}
     },  50);
-  } // end is el
+  } // end is imageshack
+  else if(loc == 'imgur'){
+  	window.setTimeout(function(){
+  		par = $D('#content');
+  		par.insertBefore($D('#gallery-upload-buttons'), par.firstChild);  		
+  		try{
+  			Dom.remove($D('//div[contains(@class,"panel") and contains(@class,"left")]//div[@id="imagelist"]',null,true))
+  		}catch(e){};
+  	}, 300);
+  	gallery = imgur = null;
+  }
   
   return false;
 }
