@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.0.9
+// @version        4.0.9.1
 // @dtversion      121116409
-// @timestamp      1353009794656
+// @timestamp      1353050635576
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -23,6 +23,14 @@
 // @include        http://postimage.org/*
 //
 // -!--latestupdate
+//
+// v4.0.9.1 - 2012-11-16 . 1353050635576
+//   fix inside iframe check
+//   get rid of .baloon-track on expand-mode
+//   avoid editor get focused on click multi-quote Thx=[Reza12MQ]
+//
+// -/!latestupdate---
+// ==/UserScript==
 //
 // v4.0.9b - 2012-11-16 . 1353009794656
 //   +image-uploader-host [imagevenue,imgzzz]
@@ -37,9 +45,6 @@
 //   fix css, (ignite .listing-wrapper .jump)
 //   prep plugins_container
 //   fix toggle-sideuploader
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.0.8b - 2012-10-23 . 1351009527727
 //   fix recaptcha public-key, Thx=[ceroberoz, Sanjito, Ndilallah]
@@ -67,9 +72,9 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.9b';
+gvar.sversion = 'v' + '4.0.9.1';
 gvar.scriptMeta = {
-	timestamp: 1353009794656 // version.timestamp
+	timestamp: 1353050635576 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121116409 // version.date
@@ -443,9 +448,9 @@ var rSRC = {
 			   // remote button to chkVal
 			+  '<input id="qr_chkval" type="button" style="display:none;" value="cv" />' 
 			   // remote to check MultiQuote
-			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="chkMultiQuote()" />'
+			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
 			   // remote button to delete-mQ
-			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="deleteMultiQuote()" />'
+			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){alert(e)}" />'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
@@ -807,7 +812,7 @@ var rSRC = {
 		+"#forum-listing .row .col.grid-12 {width: 98% !important; margin: 0 1% !important}"
 		+"#forum-listing .author {width: 120px !important}"
 		+"#forum-listing .entry {width: auto !important; padding: 1% 0 5% 1% !important;margin-top: -1px !important; }"
-		+".bottom-frame, .ads300, .skin, .l-link, .r-link, .banner-top-ads {display: none !important; }"
+		+".bottom-frame, .ads300, .skin, .l-link, .r-link, .banner-top-ads, .baloon-track {display: none !important; }"
 		+".footer .row .col.grid-8,#forum-listing > .row > .col.grid-12 > .header .thread-control .col.grid-8, #forum-listing > .row > .col.grid-12 > .header .thread-navigate .col.grid-8 {float: right !important; }"
 	},
 	getSCRIPT: function(){
@@ -1882,7 +1887,9 @@ var _NOFY = {
 			emsg.html('Unknown error, please <a id="qr_unknown_posterror" href="javascript:;">reload the page</a>');
 			$('#qr_unknown_posterror').click(function(){
 				setTimeout(function(){ location.reload(false) }, 50);
-			});			
+			});
+			// this should be just here, avoid editor-focused on click multi-quote
+			close_popup(); 
 		}
 		
 		//neutralizing
@@ -1905,8 +1912,7 @@ var _NOFY = {
 		else
 			$('.qr-m-panel').show();
 		$('#notify_msg, #notify_wrap').show();
-		if(typeof(_NOFY.cb)=='function') _NOFY.cb();
-		close_popup();
+		if(typeof(_NOFY.cb)=='function') _NOFY.cb();		
 	},
 	dismiss: function(){
 		$('.qr-m-panel').show();
@@ -4438,7 +4444,6 @@ function precheck_quoted( injected ){
 			if( !$('#mq_' + this).hasClass('blue') )
 				$('#mq_' + this).addClass('blue').removeClass('white');
 		});
-		
 	};
 	_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" href="javascript:;">Dismiss</a>', cb:cb_after, btnset:true});
 }
@@ -5622,7 +5627,7 @@ function outSideForumTreat(){
   /*
     # do pre-check hostname on location
   */
-  if( top === self ) return;
+  if( window == window.top ) return;
  
   
   switch(loc){
