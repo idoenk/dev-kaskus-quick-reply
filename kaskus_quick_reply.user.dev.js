@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.0.9.1
-// @dtversion      121116409
-// @timestamp      1353050635576
+// @version        4.1.0
+// @dtversion      121127410
+// @timestamp      1353973671992
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,13 +24,17 @@
 //
 // -!--latestupdate
 //
+// v4.1.0 - 2012-11-27 . 1353973671992
+//   fix quick-quote parser [align,size,font,indent]
+//   deprecate toCharRef. Thx=[mangudel™]
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.0.9.1 - 2012-11-16 . 1353050635576
 //   fix inside iframe check
 //   get rid of .baloon-track on expand-mode
 //   avoid editor get focused on click multi-quote Thx=[Reza12MQ]
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.0.9b - 2012-11-16 . 1353009794656
 //   +image-uploader-host [imagevenue,imgzzz]
@@ -72,12 +76,12 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.0.9.1';
+gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1353050635576 // version.timestamp
+	timestamp: 1353973671992 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121116409 // version.date
+	,dtversion: 121127410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1242,7 +1246,7 @@ var _BOX = {
 					val = wrap_layout_tpl( val.replace(/\r\n/g, '\n') );
 					clog('val message=\n' +  val );
 					
-					val = ( toCharRef( val ) + "\n" ) + gvar.eof;
+					val = ( val + "\n" ) + gvar.eof;
 					
 					// avoid fail encoding for autotext custom-smiley
 					val = val.replace(/(\&\#\d+\;)\)/g, '$1&#41;');
@@ -3584,10 +3588,10 @@ var _QQparse = {
 			// parse BIU
 			if ( $.inArray($2.toUpperCase(), ['B','I','U']) != -1 ){
 				return '[' + ($1 ? '/' : '') + $2.toUpperCase() + ']';
+			}else
 			
-			}else			
+			// parse code
 			if( /^pre\s/i.test($2) || $2.toUpperCase()=='PRE' ){
-				// parse code
 				mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
 				
 				if( isDefined(mct[1]) ){
@@ -3606,50 +3610,69 @@ var _QQparse = {
 				if( !openTag )
 					LT.coder.splice(lastIdx,1);
 				return pRet;
-			
 			}else
-			if( /^font\s+/i.test($2) || $2.toUpperCase()=='FONT' ){
-				// parse font;size;color
-				mct = $2.match(/\bfont(?:\s{1,}([^=]+).['"]([^'"]+))?/i); // $$1:type; $$2:value
-				if( isDefined(mct[1]) ){
-					mct[1] = (mct[1]=='face' ? 'font' : mct[1] );
-					LT.font.push( mct[1] );
-				}
-				openTag = (isDefined(mct[2]) && mct[2]);
-				lastIdx = LT.font.length-1;
-				
-				pRet='[' +( openTag ? mct[1].toUpperCase()+'="'+mct[2]+'"' : '/'+(isDefined(LT.font[lastIdx]) ? LT.font[lastIdx].toUpperCase():'???') ) +']';
-				if(!openTag) LT.font.splice(lastIdx,1);
-				return pRet;      
 			
-			}else
+			// parse align | color | font | size;
 			if( /^span\s/i.test($2) || $2.toUpperCase()=='SPAN'){
-				// parse align
-				if( $2.indexOf('align=')!=-1 ){
+				if( $2.indexOf('-align:')!=-1 ){
 					
-					mct = $2.match(/\/?span(?:\salign=['"]([^'"]+))?/i);
-					if( isDefined(mct[1]) ){
-						LT.align.push( mct[1].toUpperCase() );
-					}					
-				}else{
+					mct = $2.match(/\/?span(?:(?:[^\-]+).align\:(\w+))?/i);
+					openTag= ( mct && mct[1] );
+				}else 
+				if( $2.indexOf('color:')!=-1 ){
+
+					mct = $2.match(/\/?span(?:(?:[^\'\"]+).(color)\:([^\!]+))?/i);
+					openTag = (mct[1] && isDefined(mct[2]) && mct[2]);
+				}
+				else
+				if( $2.indexOf('-family') != -1 ){
+					mct = $2.match(/\/?span(?:(?:[^\'\"]+).(font)-family\:([^\!]+))?/);
+					openTag = (mct[1] && isDefined(mct[2]) && mct[2]);
+				}
+				else
+				if( $2.indexOf('-size') != -1 ){
+					mct = $2.match(/\/?span(?:(?:[^\'\"]+).font-(size)\:([\d]+px))?/);
+					openTag = (mct[1] && isDefined(mct[2]) && mct[2]);
+					if( openTag ){
+						var size_maper = {
+							'7px': '1',
+							'9px': '2',
+							'10px': '3',
+							'12px': '4',
+							'16px': '5',
+							'20px': '6',
+							'30px': '7'
+						}
+						mct[2] = ( isDefined(size_maper[mct[2]]) ? size_maper[mct[2]] : 'NA');
+					}
+				}
+				else{
 					mct = [0,false];
+					openTag = false;
+				}
+
+				if( isDefined(mct[1]) && mct[1] ){
+					LT.align.push( mct[1].toUpperCase() );
 				}
 				
-				openTag= ( mct && mct[1] );
-				if( openTag )
+				if( openTag ){
 					mct[1] = mct[1].toUpperCase();
+				}
 				lastIdx = LT.align.length-1;
 				
-				pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.align[lastIdx]) ? '['+'/'+LT.align[lastIdx].toUpperCase()+']' : '') );
+				pRet= (openTag ? '['+mct[1] + (mct[2] ? '="' + trimStr(mct[2]) +'"' : '') +']' : (isDefined(LT.align[lastIdx]) ? '['+'/'+LT.align[lastIdx].toUpperCase()+']' : '') );
 				
 				if( !openTag )
 					LT.align.splice(lastIdx,1);
 				return pRet;
-
 			}else
+			
+			// parse html | php | indent
 			if( /^div\s/i.test($2) || $2.toUpperCase()=='DIV'){
-				// parse html | php
-				mct = $2.toLowerCase().match(/\/?div(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
+				if( mct = $2.toLowerCase().match(/\s1em\s40px/) )
+					mct = [$2, 'INDENT'];
+				else
+					mct = $2.toLowerCase().match(/\/?div(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
 				
 				if( isDefined(mct[1]) ){
 					LT.coder.push( mct[1].toUpperCase() );
@@ -3667,10 +3690,10 @@ var _QQparse = {
 				if( !openTag )
 					LT.coder.splice(lastIdx,1);
 				return pRet;
-
 			}else
+			
+			// parse linkify
 			if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
-				// parse linkify
 				mct = $2.match(/\/?a\s*(?:(?:target|style|title|linkid)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
 				if( isDefined(mct[1]) ){
 					tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
@@ -3687,15 +3710,10 @@ var _QQparse = {
 				if( !openTag )
 					LT.a.splice(lastIdx,1);
 				return pRet;
+			}else
 			
-			}else
-			if( /^blockquote/i.test($2) ){
-				// parse INDENT
-				return '[' + ($1 ? '/':'') + 'INDENT]';
-		
-			}else
+			// parse img
 			if( /\ssrc=/i.test($2) ){
-				// parse img
 				mct = $2.match(/\ssrc=['"]([^'"]+)/i);
 				
 				if( mct && isDefined(mct[1]) ){
@@ -4055,21 +4073,6 @@ function HtmlUnicodeDecode(a){
     }
   }b+=c;
  }return b;
-};
-function toCharRef(text){
-    var charRefs = [], codePoint, i;
-    for(i = 0; i < text.length; ++i) {
-        codePoint = text.charCodeAt(i);
-        if(!text[i].match(/[\w\[\]\<\>\s\?\'\"\;\:\=\+\-\_\)\(\&\^\$\%\#\@\*\.\,\!\~\}\{\|\/\r\n]/)){
-         if(0xD800 <= codePoint && codePoint <= 0xDBFF) {
-            i++;
-            codePoint = 0x2400 + ((codePoint - 0xD800) << 10) + text.charCodeAt(i);
-         }
-         charRefs.push('&#' + codePoint + ';');
-        }else
-          charRefs.push(text[i]);
-    }
-    return charRefs.join('');
 };
 function do_an_e(A) {
   if (!A) {
