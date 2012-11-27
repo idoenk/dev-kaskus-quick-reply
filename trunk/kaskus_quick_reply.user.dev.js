@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
-// @dtversion      121127410
-// @timestamp      1353973671992
+// @dtversion      121128410
+// @timestamp      1354060094547
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,9 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-27 . 1353973671992
+// v4.1.0 - 2012-11-28 . 1354060094547
+//   fix insert list (bullet,number)
+//   fix lastfocus on edit post. Thx=[coolkips]
 //   fix quick-quote parser [align,size,font,indent]
 //   deprecate toCharRef. Thx=[mangudel™]
 //
@@ -78,10 +80,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1353973671992 // version.timestamp
+	timestamp: 1354060094547 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121127410 // version.date
+	,dtversion: 121128410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1782,6 +1784,7 @@ var _AJAX = {
 
 						_TEXT.set( tmptext );
 						_TEXT.pracheck();
+						_TEXT.lastfocus();
 					}
 					$('#scancel_edit').show();
 					
@@ -4519,16 +4522,13 @@ function do_insertCustomTag(tag){
 	tagprop = '';
 	
 	if(tag=='quote' || tag=='code' || tag=='html' || tag=='php'){
-		_TEXT.wrapValue( tag );  
+		_TEXT.wrapValue( tag );
+
 	}else if(tag=='spoiler'){
-		// dummy
-		//gvar.settings.lastused.sptitle = '';
-		
+
 		var title = prompt('Please enter the TITLE of your Spoiler:', '' );
 		if(title==null) return endFocus();
 		title = (title ? title : ' ');
-		//gvar.settings.lastused.sptitle = trimStr(title);
-		//setValue(KS+'LAST_SPTITLE', title);
 		_TEXT.wrapValue( 'spoiler', title );	
 		
 	}else if(tag=='strike'){
@@ -4771,7 +4771,6 @@ function eventsController(){
 						var reInsert = function(pass){
 							var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
 							_TEXT.init();
-							if( isUndefined(pass) ) _TEXT.setValue( '\n' );
 							if(ins){
 								_TEXT.setValue( '\n' + '[*]' + ins + '');
 								reInsert(true);
@@ -4780,8 +4779,8 @@ function eventsController(){
 							}
 						};  
 						do_insertTag('LIST', (mode=='number' ? 1:false) );
-						reInsert();
-					}else{					
+						gvar.$w.setTimeout(function(){ reInsert(); }, 10);
+					}else{
 						var ret = '', parts = selected.split('\n');
 						for(var i=0; i< parts.length; i++)
 							if(trimStr(parts[i])) ret+= '\n' + '[*]' + parts[i] + '';
