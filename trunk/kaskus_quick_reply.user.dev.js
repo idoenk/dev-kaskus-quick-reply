@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121128410
-// @timestamp      1354060094547
+// @timestamp      1354060555913
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,9 +24,9 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-28 . 1354060094547
+// v4.1.0 - 2012-11-28 . 1354060555913
 //   fix insert list (bullet,number)
-//   fix lastfocus on edit post. Thx=[coolkips]
+//   fix lastfocus on [edit post, continue draft]. Thx=[coolkips]
 //   fix quick-quote parser [align,size,font,indent]
 //   deprecate toCharRef. Thx=[mangudel™]
 //
@@ -52,18 +52,6 @@
 //   prep plugins_container
 //   fix toggle-sideuploader
 //
-// v4.0.8b - 2012-10-23 . 1351009527727
-//   fix recaptcha public-key, Thx=[ceroberoz, Sanjito, Ndilallah]
-//   fix css (settings)
-//   fix get action form for post_reply
-//   fix get error message (delay post)
-//
-// v4.0.7b - 2012-08-25 . 1351009229054
-//   fix onresize width
-//   add expand thread width (css widefix -by s4nji)
-//   deprecated uploader [lulzimg]
-//   add uploader postimage.org
-//
 //
 // v0.1 - 2010-06-29
 //	 Init
@@ -80,7 +68,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354060094547 // version.timestamp
+	timestamp: 1354060555913 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121128410 // version.date
@@ -5025,10 +5013,13 @@ function eventsTPL(){
 			if( me.hasClass(disb) ) return;
 			if( me.attr('data-state') == 'idle' ){
 				_TEXT.init();
-				if( text == gvar.silahken || text=="" )
+				if( text == gvar.silahken || text=="" ){
 					_TEXT.set( gvar.tmp_text );
-				else
+					_TEXT.lastfocus();
+				}
+				else{
 					_TEXT.add( gvar.tmp_text );
+				}
 				$('#draft_desc').html('');
 				me.html('Saved').attr('data-state', 'saved');
 				_DRAFT.switchClass(disb);
@@ -5433,7 +5424,7 @@ function start_Main(){
 					});
 					
 					// add-event to multi-quote
-					$(this).find('a[id^="mq_"]').click(function(ev){						
+					$(this).find('a[id^="mq_"]').click(function(ev){
 						if(gvar.sTry_canceling){
 							delete(gvar.sTry_canceling);
 							return;
