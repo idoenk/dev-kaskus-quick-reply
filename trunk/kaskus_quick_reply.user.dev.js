@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121128410
-// @timestamp      1354060555913
+// @timestamp      1354065248778
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-28 . 1354060555913
+// v4.1.0 - 2012-11-28 . 1354065248778
+//   +character counter
 //   fix insert list (bullet,number)
 //   fix lastfocus on [edit post, continue draft]. Thx=[coolkips]
 //   fix quick-quote parser [align,size,font,indent]
@@ -68,14 +69,14 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354060555913 // version.timestamp
+	timestamp: 1354065248778 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121128410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 121030409 // css revision date; only change this when you change your external css
+	,cssREV: 121128410 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -445,6 +446,7 @@ var rSRC = {
 			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
 			   // remote button to delete-mQ
 			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){alert(e)}" />'
+			+	'<span class="counter"><i>Characters left:</i> <tt class="numero">10000</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
@@ -2087,6 +2089,44 @@ var _TEXT = {
 	}
 };
 
+var _TEXTCOUNT = {
+	init: function( target ){
+		var cUL, _tc = this;
+		cUL = String(gvar.settings.userLayout.config).split(',');
+
+		_tc.limitchar = 10000;
+		_tc.$editor = $('#'+gvar.tID);
+		_tc.$target = ("string" == typeof target ? $(target) : target);
+		_tc.preload_length = 0;
+		if( cUL[1] == '1' ){
+			_tc.preload_length = String(gvar.settings.userLayout.template).replace(/{message}/, '').length;			
+		}		
+
+		if( _tc.$target.length ){
+			if(_tc.preload_length > 0)
+				 _tc.$target.find('.preload').show().text(' (+'+_tc.preload_length+')');
+			else
+				_tc.$target.find('.preload').hide();
+
+
+			_tc.$target = _tc.$target.find('.numero:first');
+			_tc.$target.text(_tc.count_it(_tc));
+		}
+		_tc.do_watch(_tc);
+	},
+	count_it: function(_tc){
+		return (_tc.limitchar - _tc.preload_length - _tc.$editor.val().length);
+	},
+	do_watch: function(_tc){
+		gvar.sTryTCount = window.setInterval(function() {
+			_tc.$target.text( _tc.count_it(_tc) );
+		}, 600);
+	},
+	dismiss: function(){
+		gvar.sTryTCount && clearInterval( gvar.sTryTCount );
+	}
+};
+
 var _CTDOWN = {
 	init: function(num, tgt){
 		_CTDOWN.ori_title = $('title').text();
@@ -3010,13 +3050,14 @@ var _STG = {
 					.addClass('jfk-button-disabled');
 
 				// validate
-				gvar.settings.updates = isChk('#misc_autolayout');			
-				pval = (gvar.settings.updates ? '1' : '0');
+				pval = ( isChk('#misc_autolayout') ? '1' : '0' );
 				tpltext = trimStr( $('#edit_tpl_txta').val().toString() );
 				if( tpltext == "" )
 					tpltext = '[B]{message}[/B]';
+
 				if( pval && tpltext.toLowerCase().indexOf('{message}') != -1 ){
-					setValueForId(gvar.user.id, ('0,' + pval).toString(), 'LAYOUT_CONFIG'); //save layout
+					gvar.settings.userLayout.config = ('0,' + pval).toString();
+					setValueForId(gvar.user.id, gvar.settings.userLayout.config, 'LAYOUT_CONFIG'); //save layout
 					gvar.settings.userLayout.template = val = tpltext;
 					setValueForId( gvar.user.id, encodeURIComponent(val), 'LAYOUT_TPL', ['<!>','::'] );
 				}else{
@@ -4947,7 +4988,16 @@ function eventsTPL(){
 	
 	gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
 	_TEXT.setElastic(gvar.maxH_editor);
-	$('#'+gvar.tID).keydown(function(ev){
+	$('#'+gvar.tID)
+	.focus(function(){
+		$('.counter:first').addClass('kereng');
+		_TEXTCOUNT.init('#qr-content-wrapper .counter')
+	})
+	.blur(function(){
+		$('.counter:first').removeClass('kereng');
+		_TEXTCOUNT.dismiss();
+	})
+	.keydown(function(ev){
 		var B, A = ev.keyCode || ev.keyChar, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
 		
 		if(A === 9){
@@ -4985,10 +5035,11 @@ function eventsTPL(){
 			do_an_e(ev);
 			$('#' + asocKey[A]).click();
 		}
-		
-	}).keyup(function(ev){
+	})
+	.keyup(function(ev){
 		$('#clear_text').toggle( $(this).val()!=="" );
-	});
+	})
+	;
 
 	if( gvar.settings.qrdraft ){
         $('#'+gvar.tID).keypress(function(e){
