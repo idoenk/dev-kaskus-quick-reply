@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121130410
-// @timestamp      1354214469989
+// @timestamp      1354222040821
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-30 . 1354214469989
+// v4.1.0 - 2012-11-30 . 1354222040821
+//   catch error text too long
 //   fix keep scrollTop pos when editor in scroll mode. Thx=[coolkips,p1nky]
 //   force scroll to bottom on lastfocus (editor)
 //   +bad-css-checker
@@ -72,14 +73,14 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354214469989 // version.timestamp
+	timestamp: 1354222040821 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121130410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 121128410 // css revision date; only change this when you change your external css
+	,cssREV: 121130410 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -1282,18 +1283,18 @@ var _BOX = {
 			try{
 			   if( query!="" )
 				gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
-					var valid, parsed, clean_text, cucok, sdata, mH, imgTitle, titleStr;
+					var valid, parsed, clean_text, cucok, sdata, mH, imgTitle, titleStr, msg, func;
 					valid = tokcap_parser(data);
 					mH = ( parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer );
 					
 					$('#box_preview').css('max-height', mH + 'px');
 					
-					if(!valid){
-						var msg, func;
+					if(!valid){						
 						msg = 'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>';
 						func = function(){
-							$('#box_preview').html( msg );
+							$('#box_preview').html('<div class="qrerror">'+msg+'</div>');
 						};
+						_NOFY.btnset = false;
 						_NOFY.init({mode:'error', msg:msg, cb:func});
 						
 					}else{
@@ -1336,6 +1337,15 @@ var _BOX = {
 							$('#cont_button').show();
 						}else{
 							clog('fail build clean_text');
+
+							// is there error?
+							if( cucok = /[\'\"]err-msg[\'\"](?:[^>]+|)>([^<]+).\//i.exec(sdata) ){
+								func = function(){
+									$('#box_preview').html('<div class="qrerror">'+cucok[1]+'</div>');
+								};
+								_NOFY.btnset = false;
+								_NOFY.init({mode:'error', msg:cucok[1], cb:func});
+							}
 						}
 						
 						$('#box_prepost').click(function(){
