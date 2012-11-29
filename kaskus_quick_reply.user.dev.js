@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
-// @dtversion      121128410
-// @timestamp      1354065248778
+// @dtversion      121130410
+// @timestamp      1354214469989
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,12 +24,15 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-28 . 1354065248778
+// v4.1.0 - 2012-11-30 . 1354214469989
+//   fix keep scrollTop pos when editor in scroll mode. Thx=[coolkips,p1nky]
+//   force scroll to bottom on lastfocus (editor)
+//   +bad-css-checker
 //   +character counter
 //   fix insert list (bullet,number)
 //   fix lastfocus on [edit post, continue draft]. Thx=[coolkips]
 //   fix quick-quote parser [align,size,font,indent]
-//   deprecate toCharRef. Thx=[mangudel™]
+//   deprecate toCharRef. Thx=[mangudel]
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -69,10 +72,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354065248778 // version.timestamp
+	timestamp: 1354214469989 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121128410 // version.date
+	,dtversion: 121130410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -255,7 +258,7 @@ var rSRC = {
 	},
 	menuColor: function(id){
 		var li_cls = rSRC.mCls, buff, capt, kolors = rSRC.getSetOf('color');
-		buff='<li class="'+li_cls[0] + ' ' + li_cls[0] + id + ' ' + li_cls[1]+'"><a title="Colors" href="">Colors</a>';		
+		buff='<li class="'+li_cls[0] + ' ' + li_cls[0] + id + ' ' + li_cls[1]+'"><a title="Colors" href="">Colors</a>';
 		buff+='<ul class="markItUpButton'+id+'-wrapper">';
 		for(hex in kolors){
 			capt = kolors[hex];
@@ -304,16 +307,16 @@ var rSRC = {
 		return buff;
 	},
 	menuIcon: function () {
-        var c = rSRC.mCls, d = "", e = 0, f = "img/icons/new/", g = rSRC.getSetOf('posticon');
-        d = '<ul id="menu_posticon" style="display:none;" class="menu-post-icon" >';
-        for (icon in g) {
-            d += '<li class="' + c[0] + ' fonts "><a title="" href="javascript:;" data-rel="' + e + '" data-name="'+ (!g[icon] ? '' : g[icon].replace(/\./g,'')) +'">' 
+		var c = rSRC.mCls, d = "", e = 0, f = "img/icons/new/", g = rSRC.getSetOf('posticon');
+		d = '<ul id="menu_posticon" style="display:none;" class="menu-post-icon" >';
+		for (icon in g) {
+			d += '<li class="' + c[0] + ' fonts "><a title="" href="javascript:;" data-rel="' + e + '" data-name="'+ (!g[icon] ? '' : g[icon].replace(/\./g,'')) +'">' 
 			+ (g[icon] ? '<img src="' + gvar.domain + f + g[icon] + '" border=0>' + icon : "No Icon") + "</a></li>";
-            e++
-        }
-        d += "</ul>";
-        return d
-    },
+			e++
+		}
+		d += "</ul>";
+		return d
+	},
 	
 	getTPL: function(){
 		var _sp = rSRC.mCls[2], lc=rSRC.mCls[0]
@@ -554,7 +557,6 @@ var rSRC = {
 			+ '<div id="dv_menu_disabler" style="position:absolute; padding:0;margin:0;border:0; opacity:.15; filter:alpha(opacity=15); background:#000; width:100%; height:100%; display:none;"></div>'
 			+ '<ul id="ul_group" class="qrset_mnu">'
 			+ 	menus
-			//+  '<li>'+spacer+'</li>' // end list
 			+ '</ul>'
 			+'</div>' // cs_left
 
@@ -597,7 +599,7 @@ var rSRC = {
 			+'<div class="wraper_custom">'
 			+'<div class="sidsid cs_left">'
 			+ '<ul id="ul_group" class="qrset_mnu">'
-			+ 	menus		
+			+ 	menus
 			+  '<li>'+spacer+'</li>' // end list
 			+ '</ul>'
 			+'</div>' // cs_left
@@ -608,7 +610,6 @@ var rSRC = {
 			+'<span id="toggle-sideuploader" class="toggle-sidebar" data-state="hide">&#9664;</span>'
 			+'</div>' // .wraper_custom
 			+''
-			
 		;
 	},
 	
@@ -957,7 +958,7 @@ var rSRC = {
 	gvar.smgroup = [];
 	getValue(KS+'CUSTOM_SMILEY',  function(buff){
 		
-		if( buff && isString(buff) && buff!='' ){			
+		if( buff && isString(buff) && buff!='' ){
 			var grup, ret, extractSmiley = function(partition){
 				if(!partition) return false;
 				var idx=1,sepr = ',',customs=[];
@@ -1221,7 +1222,7 @@ var _BOX = {
 		// &preview=Preview+Post&parseurl=1&emailupdate=9999&folderid=0&rating=0
 		$('#formform').find('*[name]').each(function(){
 			var inside = ($.inArray($(this).attr('name'), fields) != -1);
-			if( inside ){			
+			if( inside ){
 				val = ( trimStr( $(this).val() ) );
 				name = encodeURIComponent( $(this).attr('name') );
 				
@@ -1301,7 +1302,7 @@ var _BOX = {
 							sdata = data.replace(/\t/gm, " ").replace(/\s{2,}/gm,' ').replace(/(\r\n|\n|\r)/gm, '{{nn}}').replace(/\"/gm, '"').toString() + '\n\n';
 							
 						}catch(e){
-							clog('decodeURI in preview failed');							
+							clog('decodeURI in preview failed');
 						}
 						
 						parsed = sdata.substring( sdata.indexOf('<section') );
@@ -1317,21 +1318,21 @@ var _BOX = {
 								imgTitle = $('h2', $(_dom)).html();
 								titleStr = imgTitle.replace(/<[^>]+>/g,'');
 								imgTitle = imgTitle.replace(titleStr, '');
-								if( titleStr.length > 77 ){								
+								if( titleStr.length > 77 ){
 									$('#box_preview_title').attr('title', titleStr.replace(/\&nbsp;/,''));
 									titleStr = titleStr.substring(0, 77) + '...';
 								}
 								$('#box_preview_title').html( imgTitle + titleStr );
 							}
-							
+
 							_dom = $('.entry', $(_dom));
 							$('.preview-post', $(_dom)).remove();
 							clean_text = $(_dom).html().replace(gvar.eof, '');
 						
 							$('#box_preview').html( clean_text.replace(/\{\{nn\}\}/g, '\n') );
-	
+
 							// resize image on its max fits
-							$('#box_preview').find('img').each(function(){ $(this).css('max-width', '790px') });							
+							$('#box_preview').find('img').each(function(){ $(this).css('max-width', '790px') });
 							$('#cont_button').show();
 						}else{
 							clog('fail build clean_text');
@@ -1339,18 +1340,18 @@ var _BOX = {
 						
 						$('#box_prepost').click(function(){
 							_BOX.init();
-							_BOX.presubmit();						
+							_BOX.presubmit();
 						});
 						
 						_BOX.attach_userphoto('#cont_button .qr_current_user', 'Signed in as ');
 						
 						if( !gvar.user.isDonatur ){
-							if(gvar.edit_mode == 1)					
+							if(gvar.edit_mode == 1)
 								$('#box_prepost').addClass('jfk-button-action').removeClass('g-button-red');
 							else
 								$('#box_prepost').removeClass('jfk-button-action').addClass('g-button-red');
 						}
-							
+
 						$('#box_prepost').focus().delay(1200);
 					}
 					
@@ -1378,16 +1379,15 @@ var _BOX = {
 			gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
 				var parsed, cucok, sdata, is_error=false;
 				
-				//tokcap_parser(data);				
 				try{
 					// warning this may trigger error
 					sdata = data.replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "").replace(/\"/g, '"').toString();
 					
 				}catch(e){
-					clog('decodeURI in submit post failed');					
+					clog('decodeURI in submit post failed');
 				}
 				clog('submited sdata:' + sdata );
-				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));				
+				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));
 
 				var args, txt_msg, re;
 				// determine any error raises
@@ -1512,7 +1512,7 @@ var _BOX = {
 			$(parent + ' .ycapcay label').hide();
 		}
 		
-		resize_popup_container();		
+		resize_popup_container();
 		_BOX.boxEvents();
 		
 		
@@ -1552,7 +1552,6 @@ var _BOX = {
 				});
 			}, 200);
 		}else{
-			//alert('submit halted')
 			_BOX.submit();
 		}
 	},
@@ -1601,7 +1600,7 @@ var _AJAX = {
 		post_ids = $('#tmp_chkVal').val();
 		if(post_ids)
 			post_ids = post_ids.split(',');
-		uri+= '/?post=' + post_ids[0];		
+		uri+= '/?post=' + post_ids[0];
 		
 		clog('uri=' + uri);
 		if( _AJAX.e.task && gvar.ajax_pid[_AJAX.e.task] ) {
@@ -1630,7 +1629,7 @@ var _AJAX = {
 					var func = function(){};
 					_NOFY.init({mode:'error', msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>', cb:func});
 					
-				}else{				
+				}else{
 					parsed = sdata.substring(0, sdata.indexOf('</textar'));
 					clog('parsed=' + parsed);
 					
@@ -1655,7 +1654,7 @@ var _AJAX = {
 			clog('edit canceling; now switching Token:\nold=' + gvar._securitytoken + '; now using:' + gvar._securitytoken_prev);
 			
 			gvar._securitytoken = gvar.inner['reply']['stoken'];
-			$('#qr-securitytoken').val(gvar._securitytoken);			
+			$('#qr-securitytoken').val(gvar._securitytoken);
 			
 			gvar.edit_mode = 0;
 			_AJAX.e.task = 'post';
@@ -1691,7 +1690,7 @@ var _AJAX = {
 			}catch(e){}
 		}
 		try{
-			_AJAX.ajaxPID('edit');			
+			_AJAX.ajaxPID('edit');
 			if(typeof(cb_before)=='function') cb_before();
 			gvar.edit_mode = 1;
 			var uri, pos, href; 
@@ -1721,12 +1720,12 @@ var _AJAX = {
 					var func = function(){};
 					_NOFY({mode:'error', msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>', cb:func});
 					
-				}else{				
+				}else{
 					$('#formform')
 						.attr('action', uri)
 						.attr('name', 'edit_postreply');
 					
-					parsed = sdata.substring(0, sdata.indexOf('</textar'));					
+					parsed = sdata.substring(0, sdata.indexOf('</textar'));
 					clog('parsed=' + parsed)
 					
 					if( cucok = /<textarea[^>]+>(.+)?/im.exec(parsed) ){
@@ -1737,7 +1736,7 @@ var _AJAX = {
 						// check for title
 						ttitle = false;
 						el = $('input[name="title"]', $(sdata));
-						if( $(el).get(0) ){							
+						if( $(el).get(0) ){
 							ttitle = {
 								 icon: basename( $('#display_posticon', $(sdata)).attr('src') ).replace(/\./g,'')
 								,text: $(el).val()
@@ -1789,7 +1788,7 @@ var _AJAX = {
 	},
   scustom_parser: function(msg){
 		// trim content msg
-		msg = trimStr( msg );		
+		msg = trimStr( msg );
 		if( !gvar.settings.scustom_noparse ) 
 				return ( !msg.match(/\[\[([^\]]+)/gi) ? msg : _AJAX.do_parse_scustom(msg) );
 		else
@@ -1820,8 +1819,8 @@ var _AJAX = {
 								buf = buf.replace(re, '\\[\\['+tag[1]+'\\]');
 								retag.push(tag[1]);
 						}
-				}else{        
-						done=true;
+				}else{
+					done=true;
 				}
 		} // end while
 		
@@ -1909,7 +1908,7 @@ var _NOFY = {
 		else
 			$('.qr-m-panel').show();
 		$('#notify_msg, #notify_wrap').show();
-		if(typeof(_NOFY.cb)=='function') _NOFY.cb();		
+		if(typeof(_NOFY.cb)=='function') _NOFY.cb();
 	},
 	dismiss: function(){
 		$('.qr-m-panel').show();
@@ -1930,21 +1929,21 @@ var _TEXT = {
 		this.eNat = gID(gvar.tID);
 		this.content = this.e.val();
 		this.cursorPos = this.rearmPos(); // [start, end]
-		
-		this.last_scrollTop = gID(gvar.tID).scrollTop; // last scrolltop pos	
 	},
 	rearmPos: function(){ return [this.getCaretPos(), gID(gvar.tID).selectionEnd]; },
 	subStr: function(start, end){ return this.content.substring(start, end);},
 	set_title: function(data){
 		$('.title-message').slideDown(1, function(){
 			$('.title-message #form-title').focus().val( data.text );
-			$('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).click();			
+			$('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).click();
 		});
 	},
 	set: function(value){
-		$('#'+gvar.tID).val(value);
-		//this.eNat.value = this.content = value;	
-		gID(gvar.tID).value = this.content = value;	
+		this.content = value;
+		// track latest scrollTop, doing val() might reset it to 0
+		this.last_scrollTop = gID(gvar.tID).scrollTop;
+		$('#'+gvar.tID).val(this.content);
+		
 		_TEXT.setRows_Elastic();
 		_TEXT.init();
 
@@ -1961,8 +1960,8 @@ var _TEXT = {
 		
 		this.set(bufValue);
 		st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
-		this.setCaretPos( st2, st2 + this.subStr(start, end).length );    
-		if(this.overflow!='hidden') gID(gvar.tID).scrollTop = (this.last_scrollTop+1);
+
+		this.caretChk( st2, (st2+this.subStr(start, end).length) );
 		return bufValue; 
 	},
 	add: function(text){ // used on fetch post only
@@ -1979,26 +1978,23 @@ var _TEXT = {
 	},
 	// ptpos stand to puretext position [start, end]
 	setValue : function(text, ptpos){
-		var start=this.cursorPos[0], end=this.cursorPos[1];
+		var bufValue, start=this.cursorPos[0], end=this.cursorPos[1];
 		if(isUndefined(ptpos)) ptpos=[text.length,text.length];
 		if(start!=end) {
 			this.replaceSelected(text,ptpos);
 			return;
 		}
-		var bufValue = this.subStr(0, start) + text + this.subStr(start, this.content.length);
+		bufValue = this.subStr(0, start) + text + this.subStr(start, this.content.length);
 		this.set(bufValue);
-		// fix chrome weird
-		this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
-		if(_TEXT.overflow!='hidden') gID(gvar.tID).scrollTop = (this.last_scrollTop+1);
+		this.caretChk( (start+ptpos[0]), (start+ptpos[1]) );
 		return bufValue; 
 	},
 	replaceSelected : function(text, ptpos){
-		var start=this.cursorPos[0], end=this.cursorPos[1];
+		var bufValue, start=this.cursorPos[0], end=this.cursorPos[1];
 		if(start==end) return;    
-		var bufValue = this.subStr(0, start) + text + this.subStr(end, this.content.length);
+		bufValue = this.subStr(0, start) + text + this.subStr(end, this.content.length);
 		this.set(bufValue);
-		this.setCaretPos( (start + ptpos[0]), (start+ptpos[1]) );
-		if( _TEXT.overflow!='hidden') gID(gvar.tID).scrollTop = (this.last_scrollTop+1);
+		this.caretChk( (start+ptpos[0]), (start+ptpos[1]) );
 	},
 	pracheck: function(foc){
 		if( isUndefined(foc) )
@@ -2016,18 +2012,23 @@ var _TEXT = {
 	focus: function(){ 
 		$('#'+gvar.tID).focus() 
 	},
+	lastsroll: function (){
+		// scroll to bottom of editor line
+		!_TEXT.e && (_TEXT.e = $('#'+gvar.tID));
+		_TEXT.e && _TEXT.e.scrollTop(_TEXT.e[0].scrollHeight);
+	},
 	lastfocus: function (){
 		var eText, nl, pos, txt = String($('#'+gvar.tID).val()); // use the actual content
-		pos = txt.length;		
+		pos = txt.length;
 		nl = txt.split('\n');
 		nl = nl.length;
-		pos+= (nl * 2);		
+		pos+= (nl * 2);
 		eText = gID(gvar.tID);
 		if( eText.setSelectionRange ) {
 			_TEXT.focus();
 			eText.setSelectionRange(pos,pos);
 		}
-		gvar.$w.setTimeout(function(){ _TEXT.focus() } , 310);
+		gvar.$w.setTimeout(function(){ _TEXT.focus(); _TEXT.lastsroll() } , 310);
 	},
 	getSelectedText : function() {
 		return (this.cursorPos[0]==this.cursorPos[1]? '': this.subStr(this.cursorPos[0], this.cursorPos[1]) );
@@ -2086,6 +2087,12 @@ var _TEXT = {
 			if( gvar.settings.qrdraft )
 				_DRAFT.quick_check();
 		}
+	},
+	caretChk: function(s,e){
+		this.setCaretPos(s, e);
+		// restore scrollTop on overflow mode:scroll
+		if(this.last_scrollTop && _TEXT.overflow!='hidden')
+			gID(gvar.tID).scrollTop = (this.last_scrollTop+1);
 	}
 };
 
@@ -2099,7 +2106,7 @@ var _TEXTCOUNT = {
 		_tc.$target = ("string" == typeof target ? $(target) : target);
 		_tc.preload_length = 0;
 		if( cUL[1] == '1' ){
-			_tc.preload_length = String(gvar.settings.userLayout.template).replace(/{message}/, '').length;			
+			_tc.preload_length = String(gvar.settings.userLayout.template).replace(/{message}/, '').length;
 		}		
 
 		if( _tc.$target.length ){
@@ -2173,26 +2180,28 @@ var _DRAFT= {
 		_DRAFT.el = $('#qrdraft');
 		_DRAFT.dsc= $('#draft_desc');
 	}
+	
+
 	,check: function(){
-        clog('checking draft..');
-        if( _DRAFT.el.get(0) && _DRAFT.el.attr('data-state')=='idle'){
-            gvar.timeOld = new Date().getTime();
-            clearInterval(gvar.sITryKeepDrafting);
-            // default interval should be 120 sec || 2 minutes (120000)
-            gvar.sITryKeepDrafting= window.setInterval(function() { _DRAFT.check() }, 120000);
-        }
-        
-        var tmp_text= $('#'+gvar.tID).val(), timeNow=new Date().getTime()
-            ,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
-        
-        if( _DRAFT.provide_draft() ) return false;
-        if( tmp_text==gvar.silahken || tmp_text=="") return false;
-        
-        // any live change ? 
-        if( isDefined(gvar.isKeyPressed) )
-            _DRAFT.save();
-        else
-            _DRAFT.dsc.html( (minuten > 0 ? 'Last saved ' + minuten + ' minutes' : 'Saved seconds') + ' ago' );
+		clog('checking draft..');
+		if( _DRAFT.el.get(0) && _DRAFT.el.attr('data-state')=='idle'){
+			gvar.timeOld = new Date().getTime();
+			clearInterval(gvar.sITryKeepDrafting);
+			// default interval should be 120 sec || 2 minutes (120000)
+			gvar.sITryKeepDrafting= window.setInterval(function() { _DRAFT.check() }, 120000);
+		}
+
+		var tmp_text= $('#'+gvar.tID).val(), timeNow=new Date().getTime()
+		,selisih=(timeNow-gvar.timeOld), minuten=Math.floor(selisih/(1000*60));
+
+		if( _DRAFT.provide_draft() ) return false;
+		if( tmp_text==gvar.silahken || tmp_text=="") return false;
+
+		// any live change ? 
+		if( isDefined(gvar.isKeyPressed) )
+			_DRAFT.save();
+		else
+			_DRAFT.dsc.html( (minuten > 0 ? 'Last saved ' + minuten + ' minutes' : 'Saved seconds') + ' ago' );
 	}
 	,provide_draft: function(){
 		var tmp_text= $('#'+gvar.tID).val();
@@ -2228,7 +2237,6 @@ var _DRAFT= {
 			_DRAFT.dsc.html('Saved seconds ago');
 			if( isDefined(gvar.isKeyPressed) ) delete gvar.isKeyPressed;
 		}
-		
 		gvar.timeOld = new Date().getTime();
 	}
 	,clear: function(txt){
@@ -2238,7 +2246,6 @@ var _DRAFT= {
 		_DRAFT.el.html('Draft');
 		_DRAFT.switchClass('jfk-button-disabled');
 		_DRAFT.dsc.html('blank');
-		//force_focus(10);
 	}
 	,quick_check: function(){
 		gvar.$w.setTimeout(function(){ _DRAFT.provide_draft() }, 300);
@@ -2300,17 +2307,17 @@ var _UPL_ = {
 				$(uc).css('width', ucw - wleft ).css('max-width', ucw - wleft );
 			}
 			$(this).html( HtmlUnicodeDecode(todo=='hide' ? '&#9658;' : '&#9664;') );
-			$(this).attr('data-state', todo=='hide' ? 'show' : 'hide' );			
+			$(this).attr('data-state', todo=='hide' ? 'show' : 'hide' );
 		});
 	},
 	tplcont: function(host){
 		return '<div id="content_uploader_'+host+'" class="content_uploader" style="display:none" />';
 	},
-	main: function(){		
+	main: function(){
 		var tpl='', iner = _UPL_.tcui;
 
 		$('#'+iner).html( rSRC.getTPLUpload( _UPL_.menus() ) );
-		_UPL_.event_menus();		
+		_UPL_.event_menus();
 		
 		tpl = _UPL_.tplcont(_UPL_.def);
 		for(host in gvar.upload_sel)
@@ -2333,7 +2340,7 @@ var _UPL_ = {
 					+'<div id="preview-image-outer">'
 					+ '<div id="preview-image" />'
 					+'</div>'
-					+'<div id="loading_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'			
+					+'<div id="loading_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
 					+'<div id="image-control" class="">'
 					+ '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
 					+ '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse" class="small white"/>'
@@ -2342,11 +2349,8 @@ var _UPL_ = {
 				$('#' + tgt ).html( tpl );
 				inteligent_width();
 
-				//GM_addGlobalScript( gvar.kkcdn + 'css_v0.1/js/ajaxfileupload.js' );
-				
-				// http://kkcdn-static.kaskus.co.id/themes_2.0/js/ajaxfileupload.js
 				GM_addGlobalScript( gvar.kkcdn + 'themes_2.0/js/ajaxfileupload.js' );
-				GM_addGlobalScript( rSRC.getSCRIPT_UPL() );				
+				GM_addGlobalScript( rSRC.getSCRIPT_UPL() );
 				
 				$('#'+_UPL_.tcui+' #preview-image').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
 					if( ev.type == 'DOMNodeInserted' ){
@@ -2407,8 +2411,8 @@ var _SML_ = {
 		_SML_.sibl = 'box-upload';
 		if( !def ) def = 'tabs-sb-tkecil';
 
-		_SML_.init_container();		
-		_SML_.load_smiley( def );		
+		_SML_.init_container();
+		_SML_.load_smiley( def );
 	},
 	init_container: function(){
 		var cL, tgt = $('#' + _SML_.tci), conts = ['tabs-sb-tkecil', 'tabs-sb-tbesar', 'tabs-sb-tcustom'];
@@ -2442,7 +2446,7 @@ var _SML_ = {
 		gruptpl+='</select>';
 		
 		if( tpl ){
-			$('#scustom_container').html( tpl ).show();			
+			$('#scustom_container').html( tpl ).show();
 			$('#position_group').html( gruptpl );
 			$('#manage_help, #manage_cancel, #dv_menu_disabler').hide();
 			$('#custom_bottom, #title_group').show();
@@ -2456,7 +2460,7 @@ var _SML_ = {
 			+'<li class="qrt add_group"><div class="add_group">Add Group</div></li>'
 			+'<li>'+spacer+'</li>';
 		;
-		if( gvar.smgroup && gvar.smgroup.length > 0 ){			
+		if( gvar.smgroup && gvar.smgroup.length > 0 ){
 			gL = gvar.smgroup.length;
 			for(var i=0; i<gL; i++){
 				ret+=''
@@ -2576,7 +2580,7 @@ var _SML_ = {
 		});		
 		$('#input_grupname').focus(function(){
 			$(this).select()
-		}).keydown(function(ev){			
+		}).keydown(function(ev){
 			if(ev.keyCode==13){
 				do_an_e(ev);
 				$('#manage_btn').click();
@@ -2620,17 +2624,11 @@ var _SML_ = {
 		$('#manage_btn').click(function(){
 			var task = $(this).html().toLowerCase();
 			if(task=='save'){
-				// ===================
-				//alert('saving....');
-				// ===================
-				// predefined private function
-				
 				var grupname, todo, niubuf, cleanGrup = function(){
 					return trimStr( $('#input_grupname').val().replace(/[^a-z0-9]/gi,'_').replace(/_{2,}/g,'_') );
 				}
-				grupname = cleanGrup();				
+				grupname = cleanGrup();
 				todel = ($('#scustom_todel').val() == grupname);
-
 
 				// needed to filter text to saved from smiley-custom
 				var do_filter_scustom = function (text){
@@ -2675,9 +2673,6 @@ var _SML_ = {
 					return retbuf;
 				}
 				
-				//var remixBuff = 
-				
-				
 				if( niubuf = $('#textarea_scustom_container').val() )
 					niubuf = do_filter_scustom( trimStr(niubuf) );
 
@@ -2687,13 +2682,10 @@ var _SML_ = {
 					alert('Invalid tag and\/or smiley format');
 				}else{
 					//save custom smiley
-					//remixBuff(niubuf, todel);
-					
 					(function remixBuff(niubuf, todel){
 						var ret='', curG, oldOrder, curOrder, todo, sEL, nOrder;
 						todo = $('#scustom_todo').val();
-						
-						
+
 						if( !niubuf )
 							_SML_.save_scustom( false )
 	
@@ -2706,9 +2698,7 @@ var _SML_ = {
 							oldOrder = (curOrder ? curOrder : "");
 							curG = [(curOrder ? curOrder : ""), $('#current_grup').val()];
 							nOrder = $('#pos_group_sets option:selected').val();
-							
-							//alert(curOrder);
-							
+
 							// reorder-group (manage | not add)
 							if(curG[0]!="" && nOrder!=curG[0] && gvar.smgroup){
 								var tomove = gvar.smgroup[curG[0]], newGrup=[];
@@ -2724,9 +2714,7 @@ var _SML_ = {
 								//return;
 							}
 						}
-						
-						//alert('good togo');
-						
+
 						// good togo
 						var ch_grup, tmp_SML = {}, grlen, degrup, joined;
 						getValue(KS + 'CUSTOM_SMILEY', function( _CS ){
@@ -2740,7 +2728,7 @@ var _SML_ = {
 							
 							if( todo == 'edit' ){
 								curOrder = $('#current_order').val();
-								curG = [(curOrder ? curOrder : ""), $('#current_grup').val()];							
+								curG = [(curOrder ? curOrder : ""), $('#current_grup').val()];
 								ch_grup=(curG[1]!='' && grupname!='' && grupname!=curG[1] );
 								
 								for(var k=0; k<grlen; k++ ){
@@ -2772,9 +2760,7 @@ var _SML_ = {
 						});
 					})(niubuf, todel);
 					// end remixBuff
-					
-					
-				}			
+				}
 			}
 			else if(task=='manage'){
 
@@ -2783,7 +2769,6 @@ var _SML_ = {
 					$('#scustom_todo').val('edit');
 					$('#manage_help, #manage_cancel, #custom_bottom, #custom_addgroup_container, #dv_menu_disabler, #position_group, #delete_grupname').show();
 					$('#scustom_container, #title_group').hide();
-					//nOrder = $('#pos_group_sets option:selected').val();
 					
 					var gid, grupname = $('#current_grup').val(), buff_edit='';
 					$('#input_grupname').val( grupname );
@@ -2810,13 +2795,12 @@ var _SML_ = {
 			if( confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nContinue delete this group?\n') ){
 				$('#scustom_todel').val( cGrp );
 				$('#manage_btn').click();
-				//SML_LDR.custom.manage_save(cGrp);
 			}
 		});
 		
 		$('#textarea_scustom_container, #delete_grupname, #manage_help').keydown(function(ev){
 			var land_id, tid, A = ev.keyCode || ev.keyChar;
-			tid = $(this).attr('id');			
+			tid = $(this).attr('id');
 			if( tid=='manage_help' ){
 				if( $('#pos_group_sets').is(':visible') )
 					return true;
@@ -2872,10 +2856,9 @@ var _SML_ = {
 					$.each(smilies, function(i, img){
 						tpl+= '<img src="'+ gvar.kkcdn + 'images/smilies/' + img[0] +'" alt="'+ img[1] +'" title="'+ img[1] + ' &#8212;' + img[2] +'" /> '
 					});
-					$('#'+target).html( tpl );					
+					$('#'+target).html( tpl );
 					_SML_.event_img('#' + target, label);
 				}else{
-					//alert(JSON.stringify(smilies)); return;
 					
 					_SML_.init_scustom(target, smilies);
 					_SML_.event_scustom();
@@ -2885,7 +2868,7 @@ var _SML_ = {
 					$('#' + target).addClass('filled');
 				_SML_.switch_tab( target );
 			}, 1);
-			// klo dah keload semua termuat di #tabs-content-inner			
+			// klo dah keload semua termuat di #tabs-content-inner
 		}else{
 			// sumthin like switch only
 			_SML_.switch_tab( target );
@@ -2895,7 +2878,7 @@ var _SML_ = {
 		if( $('#' + target).html() == "" ){
 			_SML_.load_smiley(target);
 			return;
-		}		
+		}
 		$('#' + _SML_.tci).find('.active').removeClass('active').hide();
 		$('.'+_SML_.self+' #tabs-loader').hide();
 		$('#' + target).addClass('active').show();
@@ -2929,7 +2912,7 @@ var _STG = {
 	main:function(){
 		$('#'+_STG.e.dialogname)
 			.css('visibility', 'visible')
-			.show();		
+			.show();
 		$('body').prepend( rSRC.getTPLSetting() );
 		
 		_STG.design();
@@ -3000,7 +2983,7 @@ var _STG = {
 			});
 		});
 		$('#edit_tpl_cancel').click(function(){
-			$('#misc_autolayout').removeAttr('checked').click().removeAttr('checked')			
+			$('#misc_autolayout').removeAttr('checked').click().removeAttr('checked')
 		});
 		$('#qr-box_setting .goog-tab').each(function(){
 			var id, $T = $(this);
@@ -3100,7 +3083,7 @@ var _STG = {
 					});
 				}
 				
-				// autoload smiley				
+				// autoload smiley
 				misc = ('kecil,besar,custom').split(',');
 				value = [];
 				value.push( isChk( $('#misc_autoshow_smile')) ? '1' : '0' );
@@ -3111,7 +3094,7 @@ var _STG = {
 								value.push(misc[id]);
 								break;
 						}
-				}				
+				}
 				setValue(KS+'SHOW_SMILE', String( value ));
 				
 				// last shot
@@ -3133,9 +3116,6 @@ var _STG = {
 						});
 					});
 				}, 400);
-				
-				//gvar.$w.setTimeout(function(){ $('#box_cancel').click() }, 10);
-
 			} //=end act update
 			
 			// import ==
@@ -3177,11 +3157,10 @@ var _STG = {
 										lastkey = false; // flushed, find next key
 									});
 								}catch(e){};
-								//lastkey = false; // flushed, find next key
 							}
 							line++;
-							if(line < rL){
 
+							if(line < rL){
 								query_save_setting(line);
 
 							}else{
@@ -3195,7 +3174,7 @@ var _STG = {
 						// let's save em all
 						query_save_setting(line);
 					}
-				}				
+				}
 			}
 		});
 		
@@ -3205,42 +3184,8 @@ var _STG = {
 		});
 		
 		$('#reset_settings').click(function(){
-			
-			getValue(KS+'CUSTOM_SMILEY', function(ret){
-				var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org/topics/58227'];
-				space = '';
-				for(var i=0;i<20;i++) space+=' ';
-				csmiley = ret.replace(/^\s+|\n|\s+$/g, "");
-				msg = ( csmiley!="" ? 
-					HtmlUnicodeDecode('&#182;') + ' ::Alert::\nCustom Smiley detected. You might consider of losing it.\n\n' : ""
-				)
-				+'This will delete/reset all saved data.'
-				+'\nPlease report any bug or some bad side effects here:'+space+'\n'+home[1]+'\nor\n'+home[0] + '\n\n'
-				+ HtmlUnicodeDecode('&#187;')+' Continue with Reset?';				
-				if( confirm(msg) ){
-					keys = ['SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE','UPDATES_INTERVAL','UPDATES'
-					,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
-					,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
-					,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','PRELOAD_RATE'
-					,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
-					,'UPLOAD_LOG','CSS_BULK','CSS_META','SCUSTOM_NOPARSE'
-					,'FORUMS_BULK','EXC_PLACES','INC_PLACES','ALL_PLACES'
-					,'DYNAMIC_QR','COUNTDOWN'
-					];
-					var kL=keys.length, waitfordel, alldone=0;
-					for(var i=0; i<kL; i++){
-						try{
-							if( isString(keys[i]) )
-								delValue(KS + keys[i], function(){
-									alldone++;
-									if( alldone >= kL )
-										gvar.$w.setTimeout(function() { location.reload(false); }, 500);
-								});
-						}catch(e){}
-					}
-				}
-			})
-		});		
+			_STG.reset_settings()
+		});
 		
 		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
 		
@@ -3308,12 +3253,12 @@ var _STG = {
 		gvar.buftxt+= '# Source: http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'\n';
 		gvar.buftxt+= '# User-Agent: '+parse_UA_Vers()+'\n';
 		gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
-		gvar.buftxt+= nn;		
+		gvar.buftxt+= nn;
 		
 		var query_settings = function(z){
 			getValue(KS + keys[z], function(ret){
 				var cur_key = keys[z];
-				if( ret && cur_key ){					
+				if( ret && cur_key ){
 					gvar.buftxt+= '# '+keykomeng[cur_key] + nn;
 					gvar.buftxt+= '[' + cur_key + ']' + nn + ret + nn + nn;
 				}
@@ -3329,19 +3274,91 @@ var _STG = {
 		};
 		z = 0;
 		query_settings( 0 );
+	},
+	reset_settings: function(){
+		getValue(KS+'CUSTOM_SMILEY', function(ret){
+			var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org/topics/58227'];
+			space = '';
+			for(var i=0;i<20;i++) space+=' ';
+			csmiley = ret.replace(/^\s+|\n|\s+$/g, "");
+			msg = ( csmiley!="" ? 
+				HtmlUnicodeDecode('&#182;') + ' ::Alert::\nCustom Smiley detected. You might consider of losing it.\n\n' : ""
+			)
+			+'This will delete/reset all saved data.'
+			+'\nPlease report any bug or some bad side effects here:'+space+'\n'+home[1]+'\nor\n'+home[0] + '\n\n'
+			+ HtmlUnicodeDecode('&#187;')+' Continue with Reset?';				
+			if( confirm(msg) ){
+				keys = ['SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE','UPDATES_INTERVAL','UPDATES'
+				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
+				,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
+				,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','PRELOAD_RATE'
+				,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
+				,'UPLOAD_LOG','CSS_BULK','CSS_META','SCUSTOM_NOPARSE'
+				,'FORUMS_BULK','EXC_PLACES','INC_PLACES','ALL_PLACES'
+				,'DYNAMIC_QR','COUNTDOWN'
+				];
+				var kL=keys.length, waitfordel, alldone=0;
+				for(var i=0; i<kL; i++){
+					try{
+						if( isString(keys[i]) )
+							delValue(KS + keys[i], function(){
+								alldone++;
+								if( alldone >= kL )
+									gvar.$w.setTimeout(function() { location.reload(false); }, 500);
+							});
+					}catch(e){}
+				}
+			}
+		})
 	}
 };
-
 
 var _CSS = {
 	engage:false,
 	init:function(){
 		_CSS.path_uri = gvar.kqr_static;
+		_CSS.dovalidate = false;
 		_CSS.css_name = '';
+		_CSS.DialogId = null;
+
 		_CSS.run(gvar.css_default, _CSS.callback);
 	},
+	dialog: function(doshow){
+		if( !_CSS.DialogId )
+			_CSS.DialogId = 'css_' + String(gvar.scriptMeta.timestamp);
+		if(_CSS.DialogId && !$('#'+_CSS.DialogId).length ){
+			$('body').append(''
+			 +'<div id="'+_CSS.DialogId+'" style="position:fixed;z-index:99;top:3px;left:44%; filter:alpha(opacity=95); opacity:.95;background:#f9edbe; border:1px solid #f0c36d; border-radius:2px;-moz-border-radius:2px;-webkit-border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,0.2);font-size:90%;font-weight:bold;line-height:22px;padding:0 15px;display:'+(doshow ? '':'none')+';">'
+			 +'<span class="qrV">QR: <span class="tXt">Loading...</span></span>'
+			 +'<span class="close" style="display:inline-block;float:right;padding:auto 6px;cursor:pointer;margin:0 -5px 0 10px; color:#999;">&times;</span>'
+			 +'</div>'
+			);
+			$('#'+_CSS.DialogId).find('.close').click(function(){
+				_CSS.dialog_dismiss();
+			})
+		}
+	},
+	dialog_html: function(x){
+		$('#'+_CSS.DialogId).show().find('.tXt').html(x);
+	},
+	dialog_dismiss: function(xfade){
+		!xfade && (xf = 222);
+		$('#'+_CSS.DialogId).length && $('#'+_CSS.DialogId).fadeOut(xfade, function(){
+			$(this).remove();
+		});
+	},
+	dialog_retry: function(){
+		_CSS.dialog_html('Loading...');
+
+		// reset localstorage before refetching
+		setValue(KS + 'CSS_BULK', '', function(){
+			_CSS.init();
+		});
+	},
 	run: function(fn, cb){
-		GM_XHR.uri = _CSS.path_uri + fn;
+		_CSS.dovalidate = 1;
+		_CSS.dialog(1);
+		GM_XHR.uri = _CSS.path_uri + fn + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV);
 
 		clog('fetch css: ' + GM_XHR.uri);
 		GM_XHR.cached = false;
@@ -3350,24 +3367,50 @@ var _CSS = {
 	},
 	callback_fin: function(x){
 		x = trimStr( String( x.responseText ) );
-		if( x ) _CSS.set_css(x);
+		_CSS.set_css(x);
 	},
 	set_css: function(c, cb){
-		setValue(KS + 'CSS_BULK', c, function(){
+		c && setValue(KS + 'CSS_BULK', c, function(){
 			GM_addGlobalStyle(c, 'xhr_css', 1);
 			var metacss = gvar.css_default + ';' + (new Date().getTime()).toString()
 
 			setValue(KS + 'CSS_META', metacss, function(){
 				if(typeof cb=='function') cb();
 			});
+			_CSS.dom_css_validate();
 		});
+		!c&&_CSS.dom_css_validate();
+	},
+	dom_css_validate: function(){
+		window.setTimeout(function(){
+			var _id, $tgt = $('#'+gvar.qID + ' .righty');
+			_id = _CSS.DialogId;
+
+			!(_id && $('#'+_id).length) && _CSS.dialog();
+			_id = _CSS.DialogId;
+			if( $tgt.length && $tgt.width() === 0 ){
+
+				_CSS.dovalidate && _CSS.dialog_html('#okesip!');
+				window.setTimeout(function(){
+					_CSS.dialog_dismiss(!_CSS.dovalidate?0:222);
+				}, !_CSS.dovalidate?0:987);
+			}
+			else{
+				var mtitle = 'Your QR CSS not correctly loaded';
+				_CSS.dialog_html('<span rel="tooltip" title="'+mtitle+'" data-title="'+mtitle+'" data-placement="bottom">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
+				$('#'+_id).find('.'+_id+'-qrR').click(function(){ _CSS.dialog_retry() });
+				$('#'+_id).find('.'+_id+'-qrS').click(function(){ _STG.reset_settings() });
+				if( !gvar.isOpera )
+					$('#'+_id).find('*[rel="tooltip"]').tooltip();
+			}
+		}, 1890);
 	}
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
 // customized from FFixer & userscript_updater
 // previous name was : Updater
 var _UPD = {
-	 caller:''
+	caller:''
 	,check: function(forced){
 		// is not available for addons version
 		if(isDefined(isQR_PLUS) && isQR_PLUS!==0) return;
@@ -3379,7 +3422,7 @@ var _UPD = {
 				gvar.updateForced = forced;
 				if(!forced) _UPD.caller='';
 
-				GM_XHR.uri = 'http://' + 'userscripts.org'+'/scripts/source/' + gvar.scriptMeta.scriptID + '.meta.js';			
+				GM_XHR.uri = 'http://' + 'userscripts.org'+'/scripts/source/' + gvar.scriptMeta.scriptID + '.meta.js';
 				GM_XHR.cached = false;
 				GM_XHR.forceGM = true;
 				GM_XHR.request(null, 'GET', _UPD.callback);
@@ -3406,7 +3449,7 @@ var _UPD = {
 					}
 				}else {
 					if(gvar.updateForced){
-						alert("No update is available for QR.");      
+						alert("No update is available for QR.");
 					}
 				}
 			}catch(e){}
@@ -3419,7 +3462,7 @@ var _UPD = {
 		if($('#modal_update_box').get(0))
 			$('#modal_update_box').remove();
 			
-		$('.xkqr-entry-content').prepend('<div class="baloon-update" style="display:none"><a href="javascript:;">&nbsp;</a></div>');		
+		$('.xkqr-entry-content').prepend('<div class="baloon-update" style="display:none"><a href="javascript:;">&nbsp;</a></div>');
 		$('.baloon-update').fadeIn(1500, function(){
 			$('.baloon-update a').click(function(){
 				_UPD.meta = _UPD.mparser( rt );
@@ -3433,7 +3476,7 @@ var _UPD = {
 		});
 	}
 	,design: function(){
-		var tpl = ''			
+		var tpl = ''
 			+'<b>New'+' '+gvar.titlename+'</b> (v'+ _UPD.meta.cvv[1]+') is available'
 			+'<div style="float:right;"><a class="qbutton" href="http://'+ 'userscripts.org'
 			+'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="QR Home in userscripts.org"><b>v'+ _UPD.meta.cvv[1]+'</b></a></div>'
@@ -3486,10 +3529,11 @@ var _UPD = {
 		};
 		return ret;
 	}
-}; // -end UPD
+};
+// -end UPD
 
 var _QQparse = {
-	 init:function(calee, cb){
+	init:function(calee, cb){
 		//_QQparse.pids = pids;
 		var par, mqs_id = [];
 		$('.multi-quote.blue').each(function(){
@@ -3596,7 +3640,7 @@ var _QQparse = {
 			els = $D(XPathStr, rvCon);
 			//clog(' quote objects len = ' + els.snapshotLength)
 			if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
-				el = els.snapshotItem(i);				
+				el = els.snapshotItem(i);
 				if(cucok = $(el).html().match(/(?:(HTML|PHP)\s{1})*Code:/)) {
 					//clog('is coder..' + (cucok && cucok[1] ? cucok[1] : 'CODE') );
 					$(el).next().attr('rel', (cucok && cucok[1] ? cucok[1] : 'CODE') );
@@ -3754,7 +3798,7 @@ var _QQparse = {
 						cucok = mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');
 						if( mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ) {
 							cucok = entity_decode( entity_decode( unescape(cucok) ) ); // dua X decode coy
-							cucok = entity_encode(cucok);				
+							cucok = entity_encode(cucok);
 							return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
 						}else{
 							return ""; // strip non-youtube flash object.
@@ -3837,7 +3881,7 @@ var _QQparse = {
 		$(pCon).html( revealCoders() );	
 		//clog('pCon after coder / before x decoded =' + $(pCon).html() );
 		
-		x = double_encode( $(pCon).html() );		
+		x = double_encode( $(pCon).html() );
 		//clog('x decoded ' + x);
 		delete pCon;
 		
@@ -3942,7 +3986,7 @@ function validTag(txt, doreplace, mode){
 			break;
 		}
 	}
-	return (cucok ? ret : false);              
+	return (cucok ? ret : false);
 }
 
 function do_sanitize(text){
@@ -4088,34 +4132,34 @@ function createEl(a, b, c) {
 	return d
 }
 function HtmlUnicodeDecode(a){
- var b="";if(a==null){return(b)}
- var l=a.length;
- for(var i=0;i<l;i++){
-  var c=a.charAt(i);
-  if(c=='&'){
-    var d=a.indexOf(';',i+1);
-    if(d>0){
-      var e=a.substring(i+1,d);
-      if(e.length>1&&e.charAt(0)=='#'){
-        e=e.substring(1);
-        if(e.charAt(0).toLowerCase()=='x'){c=String.fromCharCode(parseInt('0'+e))}else{c=String.fromCharCode(parseInt(e))}
-      }else{
-        switch(e){case"nbsp":c=String.fromCharCode(160)}
-      }i=d;
-    }
-  }b+=c;
- }return b;
+	var b="";if(a==null){return(b)}
+	var l=a.length;
+	for(var i=0;i<l;i++){
+		var c=a.charAt(i);
+		if(c=='&'){
+			var d=a.indexOf(';',i+1);
+			if(d>0){
+				var e=a.substring(i+1,d);
+				if(e.length>1&&e.charAt(0)=='#'){
+					e=e.substring(1);
+					if(e.charAt(0).toLowerCase()=='x'){c=String.fromCharCode(parseInt('0'+e))}else{c=String.fromCharCode(parseInt(e))}
+				}else{
+					switch(e){case"nbsp":c=String.fromCharCode(160)}
+				}i=d;
+			}
+		}b+=c;
+	}return b;
 };
 function do_an_e(A) {
-  if (!A) {
-      window.event.returnValue = false;
-      window.event.cancelBubble = true;
-      return window.event
-  } else {
-      A.stopPropagation();
-      A.preventDefault();
-      return A
-  }
+	if (!A) {
+		window.event.returnValue = false;
+		window.event.cancelBubble = true;
+		return window.event
+	} else {
+		A.stopPropagation();
+		A.preventDefault();
+		return A
+	}
 }
 function selectAll(e){
 	e = e.target||e;
@@ -4124,31 +4168,29 @@ function selectAll(e){
 }
 
 function getHeight(){
-  var y = 0;
-  if (self.innerHeight){ // FF; Opera; Chrome
-     y = self.innerHeight;
-  } else if (document.documentElement && document.documentElement.clientHeight){ 
-     y = document.documentElement.clientHeight;
-  } else if (document.body){
-     y = document.body.clientHeight;
-  }
-  return y;
+	var y = 0;
+	if (self.innerHeight){ // FF; Opera; Chrome
+		y = self.innerHeight;
+	} else if (document.documentElement && document.documentElement.clientHeight){ 
+		y = document.documentElement.clientHeight;
+	} else if (document.body){
+		y = document.body.clientHeight;
+	}
+	return y;
 };
 function getCurrentYPos() {
-    if (document.body && document.body.scrollTop)
-      return document.body.scrollTop;
-    if (document.documentElement && document.documentElement.scrollTop)
-      return document.documentElement.scrollTop;
-    if (gvar.$w.pageYOffset)
-      return gvar.$w.pageYOffset;
-    return 0;
+	if (document.body && document.body.scrollTop)
+		return document.body.scrollTop;
+	if (document.documentElement && document.documentElement.scrollTop)
+		return document.documentElement.scrollTop;
+	if (gvar.$w.pageYOffset)
+		return gvar.$w.pageYOffset;
+	return 0;
 }
 
 function getValue(key, cb) {
 	var ret, data=OPTIONS_BOX[key];
 	if( !data ) return;
-	//return (!data ? '': GM_getValue(key,data[0]));
-	//gvar.$w.setTimeout(function(){ ret = GM_getValue(key,data[0]) }, 0);
 	setTimeout(function(){
 		ret = GM_getValue(key,data[0]);
 		if(typeof(cb)=='function')
@@ -4158,13 +4200,10 @@ function getValue(key, cb) {
 		else
 			return ret;
 	}, 0);
-	//return (!data ? '': ret );
 }
 function setValue(key, value, cb) {
 	var ret, data=OPTIONS_BOX[key];
 	if( !data ) return;
-	//return (!data ? '': GM_setValue(key,value));
-	//gvar.$w.setTimeout(function(){ GM_setValue(key,value) }, 0);
 	setTimeout(function(){
 		ret = GM_setValue(key,value)
 		if(typeof(cb)=='function')
@@ -4174,7 +4213,6 @@ function setValue(key, value, cb) {
 		else
 			return ret;
 	}, 0);
-	//return (!data ? '': ret ); 
 }
 function delValue(key, cb){
 	try{
@@ -4207,7 +4245,7 @@ function setValueForId(userID, value, gmkey, sp){
 		}
 		
 		info.splice(i, 0, userID+"="+value);
-		setValue(ksg, info.join(sp[0]));		
+		setValue(ksg, info.join(sp[0]));
 	});
 }
 
@@ -4234,7 +4272,7 @@ function getValueForId(userID, gmkey, sp, cb){
 		
 		for(var i=0; i<info.length; i++){
 			if( !isString(info[i]) ) continue;
-			var recs = info[i].split('=');			
+			var recs = info[i].split('=');
 			if( recs[0]==userID ){
 				var rets = [userID], values = recs[1].split(sp[1]), vL=values.length;
 				for(var idx=0; idx<vL; idx++){
@@ -4340,23 +4378,16 @@ function clog(msg) {
 function tokcap_parser(page, mode){
 	try{
 		page = decodeURIComponent( page );
-	}catch(e){
-		//page = page.replace(/\\\"/g, '').replace(/(\r\n|\n|\r)/gm, "").toString()
-		
+	}catch(e){		
 		
 		page = page.replace(/\\\"/g, '').replace(/(\r\n|\n|\r|\t|\s{2,})/gm, "").replace(/\%/gm, '%25').toString();
 		//page = decodeURIComponent( page );
 		
 		clog('decodeURI in tokcap_parser failed');
-		clog('secondary result of page = ' + page)
-		
+		clog('secondary result of page = ' + page)		
 	}
 	
-	// conform user is the same and is not donat; else update hash & sec.token
-	//if( !/\bmember\.php\?u=(\d+)/.test(page) || page.indexOf('security token was invalid.<br')!=-1 || gvar.user.isDonatur ){ return false; }	
-	
 	var cucok, match, rets=[0,0];
-	//if(cucok = /<input\s+(?:(?:[^\=]+).(?:[\'\"][^\'\"]+.)\s+)+name=[\'\"]securitytoken[\'\"]\s+value=[\'\"]([^\'\"]+)/i.exec(page) ){
 	if(cucok = /out\/\?\&hash=([^\'\"]+)/i.exec(page) ){
 		
 		clog('old securitytoken=' + gvar._securitytoken);
@@ -4438,7 +4469,7 @@ function inteligent_width( mode ){
 		upkey = 'UPLOAD_LOG';
 		if( mode=='' ){
 			// save history upload
-			getValue(KS + upkey, function(ret){				
+			getValue(KS + upkey, function(ret){
 				imgs = ret.split(',');
 				if( ret && imgs.length > 0 ){
 					$.each(imgs, function(){
@@ -4451,7 +4482,7 @@ function inteligent_width( mode ){
 						;
 						$('#preview-image').append( tpl );
 					});
-				}				
+				}
 			});
 		}else{
 			// whether is [insert, delete]
@@ -4517,7 +4548,6 @@ function do_smile(Obj, nospace){
 	}else if( Obj.get(0).nodeName != tag ) {
 		bbcode=Obj.attr("title");
 		_src = bbcode.split(' ' + HtmlUnicodeDecode('&#8212;'));
-		//alert(_src[1].replace(/\)/g,'&#41;').replace(/\(/g,'&#40;'));
 		_TEXT.setValue( _src[1] + (!nospace ? ' ':''));  
 	}else{
 		_TEXT.setValue(bbcode + (!nospace ? ' ':'') );
@@ -4620,11 +4650,11 @@ function do_insertCustomTag(tag){
 				return endFocus();
 			}else{
 				prehead = [('['+pTag[tag] + (tagprop!=''?'='+tagprop:'')+']').length, 0];
-				prehead[1] = (prehead[0]+text.length);        
+				prehead[1] = (prehead[0]+text.length);
 				_TEXT.setValue( '['+pTag[tag] + (tagprop!=''?'='+tagprop:'')+']'+text+'[/'+pTag[tag]+']', prehead );
 			}
 			return endFocus();
-		} // end selected==''		
+		} // end selected==''
 		
 		tagprop = (tag=='transparent' ? 'transparent' : '');
 		if(tag=='link'||tag=='image'||tag=='youtube'){
@@ -4636,7 +4666,7 @@ function do_insertCustomTag(tag){
 			switch(tag){
 				case 'link':
 					tagprop = text;
-					text = selected;           
+					text = selected;
 				break;
 				case 'youtube':
 					text = is_youtube_link(text);
@@ -4687,7 +4717,7 @@ function eventsController(){
 		if ($(this).val() != "") $("#close_title").show();
 		else $("#close_title").hide()
 	});
-	
+
 	$("#pick_icon").click(function () {
 		gvar.$w.clearTimeout(gvar.sTryEvent);
 		$("#menu_posticon").slideToggle(120, function () {
@@ -4739,7 +4769,7 @@ function eventsController(){
 	// render font's fonts
 	$('.fonts ul li a').each(function(){ $(this).css('font-family', $(this).attr('title')) });
 	
-	$('.markItUpDropMenu').each(function(){		
+	$('.markItUpDropMenu').each(function(){
 		$(this).hover(function() {
 			$(this).find('> ul').show();
 			var that = $(this);
@@ -4815,7 +4845,7 @@ function eventsController(){
 							if(trimStr(parts[i])) ret+= '\n' + '[*]' + parts[i] + '';
 						ret = '[LIST'+(mode=='number' ? '="1"' : '')+']' + ret + '\n[/LIST]';
 						_TEXT.replaceSelected( ret, [0, ret.length] );
-					}					
+					}
 					_TEXT.pracheck();
 				});
 			 break;
@@ -4847,7 +4877,7 @@ function eventsController(){
 			 break;
 			 case "misc":
 				el.click(function(){
-					tag = $(this).attr('data-bbcode');					
+					tag = $(this).attr('data-bbcode');
 					do_insertCustomTag( tag );
 					
 					_TEXT.pracheck();
@@ -4981,7 +5011,7 @@ function eventsTPL(){
 		$(this).hide()
 	});
 	$('#qr_chkval').click(function(){
-		precheck_quoted( $('#tmp_chkVal').val() );		
+		precheck_quoted( $('#tmp_chkVal').val() );
 	});
 
 	$('#settings-button').click(function(){ _STG.init(); });
@@ -5042,19 +5072,18 @@ function eventsTPL(){
 	;
 
 	if( gvar.settings.qrdraft ){
-        $('#'+gvar.tID).keypress(function(e){
-            var A = e.keyCode;
-            if( A>=37 && A<=40 ) return; // not an arrow
-            if( $('#qrdraft').get(0) )
+		$('#'+gvar.tID).keypress(function(e){
+			var A = e.keyCode;
+			if( A>=37 && A<=40 ) return; // not an arrow
+			if( $('#qrdraft').get(0) )
 				_TEXT.saveDraft(e);
-            clearTimeout( gvar.sITryLiveDrafting );
-            gvar.isKeyPressed=1; _DRAFT.quick_check();
-			//updateCounter(gvar.additionalLength);
-        });
+			clearTimeout( gvar.sITryLiveDrafting );
+			gvar.isKeyPressed=1; _DRAFT.quick_check();
+		});
 		
 		// initialize draft check
 		_DRAFT._construct();
-        _DRAFT.check();
+		_DRAFT.check();
 
 		// event click for save_draft
 		$("#qrdraft").click(function(){
@@ -5075,7 +5104,7 @@ function eventsTPL(){
 				me.html('Saved').attr('data-state', 'saved');
 				_DRAFT.switchClass(disb);
 				_TEXT.setElastic(gvar.maxH_editor);
-			}else{                
+			}else{
 				if( text!=gvar.silahken && text!="" )
 					_DRAFT.save();
 			}
@@ -5097,7 +5126,7 @@ function get_userdetail() {
 		,photo:$(d).attr('src')
 		,isDonatur: ($('#quick-reply').get(0) ? true : false)
 	};
-    return a
+	return a
 }
 
 function getSettings(stg){
@@ -5141,7 +5170,7 @@ function getSettings(stg){
 	
 	gvar.$w.setTimeout(function(){
 	getValue(KS+'UPDATES', function(ret){
-		var hVal, hdc;		
+		var hVal, hdc;
 		
 		// get layout config
 		settings.userLayout.config = ('0,0').split(',');
@@ -5209,7 +5238,6 @@ function getSettings(stg){
 	return waitTillDone();
 }
 
-// 
 function getUploaderSetting(){
 	// uploader properties
 	gvar.upload_sel={
@@ -5217,11 +5245,10 @@ function getUploaderSetting(){
 		,imagevenue:'imagevenue.com'
 		,imgzzz:'imgzzz.com'
 		,imgur:'imgur.com'
-    	,postimage:'postimage.org'
+		,postimage:'postimage.org'
 	};
 	gvar.uploader={
-		// imagedum:{ src:'imagedum.com',noCross:'1'  }
-		 imageshack:{
+		imageshack:{
 			src:'imageshack.us'
 			,post:'post.imageshack.us/'
 			,ifile:'fileupload'
@@ -5239,9 +5266,9 @@ function getUploaderSetting(){
 		,imagevenue:{
 			src:'imagevenue.com/host.php',noCross:'1' 
 		}
-    	,postimage:{
-        	src:'postimage.org',noCross:'1' 
-    	}
+		,postimage:{
+			src:'postimage.org',noCross:'1' 
+		}
 	};
 	// set last-used host
 	try{
@@ -5255,7 +5282,7 @@ function getUploaderSetting(){
 
 function toggleTitle(){
 	if( $('#formqr').is(':visible') ){
-		$('#qrtoggle-button').html('&#9650;');		
+		$('#qrtoggle-button').html('&#9650;');
 	}else{
 		$('#qrtoggle-button').html('&#9660;');
 	}
@@ -5291,7 +5318,6 @@ function resize_popup_container(force_width){
 		$('#box_preview')
 			.css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
 	}
-	
 	gvar.maxH_editor = ( bH - gvar.offsetEditorHeight );	
 	_TEXT.setElastic(gvar.maxH_editor, 1);
 }
@@ -5343,7 +5369,7 @@ function slideAttach(that, cb){
 		delay = 100;
 	
 	destination = $(that).offset().top
-	scOffset = Math.floor(gvar.$w.innerHeight / 5) * 2;			
+	scOffset = Math.floor(gvar.$w.innerHeight / 5) * 2;
 	landed = 0;
 	$("html:not(:animated),body:not(:animated)").animate({ scrollTop: (destination-scOffset)}, delay, function() {
 		if( !prehide && !isclosed ) {
@@ -5379,7 +5405,7 @@ function xtip(sel, dofind){
 
 function start_Main(){
 	
-	gvar.user = get_userdetail();	
+	gvar.user = get_userdetail();
 	// do nothin if not login | locked thread
 	if( !gvar.user.id || $('.icon-lock').get(0) || !$('*[name="securitytoken"]').val() ){
 		clog('Not login, no securitytoken, locked thread, wotever, get the "F"-out');
@@ -5391,7 +5417,7 @@ function start_Main(){
 	gvar.thread_type = (location.href.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : 'forum');	
 	gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
 	
-	// is aka to groupid
+	// may reffer to groupid
 	gvar.pID = (function get_thread_id(href){
 		// *.kaskus.*/group/reply_discussion/6124
 		// *.kaskus.*/post_reply/000000000000000007710877
@@ -5415,7 +5441,7 @@ function start_Main(){
 			var $_1stlanded, mq_class = 'multi-quote';
 			
 			// need a delay to get all this settings
-			gvar.$w.setTimeout(function(){				
+			gvar.$w.setTimeout(function(){
 				
 				// push qr-tpl
 				if(gvar.last_postwrap){
@@ -5482,14 +5508,12 @@ function start_Main(){
 						}
 						if( gvar.edit_mode == 1 ){
 							if( _AJAX.edit_cancel(false) ){
-								//$('#qr_chkcookie').click();
 								window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
 							}else{
 								gvar.sTry_canceling = 1;
 								$(this).click();
 							}
 						}else{
-							//$('#qr_chkcookie').click();
 							window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
 						}
 						if(!$(this).hasClass(mq_class))
@@ -5529,7 +5553,6 @@ function start_Main(){
 				// almost done, later do. delayed and give a time for rendering
 				// give events for another node
 				$(document).ready(function(){
-					
 					
 					$('#qrtoggle-button').click(function(){
 						$('#formqr').toggle(180, function(){
@@ -5584,7 +5607,7 @@ function start_Main(){
 									$('#qrdraft').click();
 							}
 							break;
-						};						
+						};
 						if(doThi) do_an_e(ev);
 						
 					}).resize(function () {
@@ -5601,24 +5624,8 @@ function start_Main(){
 						$('#draft_desc #clear-draft').click(function(){ _DRAFT.clear() });
 					}
 					
-					
-					// sense of fail css
-					var w_text, w_field, txa = $('#reply-messsage');
-					w_text = $(txa).width()
-					w_field = $(txa).closest('fieldset').width();
-					if( ((w_text*2) - 10) < w_field ){
-						if( gvar.noCrossDomain ){
-							GM_addGlobalStyle(gvar.kqr_static + gvar.css_default + '?' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV), 'direct_css', true);
-						}else if( !gvar.isOpera/*&& confirm('Your QR CSS_BULK seems not loaded properly\nReload page to refetch them now?') */ ){
-							//delValue('CSS_BULK', function(){ location.reload(false) })
-							clog('Your QR CSS_BULK seems not loaded properly. Try to reload page to refetch them.')
-						}
-					}
-				
 					// infiltrate default script
 					GM_addGlobalScript( rSRC.getSCRIPT() );
-					
-					
 					(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){ $('.ev_smiley:first').click() }, 50);
 
 					// trigger preload recapcay
@@ -5655,33 +5662,33 @@ function start_Main(){
 
 // outside forum like u.kaskus.us || imageshack.us
 function outSideForumTreat(){
-  var whereAmId=function(){
-    var _src, ret=false;
-    getUploaderSetting();
-    for(var host in gvar.uploader){
-		_src = gvar.uploader[host]['src'] || null;
-		if( _src && self.location.href.indexOf( _src )!=-1 ){
-			ret= String(host); break;
+	var whereAmId=function(){
+		var _src, ret=false;
+		getUploaderSetting();
+		for(var host in gvar.uploader){
+			_src = gvar.uploader[host]['src'] || null;
+			if( _src && self.location.href.indexOf( _src )!=-1 ){
+				ret= String(host); break;
+			}
 		}
-    }
-    return ret;
-  };
-  
-  var el,els,par,lb,m=20,loc = whereAmId(),CSS="",i="!important";
-  /*
-    # do pre-check hostname on location
-  */
-  if( window == window.top ) return;
+		return ret;
+	};
+
+	var el,els,par,lb,m=20,loc = whereAmId(),CSS="",i="!important";
+	/*
+	# do pre-check hostname on location
+	*/
+	if( window == window.top ) return;
  
   
-  switch(loc){
-    case "imageshack":
+	switch(loc){
+		case "imageshack":
 		CSS=''
 		+'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
 		+'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0}'
 		+'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt}'
 		;break;
-    case "imgur":
+		case "imgur":
 		CSS=''
 		+'.panel.left #imagelist,#colorbox .top-tr, #upload-global-dragdrop,#upload-global-clipboard,#upload-global-form h1,#upload-global-queue-description{display:none'+i+'}'
 		+'#gallery-upload-buttons{width:50%}'
@@ -5689,17 +5696,17 @@ function outSideForumTreat(){
 		+'#colorbox{position:absolute'+i+';top:0'+i+'}'
 		+'.textbox.list{overflow-y:auto'+i+';max-height:100px}'
 		;break;		
-    case "imagevenue":
+		case "imagevenue":
 		CSS=''
-		+'table td > table:first-child{display:none'+i+'}'		
+		+'table td > table:first-child{display:none'+i+'}'
 		;break;
-    case "imgzzz":
+		case "imgzzz":
 		CSS=''
 		+'#toper,#mem-info,#bottom, .mainbox, .imargin h4{display:none'+i+'}'
 		+'body > div{position:absolute;}'
 		+'#mid-part{width:30px; background:#ddd; color:transparent;}'
 		;break;
-    case "photoserver":
+		case "photoserver":
 		CSS=''
 		+'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
 		+'body>img,#topbar{top:0'+i+'}'
@@ -5709,91 +5716,91 @@ function outSideForumTreat(){
 		+'#overlay .content{top:3px'+i+'}'
 		+'#overlay{position:absolute'+i+'}'
 		;break;
-    case "postimage":
-	    CSS=''
-	    +'* html, body{background-color:#fff;padding:0;margin:0}'
-	    +'center, p:first-child{display:none'+i+'}'
-	    +'#footer{margin-top:2px}'
-	    +'#footer p{margin-top:-18px}'
-	    +'#center{width:70%'+i+'}'
-	    +'#content{padding:0 5px;height:180px'+i+'}'
-	    +'.box{margin-top:-30px}'
-	    ;break;
-  }; // end switch loc
-  if( CSS!="" ) 
-    GM_addGlobalStyle(CSS,'inject_host_css', true);
-  
-  // treat on imageshack
-  el = $D('//input[@wrap="off"]',null,true);
-  if(loc=='imageshack' && el){
-    gvar.sITryKill = window.setInterval(function() {
-		if( $D('.ui-dialog') ){
-			clearInterval( gvar.sITryKill );
-			var lL, ealb;
-			
-			// make sure, kill absolute div layer
-			lb = $D('//div[contains(@style,"z-index")]',null);
-			if( lL = lb.snapshotLength ){
-				for(var i=0; i<lL; i++)
-					Dom.remove( lb.snapshotItem(i) )
-			}
-			if( $D('#ad') ) Dom.remove( $D('#ad') );
-			
-			window.setTimeout(function(){
-				el.removeAttribute('disabled');            
-				var par=el.parentNode.parentNode;
-				lb = $D('.tooltip',par);
-				if(lb){
-					lb[0].innerHTML=lb[1].innerHTML='';
-					Dom.add(el,par);
-				}
-				// right-col manipulator
-				var ei,et,rTitle=function(t){
-					var e = createEl('div',{'class':'main-title'},t);
-					return e;
-				}, BBCodeImg=function(A){
-					return '[IMG]'+A+'[/IMG]';
-				}, BBCodeTh=function(A){
-					var b=A.lastIndexOf('.'),c=A.substring(0,b)+'.th'+A.substring(b);
-					return '[URL='+A+']'+BBCodeImg(c)+'[/URL]';
-				};
-				if( lb = $D('.right-col',null) ){
-					lb[0].innerHTML='';
-					et=rTitle('Direct Link'); Dom.add(et, lb[0]);
-					ei = createEl('input',{type:'text', value:el.value, readonly:'readonly', 'class':'readonly'});
-					_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
-					try{ei.focus();selectAll(ei)}catch(e){}
-					
-					et=rTitle('BBCode IMG'); Dom.add(et, lb[0]);
-					ei = createEl('input',{type:'text', value:BBCodeImg(el.value), readonly:'readonly', 'class':'readonly'});
-					_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
-					et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
-					ei = createEl('input',{type:'text', value:BBCodeTh(el.value), readonly:'readonly', 'class':'readonly'});
-					_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
-				}
-			}, 500);
-		}else{
-			if(max>0)
-				m=m-1;
-			else
-				clearInterval(gvar.sITryKill);
-		}
-    },  50);
-  } // end is imageshack
-  else if(loc == 'imgur'){
-  	window.setTimeout(function(){
-  		par = $D('#content');
-  		par.insertBefore($D('#gallery-upload-buttons'), par.firstChild);  		
-  		try{
-  			Dom.remove($D('//div[contains(@class,"panel") and contains(@class,"left")]//div[@id="imagelist"]',null,true))
-  		}catch(e){};
-  	}, 300);
-  	gallery = imgur = null;
-  }
-  
-  return false;
-}
+		case "postimage":
+		CSS=''
+		+'* html, body{background-color:#fff;padding:0;margin:0}'
+		+'center, p:first-child{display:none'+i+'}'
+		+'#footer{margin-top:2px}'
+		+'#footer p{margin-top:-18px}'
+		+'#center{width:70%'+i+'}'
+		+'#content{padding:0 5px;height:180px'+i+'}'
+		+'.box{margin-top:-30px}'
+		;break;
+	};
+	// end switch loc
+	if( CSS!="" ) 
+		GM_addGlobalStyle(CSS,'inject_host_css', true);
 
+	// treat on imageshack
+	el = $D('//input[@wrap="off"]',null,true);
+	if(loc=='imageshack' && el){
+		gvar.sITryKill = window.setInterval(function() {
+			if( $D('.ui-dialog') ){
+				clearInterval( gvar.sITryKill );
+				var lL, ealb;
+
+				// make sure, kill absolute div layer
+				lb = $D('//div[contains(@style,"z-index")]',null);
+				if( lL = lb.snapshotLength ){
+					for(var i=0; i<lL; i++)
+						Dom.remove( lb.snapshotItem(i) )
+				}
+				if( $D('#ad') ) Dom.remove( $D('#ad') );
+				
+				window.setTimeout(function(){
+					el.removeAttribute('disabled');            
+					var par=el.parentNode.parentNode;
+					lb = $D('.tooltip',par);
+					if(lb){
+						lb[0].innerHTML=lb[1].innerHTML='';
+						Dom.add(el,par);
+					}
+					// right-col manipulator
+					var ei,et,rTitle=function(t){
+						var e = createEl('div',{'class':'main-title'},t);
+						return e;
+					}, BBCodeImg=function(A){
+						return '[IMG]'+A+'[/IMG]';
+					}, BBCodeTh=function(A){
+						var b=A.lastIndexOf('.'),c=A.substring(0,b)+'.th'+A.substring(b);
+						return '[URL='+A+']'+BBCodeImg(c)+'[/URL]';
+					};
+					if( lb = $D('.right-col',null) ){
+						lb[0].innerHTML='';
+						et=rTitle('Direct Link'); Dom.add(et, lb[0]);
+						ei = createEl('input',{type:'text', value:el.value, readonly:'readonly', 'class':'readonly'});
+						_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+						try{ei.focus();selectAll(ei)}catch(e){}
+						
+						et=rTitle('BBCode IMG'); Dom.add(et, lb[0]);
+						ei = createEl('input',{type:'text', value:BBCodeImg(el.value), readonly:'readonly', 'class':'readonly'});
+						_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+						et=rTitle('BBCode Thumbnail'); Dom.add(et, lb[0]);
+						ei = createEl('input',{type:'text', value:BBCodeTh(el.value), readonly:'readonly', 'class':'readonly'});
+						_o('focus',ei, function(de){selectAll(de)}); Dom.add(ei, lb[0]);
+					}
+				}, 500);
+			}else{
+				if(max>0)
+					m=m-1;
+				else
+					clearInterval(gvar.sITryKill);
+			}
+		},  50);
+	}
+	else if(loc == 'imgur'){
+		window.setTimeout(function(){
+			par = $D('#content');
+			par.insertBefore($D('#gallery-upload-buttons'), par.firstChild);
+			try{
+				Dom.remove($D('//div[contains(@class,"panel") and contains(@class,"left")]//div[@id="imagelist"]',null,true))
+			}catch(e){};
+		}, 300);
+		gallery = imgur = null;
+	}
+	return false;
+}
+ 
 
 
 function init(){
@@ -5810,7 +5817,7 @@ function init(){
 	};
 	gvar.titlename= gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
 	
-	var kdomain = domainParse();		
+	var kdomain = domainParse();
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kask_domain = 'http://kask.us/';
@@ -5869,29 +5876,36 @@ function CSS_precheck(){
 				one_week = parseInt(1000 * 60 * 60 * 24 * 7);
 				if( cucok = /kqr_quad\.([^\.]+).css/.exec( parts[0] ) ){
 					if( gvar.scriptMeta.cssREV != cucok[1] || ( (parseInt(parts[0]) + one_week ) < (new Date().getTime()) )  ){
-						
+						/*
+						* css needed to update due to several condition
+						*  -qr engine changed, so the required css file
+						*  -css_meta said that css_bulk is expired (> 7 days)
+						*/
 						CSS_wait();
 						
 					}else{
-					
 						getValue(KS + 'CSS_BULK', function(ret){
-							if( !ret )
-								CSS_wait();
+							if( !ret ){
+								// not found CSS_BULK
+								CSS_wait(); return;
+							}
 							else{
 								_CSS.css_name = "kqr_quad." + cucok[1] + '.css';
+
+								// set css to DOM; update timestamp for next lastupdate check
 								_CSS.set_css(ret, start_Main);
-							}	
+							}
 						});
-					
 					}
 				}else{
+					// invalid value in CSS_META
 					CSS_wait();
 				}
 			}else{
+				// no meta yet, key deleted?
 				CSS_wait();
 			}
 		});
-		
 	}else{
 		clog('[Opera|Debug] fetch fresh css from: ' + gvar.kqr_static + gvar.css_default);
 		
@@ -5900,14 +5914,14 @@ function CSS_precheck(){
 	}
 }
 
-function CSS_wait(refetch_only, cb){	
+function CSS_wait(refetch_only, cb){
 	if( gvar.noCrossDomain || gvar.__DEBUG__ ) {
-		GM_addGlobalStyle(gvar.kqr_static + gvar.css_default + '?' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV), 'direct_css', true);
+		GM_addGlobalStyle(gvar.kqr_static + gvar.css_default + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV), 'direct_css', true);
 		start_Main();
 		if( typeof cb == 'function' ) cb();
 		return;
 	}
-	if( !$('#xhr_css').get(0) && gvar.ix < gvar.mx ){
+	if( !$('#xhr_css').length && gvar.ix < gvar.mx ){
 		if( !_CSS.engage ){
 			_CSS.init();
 			_CSS.engage = 1;
@@ -5923,7 +5937,7 @@ function CSS_wait(refetch_only, cb){
 	}
 }
 
-function jQ_wait2(){	
+function jQ_wait2(){
 	if( jQuery == "undefined" && gvar.ix < gvar.mx ){
 		gvar.$w.setTimeout(function () { jQ_wait2() }, 200);
 		gvar.injected = true;
@@ -5939,20 +5953,20 @@ function jQ_wait2(){
 
 
 function jQ_wait() {
-    if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
-        gvar.$w.setTimeout(function () { jQ_wait() }, 200);
-			if( !gvar.injected ){
-				GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
-				gvar.injected = true;
-			}
-        gvar.ix++;
-    } else {
-        if ("undefined" == typeof unsafeWindow.jQuery) return;
-        $ = unsafeWindow.$ = unsafeWindow.jQuery = unsafeWindow.jQuery.noConflict(true);
-			gvar.ix = 0;
+	if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
+		gvar.$w.setTimeout(function () { jQ_wait() }, 200);
+		if( !gvar.injected ){
+			GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
+			gvar.injected = true;
+		}
+		gvar.ix++;
+	} else {
+		if ("undefined" == typeof unsafeWindow.jQuery) return;
+		$ = unsafeWindow.$ = unsafeWindow.jQuery = unsafeWindow.jQuery.noConflict(true);
+		gvar.ix = 0;
 		
-			CSS_precheck();
-    }
+		CSS_precheck();
+	}
 }
 
 if('undefined' == typeof mothership)
