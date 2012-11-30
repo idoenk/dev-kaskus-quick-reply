@@ -5038,13 +5038,6 @@ function eventsTPL(){
 	});
 
 	$('#settings-button').click(function(){ _STG.init(); });
-
-	// trigger false-positive css-checker
-	//$('#'+gvar.qID + ' .righty').bind("resize", function(){
-	//$('#'+gvar.qID + ' .righty').resize(function(){
-	$('.righty').resize(function(){
-		alert('huaaa; ada css');
-	});
 	
 	gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
 	_TEXT.setElastic(gvar.maxH_editor);
