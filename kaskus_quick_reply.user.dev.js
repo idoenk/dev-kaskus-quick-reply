@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121201410
-// @timestamp      1354307171057
+// @timestamp      1354311121531
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-12-01 . 1354307171057
+// v4.1.0 - 2012-12-01 . 1354311121531
+//   fix size_mapper
 //   fix bad-css-checker, Lv.1 Thx=[p1nky]
 //   reimplement fixercod
 //   catch error text too long
@@ -75,7 +76,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354307171057 // version.timestamp
+	timestamp: 1354311121531 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121201410 // version.date
@@ -3733,15 +3734,15 @@ var _QQparse = {
 					openTag = (mct[1] && isDefined(mct[2]) && mct[2]);
 					if( openTag ){
 						var size_maper = {
-							'7px': '1',
-							'9px': '2',
-							'10px': '3',
-							'12px': '4',
-							'16px': '5',
+							'10px': '1',
+							'12px': '2',
+							'14px': '3',
+							'16px': '4',
+							'18px': '5',
 							'20px': '6',
-							'30px': '7'
+							'22px': '7'
 						}
-						mct[2] = ( isDefined(size_maper[mct[2]]) ? size_maper[mct[2]] : 'NA');
+						mct[2] = ( isDefined(size_maper[mct[2]]) ? size_maper[mct[2]] : '3');
 					}
 				}
 				else{
