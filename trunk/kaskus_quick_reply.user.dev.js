@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
-// @dtversion      121130410
-// @timestamp      1354222040821
+// @dtversion      121201410
+// @timestamp      1354307171057
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,9 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-11-30 . 1354222040821
+// v4.1.0 - 2012-12-01 . 1354307171057
+//   fix bad-css-checker, Lv.1 Thx=[p1nky]
+//   reimplement fixercod
 //   catch error text too long
 //   fix keep scrollTop pos when editor in scroll mode. Thx=[coolkips,p1nky]
 //   force scroll to bottom on lastfocus (editor)
@@ -73,10 +75,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354222040821 // version.timestamp
+	timestamp: 1354307171057 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121130410 // version.date
+	,dtversion: 121201410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -3327,6 +3329,7 @@ var _CSS = {
 	engage:false,
 	init:function(){
 		_CSS.path_uri = gvar.kqr_static;
+		// flag we'll be running xhr get css
 		_CSS.dovalidate = false;
 		_CSS.css_name = '';
 		_CSS.DialogId = null;
@@ -3387,18 +3390,23 @@ var _CSS = {
 			setValue(KS + 'CSS_META', metacss, function(){
 				if(typeof cb=='function') cb();
 			});
-			_CSS.dom_css_validate();
+			//_CSS.dom_css_validate();
+			gvar.on_demand_csscheck = _CSS.dom_css_validate;
+			_CSS.dovalidate && ("function" === typeof gvar.on_demand_csscheck)
+				&& gvar.on_demand_csscheck();
 		});
-		!c&&_CSS.dom_css_validate();
+		//!c && _CSS.dom_css_validate();
+		!c && ( gvar.on_demand_csscheck = _CSS.dom_css_validate );
 	},
 	dom_css_validate: function(){
 		window.setTimeout(function(){
-			var _id, $tgt = $('#'+gvar.qID + ' .righty');
-			_id = _CSS.DialogId;
+			var $tgt, _id = _CSS.DialogId;
+			$tgt = $D('.righty', gID(gvar.qID), 1);
 
 			!(_id && $('#'+_id).length) && _CSS.dialog();
 			_id = _CSS.DialogId;
-			if( $tgt.length && $tgt.width() === 0 ){
+
+			if( $tgt.length && $tgt[0].offsetWidth < 940 ){
 
 				_CSS.dovalidate && _CSS.dialog_html('#okesip!');
 				window.setTimeout(function(){
@@ -3413,7 +3421,8 @@ var _CSS = {
 				if( !gvar.isOpera )
 					$('#'+_id).find('*[rel="tooltip"]').tooltip();
 			}
-		}, 1890);
+		}, 890);
+		gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
 	}
 };
 // utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
@@ -3638,6 +3647,9 @@ var _QQparse = {
 			$('.edited', $(rvCon) ).remove();
 			return $(rvCon).html();
 		}
+		,br2nl = function(text){
+			return text.replace(/<br\s*(?:[^>]+|)>/gi, "\n")
+		}
 		,revealCoders = function(html){
 			var els,el,cucok, XPathStr = './/div[contains(@style,"margin-bottom")]', rvCon = pCon;
 			if( isDefined(html) ){
@@ -3658,8 +3670,8 @@ var _QQparse = {
 					if(cucok[1]=='PHP' || cucok[1]=='HTML'){
 						var _html = (cucok[1]=='PHP' ? $(el).next().find('code').html() : $(el).next().html() );
 						if( _html ){
-							_html = _html.replace(/<\/?span(?:[^>]+)?>/gim, '')
-								.replace(/<br\s*\/?>/g, "\n");
+							_html = _html.replace(/<\/?span(?:[^>]+)?>/gim, '');
+							_html = br2nl(_html);
 							$(el).next().html( entity_encode(_html) );
 						}
 					}
@@ -3842,11 +3854,12 @@ var _QQparse = {
 			}
 		}
 		,double_encode= function(x){
-				return x
-						.replace(/\&amp;/gm,'&amp;amp;')
-						.replace(/\&lt;/gm,'&amp;lt;')
-						.replace(/\&gt;/gm,'&amp;gt;')
-						.replace(/<br\s*\/?>/g, "\n");
+			x = br2nl(x);
+			return x
+				.replace(/\&amp;/gm,'&amp;amp;')
+				.replace(/\&lt;/gm,'&amp;lt;')
+				.replace(/\&gt;/gm,'&amp;gt;')
+			;
 		};
 		
 		// make a fake container for this inner x
@@ -5025,6 +5038,13 @@ function eventsTPL(){
 	});
 
 	$('#settings-button').click(function(){ _STG.init(); });
+
+	// trigger false-positive css-checker
+	//$('#'+gvar.qID + ' .righty').bind("resize", function(){
+	//$('#'+gvar.qID + ' .righty').resize(function(){
+	$('.righty').resize(function(){
+		alert('huaaa; ada css');
+	});
 	
 	gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
 	_TEXT.setElastic(gvar.maxH_editor);
@@ -5123,6 +5143,10 @@ function eventsTPL(){
 	
 	eventsController();
 	resize_popup_container(); // init to resize textarea
+
+	// check if css_check defined
+	(typeof gvar.on_demand_csscheck=='function')
+		&& gvar.on_demand_csscheck();
 }
 
 function get_userdetail() {
@@ -5363,6 +5387,23 @@ function finalizeTPL(){
 	if( gvar.settings.widethread ){
 		GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
 	}
+	fixerCod();
+}
+
+// <br/> inside <pre>? ergh
+function fixerCod(){
+	$('.hfeed >.entry').each(function(){
+		var rx, $e, $pre = $(this).find('pre');
+		if( !$pre.length ) return true;
+
+		$e = $pre.find('a:last');
+		rx = /\[\/CODE\](?:.+)?/i;
+		if($e.length && (cucok = rx.exec( $e.attr('href') )) )
+			$e.attr('href', $e.attr('href').replace(rx, '') );
+
+		$pre.find('br')
+			.attr('style', 'display:block; margin-top:-12px;');
+	});
 }
 
 function slideAttach(that, cb){
@@ -5414,7 +5455,13 @@ function xtip(sel, dofind){
 }
 
 function start_Main(){
+
+	var _loc = location.href;
+	gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
 	
+	if(gvar.thread_type == 'singlepost')
+		return fixerCod();
+
 	gvar.user = get_userdetail();
 	// do nothin if not login | locked thread
 	if( !gvar.user.id || $('.icon-lock').get(0) || !$('*[name="securitytoken"]').val() ){
@@ -5422,9 +5469,8 @@ function start_Main(){
 		return
 	}
 	GM_addGlobalStyle( rSRC.getCSS() );	
-	gvar.bodywidth = $('#main .col:first').width();
+	gvar.bodywidth = $('#main .col:first').width();	
 	
-	gvar.thread_type = (location.href.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : 'forum');	
 	gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
 	
 	// may reffer to groupid
