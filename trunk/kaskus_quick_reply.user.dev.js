@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121201410
-// @timestamp      1354311121531
+// @timestamp      1354314073290
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-12-01 . 1354311121531
+// v4.1.0 - 2012-12-01 . 1354314073290
 //   fix size_mapper
 //   fix bad-css-checker, Lv.1 Thx=[p1nky]
 //   reimplement fixercod
@@ -76,7 +76,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354311121531 // version.timestamp
+	timestamp: 1354314073290 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121201410 // version.date
@@ -90,7 +90,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = 0; // development debug
+gvar.__DEBUG__ = 1; // development debug
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -328,7 +328,7 @@ var rSRC = {
         return ''
 		+'<div id="' + gvar.qID + '" class="xkqr" style="clear:both">' 
 		+'<div class="xkqr-entry-content">'
-		+'<div class="xkqr-entry-head">'
+		+'<div class="xkqr-entry-head'+(gvar.thread_type == 'group' ? ' bar0' : '')+'">'
 		+ '<div class="qrhead-title lefty">'+iner_head+'</div>'
 		+ '<div class="righty">'
 		+   '<span id="draft_desc" style="">blank</span>' 
@@ -453,7 +453,7 @@ var rSRC = {
 			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
 			   // remote button to delete-mQ
 			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){alert(e)}" />'
-			+	'<span class="counter"><i>Characters left:</i> <tt class="numero">10000</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
+			+	'<span class="counter"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
@@ -1343,12 +1343,16 @@ var _BOX = {
 
 							// is there error?
 							if( cucok = /[\'\"]err-msg[\'\"](?:[^>]+|)>([^<]+).\//i.exec(sdata) ){
-								func = function(){
-									$('#box_preview').html('<div class="qrerror">'+cucok[1]+'</div>');
-								};
-								_NOFY.btnset = false;
-								_NOFY.init({mode:'error', msg:cucok[1], cb:func});
+								msg = cucok[1];
 							}
+							else{
+								msg = 'Unknown error..' + (parseInt($('#'+gvar.qID + ' .numero').text()) < 0 ? ' Your characters is too long' : '');
+							}
+							func = function(){
+								$('#box_preview').html('<div class="qrerror">'+msg+'</div>');
+							};
+							_NOFY.btnset = false;
+							_NOFY.init({mode:'error', msg:msg, cb:func});
 						}
 						
 						$('#box_prepost').click(function(){
@@ -2114,7 +2118,7 @@ var _TEXTCOUNT = {
 		var cUL, _tc = this;
 		cUL = String(gvar.settings.userLayout.config).split(',');
 
-		_tc.limitchar = 10000;
+		_tc.limitchar = (gvar.thread_type == 'group' ? 1000 : 10000);
 		_tc.$editor = $('#'+gvar.tID);
 		_tc.$target = ("string" == typeof target ? $(target) : target);
 		_tc.preload_length = 0;
@@ -3596,7 +3600,7 @@ var _QQparse = {
 		var nameStr, el = createEl('div', {}, $('#'+pid).find('.nickname').html() );
 		nameStr = trimStr($(el).text().toString()).replace(/\[\$\]$/, '');
 		$(el).remove();
-		return trimStr( nameStr ) + ';' + pid.replace(/^post/i, '');
+		return trimStr( nameStr ) + (gvar.thread_type == 'group' ? '' : ';'+pid.replace(/^post/i, ''));
 	},
 	clearTag: function(h, tag){
 		if( isUndefined(tag) ){
