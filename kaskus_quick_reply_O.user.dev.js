@@ -1387,11 +1387,12 @@ var _BOX = {
           
           if( cucok = /<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i.exec(sdata) ){
             // try to flush draft, before reload
-            setValue(KS+'TMP_TEXT', '', function(){
+            setValue(KS+'TMP_TEXT', '');
+            (function(){
               // NO-Error, grab redirect location
               cucok[1] = cucok[1].replace(/\#/,'/?p'+(new Date().getTime()) + '#');
               location.href = cucok[1];
-            });
+            })();
             return;
           }else{
             var args, msg  = 'redirect link not found, post might fail. please try again.';
@@ -3077,10 +3078,11 @@ var _STG = {
               }else if( lastkey && newval && !newval.match(/^\#\s(?:\w.+)*/) ){
                 // is lastkey is defined, newval is not blank and is not a komeng
                 try{
-                  setValue(KS+lastkey, newval.toString(), function(){
+                  setValue(KS+lastkey, newval.toString());
+                  (function(){
                     //query_save_setting(line);
                     lastkey = false; // flushed, find next key
-                  });
+                  })();
                 }catch(e){};
               }
               line++;
