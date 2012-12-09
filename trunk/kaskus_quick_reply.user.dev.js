@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
-// @dtversion      121201410
-// @timestamp      1354314073290
+// @dtversion      121209410
+// @timestamp      1355012675531
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,9 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-12-01 . 1354314073290
+// v4.1.0 - 2012-12-09 . 1355012675531
+//   +text counter settings
+//   +smilies
 //   fix size_mapper
 //   fix bad-css-checker, Lv.1 Thx=[p1nky]
 //   reimplement fixercod
@@ -76,10 +78,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1354314073290 // version.timestamp
+	timestamp: 1355012675531 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121201410 // version.date
+	,dtversion: 121209410 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -98,47 +100,31 @@ gvar.$w = window;
 // predefined registered key_save
 var OPTIONS_BOX = {
   KEY_SAVE_SAVED_AVATAR:  ['']
- //,KEY_SAVE_LAST_SPTITLE:  ['title'] // last used spoiler-title
  ,KEY_SAVE_LAST_UPLOADER: [''] // last used host-uploader
  
  ,KEY_SAVE_UPDATES:          ['1'] // check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
  ,KEY_SAVE_HIDE_AVATAR:      ['1'] // hide avatar
  ,KEY_SAVE_MIN_ANIMATE:      ['0'] // minify jQuery animate
- //,KEY_SAVE_QUICK_QUOTE:      ['1'] // quick quote
- //,KEY_SAVE_DYNAMIC_QR:       ['1'] // dynamic QR
- //,KEY_SAVE_AJAXPOST:         ['1'] // ajaxPost
  ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
- //,KEY_SAVE_HIDE_CONTROLLER:  ['0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0'] // serial hide [controller]
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
  ,KEY_SAVE_QR_HOTKEY_CHAR:   ['Q'] // QR hotkey, [A-Z]
  
- //,KEY_SAVE_TXTCOUNTER:       ['1'] // text counter flag
- //,KEY_SAVE_COUNTDOWN:        ['1'] // counter down flag
- //,KEY_SAVE_COUNTDOWN_POS:    ['1,0'] // counter down actpos [qrform, tab]
+ ,KEY_SAVE_TXTCOUNTER:       ['1'] // text counter flag
 
- //,KEY_SAVE_TEXTA_EXPANDER:   ['1'] // [flag,minHeight,maxHeight] of textarea_expander
  ,KEY_SAVE_SHOW_SMILE:       ['0,kecil']   // [flag,type] of autoshow_smiley
  ,KEY_SAVE_LAYOUT_CONFIG:    [''] // flag of template_on
- //,KEY_SAVE_LAYOUT_SIGI:      [''] // signature layout, eg. [RIGHT]&#8212;[SIZE=1][b]QR[/b][/SIZE]&#8482;[/RIGHT]
  ,KEY_SAVE_LAYOUT_TPL:       [''] // template layout, must contain: "{message}". eg. [B]{message}[/B]
  
- //,KEY_SAVE_SCUSTOM_ALT:      ['0'] // use alt instead of thumbnail
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
- //,KEY_SAVE_QR_USE_RECAPCAY:  ['1'] // state of capcay mode
- //,KEY_SAVE_QR_RECAPCAY_PROP: ['clean,0'] // recapcay theme, is_simple_mode
- 
- //,KEY_SAVE_PRELOAD_RATE: ['0'] // whether donatur need to preload rate or not
- //,KEY_SAVE_QR_COLLAPSE:  ['1'] // initial state of qr
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -s4nji
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
  
  ,KEY_SAVE_UPLOAD_LOG:  [''] // history upload (kaskus)
- ,KEY_SAVE_FORUMS_BULK:  [''] // bulk of all-forums
  ,KEY_SAVE_EXC_PLACES:  [''] // excluced places for autolayout
  ,KEY_SAVE_INC_PLACES:  [''] // excluced places for autolayout
  ,KEY_SAVE_ALL_PLACES:  [''] // flag for all places for autolayout
@@ -147,7 +133,6 @@ var OPTIONS_BOX = {
 }, KS				= 'KEY_SAVE_'
 , GMSTORAGE_PATH	= 'GM_'
 ;
-
 
 
 var GM_addGlobalScript = function (a, b, c) {
@@ -453,7 +438,7 @@ var rSRC = {
 			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
 			   // remote button to delete-mQ
 			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){alert(e)}" />'
-			+	'<span class="counter"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
+			+	'<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
@@ -624,25 +609,28 @@ var rSRC = {
 		return ''
 			+'<table border="0"><tr>'
 			+'<td style="width:45%">'
-			+'<input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' /><label for="misc_updates" class="stlmenu" title="Check Userscripts.org for QR latest update">Updates</label>'+nb+nb 
+			+'<div class="wrap_stlmenu"><label for="misc_updates" class="stlmenu" title="Check Userscripts.org for QR latest update"><input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' />Updates</label></div>'+nb+nb 
 			+ ( !gvar.noCrossDomain ? '<a id="chk_upd_now" class="gbtn" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking..&nbsp;<img src="'+gvar.B.throbber_gif+'" border=0/></span>' : '')
-			+ '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval:</label><input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</div><div style="height: 1px;"></div>'
-			
-     +'<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/><label for="misc_autoshow_smile" class="stlmenu">AutoLoad Smiley</label>'
-     +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:-3px 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
-     +'<label for="misc_autoshow_smile_kecil">kecil <input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/></label>&nbsp;'
-     +'<label for="misc_autoshow_smile_besar">besar <input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/></label>&nbsp;'
-     +'<label for="misc_autoshow_smile_custom">custom <input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/></label>'
-     +'</div>'
-			
+			+ '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval</label><input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</div><div style="height: 1px;"></div>'
+
+			+'<div class="wrap_stlmenu"><label for="misc_autoshow_smile" class="stlmenu"><input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/>AutoLoad&nbsp;Smiley</label></div>'
+			+'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:-3px 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
+			+'<label for="misc_autoshow_smile_kecil">kecil <input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/></label>&nbsp;'
+			+'<label for="misc_autoshow_smile_besar">besar <input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/></label>&nbsp;'
+			+'<label for="misc_autoshow_smile_custom">custom <input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/></label>'
+			+'</div>'
+
 			+'</td><td>'
-			+'<input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/><label for="misc_hotkey" class="stlmenu">QR-Hotkey</label><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<label for="misc_hotkey_ctrl">ctrl <input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /></label>'+nb+'<label for="misc_hotkey_alt">alt <input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_shift">shift <input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'+'+nb+'<label for="misc_hotkey_char">'+nb+'</label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></div>'
+			+'<div class="wrap_stlmenu"><label for="misc_hotkey" class="stlmenu"><input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/>QR-Hotkey</label></div><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<label for="misc_hotkey_ctrl">ctrl <input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /></label>'+nb+'<label for="misc_hotkey_alt">alt <input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_shift">shift <input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'+'+nb+'<label for="misc_hotkey_char">'+nb+'</label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></div>'
+			+'<div class="wrap_stlmenu"><label for="misc_txtcount" class="stlmenu"><input id="misc_txtcount" class="optchk" type="checkbox"'+ (gvar.settings.txtcount ? ' checked="checked"' : '') +'/>Text Counter</label></div>'
 			+'</td>'
 			+'</tr></table>'
 			+'<div style="width:98%; padding-left:10px;">'
-			+'<input id="misc_autolayout" type="checkbox" class="optchk"'+ (cUL[1]=='1' ? ' checked="checked"':'') +' /><label for="misc_autolayout" class="stlmenu">AutoLayout</label>'+nb+nb+'<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout gbtn" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a><div id="misc_autolayout_child" style="margin-top:-3px; display:'+ (cUL[1]=='1' ? 'block' : 'none') +'"><textarea rows="3" style="overflow:auto; letter-spacing:0; line-height:14pt; height:28pt; max-width:92%; min-width:92%; max-height:280px; margin-left:20px;" class="txta_editor" id="edit_tpl_txta">'+ gvar.settings.userLayout.template +'</textarea></div>'
+			+'<div class="wrap_stlmenu"><label for="misc_autolayout" class="stlmenu"><input id="misc_autolayout" type="checkbox" class="optchk"'+ (cUL[1]=='1' ? ' checked="checked"':'') +' />AutoLayout</label></div>'+nb+nb
+			+'<a id="edit_tpl_cancel" href="javascript:;" class="cancel_layout gbtn" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a>'
+			+'<div id="misc_autolayout_child" class="smallfont" style="margin-top:-3px; display:'+ (cUL[1]=='1' ? 'block' : 'none') +'"><textarea rows="3" style="overflow:auto; letter-spacing:0; line-height:14pt; height:28pt; max-width:92%; min-width:92%; max-height:280px; margin-left:20px;" class="txta_editor" id="edit_tpl_txta">'+ gvar.settings.userLayout.template +'</textarea></div>'
 			+'</div>'
-			;
+		;
 	},
 	getTPLAbout: function(){
 		return ''
@@ -1019,13 +1007,13 @@ gvar.smbesar = [
  ,["ultah.gif", ":ultah", "Ultah"]
  ,["traveller.gif", ":travel", "Traveller"]
  ,["toastcendol.gif", ":toast", "Toast"]
- ,["jempol1.gif", ":thumbup", "Jempol"]
  ,["takut.gif", ":takut", "Takut"]
  ,["fd_5.gif", ":sup:", "Sundul Up"]
  ,["sundul.gif", ":sup2", "Sundul"]
  ,["sorry.gif", ":sorry", "Sorry"]
  ,["shakehand2.gif", ":shakehand2", "Shakehand2"]
  ,["selamat.gif", ":selamat", "Selamat"]
+ ,["lebaran03.gif", ":salaman", "Salaman"]
  ,["salah_kamar.gif", ":salahkamar", "Salah Kamar"]
  ,["request.gif", ":request", "Request"]
  ,["fd_7.gif", ":repost:", "Repost"]
@@ -1044,10 +1032,13 @@ gvar.smbesar = [
  ,["matabelo1.gif", ":matabelo", "Matabelo"]
  ,["marah.gif", ":marah", "Marah"]
  ,["malu.gif", ":malu", "Malu"]
+ ,["lebaran04.gif", ":maafaganwati", "Maaf Aganwati"]
+ ,["lebaran01.gif", ":maafagan", "Maaf Agan"]
  ,["fd_6.gif", ":kts:", "Kemana TSnya?"]
  ,["kaskus_radio.gif", ":kr", "Kaskus Radio"]
  ,["cewek.gif", ":kiss", "Kiss"]
  ,["kimpoi.gif", ":kimpoi", "Kimpoi"]
+ ,["lebaran05.gif", ":ketupat", "Ketupat"]
  ,["fd_4.gif", ":kbgt:", "Kaskus Banget"]
  ,["fd_8.gif", ":kacau:", "Thread Kacau"]
  ,["fd_1.gif", ":jrb:", "Jangan ribut disini"]
@@ -1075,6 +1066,7 @@ gvar.smbesar = [
  ,["babyboy.gif", ":babyboy", "Baby Boy"]
  ,["angel1.gif", ":angel", "Angel"]
  ,["jempol2.gif", ":2thumbup", "2 Jempol"]
+ ,["jempol1.gif", ":1thumbup", "Jempol"]
 ];
 // smbesar
 
@@ -2153,6 +2145,8 @@ var _TEXTCOUNT = {
 
 var _CTDOWN = {
 	init: function(num, tgt){
+		if( !gvar.settings.txtcount )
+			return;
 		_CTDOWN.ori_title = $('title').text();
 		
 		if( !num ) num = gvar.postlimit;
@@ -2991,12 +2985,17 @@ var _STG = {
 		});
 		$('#qr-box_setting .optchk').each(function(){
 			$(this).click(function(){
-				var tgt, chked, id = $(this).attr('id');
-				tgt = $(this).parent().find('#'+id + '_child');
+				var $tgt, chked, id = $(this).attr('id');
 				chked = $(this).is(':checked');
-				$(tgt).css('display', chked ? 'block' : 'none' );
-				if(id == 'misc_autolayout')
-					$('#edit_tpl_cancel').css('display', chked ? '' : 'none' );
+				$tgt = $(this).closest('.stg_content').find('#'+id + '_child');
+
+				if( $tgt.length ) {
+					$tgt.css('display', chked ? 'block' : 'none' );
+					if(id == 'misc_autolayout'){
+						$('#edit_tpl_cancel').css('display', chked ? '' : 'none' );
+						chked && $('#edit_tpl_txta').focus().select();
+					}
+				}
 			});
 		});
 		$('#edit_tpl_cancel').click(function(){
@@ -3106,13 +3105,25 @@ var _STG = {
 				value.push( isChk( $('#misc_autoshow_smile')) ? '1' : '0' );
 				oL = misc.length;
 				for(var id=0; id<oL; id++){
-						if( !isString(misc[id]) ) continue;
-						if(isChk( $('#misc_autoshow_smile_' + misc[id]) )){
-								value.push(misc[id]);
-								break;
-						}
+					if( !isString(misc[id]) ) continue;
+					if(isChk( $('#misc_autoshow_smile_' + misc[id]) )){
+						value.push(misc[id]);
+						break;
+					}
 				}
 				setValue(KS+'SHOW_SMILE', String( value ));
+
+				// txtcount
+				value = '0';
+				if( isChk($('#misc_txtcount')) ) {
+					gvar.settings.txtcount = true;
+					$('.counter').show();
+					value = '1';
+				}
+				else{
+					$('.counter').hide();
+				}
+				setValue(KS+'TXTCOUNTER', String( value ));
 				
 				// last shot
 				gvar.$w.setTimeout(function(){
@@ -3222,40 +3233,20 @@ var _STG = {
 		// collect all settings from storage,. 
 		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
 					,'HIDE_AVATAR','QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
-					,'LAYOUT_CONFIG','LAYOUT_TPL','CUSTOM_SMILEY'
+					,'TXTCOUNTER','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
 		];
-		//if(gvar.user.isDonatur)  keys.push('PRELOAD_RATE');
-		//else keys.push('QR_USE_RECAPCAY','QR_RECAPCAY_PROP');
-	
 		var keykomeng = {
 			 'UPDATES':'Check Update enabled? validValue=[1,0]'
 			,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
-			//,'LAST_FONT':'Last Used Font'
-			//,'LAST_COLOR':'Last Used Color'
-			//,'LAST_SIZE':'Last Used Size'
-			//,'LAST_SPTITLE':'Last Used Spoiler Title'
-			//,'LAST_UPLOADER':'Last Used Host Uploader'
-			//,'DYNAMIC_QR':'Mode QR Dynamic; validValue=[1,0]'
-			//,'QUICK_QUOTE':'Mode Quick Quote; validValue=[1,0]'
-			//,'AJAXPOST':'Mode AjaxPost; validValue=[1,0]'
 			,'QR_DRAFT':'Mode QR-Draft; validValue=[1,0]'
-			//,'SAVED_AVATAR':'Buffer of logged in user avatar; [userid=username::avatar_filename]'
+			,'TXTCOUNTER':'Mode Text Couter; validValue=[1,0]'
 			,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
-			//,'MIN_ANIMATE':'Minify jQuery animate. validValue=[1,0]'
-			//,'HIDE_CONTROLLER':'Mode Show Controller; validValue=[1,0]'
-			//,'TEXTA_EXPANDER':'Textarea Expander preferences; [isEnabled]; validValue1=[1,0]'
-			//,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
+			,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
 			,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
-			//,'QR_COLLAPSE':'Mode QR collapsed; validValue=[1,0]'
 			,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
 			,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
 			,'LAYOUT_CONFIG':'Layout Config; [userid=isNaN,isEnable_autoLAYOUT]; isEnable\'s validValue=[1,0]'
-			//,'LAYOUT_SIGI':'Layout Signature; [userid=SIGI];'
 			,'LAYOUT_TPL':'Layout Template; [userid=LAYOUT]; validValue of LAYOUT is must contain escaped {MESSAGE}'
-			//,'SCUSTOM_ALT':'Smiley Custom use Alt instead of thumbnail; validValue=[1,0]'
-			//,'PRELOAD_RATE':'Preload Rate Thread; validValue=[1,0]'
-			//,'QR_USE_RECAPCAY':'Mode reCaptcha; validValue=[1,0]'
-			//,'QR_RECAPCAY_PROP':'reCaptcha Properties; validValue=[clean,red,white,blackglass],[0,1]'
 			,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'	 
 			,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
 		};
@@ -3305,13 +3296,15 @@ var _STG = {
 			+'\nPlease report any bug or some bad side effects here:'+space+'\n'+home[1]+'\nor\n'+home[0] + '\n\n'
 			+ HtmlUnicodeDecode('&#187;')+' Continue with Reset?';				
 			if( confirm(msg) ){
-				keys = ['SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE','UPDATES_INTERVAL','UPDATES'
+				keys = [
+				'SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE'
+				,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
 				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
 				,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
-				,'LAYOUT_CONFIG','LAYOUT_SIGI','LAYOUT_TPL','PRELOAD_RATE'
+				,'LAYOUT_CONFIG','LAYOUT_TPL','PRELOAD_RATE'
 				,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
 				,'UPLOAD_LOG','CSS_BULK','CSS_META','SCUSTOM_NOPARSE'
-				,'FORUMS_BULK','EXC_PLACES','INC_PLACES','ALL_PLACES'
+				,'EXC_PLACES','INC_PLACES','ALL_PLACES'
 				,'DYNAMIC_QR','COUNTDOWN'
 				];
 				var kL=keys.length, waitfordel, alldone=0;
@@ -5048,12 +5041,16 @@ function eventsTPL(){
 	_TEXT.setElastic(gvar.maxH_editor);
 	$('#'+gvar.tID)
 	.focus(function(){
-		$('.counter:first').addClass('kereng');
-		_TEXTCOUNT.init('#qr-content-wrapper .counter')
+		if( gvar.settings.txtcount ){
+			$('.counter:first').addClass('kereng');
+			_TEXTCOUNT.init('#qr-content-wrapper .counter')
+		}
 	})
 	.blur(function(){
-		$('.counter:first').removeClass('kereng');
-		_TEXTCOUNT.dismiss();
+		if( gvar.settings.txtcount ){
+			$('.counter:first').removeClass('kereng');
+			_TEXTCOUNT.dismiss();
+		}
 	})
 	.keydown(function(ev){
 		var B, A = ev.keyCode || ev.keyChar, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
@@ -5177,25 +5174,20 @@ function getSettings(stg){
 	*/
 	var capsulate_done, settings = { lastused:{}, userLayout:{} };
 	
-	//getValue(KS+'LAST_SPTITLE', settings.lastused.sptitle);
 	getValue(KS+'LAST_UPLOADER', settings.lastused.uploader);
 	
 	settings.userLayout.config = [];
-	//getValue(KS+'LAYOUT_SIGI', settings.userLayout.signature);
 	getValue(KS+'LAYOUT_TPL', settings.userLayout.template);
 	
 	getValue(KS+'HIDE_AVATAR', function(ret){ settings.hideavatar=(ret=='1') });
 	getValue(KS+'MIN_ANIMATE', function(ret){ settings.minanimate=(ret=='1') });
 	getValue(KS+'UPDATES_INTERVAL', function(ret){ settings.updates_interval=Math.abs(ret) });
-	//getValue(KS+'QUICK_QUOTE', function(ret){ settings.quick_quote=(ret!='0') });
-	//getValue(KS+'DYNAMIC_QR', function(ret){ settings.dynamic=(ret!='0') });
 	getValue(KS+'QR_DRAFT', function(ret){ settings.qrdraft=(ret!='0') });
-	//getValue(KS+'COUNTDOWN', function(ret){ settings.countdown=(ret!='0') });
-	//getValue(KS+'COUNTDOWN_POS', function(ret){ settings.countdownpos=ret });
 	getValue(KS+'QR_HOTKEY_KEY', function(ret){ settings.hotkeykey=ret });
 	getValue(KS+'QR_HOTKEY_CHAR', function(ret){ settings.hotkeychar=ret });
 	getValue(KS+'TMP_TEXT', function(ret){ settings.tmp_text = ret });
 	getValue(KS+'UPDATES', function(ret){ settings.updates=(ret=='1') });
+	getValue(KS+'TXTCOUNTER', function(ret){ settings.txtcount=(ret=='1') });
 	getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
 	getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
 	getValue(KS+'WIDE_THREAD', function(ret){ settings.widethread=(ret=='1') });
@@ -5216,7 +5208,6 @@ function getSettings(stg){
 			getValueForId(gvar.user.id, 'LAYOUT_TPL', ['<!>','::'], function(_hVal){
 
 				if( !_hVal ) _hVal = ['', '[B]{message}[/B]'];
-				
 				try{
 					// warning this may trigger error
 					settings.userLayout.template = decodeURIComponent(_hVal[1]).replace(/\\([\!\:])/g, "$1");
