@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0
 // @dtversion      121209410
-// @timestamp      1355012675531
+// @timestamp      1355016895853
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0 - 2012-12-09 . 1355012675531
+// v4.1.0 - 2012-12-09 . 1355016895853
 //   +text counter settings
 //   +smilies
 //   fix size_mapper
@@ -78,7 +78,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0';
 gvar.scriptMeta = {
-	timestamp: 1355012675531 // version.timestamp
+	timestamp: 1355016895853 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
 	,dtversion: 121209410 // version.date
@@ -5134,6 +5134,10 @@ function eventsTPL(){
 					_DRAFT.save();
 			}
 		});
+	}
+
+	if( !gvar.settings.txtcount ){
+		$('.counter').hide();
 	}
 	
 	eventsController();
