@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0
-// @dtversion      121209410
-// @timestamp      1355016895853
+// @version        4.1.0.1
+// @dtversion      1212124101
+// @timestamp      1355245218474
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -23,6 +23,13 @@
 // @include        http://postimage.org/*
 //
 // -!--latestupdate
+//
+// v4.1.0.1 - 2012-12-12 . 1355245218474
+//   get rid quot (") on wrap/parsing tags (font,size,color). Thx[coolkips]
+//
+//
+// -/!latestupdate---
+// ==/UserScript==
 //
 // v4.1.0 - 2012-12-09 . 1355016895853
 //   +text counter settings
@@ -40,27 +47,10 @@
 //   fix quick-quote parser [align,size,font,indent]
 //   deprecate toCharRef. Thx=[mangudel]
 //
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v4.0.9.1 - 2012-11-16 . 1353050635576
 //   fix inside iframe check
 //   get rid of .baloon-track on expand-mode
 //   avoid editor get focused on click multi-quote Thx=[Reza12MQ]
-//
-// v4.0.9b - 2012-11-16 . 1353009794656
-//   +image-uploader-host [imagevenue,imgzzz]
-//   fix css imgur
-//   parse err-msg invalid recapcay,. Thx=[Sanjito]
-//   suggest reload on unknown_posterror; Thx=[faley.inluv,Sanjito]
-//   wider include for (|www\.)kaskus.co.id; Thx=[t0g3,faley.inluv,Sanjito]
-//   optimized parsing nested* spoiler; (avoid freeze, *upto 63 level) Thx=[Sanjito]
-//   +include /lastpost/*; Thx=[Aa JaMbRoNg]
-//   fix get_quotefrom (donatur user); Thx=[Ndilallah]
-//   keybords shortcuts (qr, kaskus)
-//   fix css, (ignite .listing-wrapper .jump)
-//   prep plugins_container
-//   fix toggle-sideuploader
 //
 //
 // v0.1 - 2010-06-29
@@ -76,12 +66,12 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0';
+gvar.sversion = 'v' + '4.1.0.1';
 gvar.scriptMeta = {
-	timestamp: 1355016895853 // version.timestamp
+	timestamp: 1355245218474 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 121209410 // version.date
+	,dtversion: 1212124101 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -3568,8 +3558,8 @@ var _QQparse = {
 		_QQparse.mqs_id = mqs_id;
 		_QQparse.title = false;
 		_QQparse.start();
-	 }
-	,start:function(){
+	},
+	start:function(){
 		var ret, buff, entrycontent, post_id;
 		$.each( _QQparse.mqs_id, function(){
 			post_id = this;
@@ -3735,9 +3725,9 @@ var _QQparse = {
 							'12px': '2',
 							'14px': '3',
 							'16px': '4',
-							'18px': '5',
-							'20px': '6',
-							'22px': '7'
+							'20px': '5',
+							'24px': '6',
+							'28px': '7'
 						}
 						mct[2] = ( isDefined(size_maper[mct[2]]) ? size_maper[mct[2]] : '3');
 					}
@@ -3756,7 +3746,7 @@ var _QQparse = {
 				}
 				lastIdx = LT.align.length-1;
 				
-				pRet= (openTag ? '['+mct[1] + (mct[2] ? '="' + trimStr(mct[2]) +'"' : '') +']' : (isDefined(LT.align[lastIdx]) ? '['+'/'+LT.align[lastIdx].toUpperCase()+']' : '') );
+				pRet= (openTag ? '['+mct[1] + (mct[2] ? '='+trimStr(mct[2]) : '')+']' : (isDefined(LT.align[lastIdx]) ? '['+'/'+LT.align[lastIdx].toUpperCase()+']' : '') );
 				
 				if( !openTag )
 					LT.align.splice(lastIdx,1);
@@ -4577,12 +4567,16 @@ function do_smile(Obj, nospace){
 }
 
 // action to do insert font/color/size/list
-function do_insertTag(tag, value){
+function do_insertTag(tag, value, $caleer){
 	_TEXT.init();
-	if(value) 
-		_TEXT.wrapValue(tag,'"'+value+'"');
+	if(value)
+		_TEXT.wrapValue(tag, value);
 	else
 		_TEXT.wrapValue(tag);
+
+	if( ($.inArray(tag, ["FONT","COLOR","SIZE"]) != -1) && $caleer && $caleer.length ){
+		$caleer.closest('ul').hide();
+	}
 }
 
 // action to do insert media,codes,quote
@@ -4808,7 +4802,7 @@ function eventsController(){
 		if( _cls && _cls.indexOf('ev_') != -1 ){
 			_cls = _cls.replace(/ev_/,'');
 			var tag, title, pTag;
-			
+
 			switch(_cls){
 			 case "biu": case "align":
 				el.click(function(){
@@ -4819,7 +4813,7 @@ function eventsController(){
 			 case "font":
 				el.click(function(){
 					_TEXT.init();
-					do_insertTag('FONT', $(this).attr('title'));
+					do_insertTag('FONT', $(this).attr('title'), $(this));
 					
 					_TEXT.pracheck();
 				});
@@ -4827,7 +4821,7 @@ function eventsController(){
 			 case "size":
 				el.click(function(){
 					_TEXT.init();
-					do_insertTag('SIZE', $(this).attr('title'));
+					do_insertTag('SIZE', $(this).attr('title'), $(this));
 					
 					_TEXT.pracheck();
 				});
@@ -4835,7 +4829,7 @@ function eventsController(){
 			 case "color":
 				el.click(function(){
 					_TEXT.init();
-					do_insertTag('COLOR', $(this).attr('title'));
+					do_insertTag('COLOR', $(this).attr('title'), $(this));
 					
 					_TEXT.pracheck();
 				});
@@ -4973,7 +4967,6 @@ function eventsController(){
 				});
 			 break;
 			} // end switch
-
 		}
 	});
 }
@@ -5039,20 +5032,17 @@ function eventsTPL(){
 	
 	gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
 	_TEXT.setElastic(gvar.maxH_editor);
-	$('#'+gvar.tID)
-	.focus(function(){
+	$('#'+gvar.tID).focus(function(){
 		if( gvar.settings.txtcount ){
 			$('.counter:first').addClass('kereng');
 			_TEXTCOUNT.init('#qr-content-wrapper .counter')
 		}
-	})
-	.blur(function(){
+	}).blur(function(){
 		if( gvar.settings.txtcount ){
 			$('.counter:first').removeClass('kereng');
 			_TEXTCOUNT.dismiss();
 		}
-	})
-	.keydown(function(ev){
+	}).keydown(function(ev){
 		var B, A = ev.keyCode || ev.keyChar, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
 		
 		if(A === 9){
@@ -5090,11 +5080,72 @@ function eventsTPL(){
 			do_an_e(ev);
 			$('#' + asocKey[A]).click();
 		}
-	})
-	.keyup(function(ev){
+	}).keyup(function(ev){
 		$('#clear_text').toggle( $(this).val()!=="" );
-	})
-	;
+	});
+	
+
+	$('#qrtoggle-button').click(function(){
+		$('#formqr').toggle(180, function(){
+			toggleTitle();
+			$('#'+gvar.tID).focus();
+		});
+	});
+	
+	// global-window-shortcut
+	$(window).keydown(function (ev) {
+		var A = ev.keyCode, doThi=0, CSA_tasks, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
+		
+		if( A == 27 && $("#" + _BOX.e.dialogname).is(":visible") && $("#" + _BOX.e.dialogname).css('visibility')=='visible' ){
+			do_an_e(ev);
+			close_popup();
+			$("#" + gvar.tID).focus();
+			return;
+		}
+		
+		if( (pCSA=='0,0,0' || pCSA=='0,1,0') || A < 65 || A > 90 )
+			return;
+			
+		CSA_tasks = {
+			 quickreply: gvar.settings.hotkeykey.toString() // default: Ctrl+Q
+			,fetchpost: (!gvar.isOpera ? '0,0,1' : '1,0,1' ) // Alt+Q [FF|Chrome] --OR-- Ctrl+Alt+Q [Opera]
+			,ctrlshift: '1,1,0' // Ctrl+Shift+..., due to Ctrl+Alt will be used above
+		};
+		
+		switch(pCSA){ // key match in [Ctrl-Shift-Alt Combination]
+		case CSA_tasks.quickreply:
+			var cCode = gvar.settings.hotkeychar.charCodeAt();
+			if(A == cCode) {
+				doThi = 1;
+				scrollToQR();
+			}
+			break;
+		case CSA_tasks.fetchpost:
+			if(A == 81) { // keyCode for Q
+				doThi = 1;
+				scrollToQR();
+				$('#squote_post').click();
+			}
+			break;
+		case CSA_tasks.ctrlshift:
+			if(A == 81) { // keyCode for Q
+				doThi=1;
+				$('#sdismiss_quote').click()
+			}else if(A == 68 // keyCode for D
+				  && !$('#qrdraft').hasClass('jfk-button-disabled') ){
+					doThi=1;
+					scrollToQR();
+					$('#qrdraft').click();
+			}
+			break;
+		};
+		if(doThi) do_an_e(ev);
+	}).resize(function () {
+		var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
+		gvar.bodywidth = b;
+		gvar.maxH_editor = parseInt( getHeight() ) - gvar.offsetEditorHeight;
+		resize_popup_container();
+	});
 
 	if( gvar.settings.qrdraft ){
 		$('#'+gvar.tID).keypress(function(e){
@@ -5598,110 +5649,43 @@ function start_Main(){
 				$('#quick-reply').remove();
 				
 				eventsTPL();
-				
-				// almost done, later do. delayed and give a time for rendering
-				// give events for another node
-				$(document).ready(function(){
-					
-					$('#qrtoggle-button').click(function(){
-						$('#formqr').toggle(180, function(){
-							toggleTitle();
-							$('#'+gvar.tID).focus();
-						});
-					});
-					
-					// global-shortcut
-					$(window).keydown(function (ev) {
-						var A = ev.keyCode, doThi=0, CSA_tasks, pCSA = (ev.ctrlKey ? '1':'0')+','+(ev.shiftKey ? '1':'0')+','+(ev.altKey ? '1':'0');
-						
-						if( A == 27 && $("#" + _BOX.e.dialogname).is(":visible") && $("#" + _BOX.e.dialogname).css('visibility')=='visible' ){
-							do_an_e(ev);
-							close_popup();
-							$("#" + gvar.tID).focus();
-							return;
-						}
-						
-						if( (pCSA=='0,0,0' || pCSA=='0,1,0') || A < 65 || A > 90 )
-							return;
-							
-						CSA_tasks = {
-							 quickreply: gvar.settings.hotkeykey.toString() // default: Ctrl+Q
-							,fetchpost: (!gvar.isOpera ? '0,0,1' : '1,0,1' ) // Alt+Q [FF|Chrome] --OR-- Ctrl+Alt+Q [Opera]
-							,ctrlshift: '1,1,0' // Ctrl+Shift+..., due to Ctrl+Alt will be used above
-						};
-						
-						switch(pCSA){ // key match in [Ctrl-Shift-Alt Combination]
-						case CSA_tasks.quickreply:
-							var cCode = gvar.settings.hotkeychar.charCodeAt();
-							if(A == cCode) {
-								doThi = 1;
-								scrollToQR();
-							}
-							break;
-						case CSA_tasks.fetchpost:
-							if(A == 81) { // keyCode for Q
-								doThi = 1;
-								scrollToQR();
-								$('#squote_post').click();
-							}
-							break;
-						case CSA_tasks.ctrlshift:
-							if(A == 81) { // keyCode for Q
-								doThi=1;
-								$('#sdismiss_quote').click()
-							}else if(A == 68 // keyCode for D
-								  && !$('#qrdraft').hasClass('jfk-button-disabled') ){
-									doThi=1;
-									scrollToQR();
-									$('#qrdraft').click();
-							}
-							break;
-						};
-						if(doThi) do_an_e(ev);
-						
-					}).resize(function () {
-						var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
-						gvar.bodywidth = b;
-						gvar.maxH_editor = parseInt( getHeight() ) - gvar.offsetEditorHeight;
-						resize_popup_container();
-					});
-					
-					if( trimStr(gvar.tmp_text) && gvar.settings.qrdraft ){
-						_DRAFT.switchClass('gbtn');
-						_DRAFT.title('continue');
-						$('#draft_desc').html( '<a href="javascript:;" id="clear-draft" title="Clear Draft">clear</a> | available' );
-						$('#draft_desc #clear-draft').click(function(){ _DRAFT.clear() });
-					}
-					
-					// infiltrate default script
-					GM_addGlobalScript( rSRC.getSCRIPT() );
-					(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){ $('.ev_smiley:first').click() }, 50);
+				// almost-done
 
-					// trigger preload recapcay
-					if(gvar.thread_type != 'group')
-						window.setTimeout(function(){ $('#hidrecap_btn').click(); }, 100);
 
-					if( !gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS == 0 ){
-						window.setTimeout(function(){
-							_UPD.check();
-							// dead-end marker, should set this up at the end of process
-							gvar.freshload=null;
-						}, 2000);
-					}
-					$('.bottom-frame').is(':visible') && $('.btm-close').click();
-					
-					// coz opera is too slow evaluating js
-					if(gvar.isOpera){
-						window.setTimeout(function(){
-							xtip('.user-tools', '*[rel="tooltip"]');
-							xtip('#'+gvar.qID, '*[rel="tooltip"]');
-						}, 1500);
-					}else{
-						$('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
-					}
-				});
-				// settimeout additional
+				if( trimStr(gvar.tmp_text) && gvar.settings.qrdraft ){
+					_DRAFT.switchClass('gbtn');
+					_DRAFT.title('continue');
+					$('#draft_desc').html( '<a href="javascript:;" id="clear-draft" title="Clear Draft">clear</a> | available' );
+					$('#draft_desc #clear-draft').click(function(){ _DRAFT.clear() });
+				}
 				
+				// infiltrate default script
+				GM_addGlobalScript( rSRC.getSCRIPT() );
+				(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){ $('.ev_smiley:first').click() }, 50);
+
+				// trigger preload recapcay
+				if(gvar.thread_type != 'group')
+					window.setTimeout(function(){ $('#hidrecap_btn').click(); }, 100);
+
+				if( !gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS == 0 ){
+					window.setTimeout(function(){
+						_UPD.check();
+						// dead-end marker, should set this up at the end of process
+						gvar.freshload=null;
+					}, 2000);
+				}
+				$('.bottom-frame').is(':visible') && $('.btm-close').click();
+				
+				// opera is need backup evaluating js
+				if(gvar.isOpera){
+					window.setTimeout(function(){
+						xtip('.user-tools', '*[rel="tooltip"]');
+						xtip('#'+gvar.qID, '*[rel="tooltip"]');
+					}, 1500);
+				}else{
+					$('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
+				}
+
 			}, 50);
 			// settimeout pra-loaded settings 
 		}
