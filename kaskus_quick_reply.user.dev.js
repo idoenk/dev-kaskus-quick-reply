@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.1
-// @dtversion      1212124101
-// @timestamp      1355245218474
+// @version        4.1.0.2
+// @dtversion      1212164102
+// @timestamp      1355681039712
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,9 +24,11 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.1 - 2012-12-12 . 1355245218474
+// v4.1.0.2 - 2012-12-16 . 1355681039712
+//	 fix invalid emoticon bbcode; Thx[Alfazaki]
+//	 +edit post additional fields;
+//	 fix qq-parser youtube tag. Thx=[IbrahimKh]
 //   get rid quot (") on wrap/parsing tags (font,size,color). Thx[coolkips]
-//
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -66,16 +68,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.1';
+gvar.sversion = 'v' + '4.1.0.2';
 gvar.scriptMeta = {
-	timestamp: 1355245218474 // version.timestamp
+	timestamp: 1355681039712 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 1212124101 // version.date
+	,dtversion: 1212164102 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 121130410 // css revision date; only change this when you change your external css
+	,cssREV: 1212164102 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -352,15 +354,51 @@ var rSRC = {
 			+ '<div class="title-message" style="display:none; position:relative;">' 
 			+ '<input id="fakefocus_icon" type="text" style="position:absolute!important; color:transparent; background:transparent; left:5px; top:20px; width:1px; border:0px;" value=""/>' 
 			
-			+ '<div class="title-message-sub condensed">' 
-			+  '<img id="img_icon" class="modal-dialog-title-imgicon" src="#" style="display:none;"/>' 
-			+  '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" data-original-title="Pick Icon" rel="tooltip"/>' 
+			+ '<div class="title-message-sub forum-title condensed">' 
+			+  '<div class="controlls">'
+			+  '<div class="input-prepend">'
+			+  '<span class="add-on">'
+			+   '<img id="img_icon" class="modal-dialog-title-imgicon" src="#" style="display:none;"/>' 
+			+   '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" data-original-title="Pick Icon" rel="tooltip"/>' 
 			+ rSRC.menuIcon() 
-			+  '</li></ul>'
-			+  '<input id="form-title" type="text" class="twt-glow" value="' + gvar.def_title + '" name="title" title="(optional) Message Title" style="width:82%;"/>' 
+			+   '</li></ul>'
+			+  '</span>'
+			+  '<input id="form-title" type="text" name="title" title="(optional) Message Title" placeholder="'+gvar.def_title+'" class="" />'
 			+  '<span id="close_title" class="modal-dialog-title-close" data-original-title="Remove Title Message" style="display:none;" rel="tooltip"/>' 
-			+ "</div>" // condensed
-			+ "</div>" // title-message
+			+  '</div>'
+			+  '</div>'
+			+ '</div>' // condensed
+
+			+ '<div class="title-message-sub ts_fjb-price condensed" style="display:none;">'
+			+  '<div class="controlls">'
+			+  '<div class="input-prepend">'
+			+   '<span class="add-on" data-original-title="Price (Rp)" rel="tooltip"><i class="icon-shopping-cart"></i></span>'
+			+   '<input id="form-price" type="text" class="span4" name="harga" placeholder="Harga, eg. 30000" />'
+			+  '</div>'
+			+  '</div>'
+			+ '</div>' // condensed
+
+			+ '<div class="title-message-sub title-righty">'
+			+ '<div class="ts_fjb-kondisi condensed" style="display:none;">' 
+			+ '<select name="kondisi" class="selectbox" data-original-title="Kondisi Barang" rel="tooltip">'
+			+  '<option value="1">New</option>'
+			+  '<option value="2">Second</option>'
+			+  '<option value="3">BNWOT</option>'
+			+  '<option value="4">Refurbish</option>'
+			+ '</select>'
+			+ '</div>'  // condensed
+			+ '<div class="ts_fjb-type condensed" style="display:none;">' 
+			+ '<select name="prefixid" class="selectbox" data-original-title="FJB Thread" rel="tooltip">'
+			+  '<option value="0">( no prefix )</option>'
+			+  '<option value="SOLD">TERJUAL</option>'
+			+  '<option value="WTB">BELI</option>'
+			+  '<option value="WTS">JUAL</option>'
+			+ '</select>'
+			+ '</div>'  // condensed
+			+ '</div>'  // righty
+
+			+ '</div>' // title-message
+
 			
 			+ '<div class="markItUpHeader">' 
 			+ "<ul>"
@@ -420,8 +458,58 @@ var rSRC = {
 			+   '<div id="tabs-content-upl" class="goog-tab-content"><div id="tabs-content-upl-inner" style="position:relative;" /></div>'
 			+  '</div>' // box-upload
 			+  '</div>' // box-bottom
+
 			// ========
 			+ '<div class="button-bottom" style="padding-bottom:5px">'
+			  // wrapper additional edit-options
+			+ '<div class="edit-options" style="display:none;">'
+			+   '<div class="edit-reason condensed" style="display:none;">' 
+			+    '<div class="controlls">'
+			+    '<div class="input-prepend">'
+			+     '<span class="add-on" data-original-title="Edit Reason" data-placement="bottom" rel="tooltip"><i class="icon-pencil"></i></span>'
+			+     '<input id="form-edit-reason" type="text" class="span4" name="reason" placeholder="Reason for editing" />'
+			+    '</div>'
+			+    '</div>'
+			+   '</div>'  // condensed
+
+			+   '<div class="ts_fjb-tags condensed" style="display:none;">'
+			+    '<div class="controlls">'
+			+    '<div class="input-prepend">'
+			+    '<span class="add-on" data-original-title="Tags \/ Keyword search, separate with space" data-placement="bottom" rel="tooltip"><i class="icon-list-alt"></i></span>'
+			+    '<input id="form-tags" type="text" class="span4" name="tagsearch" placeholder="Eg: Electronics, Gadget, Cloths, etc" />'
+			+    '</div>'
+			+    '</div>'
+			+   '</div>' // condensed
+
+			+   '<div class="additional_opt_toggle" data-original-title="Additional Options" data-placement="bottom" rel="tooltip"><i class="icon-th-list"></i></div>'
+			+   '<div id="additionalopts" class="goog-tab-content" style="display:none">'
+			+   '<div class="additional-item adt-rating condensed">'
+			+   '<select name="rating" class="selectbox">'
+			+    '<option value="0">Rating</option>'
+			+    '<option value="5">&#x2605;&#x2605;&#x2605;&#x2605;&#x2605; : Excellent!</option>'
+			+    '<option value="4">&#x2605;&#x2605;&#x2605;&#x2605;&#x2606; : Good</option>'
+			+    '<option value="3">&#x2605;&#x2605;&#x2605;&#x2606;&#x2606; : Average</option>'
+			+    '<option value="2">&#x2605;&#x2605;&#x2606;&#x2606;&#x2606; : Bad</option>'
+			+    '<option value="1">&#x2605;&#x2606;&#x2606;&#x2606;&#x2606; : Terrible</option>'
+			+   '</select>'
+			+   '</div>'
+			+   '<div class="additional-item adt-subscription condensed">'
+			+   '<select name="emailupdate" class="selectbox">'
+			+    '<option value="9999">Do not subscribe</option>'
+			+    '<option value="0">Without email notification</option>'
+			+    '<option value="1">Instant email notification</option>'
+			+   '</select>'
+			+   '<select name="folderid" id="folderid" class="selectbox"></select>'
+			+   '</div>'
+			+   '<div class="additional-item adt-converlink condensed">'
+			+   '<label for="parseurl">'
+			+   '<input name="parseurl" id="parseurl" value="1" type="checkbox" /> Convert links in text'
+			+   '</label>'
+			+   '</div>'
+
+			+   '</div>' // tab-content-additionalopt
+			+ '</div>'
+
 			   // remote button to chkVal
 			+  '<input id="qr_chkval" type="button" style="display:none;" value="cv" />' 
 			   // remote to check MultiQuote
@@ -441,11 +529,9 @@ var rSRC = {
 			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" />\n\n'
 			+  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="current_ckck" />\n\n' // current ck.credential
 			+ '</div>' // button-bottom
-			+ ''
 			+'</div>' // cont-bottom
 			
 			
-			+ ''
 			+ '</fieldset>'
 			+ "</form>"
 			
@@ -465,8 +551,7 @@ var rSRC = {
 		+'</div>'
 		
 		+'<div id="box_wrap">'
-		//+ '<h1 id="box_preview_title"></h1>'
-		+ '<div class="box_sp" style=""></div>'
+		+ '<div class="box_sp"></div>'
 		+ '<div id="box_preview" class="entry-content"><div style="margin:20px auto; text-align:center;"><img src="'+gvar.B.throbber_gif+'" border=0/>&nbsp;<i style="font-size:12px">loading...</i></div></div>'
 		+ '<div class="spacer"></div>'
 		+'</div>' // box_wrap
@@ -669,7 +754,7 @@ var rSRC = {
 			+''
 			+'To export your settings, copy the text below and save it in a file.<br>'
 			+'To import your settings later, overwrite the text below with the text you saved previously and click "<b>Import</b>".'
-			+'<textarea id="textarea_rawdata" class="textarea_rawdata" style="height: 335px; width: 98%; overflow: auto; white-space: pre;" readonly="readonly"></textarea>'
+			+'<textarea id="textarea_rawdata" class="textarea_rawdata" readonly="readonly"></textarea>'
 			+'<div style="float: left;"><a id="exim_select_all" class="qrsmallfont" style="margin: 10px 0pt 0pt 5px; text-decoration: none;" href="javascript:;"><b>^ Select All</b></a></div>'
 			+''
 		;
@@ -1124,7 +1209,7 @@ gvar.smkecil = [
  ,["sumbangan/q17.gif", ":metal", "Metal"]
  ,["sumbangan/33.gif", ":medicine:", "medicine"]
  ,["sumbangan/004.gif", ":matabelo:", "Belo"]
- ,["sumbangan/1.gif", ":malu", "Malu"]
+ ,["sumbangan/1.gif", ":malu:", "Malu"]
  ,["sumbangan/12.gif", ":mad", "Mad"]
  ,["sumbangan/26.gif", ":linux2:", "linux2"]
  ,["sumbangan/25.gif", ":linux1:", "linux"]
@@ -1199,11 +1284,24 @@ var _BOX = {
 	},
 	boxEvents: function(){
 		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
+		$('#box_preview').bind("scroll", function(){
+			var $par = $('#box_wrap');
+			if( $(this).scrollTop() === 0 )
+				$par.find('.box_sp').removeClass('box_sp-shadow')
+			else
+				$par.find('.box_sp').addClass('box_sp-shadow')
+		});
 	},
 	buildQuery: function(topost){
 		//,"emailupdate","folderid","rating", 
-		var fields = ["securitytoken", "title", "message", "iconid", "parseurl", "recaptcha_response_field", "recaptcha_challenge_field", "discussionid", "groupid"], url, name, val, query='', arquery={};
-		// &discussionid=6124&groupid=2261
+		var fields = ["securitytoken", "title", "message", "iconid", "parseurl", "recaptcha_response_field", "recaptcha_challenge_field", "discussionid", "groupid"];
+		var url, name, val, query='', arquery={};
+
+		if( gvar.edit_mode == 1 )
+			fields = $.merge(["reason","folderid","emailupdate","rating"], fields);
+		
+		if( gvar.classbody == 'fjb' && $('.ts_fjb-type', $('#formform')).is(':visible') )
+			fields = $.merge(["prefixid","kondisi","harga","tagsearch","lokasi"], fields);
 		
 		// &preview=Preview+Post&parseurl=1&emailupdate=9999&folderid=0&rating=0
 		$('#formform').find('*[name]').each(function(){
@@ -1236,6 +1334,10 @@ var _BOX = {
 				if( val!="" ) arquery[name] = val;
 			}
 		});
+		//alert(dump(arquery));
+		!arquery['harga'] && (arquery['harga'] = 1);
+		!arquery['lokasi'] && (arquery['lokasi'] = 33); // N/A
+
 		_BOX.e.isdiff = (_BOX.e.lastbuff != trimStr( $('#'+gvar.tID).val() ));
 		_BOX.e.lastbuff = trimStr( $('#'+gvar.tID).val() );
 		_BOX.e.boxaction = encodeURI( $('#formform').attr('action') );
@@ -1674,12 +1776,11 @@ var _AJAX = {
 			$("#hid_iconid").val(0);
 			$("#form-title").val("");
 			$("#img_icon").attr("src", "#");
-			$("#img_icon, #close_title, .title-message").hide()
+			$(".edit-options, #img_icon, #close_title, .title-message, .edit-reason, .ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price").hide()
 		}
 		return conf;
 	},
 	edit: function(obj, cb_before, cb_after){
-		
 		_AJAX.e.task = 'edit';
 		
 		if( gvar.ajax_pid[_AJAX.e.task] ) {
@@ -1735,10 +1836,10 @@ var _AJAX = {
 						// check for title
 						ttitle = false;
 						el = $('input[name="title"]', $(sdata));
-						if( $(el).get(0) ){
+						if( el.length ){
 							ttitle = {
 								 icon: basename( $('#display_posticon', $(sdata)).attr('src') ).replace(/\./g,'')
-								,text: $(el).val()
+								,text: el.val()
 							};
 							if( !ttitle.text && ttitle.icon == 'cleargif' )
 								ttitle = false;
@@ -1747,6 +1848,38 @@ var _AJAX = {
 						if( ttitle )
 							_TEXT.set_title( ttitle );
 
+						// check for reason
+						ttitle = false;
+						el = $('input[name="reason"]', $(sdata));
+						if( el.length ){
+							ttitle = {text: el.val()};
+							_TEXT.set_reason( ttitle );
+						}
+
+						// check additionl opt
+						ttitle = false;
+						el = $('select[name="folderid"]', $(sdata));
+						if( el.length ){
+							ttitle = {
+								subscriptions: el.html(),
+								rating: $('select[name="rating"]', $(sdata)).find('option[selected="selected"]').val()||null,
+								convertlink: $('input[name="parseurl"]', $(sdata)).is(':checked')
+							};
+							_TEXT.set_additionl_opt( ttitle );
+						}
+
+						// check if fjb and is first post
+						el = $('select[name="prefixid"]', $(sdata));
+						if( gvar.classbody == 'fjb' && el.length ){
+							ttitle = {
+								 tipe: 		el.find('option[selected="selected"]').val()
+								,harga: 	$('input[name="harga"]:first', $(sdata)).val()
+								,kondisi: 	$('select[name="kondisi"]', $(sdata)).find('option[selected="selected"]').val()
+								,tags: 		$('input[name="tagsearch"]:first', $(sdata)).val()
+							};
+							clog('got fjbdetail = ' + JSON.stringify(ttitle) )
+							_TEXT.set_fjbdetail( ttitle );
+						}
 						
 						// layouting ...
 						cfg = String(gvar.settings.userLayout.config).split(',');
@@ -1785,15 +1918,15 @@ var _AJAX = {
 			_AJAX.ajaxPID('edit', false);
 		};
 	},
-  scustom_parser: function(msg){
+	scustom_parser: function(msg){
 		// trim content msg
 		msg = trimStr( msg );
 		if( !gvar.settings.scustom_noparse ) 
 				return ( !msg.match(/\[\[([^\]]+)/gi) ? msg : _AJAX.do_parse_scustom(msg) );
 		else
 				return msg;
-  },
-  do_parse_scustom: function (msg){
+	},
+	do_parse_scustom: function (msg){
 		var buf = msg;
 		var paired, re, re_W, cV, tag, maxstep, done=false, lTag='', retag=[];
 		// avoid infinite loop, set for max step
@@ -1803,57 +1936,56 @@ var _AJAX = {
 		paired = _AJAX.prep_paired_scustom();
 
 		while(!done && maxstep--){
-				tag = /\[\[([^\]]+)/.exec(buf);
-				//clog('in while. tag='+tag[1] );
-				if( tag ){
-						re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
-						re = new RegExp( re_W.toString() , "g"); // case-sensitive and global, save the loop
-						if( isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lTag ){
-								clog('parsing['+tag[1]+']...');
-								cV = paired['tag_'+tag[1]];
-								buf = buf.replace(re, (/^https?\:\/\/\w+/i.test(cV) ? '[IMG]'+cV+'[/IMG]' : unescape(cV) ) );
-								lTag = tag[1];
-						}else{
-								clog('no match tag for:'+tag[1]);
-								buf = buf.replace(re, '\\[\\['+tag[1]+'\\]');
-								retag.push(tag[1]);
-						}
+			tag = /\[\[([^\]]+)/.exec(buf);
+			if( tag ){
+				re_W = '\\[\\[' + tag[1].replace(/(\W)/g, '\\$1') + '\\]';
+				re = new RegExp( re_W.toString() , "g"); // case-sensitive and global, save the loop
+				if( isDefined(tag[1]) && isDefined(paired['tag_'+tag[1]]) && tag[1]!=lTag ){
+					clog('parsing['+tag[1]+']...');
+					cV = paired['tag_'+tag[1]];
+					buf = buf.replace(re, (/^https?\:\/\/\w+/i.test(cV) ? '[IMG]'+cV+'[/IMG]' : unescape(cV) ) );
+					lTag = tag[1];
 				}else{
-					done=true;
+					clog('no match tag for:'+tag[1]);
+					buf = buf.replace(re, '\\[\\['+tag[1]+'\\]');
+					retag.push(tag[1]);
 				}
+			}else{
+				done=true;
+			}
 		} // end while
 		
 		if(retag.length){
-				clog('turing back');
-				buf = buf.replace(/\\\[\\\[([^\]]+)\]/gm, function(S,$1){return('[['+$1.replace(/\\/g,'')+']')});
+			clog('turing back');
+			buf = buf.replace(/\\\[\\\[([^\]]+)\]/gm, function(S,$1){return('[['+$1.replace(/\\/g,'')+']')});
 		}		
 		clog('END of do_parse_scustom process=\n' + buf);
 		return buf;
-  },	
-  prep_paired_scustom: function (){
+	},
+	prep_paired_scustom: function (){
 		// here we load and prep paired custom smiley to do parsing purpose
 		// make it compatible for old structure, which no containing <!!>
 		var grup, sml, idx=0, paired = {};
-		
+
 		// preload smiliecustom database, should be done before (early)
 		for(var grup in gvar.smcustom){
-				sml = gvar.smcustom[grup];
-				/** gvar.smcustom[idx.toString()] = [parts[1], parts[0], parts[0]];
-				# where :
-				# idx= integer
-				# gvar.smcustom[idx.toString()] = [link, tags, tags];
-				# deprecated for unicode emote support:
-				# # if(sml[j].toString().match(/^https?\:\/\//i)) {
-				*/
-				for(var j in sml){
-						if( typeof(sml[j]) != 'string' ) {
-								paired['tag_'+sml[j][1].toString()] = sml[j][0].toString();
-								idx++;
-						}
+			sml = gvar.smcustom[grup];
+			/** gvar.smcustom[idx.toString()] = [parts[1], parts[0], parts[0]];
+			# where :
+			# idx= integer
+			# gvar.smcustom[idx.toString()] = [link, tags, tags];
+			# deprecated for unicode emote support:
+			# # if(sml[j].toString().match(/^https?\:\/\//i)) {
+			*/
+			for(var j in sml){
+				if( typeof(sml[j]) != 'string' ) {
+					paired['tag_'+sml[j][1].toString()] = sml[j][0].toString();
+					idx++;
 				}
+			}
 		}
 		return paired;
-  }
+	}
 };
 
 var _NOFY = {
@@ -1935,7 +2067,38 @@ var _TEXT = {
 		$('.title-message').slideDown(1, function(){
 			$('.title-message #form-title').focus().val( data.text );
 			$('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).click();
+
+			data.text && $('#close_title').show();
 		});
+	},
+	set_reason: function(data){
+		$('.edit-reason #form-edit-reason').val(data['text']);
+		$('.edit-options, .edit-reason').show();
+	},
+	set_additionl_opt: function(data){
+		var $el;
+		$('#additionalopts #folderid').html(data['subscriptions']);
+		if( data['rating'] ){
+			$el = $('#additionalopts select[name="rating"]');
+			$el.find('option[selected="selected"]').removeAttr('selected');
+			$el.find('option[value="'+data['rating']+'"]').attr('selected', 'selected');
+		}
+		$el = $('#additionalopts input[name="parseurl"]');
+		if( data['convertlink'] )
+			$el.attr('checked', "checked");
+		else
+			$el.removeAttr('checked');
+	},
+	set_fjbdetail: function(data){
+		$('.ts_fjb-tags input[type="text"]').val(data['tags']);
+		$('.ts_fjb-price input[type="text"]').val(data['harga']);
+		$('.ts_fjb-type').find('option[selected="selected"]').removeAttr('selected');
+		$('.ts_fjb-type').find('option[value="'+data['tipe']+'"]').attr('selected', 'selected');
+
+		$('.ts_fjb-kondisi').find('option[selected="selected"]').removeAttr('selected');
+		$('.ts_fjb-kondisi').find('option[value="'+data['kondisi']+'"]').attr('selected', 'selected');
+
+		$('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').show();
 	},
 	set: function(value){
 		this.content = value;
@@ -2023,10 +2186,12 @@ var _TEXT = {
 		nl = nl.length;
 		pos+= (nl * 2);
 		eText = gID(gvar.tID);
-		if( eText.setSelectionRange ) {
-			_TEXT.focus();
-			eText.setSelectionRange(pos,pos);
-		}
+		try{
+			if( eText.setSelectionRange ) {
+				_TEXT.focus();
+				eText.setSelectionRange(pos,pos);
+			}
+		}catch(e){}
 		gvar.$w.setTimeout(function(){ _TEXT.focus(); _TEXT.lastsroll() } , 310);
 	},
 	getSelectedText : function() {
@@ -3803,22 +3968,11 @@ var _QQparse = {
 				mct = $2.match(/\ssrc=['"]([^'"]+)/i);
 				
 				if( mct && isDefined(mct[1]) ){
-					// dirty-youtube || Opera is not supported yet or never --"
-					if( /^embed\s*/i.test($2) ){
-						cucok = mct[1].replace(/^https?\:\/\/(?:w{3}\.)?youtube\.com\/(?:watch\?v=)?(?:v\/)?/i, '');
-						if( mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ) {
-							cucok = entity_decode( entity_decode( unescape(cucok) ) ); // dua X decode coy
-							cucok = entity_encode(cucok);
-							return ( '[YOUTUBE]' + (cucok) + '[/YOUTUBE]' );
-						}else{
-							return ""; // strip non-youtube flash object.
-						}
-					}else
-					if( cucok=mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
-						if(cucok)
-							return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
-					}else
-					if( cucok=$2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
+
+					if( /^embed\s*/i.test($2) && (cucok = mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&\?]+)/i)) ){
+						return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
+					} else
+					if( cucok = $2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
 						// is kaskus emotes?
 						if(cucok){
 							var pos, smilies = '/smilies/';
@@ -3887,6 +4041,9 @@ var _QQparse = {
 			$(this).replaceWith( $(newEl) );
 		});
 		//clog('pCon after spoiler=' + $(pCon).html() );
+
+		// clean-up youtube thumb
+		$('div[onclick*=".nextSibling"]', $(pCon) ).remove();
 		
 		// reveal code inside
 		$(pCon).html( revealCoders() );	
@@ -4735,11 +4892,15 @@ function eventsController(){
 
 	$("#pick_icon").click(function () {
 		gvar.$w.clearTimeout(gvar.sTryEvent);
-		$("#menu_posticon").slideToggle(120, function () {
-			if ($("#menu_posticon").is(":visible"))
+		$("#menu_posticon").slideToggle(81, function () {
+			var editmode = $('.edit-options').is(':visible');
+			if ($("#menu_posticon").is(":visible")){
+				editmode && $('.edit-options .add-on').css('visibility', 'hidden');
 				$("#fakefocus_icon").focus();
-			else
+			}else{
+				editmode && $('.edit-options .add-on').css('visibility', 'visible');
 				$("#form-title").focus()
+			}
 		})
 	});
 	$("#fakefocus_icon").blur(function () {
@@ -4767,7 +4928,8 @@ function eventsController(){
 	
 	// menus
 	$('#mnu_add_title').click(function(){
-		$('.title-message').slideToggle(200, function(){
+		!$('.ts_fjb-type').is(':visible') &&
+		$('.title-message').slideToggle(123, function(){
 			if( !$('.title-message').is(":visible") ){
 				$("#hid_iconid").val(0);
 				$("#img_icon").attr("src", "#").hide();
@@ -5027,6 +5189,36 @@ function eventsTPL(){
 	$('#qr_chkval').click(function(){
 		precheck_quoted( $('#tmp_chkVal').val() );
 	});
+	$('.ts_fjb-tags #form-tags').keydown(function(ev){
+		var A = ev.keyCode || ev.keyChar;
+		if(A === 9){
+			do_an_e(ev);
+			gvar.$w.setTimeout(function(){ $('#sbutton').focus() }, 50);
+		}
+	});
+	$('.edit-reason #form-edit-reason').keydown(function(ev){
+		var A = ev.keyCode || ev.keyChar;
+		if(A === 9){
+			do_an_e(ev);
+			gvar.$w.setTimeout(function(){
+				if( $('.ts_fjb-tags').is(':visible') )
+					$('.ts_fjb-tags input[type="text"]:first').focus()
+				else
+					$('#sbutton').focus()
+			}, 50);
+		}
+	});
+	$('.additional_opt_toggle').click(function(){
+		var $el = $('#additionalopts');
+		if( $el.is(':visible') ){
+			$el.hide();
+			$(this).removeClass('active');
+		}
+		else{
+			$el.show();
+			$(this).addClass('active');
+		}
+	})
 
 	$('#settings-button').click(function(){ _STG.init(); });
 	
@@ -5047,8 +5239,13 @@ function eventsTPL(){
 		
 		if(A === 9){
 			do_an_e(ev);
-			gvar.$w.setTimeout(function(){ $('#sbutton').focus() }, 50);
-		}		
+			gvar.$w.setTimeout(function(){
+				if( $('.edit-reason').is(':visible') )
+					$('.edit-reason input[type="text"]:first').focus()
+				else
+					$('#sbutton').focus()
+			}, 50);
+		}
 		
 		// area kudu dg CSA
 		if( (pCSA=='0,0,0' || pCSA=='0,1,0') || (A < 65 && (A!=13 && A!=9)) || A > 90 )
@@ -5502,6 +5699,7 @@ function start_Main(){
 
 	var _loc = location.href;
 	gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
+	gvar.classbody = String($('body').attr('class')).trim(); // [fjb,forum,group]
 	
 	if(gvar.thread_type == 'singlepost')
 		return fixerCod();
