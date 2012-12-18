@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.2
-// @dtversion      1212164102
-// @timestamp      1355681039712
+// @version        4.1.0.3
+// @dtversion      1212194103
+// @timestamp      1355858322843
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -20,11 +20,18 @@
 // @include        http://imgur.com/*
 // @include        http://imagevenue.com/*
 // @include        http://www.imgzzz.com/*
-// @include        http://postimage.org/*
+// @include        http://www.imagetoo.com/*
+// @include        http://uploadimage.co.uk/*
+// @include        http://*.uploadimage.co.uk/*
+// @include        http://uploadimage.in/*
+// @include        http://*.uploadimage.in/*
+// @include        http://cubeupload.com/*
 //
 // -!--latestupdate
 //
-// v4.1.0.2 - 2012-12-16 . 1355681039712
+// v4.1.0.3 - 2012-12-19 . 1355858322843
+//	 +image-uploader (imagetoo,uploadimage,cubeupload)
+//	 deprecate postimage
 //	 fix invalid emoticon bbcode; Thx[Alfazaki]
 //	 +edit post additional fields;
 //	 fix qq-parser youtube tag. Thx=[IbrahimKh]
@@ -68,16 +75,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.2';
+gvar.sversion = 'v' + '4.1.0.3';
 gvar.scriptMeta = {
-	timestamp: 1355681039712 // version.timestamp
+	timestamp: 1355858322843 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
 	
-	,dtversion: 1212164102 // version.date
+	,dtversion: 1212194103 // version.date
 	
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
-	,cssREV: 1212164102 // css revision date; only change this when you change your external css
+	,cssREV: 1212194103 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -2442,7 +2449,7 @@ var _UPL_ = {
 				+'<li class="qrt curent"><div id="tphost_0" title="kaskus.us" data-host="kaskus">kaskus</div></li>'
 			;
 			for(host in gvar.upload_sel){
-				ret+='<li class="qrt"><div id="tphost_'+(idx+1)+'" title="'+gvar.upload_sel[host]+'" data-host="'+host+'">' + host + '</div></li>';
+				ret+='<li class="qrt"><div id="tphost_'+(idx+1)+'" title="'+gvar.upload_sel[host]+'" data-host="'+host+'">' + host + ' <a class="externurl right" title="Goto this site" target="_blank" href="http://'+gvar.upload_sel[host]+'"><i class="icon-resize-full"></i></a></div></li>';
 				idx++;
 			}
 		}
@@ -2450,14 +2457,16 @@ var _UPL_ = {
 	},
 	event_menus:function(){
 		$('#tabs-content-upl .qrt').each(function(){
-			$(this).click(function(){
-				var subtpl, ch= $(this).find('div:first'), id, lbl, gL, host;
-				id = ch.attr('id').replace(/tphost_/gi,'');
-				host = ch.attr('data-host');
-				_UPL_.switch_tab( host );
-				
-				$(this).closest('#ul_group').find('.curent').removeClass('curent');
-				$(this).addClass('curent');
+			$(this).click(function(e){
+				if( (e.target||e).nodeName === 'DIV' ){
+					var subtpl, ch= $(this).find('div:first'), id, lbl, gL, host;
+					id = ch.attr('id').replace(/tphost_/gi,'');
+					host = ch.attr('data-host');
+					_UPL_.switch_tab( host );
+					
+					$(this).closest('#ul_group').find('.curent').removeClass('curent');
+					$(this).addClass('curent');
+				}
 			});
 		});
 		$('#toggle-sideuploader').click(function(){
@@ -5517,10 +5526,13 @@ function getUploaderSetting(){
 	// uploader properties
 	gvar.upload_sel={
 		 imageshack:'imageshack.us'
-		,imagevenue:'imagevenue.com'
 		,imgzzz:'imgzzz.com'
+		,cubeupload:'cubeupload.com'
+		,imagetoo:'imagetoo.com'
+		,uploadimage_uk:'uploadimage.co.uk'
+		,uploadimage_in:'uploadimage.in'
 		,imgur:'imgur.com'
-		,postimage:'postimage.org'
+		,imagevenue:'imagevenue.com'
 	};
 	gvar.uploader={
 		imageshack:{
@@ -5538,11 +5550,20 @@ function getUploaderSetting(){
 		,imgzzz:{
 			src:'imgzzz.com',noCross:'1' 
 		}
+		,cubeupload:{
+			src:'cubeupload.com',noCross:'1' 
+		}
 		,imagevenue:{
 			src:'imagevenue.com/host.php',noCross:'1' 
 		}
-		,postimage:{
-			src:'postimage.org',noCross:'1' 
+		,imagetoo:{
+			src:'imagetoo.com',noCross:'1' 
+		}
+		,uploadimage_uk:{
+			src:'uploadimage.co.uk',noCross:'1' 
+		}
+		,uploadimage_in:{
+			src:'uploadimage.in',noCross:'1' 
 		}
 	};
 	// set last-used host
@@ -5915,7 +5936,7 @@ function outSideForumTreat(){
 	switch(loc){
 		case "imageshack":
 		CSS=''
-		+'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col{display:none'+i+'}'
+		+'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col,ins,div>iframe{display:none'+i+'}'
 		+'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0}'
 		+'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt}'
 		;break;
@@ -5937,6 +5958,10 @@ function outSideForumTreat(){
 		+'body > div{position:absolute;}'
 		+'#mid-part{width:30px; background:#ddd; color:transparent;}'
 		;break;
+		case "cubeupload":
+		CSS=''
+		+'.bsap{display:none'+i+'}'
+		;break;
 		case "photoserver":
 		CSS=''
 		+'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
@@ -5947,15 +5972,19 @@ function outSideForumTreat(){
 		+'#overlay .content{top:3px'+i+'}'
 		+'#overlay{position:absolute'+i+'}'
 		;break;
-		case "postimage":
+		case "imagetoo":
 		CSS=''
-		+'* html, body{background-color:#fff;padding:0;margin:0}'
-		+'center, p:first-child{display:none'+i+'}'
-		+'#footer{margin-top:2px}'
-		+'#footer p{margin-top:-18px}'
-		+'#center{width:70%'+i+'}'
-		+'#content{padding:0 5px;height:180px'+i+'}'
-		+'.box{margin-top:-30px}'
+		+'#topbar, div#top{display:none'+i+'}'
+		;break;
+		case "uploadimage_uk":
+		CSS=''
+		+'ins{display:none'+i+'}'
+		+'input[type="text"].location{width:80%}'
+		;break;
+		case "uploadimage_in":
+		CSS=''
+		+'#logo, p.teaser{display:none'+i+'}'
+		+'#header{padding:0; height:25px'+i+';}'
 		;break;
 	};
 	// end switch loc
