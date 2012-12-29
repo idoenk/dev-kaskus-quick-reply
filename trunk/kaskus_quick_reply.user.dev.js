@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.3
-// @dtversion      1212194103
-// @timestamp      1355858322843
+// @version        4.1.0.4
+// @dtversion      1212304104
+// @timestamp      1356801568918
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,12 +29,13 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.3 - 2012-12-19 . 1355858322843
-//	 +image-uploader (imagetoo,uploadimage,cubeupload)
-//	 deprecate postimage
-//	 fix invalid emoticon bbcode; Thx[Alfazaki]
-//	 +edit post additional fields;
-//	 fix qq-parser youtube tag. Thx=[IbrahimKh]
+// v4.1.0.4 - 2012-12-30 . 1356801568918
+//   fix qq-parser spoiler when wrapped with any tags; Thx[p1nky,coolkips]
+//   +image-uploader (imagetoo,uploadimage,cubeupload)
+//   deprecate postimage
+//   fix invalid emoticon bbcode; Thx[Alfazaki]
+//   +edit post additional fields;
+//   fix qq-parser youtube tag. Thx=[IbrahimKh]
 //   get rid quot (") on wrap/parsing tags (font,size,color). Thx[coolkips]
 //
 // -/!latestupdate---
@@ -75,13 +76,13 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.3';
+gvar.sversion = 'v' + '4.1.0.4';
 gvar.scriptMeta = {
-	timestamp: 1355858322843 // version.timestamp
+	timestamp: 1356801568918 // version.timestamp
 	//timestamp: 999 // version.timestamp for test update
-	
-	,dtversion: 1212194103 // version.date
-	
+
+	,dtversion: 1212304104 // version.date
+
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
 	,cssREV: 1212194103 // css revision date; only change this when you change your external css
@@ -3715,7 +3716,6 @@ var _UPD = {
 
 var _QQparse = {
 	init:function(calee, cb){
-		//_QQparse.pids = pids;
 		var par, mqs_id = [];
 		$('.multi-quote.blue').each(function(){
 			par = $(this).closest('.row');
@@ -3728,14 +3728,14 @@ var _QQparse = {
 		}else{
 			$('#sdismiss_quote').click();
 		}
-		_QQparse.cb = cb;
-		_QQparse.mqs_id = mqs_id;
-		_QQparse.title = false;
-		_QQparse.start();
+		this.cb = cb;
+		this.mqs_id = mqs_id;
+		this.title = false;
+		this.start();
 	},
 	start:function(){
-		var ret, buff, entrycontent, post_id;
-		$.each( _QQparse.mqs_id, function(){
+		var ret, buff, entrycontent, post_id, _QQ = this;
+		$.each( _QQ.mqs_id, function(){
 			post_id = this;
 			entrycontent = $('#'+post_id).find('.entry');
 			if( $(entrycontent).get(0) ){
@@ -3743,15 +3743,18 @@ var _QQparse = {
 				buff = String( $(entrycontent).html() ).replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "");
 				buff = buff.replace(/(?:<\!-{2,}reason\s?[^>]+.)+/gi, '');
 				
-				ret = _QQparse.parseMSG( buff );
-				clog('ret to parseMSG=' + ret);
+				ret = _QQ.parseMSG( buff );
+				clog('ret after parseMSG=' + ret);
 				
 				_TEXT.init();
 
 				if( ret )
-					_TEXT.add( '[QUOTE=' + _QQparse.get_quotefrom(post_id) + ']' + ret + '[/QUOTE]'  + "\n\n" );
+					_TEXT.add( '[QUOTE=' + _QQ.get_quotefrom(post_id) + ']' + ret + '[/QUOTE]'  + "\n\n" );
 			}
 		});
+	},
+	count_spoilers: function($html){
+		return $('.spoiler', $html).length
 	},
 	get_quotefrom: function(pid){
 		var nameStr, el = createEl('div', {}, $('#'+pid).find('.nickname').html() );
@@ -3773,13 +3776,14 @@ var _QQparse = {
 		_src = $('img', $(el));
 		
 		_src = ( $(_src).get(0) ? basename( $(_src).attr('src') ).replace(/\./g,'') : '' );
-		_QQparse.title = {
+		this.title = {
 			icon: _src, text: $(el).text()
 		};
 	},
 	parseMSG: function(x){
 
-		var pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength,LT,pairedEmote;
+		var _QQ = this;
+		var $pCon,pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength,LT,pairedEmote;
 		var ret, contentsep, pos;
 		
 		LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[]};
@@ -4024,50 +4028,89 @@ var _QQparse = {
 			if( el ) Dom.remove(el);
 		}
 		
+		$pCon = $(pCon);
 		// reveal simple quote
-		$(pCon).html( revealQuoteCode() );	
+		$pCon.html( revealQuoteCode() );	
 		//clog('pCon=' + $(pCon).html() );
 		
 		// reveal title post
-		el = $('h2', $(pCon));
+		el = $('h2', $pCon);
 		if( $(el).length ){
-			//clog('judul=' + el.html() );
-			_QQparse.parseTITLE( el );
-			$('h2', $(pCon) ).remove();
+			this.parseTITLE( el );
+			$('h2', $pCon ).remove();
 		}
 		
 		// reveal spoiler inside
-		// bbcode_div
-		$('> .spoiler', $(pCon)).each(function(){
+		var total_spoilers;
+		//selector_1st_child = '> .spoiler';
+		total_spoilers = this.count_spoilers($pCon);
+		clog('total spoilers=' + total_spoilers );
 
-			var title, newEl, newhtml, iner = $(this).find('#bbcode_inside_spoiler:first').html()
-			title = $(this).find('i:first').html();
-			newhtml = ('[SPOILER='+ title +']'+ iner +'[/SPOILER]');
-			iner = double_encode( newhtml );
-			iner = _QQparse.parseMSG( iner );
-			
-			newEl = ( createTextEl(entity_decode(iner)) );
-			$(this).replaceWith( $(newEl) );
-		});
-		//clog('pCon after spoiler=' + $(pCon).html() );
+		/*
+		* when spoiler wrapped with any tags like [font,b,...],
+		* will fail getting its 1deg spoiler, which might not be cleared in parseSerials
+		* need to seach it first then.
+		* still we limited around 63 nested tags only, fix-me!
+		*/
+		if(total_spoilers > 0){
+			var newhtml = (function($, $_pCon){
+				var selectorSpoiler, selector_1st_child, notfound, threshold=100, step=0;
+				selectorSpoiler = selector_1st_child = '> .spoiler';
+				$_pCon.find('input[class^="spoiler_"]').remove();
+				clog('indigo...=' + $_pCon.html());
+
+				if($(selector_1st_child, $_pCon).length == 0){
+					notfound = 1; step = 0;
+					while(notfound){
+						++step;
+						selectorSpoiler = '> * ' + selectorSpoiler;
+						notfound = ($(selectorSpoiler, $_pCon).length == 0);
+						if(step >= threshold) break;
+					}
+				}
+
+				// bbcode_div
+				$(selectorSpoiler, $_pCon).each(function(){
+					var title, cucok, newEl, tmptit, _newhtml, iner = $(this).find('#bbcode_inside_spoiler:first').html()
+					title = $(this).find('i:first').html();
+
+					_newhtml = ('[SPOILER='+ (title ? title : ' ') +']'+ (iner ? iner : ' ') +'[/SPOILER]');
+					iner = double_encode( _newhtml );
+					iner = _QQ.parseMSG( iner );
+					
+					newEl = ( createTextEl(entity_decode(iner)) );
+					$(this).replaceWith( $(newEl) );
+				});
+				return $_pCon.html();
+			})($, $pCon);
+			clog('pCon after spoiler=' + $pCon.html() );
+
+			$pCon.html(newhtml);
+		}
+
+		clog('recheck spoiler=' + this.count_spoilers($pCon));
+		if(this.count_spoilers($pCon) > 0){
+			x = this.parseMSG($pCon.html());
+
+			clog('return from recheck spoiler=' + x);
+			$pCon.html(x);
+		}
 
 		// clean-up youtube thumb
-		$('div[onclick*=".nextSibling"]', $(pCon) ).remove();
+		$('div[onclick*=".nextSibling"]', $pCon ).remove();
 		
 		// reveal code inside
-		$(pCon).html( revealCoders() );	
-		//clog('pCon after coder / before x decoded =' + $(pCon).html() );
-		
-		x = double_encode( $(pCon).html() );
-		//clog('x decoded ' + x);
-		delete pCon;
-		
+		$pCon.html( revealCoders() );
+		//clog('pCon after coder / before decode parseSerials=' + $pCon.html() );
+
+		x = double_encode($pCon.html());
+		pCon = null; $pCon = null;
+
 		// serials parse
 		ret = trimStr( String(x).replace(/<(\/?)([^>]+)>/gm, parseSerials ));
-		//clog('ret=' + ret );
 		
 		// clean rest (unparsed tags)
-		return unescapeHtml( entity_decode(_QQparse.clearTag( ret )) );
+		return unescapeHtml( entity_decode(this.clearTag( ret )) );
 	}
 };
 
