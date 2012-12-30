@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356899197128
+// @timestamp      1356902139596
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356899197128
+// v1.0 - 2012-12-31 . 1356902139596
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356899197128 // version.timestamp
+    timestamp: 1356902139596 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -60,6 +60,8 @@
      KEY_SAVE_AUTHORIZED_USERS: ['']
     ,KEY_SAVE_WIDE_THREAD: ['0']
     ,KEY_SAVE_TMP_TEXT: [''] // temporary text
+    ,KEY_SAVE_TOGGLE_MENUS: ['0']
+    ,KEY_SAVE_TOGGLE_PLUGINS: ['0']
   };
 
   //========= Global Var Init ====
@@ -689,9 +691,9 @@
       +'<div class="in-txt liner" id="wrp_title">'
       + '<input type="text" name="title" maxlength="85" placeholder="Title" />'
       + '<span class="Qxc tgctr" style="display:none;">&times;</span>'
-      + '<span class="Qct tgctr btn_stg"></span>'
+      + '<span class="Qct tgctr btn_stg'+(gvar.settings.toggle_menus ? ' active':'')+'" title="Toggle Menus"></span>'
       +'</div>'
-      +'<div class="in-txt liner" id="wrp_control" style="display:none;">'
+      +'<div class="in-txt liner" id="wrp_control" '+(gvar.settings.toggle_menus ? '' : 'style="display:none;"')+'>'
       + rSRC.getControlers()
       +'</div>'
 
@@ -859,9 +861,9 @@
       + _sp + rSRC._menuCode([16, 50, 51]) 
       + _sp + rSRC._menuQuote([15, 21, 97, 52]) 
 
-      + _sp + '<li class="'+lc+ ' qplugin-togler"><span class="Qct tgctr btn_qplugin"></span></li>'
+      + _sp + '<li class="'+lc+ ' qplugin-togler"><span class="Qct tgctr btn_qplugin'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? ' active' : '')+'" title="Toggle Plugin Menus"></span></li>'
       + '</ul>'
-      + '<div id="qr_plugins_container" class="qplugin" style="'+(gvar.settings.widethread ? '':'display:none;')+'">'
+      + '<div id="qr_plugins_container" class="qplugin" style="'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? '':'display:none;')+'">'
       + '<img class="ev_strike" title="Strikethrough text" data-bbcode="strike" src="'+BTN.strikethrough+'" />'
       + '</div>'
       + "</div>" // mktH
@@ -1083,17 +1085,19 @@
 
   function getSettings(stg){
     /**
-    eg. gvar.settings.isDonatur
+    eg. gvar.settings.toggle_menus
     */
     var hVal, settings = {};
     
     hVal = getValueForId(gvar.user.id, 'AUTHORIZED_USERS');
     if( !hVal ) hVal = ['', '0'];
-    settings.isAuthorized = (hVal[1] == '1');
-    gvar.user.isDonatur = settings.isAuthorized;
+    gvar.user.isDonatur = (hVal[1] == '1');
 
     settings.widethread = (getValue(KS+'WIDE_THREAD') == '1');
     settings.tmp_text = getValue(KS+'TMP_TEXT');
+
+    settings.toggle_menus = (getValue(KS+'TOGGLE_MENUS') == '1');
+    settings.toggle_plugins = (getValue(KS+'TOGGLE_PLUGINS') == '1');
 
     // -=|
     gvar.settings = settings;
@@ -1201,7 +1205,6 @@
 
     if( gvar.settings.widethread )
       GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
-
     if( gvar.settings.tmp_text ){
       _TEXT.set( gvar.settings.tmp_text );
 
@@ -1231,16 +1234,18 @@
       }
     }
 
-
     // toggle wrp_control
     Dom.Ev($D('.btn_stg',null,1), 'click', function(e){
       var tgt = $D('#wrp_control');
       showhide( tgt );
       e = e.target||e;
-      if( isVisible(tgt) )
+      gvar.settings.toggle_plugins = isVisible(tgt);
+      if( gvar.settings.toggle_plugins )
         addClass('active', e);
       else
         removeClass('active', e);
+
+      setValue(KS+'TOGGLE_MENUS', gvar.settings.toggle_plugins ? '1' : '0');
       _TEXT.focus();
     });
     // toggle qplugin
@@ -1252,6 +1257,8 @@
         addClass('active', e);
       else
         removeClass('active', e);
+
+      setValue(KS+'TOGGLE_PLUGINS', isVisible(tgt) ? '1' : '0');
       _TEXT.focus();
     });
     // clear editor
@@ -1329,12 +1336,22 @@
 
     Dom.Ev($D('#chk_fixups'), 'click', function(e){
       e = e.target||e;
-      var isbaloonup, chk, tgt, cssid = 'css_inject_widefix';
+      var isbaloonup, el_btn, el_plugin, chk, tgt, cssid = 'css_inject_widefix';
       tgt = $D('#'+cssid);
       tgt && Dom.remove(tgt);
+      el_btn = $D('.btn_qplugin',null,1);
+      el_plugin = $D('#qr_plugins_container');
 
-      if( chk = isChecked(e) ) 
+      if( chk = isChecked(e) ){
         GM_addGlobalStyle(rSRC.getCSSWideFix(), cssid, 1);
+        
+        !isVisible(el_plugin) && showhide(el_plugin, true);
+        addClass('active', el_btn);
+      }
+      else{
+        if( !gvar.settings.toggle_plugins && isVisible(el_plugin))
+          SimulateMouse(el_btn, 'click', true);
+      }
 
       setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
       baloon_positioning();
