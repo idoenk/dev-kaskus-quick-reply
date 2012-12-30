@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356898913734
+// @timestamp      1356899197128
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356898913734
+// v1.0 - 2012-12-31 . 1356899197128
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356898913734 // version.timestamp
+    timestamp: 1356899197128 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -1206,7 +1206,9 @@
       _TEXT.set( gvar.settings.tmp_text );
 
       delete gvar.settings.tmp_text;
-      setValue(KS+'TMP_TEXT', '');
+      node = KS+'TMP_TEXT';
+      setValue(node, '');
+      delValue(node);
     }
 
 
@@ -2098,6 +2100,12 @@
         tmp.push(info[i]);    
     }
     setValue(ksg, tmp.join(';'));
+  }
+  function delValue(key){
+    var data=OPTIONS_BOX[key];
+    try{
+      return (!data ? null : GM_deleteValue(key));
+    }catch(e){}
   }
   function SimulateMouse(elem,event,preventDef) {
     if(typeof(elem)!='object') return;
