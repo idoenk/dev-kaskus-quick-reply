@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356904306482
+// @timestamp      1356904923244
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356904306482
+// v1.0 - 2012-12-31 . 1356904923244
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356904306482 // version.timestamp
+    timestamp: 1356904923244 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -971,6 +971,8 @@
       +'::-webkit-input-placeholder{color:#999!important;}:-moz-placeholder{color:#999!important;}:-ms-input-placeholder{color:#999!important;}'
 
       /* night-mode */
+      +'body.nightmode .mQR .qrtitle{background:#444;text-shadow:1px 1px #808080;}'
+      +'body.nightmode .mQR .qrtitle.editmode{background:#093858;}'
       +'body.nightmode .mQR .in-txt input[type="text"], body.nightmode .mQR .in-txt #'+gvar.tID+'{color:#f0f0f0;}'
       +'body.nightmode .mQR #wrp_control {background:#666;}'
       +'body.nightmode .mktH ul ul li:hover{background:none;}'
