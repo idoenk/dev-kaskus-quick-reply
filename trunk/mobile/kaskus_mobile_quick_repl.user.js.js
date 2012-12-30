@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356902139596
+// @timestamp      1356902734399
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356902139596
+// v1.0 - 2012-12-31 . 1356902734399
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356902139596 // version.timestamp
+    timestamp: 1356902734399 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -1344,7 +1344,7 @@
 
       if( chk = isChecked(e) ){
         GM_addGlobalStyle(rSRC.getCSSWideFix(), cssid, 1);
-        
+
         !isVisible(el_plugin) && showhide(el_plugin, true);
         addClass('active', el_btn);
       }
@@ -1648,7 +1648,7 @@
 
     subret = ret.substr(pos['start'], (pos['end'] - pos['start']));
     subret = subret.replace(/<textarea[^>]+./i, '');
-    subret = entity_decode( unescapeHtml( subret.replace(/\\n|\\r\\n|\\r/g, '\n') ) ) + '\n';
+    subret = entity_decode( unescapeHtml( subret.replace(/\\n|\\r\\n|\\r/g, '\n') ) );
 
     // check title
     if( cucok = /<input\s((?:[\w]+=[\'\"][^\'\"]+.)\s+)+name=[\'\"]title[\'\"][^\>]+/i.exec(ret) ){
@@ -1667,7 +1667,7 @@
 
     _TEXT.init();
     if( gvar.edit_mode ){
-      _TEXT.set(subret);
+      _TEXT.set(trimStr(subret));
     }
     _TEXT.pracheck();
     (tgt = $D('.bling',null,1)) && removeClass('bling', tgt);
@@ -1839,9 +1839,9 @@
           field = trimStr( String(getAttr('name', node)) );
           if( fields.indexOf(field) == -1) continue;
           if(toString)
-            data+='&' + field + '=' + node.value;
+            data+='&' + field + '=' + trimStr(node.value);
           else
-            data[field] = node.value;
+            data[field] = trimStr(node.value);
         }
 
         // keep send this field
