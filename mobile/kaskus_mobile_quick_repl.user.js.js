@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356894316795
+// @timestamp      1356898913734
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356894316795
+// v1.0 - 2012-12-31 . 1356898913734
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356894316795 // version.timestamp
+    timestamp: 1356898913734 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -57,8 +57,9 @@
 
   // predefined registered key_save
   var OPTIONS_BOX = {
-     KEY_SAVE_AUTHORIZED_USERS:  ['']
+     KEY_SAVE_AUTHORIZED_USERS: ['']
     ,KEY_SAVE_WIDE_THREAD: ['0']
+    ,KEY_SAVE_TMP_TEXT: [''] // temporary text
   };
 
   //========= Global Var Init ====
@@ -109,7 +110,7 @@
       if (window.addEventListener) {
         return function(el, type, fn, phase) {
           phase=(phase ? phase : false);
-          if(typeof(el)=='object')
+          if('object' === typeof el && el)
             this.g(el).addEventListener(type, function(e){fn(e);}, phase);
         };
       }else if (window.attachEvent) {
@@ -582,16 +583,16 @@
       $D('#recaptcha_response_field').focus();
     },
     response_field: function(isGood, dofocus){
-      var thr, rrf = $D('#recaptcha_response_field'), p = rrf.parentNode;
+      var thr, rrf = $D('#recaptcha_response_field'), p = (rrf ? rrf.parentNode : null);
       thr = $D('.btn-thr',null,1);
       if( isGood ){
-        addClass('bling', thr);
-        removeClass('error', p);
+        thr && addClass('bling', thr);
+        p && removeClass('error', p);
         _TOGGLER.gnotice(false, '', $D('.g_notice', $D('#wrp_cpcy'), 1));
       }
       else{
-        removeClass('bling', thr);
-        addClass('error', p);
+        thr && removeClass('bling', thr);
+        p && addClass('error', p);
         $D('#hidrecap_reload_btn').click();
       }
       showhide($D('.stts',null,1), isGood);
@@ -706,7 +707,6 @@
       + '<input type="text" name="reason" placeholder="Reason" title="Reason" />'
       +'</div>'
 
-      +(!gvar.user.isDonatur ? ''
       +'<div class="in_balonbox" id="wrp_cpcy" style="display:none;">'
       + rSRC.getBtBaloon()
 
@@ -715,7 +715,6 @@
       + '<span class="Qcp tgctr">&times;</span>'
       + '<div class="mqr-cpcy">' + rSRC.getCUSTOM_ReCapcay() + '</div>'
       +'</div>' // in_cpcy_boxed
-      :'')
 
       +'<div class="in_balonbox" id="wrp_act" style="display:none;">'
       + rSRC.getBtBaloon()
@@ -725,14 +724,14 @@
       +'</div>'
 
       +'<div class="r">'
-      +(!gvar.user.isDonatur ? ''
         // fake capcay.controller [create,reload]
       + '<input id="hidrecap_btn" value="reCAPTCHA" type="button" onclick="showRecaptcha();" class="ninja" />' 
       + '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" onclick="Recaptcha.reload();" class="ninja" />'
-      :'')
-      + '<input type="hidden" name="securitytoken" id="securitytoken" value=""  />'
+      + '<input type="hidden" name="securitytoken" id="securitytoken" value="" />'
+      + '<input type="hidden" name="preview" value="Preview post" />'
+
       + '<div class="in-btn action">' // [btn-red,blue]
-      +  '<input type="submit" id="sbutton" class="btn '+(gvar.settings.isAuthorized ? 'blue' : 'btn-red')+'" value="Post Reply" name="sbutton" />'
+      +  '<input type="submit" id="sbutton" class="btn '+(gvar.user.isDonatur ? 'blue' : 'btn-red')+'" value="Post Reply" name="sbutton" />'
       +  '<input type="button" id="cbutton" class="btn btn-grey" value="Cancel" />'
       +  '<div class="sayapkanan liner">'
       +   '<input id="chk_fixups" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
@@ -1084,7 +1083,7 @@
 
   function getSettings(stg){
     /**
-    eg. gvar.settings.isAuthorized
+    eg. gvar.settings.isDonatur
     */
     var hVal, settings = {};
     
@@ -1094,7 +1093,7 @@
     gvar.user.isDonatur = settings.isAuthorized;
 
     settings.widethread = (getValue(KS+'WIDE_THREAD') == '1');
-
+    settings.tmp_text = getValue(KS+'TMP_TEXT');
 
     // -=|
     gvar.settings = settings;
@@ -1147,7 +1146,7 @@
     }
 
     // inject SCRIPT
-    if( !gvar.user.isDonatur ){
+    if( !gvar.user.isDonatur ) {
       GM_addGlobalScript(location.protocol+ '\/\/www.google.com\/recaptcha\/api\/js\/recaptcha_ajax.js', 'recap', true);
       GM_addGlobalScript(rSRC.getSCRIPT());
     }
@@ -1203,6 +1202,13 @@
     if( gvar.settings.widethread )
       GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
 
+    if( gvar.settings.tmp_text ){
+      _TEXT.set( gvar.settings.tmp_text );
+
+      delete gvar.settings.tmp_text;
+      setValue(KS+'TMP_TEXT', '');
+    }
+
 
     clog('endof-design');
     // attach event
@@ -1222,6 +1228,7 @@
         })
       }
     }
+
 
     // toggle wrp_control
     Dom.Ev($D('.btn_stg',null,1), 'click', function(e){
@@ -1265,6 +1272,7 @@
     Dom.Ev($D('#recaptcha_reload_btn'), 'click', function(){
       _TOGGLER.auth_noneed_cpcy(false);
     });
+
     Dom.Ev($D('#recaptcha_stg'), 'click', function(){
       _TOGGLER.whattheheck();
     });
@@ -1293,6 +1301,7 @@
 
       // get its value first then store to localstorage..
       setValueForId(gvar.user.id, String(ischecked ? '1':'0'), 'AUTHORIZED_USERS');
+      gvar.user.isPreAuthorized = ischecked;
     });
     // btn-cancel edit
     Dom.Ev($D('#cbutton'), 'click', function(e){
@@ -1304,7 +1313,8 @@
       _TOGGLER.baloon_save()
     });
     
-    !gvar.user.isDonatur && window.setTimeout(function(){
+    !gvar.user.isDonatur && 
+    window.setTimeout(function(){
       (node = $D('#hidrecap_btn'))
         && SimulateMouse(node, 'click', true);  
 
@@ -1358,8 +1368,8 @@
           window.setTimeout(function(){ xhrpost() }, 212);
           return 0;
         };
-        //if( !gvar.user.isDonatur && !gvar.settings.isAuthorized ){
-        if( !gvar.settings.isAuthorized ){
+
+        if( !gvar.user.isDonatur ){
           if(isChecked( $D('#chk-auth') ))
             return gogo();
 
@@ -1386,6 +1396,7 @@
         return false;
       }); // end-submit-ev
     }
+
 
     Dom.Ev(window, 'scroll', function(){
       var el, nVScroll = document.documentElement.scrollTop || document.body.scrollTop;
@@ -1557,8 +1568,15 @@
   // fallback localstorage value and isDonatur
   function failover_authorization(){
     setValueForId(gvar.user.id, '0', 'AUTHORIZED_USERS');
-    gvar.settings.isAuthorized = false;
-    gvar.user.isDonatur = false;
+    if(gvar.user.isDonatur){
+      alert('You need to insert capcay to post!\nPage will be reloaded now.');
+
+      setValue(KS+'TMP_TEXT', String($D('#'+gvar.tID).value));
+      location.reload(false);
+      return !1;
+    }
+    gvar.user.isPreAuthorized = gvar.user.isDonatur = false;
+    return 1;
   }
 
   function xhrfetch_cb_post(ret, xhr){
@@ -1711,18 +1729,22 @@
     if(gvar.reqPID && xhr && xhr.pid && "undefined" != typeof gvar.reqPID[xhr.pid])
       delete gvar.reqPID[xhr.pid];
 
-    var cucok;
-
+    var cucok, prevchecked;
     // error-pattern
     if( ret.match(/[\'\"]err-msg[\'\"]/i) ){
+
+      prevchecked = gvar.user.isPreAuthorized;
+      if(gvar.user.isDonatur || gvar.user.isPreAuthorized){
+        if( failover_authorization() == !1 )
+          return;
+      }
+
       if( ret.indexOf('image verification did not match')!=-1 ){
         _TOGGLER.showhide_capcay(true);
-        _TOGGLER.gnotice(true, 'The text you entered did not match. Please try again.');
+        _TOGGLER.gnotice(true, (prevchecked ? 'Capcay is required. \n':'')+'The text you entered did not match. Please try again.');
         _TOGGLER.response_field(false, true);
         _TOGGLER.auth_noneed_cpcy(false);
       }
-      if(gvar.settings.isAuthorized)
-        failover_authorization();
     }
     // submit-pattern
     else if( ret.match(/[\'\"]s-msg[\'\"]/i) ){
@@ -1786,11 +1808,12 @@
     if( par = $D('#mqrform') ){
       data = (toString ? '' : {});
       nodes = $D('.//*[@name]', par);
-      fields = ['title','message','securitytoken','sbutton'];
+      fields = ['title','message','securitytoken','sbutton']; // previews
       if(gvar.edit_mode)
         fields = fields.concat(['reason']);
       else
         fields = fields.concat(['recaptcha_challenge_field','recaptcha_response_field']);
+      
       if( nodes.snapshotLength ){
         for(var i=0; i<nodes.snapshotLength; ++i){
           node = nodes.snapshotItem(i);
@@ -1801,8 +1824,17 @@
           else
             data[field] = node.value;
         }
+
+        // keep send this field
+        if(!gvar.edit_mode && gvar.user.isDonatur){
+          if(toString)
+            data+='&recaptcha_challenge_field=1&recaptcha_response_field=1';
+          else
+            data['recaptcha_challenge_field'] = data['recaptcha_response_field'] = '';
+        }
       }
     }
+
     return data;
   }
 
@@ -2024,7 +2056,7 @@
   // values stored in format "userID=value;..."
   // sp = array of records separator
   // gvar.user.id, 'LAYOUT_TPL', ['<!>','::'], function
-  function getValueForId(userID, gmkey, sp, cb){
+  function getValueForId(userID, gmkey, sp){
     if( !userID ) return null;
     clog(gmkey + ' inside');
     
