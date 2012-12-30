@@ -957,7 +957,7 @@
       +'.mQR .qplugin .vbmenu_popup .osize{padding:2px;}'
       +'.mQR .qplugin .vbmenu_popup .osize:hover{background: #ccc;cursor: pointer;}'
 
-      +'.mQR .sayapkanan{position:absolute; right:0;text-align:right;padding:5px;display:inline-block;}'
+      +'.mQR .sayapkanan{position:absolute; right:0;text-align:right;margin:0;margin-top:-5px;padding:5px;display:inline-block;}'
       +'.mQR .sayapkanan input[type="checkbox"]{display:inline;}'
       +'.mQR .sayapkanan a{display:inline-block;outline:none;text-decoration:none;margin-left:2px;}'
 
