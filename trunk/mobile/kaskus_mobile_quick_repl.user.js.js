@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356976426495
+// @timestamp      1356991338499
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356976426495
+// v1.0 - 2012-12-31 . 1356991338499
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356976426495 // version.timestamp
+    timestamp: 1356991338499 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -413,10 +413,6 @@
       
       this.set(bufValue);
       st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
-
-      clog('s,e=' + start + ','+end);
-      clog(st2 + ';' + (st2+this.subStr(start, end).length));
-
       this.caretChk( st2, (st2+this.subStr(start, end).length) );
       return bufValue; 
     },
@@ -1277,7 +1273,6 @@
     else{
       Dom.remove(node);
     }
-
 
     clog('endof-design');
     // attach event
@@ -2195,15 +2190,12 @@
   // sp = array of records separator
   // gvar.user.id, 'LAYOUT_TPL', ['<!>','::'], function
   function getValueForId(userID, gmkey, sp){
-    if( !userID ) return null;
-    clog(gmkey + ' inside');
-    
+    if( !userID ) return null;    
     sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];    
     var val, info, retValue=null;
 
     return (function(val){
       if( !val ) {
-
         clog(gmkey + ' blank; halted');
         retValue = null;
         return;
