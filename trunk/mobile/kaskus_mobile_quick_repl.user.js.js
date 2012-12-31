@@ -5,14 +5,14 @@
 // @author         idx (http://userscripts.org/users/idx)
 // @version        1.0
 // @dtversion      121231100
-// @timestamp      1356904923244
+// @timestamp      1356976426495
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356904923244
+// v1.0 - 2012-12-31 . 1356976426495
 //  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // -/!latestupdate---
@@ -41,7 +41,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '1.0';
   gvar.scriptMeta = {
-    timestamp: 1356904923244 // version.timestamp
+    timestamp: 1356976426495 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -49,7 +49,7 @@
   window.alert(new Date().getTime());
   */
   //========-=-=-=-=--=========
-  gvar.__DEBUG__ = 0; // development debug
+  gvar.__DEBUG__ = 1; // development debug
   //========-=-=-=-=--=========
 
   const GMSTORAGE_PATH = 'GM_';
@@ -60,6 +60,7 @@
      KEY_SAVE_AUTHORIZED_USERS: ['']
     ,KEY_SAVE_WIDE_THREAD: ['0']
     ,KEY_SAVE_TMP_TEXT: [''] // temporary text
+    ,KEY_SAVE_TMP_TITLE: [''] // temporary text-title
     ,KEY_SAVE_TOGGLE_MENUS: ['0']
     ,KEY_SAVE_TOGGLE_PLUGINS: ['0']
   };
@@ -108,7 +109,7 @@
       if(el && el.parentNode)
         el.parentNode.removeChild(el);
     },
-    Ev: function() {     
+    Ev: function() {
       if (window.addEventListener) {
         return function(el, type, fn, phase) {
           phase=(phase ? phase : false);
@@ -122,6 +123,11 @@
         };
       }
     }(),
+    Evs: function(node, types, f){
+      var parts = types.split(' ');
+      for(var i=0; i<parts.length; ++i)
+        Dom.Ev(node, parts[i], f);
+    },
     remEv: function() {
       if (window.removeEventListener) {
         return function(el, type, fn, phase) {
@@ -180,15 +186,15 @@
     return d
   };
   var GM_addGlobalStyle=function(css, id) {
-     var sel=createEl('style',{type:'text/css'});
-     if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
-     sel.appendChild(createTextEl(css));
-     var hds = document.getElementsByTagName('head');
-     if(hds && hds.nodeName=='HEAD')
+    var sel=createEl('style',{type:'text/css'});
+    if(isDefined(id) && isString(id)) sel.setAttribute('id', id);
+    sel.appendChild(createTextEl(css));
+    var hds = document.getElementsByTagName('head');
+    if(hds && hds.nodeName=='HEAD')
       window.setTimeout(function() { hds[0].appendChild(sel); }, 100);
-     else
+    else
       document.body.insertBefore(sel,document.body.firstChild);
-     return sel;
+    return sel;
   };
   var _TEXTCOUNT = {
     init: function( target ){
@@ -368,11 +374,12 @@
     },
     init: function() {
       this.e = $D('#'+gvar.tID);
-      this.eNat = Dom.g(gvar.tID);
       this.content = this.e.value;
       this.cursorPos = this.rearmPos(); // [start, end]
     },
-    rearmPos: function(){ return [this.getCaretPos(), Dom.g(gvar.tID).selectionEnd]; },
+    rearmPos: function(){
+      return this.getCaretPos();
+    },
     subStr: function(start, end){ return this.content.substring(start, end);},
     set_title: function(text){
       var tgt = $D('//div[@id="wrp_title"]/input[@name="title"]',null,1);
@@ -397,6 +404,7 @@
     },
     wrapValue : function(tag, title){
       var bufValue, st2, start = this.cursorPos[0], end = this.cursorPos[1];
+
       tag = tag.toUpperCase();    
       bufValue = this.subStr(0, start) + 
         '['+tag+(title?'='+title:'')+']' + 
@@ -405,6 +413,9 @@
       
       this.set(bufValue);
       st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
+
+      clog('s,e=' + start + ','+end);
+      clog(st2 + ';' + (st2+this.subStr(start, end).length));
 
       this.caretChk( st2, (st2+this.subStr(start, end).length) );
       return bufValue; 
@@ -465,7 +476,8 @@
       // scroll to bottom editor line
       !_TEXT.e && (_TEXT.e = $D('#'+gvar.tID));
       try{
-        _TEXT.e &&_TEXT.e.scrollTop(_TEXT.e[0].scrollHeight);
+        //_TEXT.e &&_TEXT.e.scrollTop(_TEXT.e[0].scrollHeight);
+        _TEXT.e &&_TEXT.e.scrollTop(_TEXT.e.scrollHeight);
       } catch(e){}
     },
     lastfocus: function (){
@@ -488,11 +500,12 @@
       return (this.cursorPos[0]==this.cursorPos[1]? '': this.subStr(this.cursorPos[0], this.cursorPos[1]) );
     },
     getCaretPos : function() {  
-      var CaretPos = 0;
-      if(Dom.g(gvar.tID))
-        if (Dom.g(gvar.tID).selectionStart || Dom.g(gvar.tID).selectionStart == '0')
-        CaretPos = Dom.g(gvar.tID).selectionStart;
-      return CaretPos;
+      var ret=[0,0], el = Dom.g(gvar.tID);
+      if(el && ('selectionStart' in el) && ('selectionEnd' in el) ){
+        if(el.value.length > 0)
+          ret = [el.selectionStart, el.selectionEnd];
+      }
+      return ret;
     },
     setCaretPos : function (pos,end){
       if(isUndefined(end)) end = pos;
@@ -502,38 +515,51 @@
       }
     },
     setElastic: function(max,winrez){
-      function setCols_Elastic(max){
-        var a = Dom.g(gvar.tID); a.setAttribute("cols", Math.floor(a.clientWidth/7));
-        // var w = Math.floor(a.clientWidth/7);
+      var a, tid=gvar.tID;
+
+      function setCols_Elastic(el, max){
+        el && el.setAttribute("cols", Math.floor(el.clientWidth/7));
         _TEXT.setRows_Elastic(max)
       }
-      var a, tid = gvar.tID;
       a = Dom.g(tid);
       _TEXT.oflow='hidden';
-      a.setAttribute('style','overflow:'+_TEXT.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
+      a.setAttribute('style','visibility:hidden; overflow:'+_TEXT.oflow+';letter-spacing:0;line-height:14pt;'+(max?'max-height:'+(max-130)+'pt;':''));
+
       gvar.wtrackY={};
-      if( !winrez && !getAttr('data-keyup') ){
-        Dom.Ev(a, 'keydown', function(e){ e.ctrlKey && (gvar.wtrackY['before'] = window.scrollY) });
-        Dom.Ev(a, 'keyup', function(e){
-          if( e.ctrlKey ){
+      if( !winrez ){
+        // doesnt work w/ opera?
+        Dom.Ev(a, 'paste', function(e){
+          var el = e.target||e;
+          gvar.wtrackY['before'] = window.scrollY
+          gvar.wtrackY['editor_overflow'] = (_TEXT.oflow != 'hidden');
+
+          window.setTimeout(function(){
+            setCols_Elastic(el, max);
+
             gvar.wtrackY['after'] = window.scrollY;
-            if(gvar.wtrackY['after'] != gvar.wtrackY['before'])
+            if(gvar.wtrackY['after'] != gvar.wtrackY['before']){
               window.scrollTo(0, gvar.wtrackY['before']);
-          }
-          setCols_Elastic(max);
-        });
-        setAttr('data-keyup', '1', $D('#'+tid));
+
+              if(!gvar.wtrackY['editor_overflow']){
+                _TEXT.init();
+                window.setTimeout(function(){ _TEXT.lastfocus() }, 222);
+              }
+            }
+          }, 10);
+          return true;
+        }, false);
+
+        Dom.Ev(a, 'keyup', function(e){ setCols_Elastic((e.target||e), max) });
       }
-      a.style.setProperty('visibility', 'hidden');
-      setCols_Elastic(max); //110
+      setCols_Elastic(a, max); //110
     },
     setRows_Elastic: function(max){
       var a = Dom.g(gvar.tID), c=a.cols, b=a.value.toString(), h;
-      b = b.replace(/(?:\r\n|\r|\n)/g,"\n");
-      for(var d=2, e=0, f=0; f<b.length; f++){
+      b=b.replace(/(?:\r\n|\r|\n)/g,"\n");
+      for(var d=2,e=0,f=0;f<b.length;f++){
         var g=b.charAt(f);e++;if(g=="\n"||e==c){d++;e=0}
       }
-      h=(d*14); a.setAttribute("rows",d); a.style.height = h+"pt";
+      h=(d*14); a.setAttribute("rows",d); a.style.height=h+"pt";
       _TEXT.oflow = (max && (d*14>(max-130)) ? 'auto':'hidden');
       a.style.setProperty('overflow', _TEXT.oflow, 'important');
       a.style.setProperty('visibility', 'visible');
@@ -568,12 +594,14 @@
             ret+=c;
           return ret;
         })('#');
-        setAttr('disabled', 'disabled', el);
+        //setAttr('disabled', 'disabled', el);
+        setAttr('readonly', 'readonly', el);
         _TOGGLER.gnotice(false, '', $D('.g_notice', $D('#wrp_cpcy'), 1));
       }
       else{
         el.value = '';
-        el.removeAttribute('disabled');
+        //el.removeAttribute('disabled');
+        el.removeAttribute('readonly');
         el.focus();
       }
       showhide($D('#recaptcha_image'), !flag);
@@ -690,7 +718,7 @@
       +'<fieldset>'
       +'<div class="in-txt liner" id="wrp_title">'
       + '<input type="text" name="title" maxlength="85" placeholder="Title" />'
-      + '<span class="Qxc tgctr" style="display:none;">&times;</span>'
+      + '<span class="Qxc tgctr" style="display:none;" title="Clear Title">&times;</span>'
       + '<span class="Qct tgctr btn_stg'+(gvar.settings.toggle_menus ? ' active':'')+'" title="Toggle Menus"></span>'
       +'</div>'
       +'<div class="in-txt liner" id="wrp_control" '+(gvar.settings.toggle_menus ? '' : 'style="display:none;"')+'>'
@@ -699,7 +727,7 @@
 
       +'<div class="in-txt liner" id="wrp_msg">'
       + '<textarea name="message" id="'+gvar.tID+'" placeholder="Body"></textarea>'
-      + '<span class="QxM tgctr" style="display:none;">&times;</span>'
+      + '<span class="QxM tgctr" style="display:none;" title="Clear Editor">&times;</span>'
       + '<div class="chr">'
       + '<span class="stts btn bling" style="display:none;"><i class="throb"></i> submitting..</span>'
       + '<input readonly="readonly" disabled="disabled" size="3" value="10000" id="txtLen" />'
@@ -714,14 +742,14 @@
 
       + '<label class="cpcy-title">Verification</label>'
       + '<span class="tgctr btn btn-thr"><i class="throb"></i> </span>'
-      + '<span class="Qcp tgctr">&times;</span>'
+      + '<span class="Qcp tgctr" title="Close">&times;</span>'
       + '<div class="mqr-cpcy">' + rSRC.getCUSTOM_ReCapcay() + '</div>'
       +'</div>' // in_cpcy_boxed
 
       +'<div class="in_balonbox" id="wrp_act" style="display:none;">'
       + rSRC.getBtBaloon()
       + '<label class="box-title">Saving</label>'
-      + '<span class="Qsv tgctr">&times;</span>'
+      + '<span class="Qsv tgctr" title="Close">&times;</span>'
       + '<div class="box-cnt"><i class="throb-bl"></i>Loading...</div>'
       +'</div>'
 
@@ -736,7 +764,8 @@
       +  '<input type="submit" id="sbutton" class="btn '+(gvar.user.isDonatur ? 'blue' : 'btn-red')+'" value="Post Reply" name="sbutton" />'
       +  '<input type="button" id="cbutton" class="btn btn-grey" value="Cancel" />'
       +  '<div class="sayapkanan liner">'
-      +   '<input id="chk_fixups" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+'/><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+      +   '<input id="chk_fixups" type="checkbox" '+(gvar.settings.widethread ? 'checked="checked"':'')+' />'
+      +   '<label title="Wider Thread" for="chk_fixups">Expand</label>'
       +  '</div>'
       + '</div>'
       +'</div>' // r
@@ -888,6 +917,7 @@
       +'#site-header.fx #site-nav, .fx hr.sxln{width:620px;position:fixed;top:0;z-index:99999;}'
       +'#site-header.fx hr.sxln{top:29px;height:2px;}'
       +'#site-header.fx .main-h.r{margin-top:30px}'
+      +'#site-header #donatflag{color:#F00000!important;margin-left:2px;}'
 
       +'.mQR .throb-bl{background:url('+BTN.throbber_gif+') no-repeat;display:inline-block;width:16px; height:16px;margin-right:5px;}'
       +'.mQR .legend, .mQR .form-input{margin-bottom:0;border-bottom:0;}'
@@ -948,7 +978,7 @@
       +'.mqr-cpcy .recaptcha-auth {margin-top:4px; padding:5px 0;}'
       +'.mqr-cpcy .recaptcha-auth input[type="checkbox"] + label{display:inline-block;vertical-align:middle;height:14px;}'
       +'.mqr-cpcy .recaptcha-auth label{margin:1px 0 0 5px;}'
-      +'.mqr-cpcy #recaptcha_response_field[disabled="disabled"]{color:#ccc;}'
+      +'.mqr-cpcy #recaptcha_response_field[readonly="readonly"]{color:#ccc;}'
 
       +'.qplugin-togler{float:right!important;margin:-1px -5px 0 0;border:0!important;}'
       +'.qplugin{margin-right:20px;float:right; text-align:right!important; width:100px;min-width:20px;min-height:10px;}'
@@ -959,8 +989,8 @@
       +'.mQR .qplugin .vbmenu_popup .osize:hover{background: #ccc;cursor: pointer;}'
 
       +'.mQR .sayapkanan{position:absolute; right:0;text-align:right;margin:0;margin-top:-5px;padding:5px;display:inline-block;}'
-      +'.mQR .sayapkanan input[type="checkbox"]{display:inline;}'
-      +'.mQR .sayapkanan a{display:inline-block;outline:none;text-decoration:none;margin-left:2px;}'
+      +'.mQR .sayapkanan input[type="checkbox"]{height:14px;width:14px;display:inline;color:#333;padding:1px;-webkit-appearance:checkbox;}'
+      +'.mQR .sayapkanan label{margin-left:2px;}'
 
       +'.sxln{margin:0;padding:0;border:0;height:1px;background:-webkit-gradient(linear,left top,right top,color-stop(0%,hsla(0,0%,0%,.04)),color-stop(50%,hsla(0,0%,0%,.35)),color-stop(100%,hsla(0,0%,0%,.04)));background:-webkit-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-moz-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-ms-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-o-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%)}​'
       // #f9f9f9
@@ -971,9 +1001,12 @@
       +'::-webkit-input-placeholder{color:#999!important;}:-moz-placeholder{color:#999!important;}:-ms-input-placeholder{color:#999!important;}'
 
       /* night-mode */
-      +'body.nightmode .mQR .qrtitle{background:#444;text-shadow:1px 1px #808080;}'
+      +'body.nightmode .mQR .qrtitle{background:#444;text-shadow:1px 1px #737373;}'
       +'body.nightmode .mQR .qrtitle.editmode{background:#093858;}'
       +'body.nightmode .mQR .in-txt input[type="text"], body.nightmode .mQR .in-txt #'+gvar.tID+'{color:#f0f0f0;}'
+      +'body.nightmode .mQR .tgctr:hover{color:#eee!important;}'
+      +'body.nightmode .mQR #txtLen{color:#333;}'
+      +'body.nightmode .mQR #txtLen.ffc{color:#999!important;}'
       +'body.nightmode .mQR #wrp_control {background:#666;}'
       +'body.nightmode .mktH ul ul li:hover{background:none;}'
       +'body.nightmode .mktH ul ul, body.nightmode .mktH ul ul a{background:#333;}'
@@ -1073,6 +1106,8 @@
     gvar.offsetEditorHeight = 160; // margin top Layer
     gvar.settings = gvar.reqPID = gvar.tkset = {};
 
+    ApiBrowserCheck();
+
     gvar.user = currentUser();
 
     getSettings();
@@ -1104,6 +1139,7 @@
 
     settings.widethread = (getValue(KS+'WIDE_THREAD') == '1');
     settings.tmp_text = getValue(KS+'TMP_TEXT');
+    settings.tmp_title = getValue(KS+'TMP_TITLE');
 
     settings.toggle_menus = (getValue(KS+'TOGGLE_MENUS') == '1');
     settings.toggle_plugins = (getValue(KS+'TOGGLE_PLUGINS') == '1');
@@ -1122,7 +1158,7 @@
 
       name: null,
       id: null
-    }, node, cucok;
+    }, node, cucok, el;
 
     if(user.isLogedin){
       node = $D('.//a[contains(@href,"profile/")]', $D('#site-nav'), 1);
@@ -1130,6 +1166,9 @@
 
       if( cucok = /\bprofile\/([\d]+)/i.exec(getAttr('href', node)) )
         user.id = cucok[1];
+
+      el = createEl('span',{id:'donatflag'});
+      append(node, el);
     }
     return user;
   }
@@ -1214,13 +1253,29 @@
 
     if( gvar.settings.widethread )
       GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
+
     if( gvar.settings.tmp_text ){
       _TEXT.set( gvar.settings.tmp_text );
-
       delete gvar.settings.tmp_text;
       node = KS+'TMP_TEXT';
       setValue(node, '');
       delValue(node);
+
+      if( gvar.settings.tmp_title ){
+        _TEXT.set_title( gvar.settings.tmp_title );
+        delete gvar.settings.tmp_title;
+        node = KS+'TMP_TITLE';
+        setValue(node, '');
+        delValue(node);
+      }
+    }
+
+    node = $D('#donatflag');
+    if( gvar.user.isDonatur ){
+      node.innerHTML = '[$]';
+    }
+    else{
+      Dom.remove(node);
     }
 
 
@@ -1287,14 +1342,6 @@
       showhide(e, false);
     });
 
-    Dom.Ev($D('#recaptcha_reload_btn'), 'click', function(){
-      _TOGGLER.auth_noneed_cpcy(false);
-    });
-
-    Dom.Ev($D('#recaptcha_stg'), 'click', function(){
-      _TOGGLER.whattheheck();
-    });
-
     Dom.Ev($D('.//div[@id="wrp_title"]/input[@type="text"]',null,1), 'keyup', function(e){
       e=e.target||e;
       var tgt = $D('.Qxc',null,1);
@@ -1304,29 +1351,48 @@
         showhide(tgt, false);
     });
 
+    // editor
     node = $D('//div[@id="wrp_msg"]/textarea',null,1);
-    Dom.Ev(node, 'keyup', function(e){
-      e = e.target||e;
-      _TOGGLER.clear_editor( e.value.length > 0 );
-    });
     Dom.Ev(node, 'focus', function(){ _TEXTCOUNT.init('#txtLen') });
     Dom.Ev(node, 'blur', function(){ _TEXTCOUNT.dismiss() });
+    Dom.Evs(node, 'paste', function(e){
+      window.setTimeout(function(){ _TOGGLER.clear_editor( (e.target||e).value.length > 0 ) }, 100);
+    });
+    Dom.Evs(node, 'keyup', function(e){ _TOGGLER.clear_editor( (e.target||e).value.length > 0 ) });
+
+    Dom.Ev(node, 'keydown', function(ev){
+      var asocKey, A = ev.keyCode||ev.keyChar;
+      asocKey={
+         '83':'sbutton'   // [S] Submit post
+
+        ,'66' : 'bold' // B
+        ,'73' : 'italic' // I
+        ,'85' : 'underline' // U
+
+        ,'69' : 'center' // E
+        ,'76' : 'left' // L
+        ,'82' : 'right' // R
+      };
+      if(ev.ctrlKey){
+        if( [13, 66,73,85, 69,76,82].indexOf(A) != -1 ){
+          do_an_e(ev);
+          if(A===13)
+            SimulateMouse($D('#sbutton'), 'click', true);
+          else
+            _TEXT.insert.tagBIU( asocKey[A] );
+        }
+      }
+    });
     gvar.maxH_editor = ( parseInt( getHeight() ) - gvar.offsetEditorHeight );
     _TEXT.setElastic(gvar.maxH_editor);
 
-    Dom.Ev($D('#chk-auth'), 'change', function(e){
-      var ischecked = _TOGGLER.auth_noneed_cpcy();
-
-      // get its value first then store to localstorage..
-      setValueForId(gvar.user.id, String(ischecked ? '1':'0'), 'AUTHORIZED_USERS');
-      gvar.user.isPreAuthorized = ischecked;
-    });
     // btn-cancel edit
     Dom.Ev($D('#cbutton'), 'click', function(e){
       gvar.edit_mode = null;
       toggle_qrmode(false);
     });
 
+    // close in_balonbox of saving /updating (editmode)
     Dom.Ev($D('.Qsv',null,1), 'click', function(e){
       _TOGGLER.baloon_save()
     });
@@ -1334,12 +1400,52 @@
     !gvar.user.isDonatur && 
     window.setTimeout(function(){
       (node = $D('#hidrecap_btn'))
-        && SimulateMouse(node, 'click', true);  
+        && SimulateMouse(node, 'click', true);
 
+      Dom.Ev($D('#recaptcha_reload_btn'), 'click', function(){
+        _TOGGLER.auth_noneed_cpcy(false);
+      });
+      Dom.Ev($D('#recaptcha_stg'), 'click', function(){
+        _TOGGLER.whattheheck();
+      });
       // close capcay
       Dom.Ev($D('.Qcp',null,1), 'click', function(){
         _TOGGLER.showhide_capcay();
       });
+
+      Dom.Ev($D('#chk-auth'), 'change', function(e){
+        var ischecked = _TOGGLER.auth_noneed_cpcy();
+        setValueForId(gvar.user.id, String(ischecked ? '1':'0'), 'AUTHORIZED_USERS');
+        gvar.user.isPreAuthorized = ischecked;
+      });
+
+      var handleKey = function(ev){
+        var el, A = ev.keyCode||ev.keyChar;
+        el = ev.target||ev;
+        if( [9,27, 33,34].indexOf(A) != -1 ){
+          switch(A){
+            case 9: $D('#sbutton').focus(); break;
+            case 27: _TOGGLER.showhide_capcay(false); break;
+            case 33: case 34:
+              if(getAttr('id', el) == 'recaptcha_response_field')
+                SimulateMouse($D('#recaptcha_reload_btn'), 'click', true);
+              else
+                return !1;
+            break;
+          }
+          return 1;
+        }
+        return !1;
+      };
+      Dom.Ev($D('#chk-auth'), 'keydown', function(ev){
+        if( handleKey(ev) )
+          do_an_e(ev);
+      });
+      Dom.Ev($D('#recaptcha_response_field'), 'keydown', function(ev){
+        if( handleKey(ev) )
+          do_an_e(ev);
+      });
+
       baloon_positioning();
     }, 1500);
 
@@ -1371,7 +1477,7 @@
     if( node = $D('#mqrform') ){
       setAttr('action', gvar.act_uri, node);
       Dom.Ev(node, 'submit', function(e){
-        var rrf, elcpcy, tgt, el;
+        var rrf, rrfvalue, elcpcy, tgt, el;
         do_an_e(e);
 
         el = $D('#'+gvar.tID);
@@ -1409,7 +1515,8 @@
             addClass('blue', tgt);
           }
           else{
-            if( rrf && !rrf.value ){
+            rrfvalue = (rrf ? trimStr(rrf.value) : !1);
+            if( !rrfvalue ){
               _TOGGLER.response_field(false, true);
             }
             else{
@@ -1537,7 +1644,10 @@
 
       // in the end add the class to flaging
       addClass('events', par);
-    }
+    } // mktH
+
+    // shortcut
+
   } // end -eventsController
 
   function build_fetch_url(e, pattern){
@@ -1600,6 +1710,7 @@
       alert('You need to insert capcay to post!\nPage will be reloaded now.');
 
       setValue(KS+'TMP_TEXT', String($D('#'+gvar.tID).value));
+      setValue(KS+'TMP_TITLE', String($D('//div[@id="wrp_title"]/input[@name="title"]',null,1).value));
       location.reload(false);
       return !1;
     }
@@ -1941,15 +2052,14 @@
   }
   // clean-up fetched post
   function unescapeHtml(text){
-     if(!text) return '';
-     var temp = createEl('div',{},text);
-     var cleanRet='';
-     for(var i in temp.childNodes){
-       if(typeof(temp.childNodes[i])!='object' || isUndefined(temp.childNodes[i].nodeValue)) continue;
-       cleanRet += temp.childNodes[i].nodeValue;
-     }
-     temp.removeChild(temp.firstChild);
-     return cleanRet;
+    if(!text) return '';
+    var cleanRet = '', temp = createEl('div',{},text);
+    for(var i in temp.childNodes){
+      if(typeof(temp.childNodes[i])!='object' || isUndefined(temp.childNodes[i].nodeValue)) continue;
+      cleanRet += temp.childNodes[i].nodeValue;
+    }
+    temp.removeChild(temp.firstChild);
+    return cleanRet;
   }
   function showhide(obj, show, isImportant){
     if(isUndefined(obj) || "object" != typeof obj || (obj && !obj.style)) return;
@@ -2150,7 +2260,62 @@
       return node;
   }
   function createTextEl(txt){
-     return document.createTextNode(txt);
+    return document.createTextNode(txt);
+  }
+  // play safe with Opera;
+  //=== BROWSER DETECTION / ADVANCED SETTING
+  //=============snipet-authored-by:GI-Joe==//
+  function ApiBrowserCheck() {
+    //delete GM_log; delete GM_getValue; delete GM_setValue; delete GM_deleteValue; delete GM_xmlhttpRequest; delete GM_openInTab; delete GM_registerMenuCommand;
+    if(typeof(unsafeWindow)=='undefined') { unsafeWindow=window; }
+    if(typeof(GM_log)=='undefined') { GM_log=function(msg) { try { unsafeWindow.console.log('GM_log: '+msg); } catch(e) {} }; }
+    
+    var needApiUpgrade=false;
+    if(window.navigator.appName.match(/^opera/i) && typeof(window.opera)!='undefined') {
+      needApiUpgrade=true; gvar.isOpera=true; GM_log=window.opera.postError; clog('Opera detected...',0);
+    }
+    if(typeof(GM_setValue)!='undefined') {
+      var gsv; try { gsv=GM_setValue.toString(); } catch(e) { gsv='.staticArgs.FF4.0'; }
+      if(gsv.indexOf('staticArgs')>0) {
+        gvar.isGreaseMonkey=true; gvar.isFF4=false;
+        clog('GreaseMonkey Api detected'+( (gvar.isFF4=gsv.indexOf('FF4.0')>0) ?' >= FF4':'' )+'...',0); 
+      } // test GM_hitch
+      else if(gsv.match(/not\s+supported/)) {
+        needApiUpgrade=true; gvar.isBuggedChrome=true; clog('Bugged Chrome GM Api detected...',0);
+      }
+    } else { needApiUpgrade=true; clog('No GM Api detected...',0); }
+    
+    gvar.noCrossDomain = (gvar.isOpera || gvar.isBuggedChrome);
+    if(needApiUpgrade) {
+      //gvar.noCrossDomain = gvar.isBuggedChrome = 1;
+      clog('Try to recreate needed GM Api...',0);
+      //OPTIONS_BOX['FLASH_PLAYER_WMODE'][3]=2; OPTIONS_BOX['FLASH_PLAYER_WMODE_BCHAN'][3]=2; // Change Default wmode if there no greasemonkey installed
+      var ws=null; try { ws=typeof(unsafeWindow.localStorage) } catch(e) { ws=null; } // Catch Security error
+      if(ws=='object') {
+        clog('Using localStorage for GM Api.',0);
+        GM_getValue=function(name,defValue) { var value=unsafeWindow.localStorage.getItem(GMSTORAGE_PATH+name); if(value==null) { return defValue; } else { switch(value.substr(0,2)) { case 'S]': return value.substr(2); case 'N]': return parseInt(value.substr(2)); case 'B]': return value.substr(2)=='true'; } } return value; };
+        GM_setValue=function(name,value) { switch (typeof(value)) { case 'string': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'S]'+value); break; case 'number': if(value.toString().indexOf('.')<0) { unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'N]'+value); } break; case 'boolean': unsafeWindow.localStorage.setItem(GMSTORAGE_PATH+name,'B]'+value); break; } };
+        GM_deleteValue=function(name) { unsafeWindow.localStorage.removeItem(GMSTORAGE_PATH+name); };
+      } else if(!gvar.isOpera || typeof(GM_setValue)=='undefined') {
+        clog('Using temporarilyStorage for GM Api.',0); gvar.temporarilyStorage=new Array();
+        GM_getValue=function(name,defValue) { if(typeof(gvar.temporarilyStorage[GMSTORAGE_PATH+name])=='undefined') { return defValue; } else { return gvar.temporarilyStorage[GMSTORAGE_PATH+name]; } };
+        GM_setValue=function(name,value) { switch (typeof(value)) { case "string": case "boolean": case "number": gvar.temporarilyStorage[GMSTORAGE_PATH+name]=value; } };
+        GM_deleteValue=function(name) { delete gvar.temporarilyStorage[GMSTORAGE_PATH+name]; };
+      }
+      if(typeof(GM_openInTab)=='undefined') { GM_openInTab=function(url) { unsafeWindow.open(url,""); }; }
+      if(typeof(GM_registerMenuCommand)=='undefined') { GM_registerMenuCommand=function(name,cmd) { GM_log("Notice: GM_registerMenuCommand is not supported."); }; } // Dummy
+      if(!gvar.isOpera || typeof(GM_xmlhttpRequest)=='undefined') {
+        clog('Using XMLHttpRequest for GM Api.',0);
+        GM_xmlhttpRequest=function(obj) {
+        var request=new XMLHttpRequest();
+        request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
+        request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
+        try { request.open(obj.method,obj.url,true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
+        if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
+        request.send(obj.data); return request;
+      }; }
+    } // end needApiUpgrade
+    GM_getIntValue=function(name,defValue) { return parseInt(GM_getValue(name,defValue),10); };
   }
   // ----my ge-debug--------
   function show_alert(msg, force) {
