@@ -9,12 +9,12 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.4
-// @dtversion      1212304104
-// @timestamp      1356801568918
+// @version        4.1.0.5
+// @dtversion      1301024105
+// @timestamp      1357140858497
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
-// @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
+// @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include        http://imageshack.us/*
 // @include        http://*.imageshack.us/*
 // @include        http://imgur.com/*
@@ -29,6 +29,13 @@
 //
 // -!--latestupdate
 //
+// v4.1.0.5 - 2013-01-02 . 1357140858497
+//   event click on raise_error
+//   fix edit & behaviour in Groupee. Thx=[S4nJi,coolkips]
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.1.0.4 - 2012-12-30 . 1356801568918
 //   fix qq-parser spoiler when wrapped with any tags; Thx[p1nky,coolkips]
 //   +image-uploader (imagetoo,uploadimage,cubeupload)
@@ -37,9 +44,6 @@
 //   +edit post additional fields;
 //   fix qq-parser youtube tag. Thx=[IbrahimKh]
 //   get rid quot (") on wrap/parsing tags (font,size,color). Thx[coolkips]
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.1.0 - 2012-12-09 . 1355016895853
 //   +text counter settings
@@ -57,11 +61,6 @@
 //   fix quick-quote parser [align,size,font,indent]
 //   deprecate toCharRef. Thx=[mangudel]
 //
-// v4.0.9.1 - 2012-11-16 . 1353050635576
-//   fix inside iframe check
-//   get rid of .baloon-track on expand-mode
-//   avoid editor get focused on click multi-quote Thx=[Reza12MQ]
-//
 //
 // v0.1 - 2010-06-29
 //	 Init
@@ -76,12 +75,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.4';
+gvar.sversion = 'v' + '4.1.0.5';
 gvar.scriptMeta = {
-	timestamp: 1356801568918 // version.timestamp
-	//timestamp: 999 // version.timestamp for test update
-
-	,dtversion: 1212304104 // version.date
+	 //timestamp: 999 // version.timestamp for test update
+	 timestamp: 1357140858497 // version.timestamp
+	,dtversion: 1301024105 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -119,7 +117,7 @@ var OPTIONS_BOX = {
  
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
- ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -s4nji
+ ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -S4nJi
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
@@ -731,7 +729,7 @@ var rSRC = {
 			+'<div class="st_contributor" style="height:190px; vertical-align:top; overflow:auto; border:1px solid rgb(228, 228, 228); clip: rect(auto, auto, auto, auto);">'
 			+'<b>Contributors</b><br>'
 			+'<div class="contr_l" style="width:45%; float:left;">'
-			+'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>'
+			+'S4nJi<br>riza_kasela<br>p1nk3d_books<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>'
 			+'Rh354<br>drupalorg<br>'
 			+'</div>'
 			+'<div class="contr_r" style="width:45%; float:left;">'
@@ -874,7 +872,7 @@ var rSRC = {
 	},
 
 	/*
-	 * Livebeta Widefix -by s4nji
+	 * Livebeta Widefix -by S4nJi
 	 * userstyles.org/styles/68408
 	 */
 	getCSSWideFix: function(){
@@ -1384,16 +1382,11 @@ var _BOX = {
 					
 					$('#box_preview').css('max-height', mH + 'px');
 					
-					if(!valid){						
-						msg = 'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>';
-						func = function(){
-							$('#box_preview').html('<div class="qrerror">'+msg+'</div>');
-						};
-						_NOFY.btnset = false;
-						_NOFY.init({mode:'error', msg:msg, cb:func});
+					if(!valid){
 						
+						_NOFY.raise_error(data);
+
 					}else{
-						
 						try{
 							sdata = data.replace(/\t/gm, " ").replace(/\s{2,}/gm,' ').replace(/(\r\n|\n|\r)/gm, '{{nn}}').replace(/\"/gm, '"').toString() + '\n\n';
 							
@@ -1463,12 +1456,11 @@ var _BOX = {
 
 						$('#box_prepost').focus().delay(1200);
 					}
-					
 				});
 			}catch(e){}
 		});
 	},
-	submit: function(){		
+	submit: function(){
 		if(!gvar.user.isDonatur && !gvar.edit_mode && gvar.thread_type!='group'){
 			$('#qr-recaptcha_response_field').val( $('#recaptcha_response_field').val() );
 			$('#qr-recaptcha_challenge_field').val( $('#recaptcha_challenge_field').val() );
@@ -1483,25 +1475,23 @@ var _BOX = {
 		
 		try{
 			clog('ignite post=' + _BOX.e.boxaction );
-			clog('query=' + JSON.stringify(query) )
+			clog('query=' + JSON.stringify(query) );
 			
 			gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
-				var parsed, cucok, sdata, is_error=false;
-				
+				valid = tokcap_parser(data);
+				var cucok, sdata;
 				try{
 					// warning this may trigger error
 					sdata = data.replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "").replace(/\"/g, '"').toString();
-					
+
 				}catch(e){
 					clog('decodeURI in submit post failed');
 				}
 				clog('submited sdata:' + sdata );
-				parsed = sdata.substring(0, sdata.indexOf(gvar.eof));
 
 				var args, txt_msg, re;
-				// determine any error raises
+				// determine is there any specific error raised
 				if( cucok = />Error<\/h3>(?:<ul>|\s*|<li>)+([^<]+)/i.exec(sdata) ){
-					is_error = 1;
 					gvar.postlimit = false;
 					re = new RegExp('ry\\s*again\\s*in\\s*(\\d+)\\s*sec', "");
 
@@ -1533,21 +1523,19 @@ var _BOX = {
 							args.btnset = false;
 						_NOFY.init(args);
 					}
-					
 				}else if( cucok = /[\'\"]err-msg[\'\"]+(?:[^>]+)?>([^<]+)/i.exec(sdata) ){
 					// find recapcay error | this only happen on nondonatur (assumed)
-					is_error = 1;
-
 					_BOX.postloader(false);
 					$('#hidrecap_reload_btn').click();
 					$('#box_response_msg').html( cucok[1] ).removeClass('ghost').addClass('g_notice').addClass('qrerror').show();
 					$('#recaptcha_response_field').val('').addClass('twt-glowerror');
+				}else if( !valid ){
+					close_popup();
+					_NOFY.raise_error(data);
 				}
-				// err-msg =====
+				// endcase -err-msg =====
 
-				
-				if( !is_error ){
-					
+				else {
 					if( cucok = /<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i.exec(sdata) ){
 						// try to flush draft, before reload
 						setValue(KS+'TMP_TEXT', '', function(){
@@ -1557,15 +1545,12 @@ var _BOX = {
 						});
 						return;
 					}else{
-						var args, msg  = 'redirect link not found, post might fail. please try again.';
-						clog(msg);
-						args = {mode:'error', msg:cucok };
-						if(!gvar.edit_mode) args.btnset = false;
+						txt_msg  = 'redirect link not found, post might fail. please try again.';
+						clog(txt_msg);
+						args = {mode:'error', msg:txt_msg, btnset:false };
 						_NOFY.init(args);
 					}
 				}
-				// update token
-				tokcap_parser(data);
 			});
 		}catch(e){};
 	},
@@ -1735,8 +1720,7 @@ var _AJAX = {
 				
 				// is_error checking
 				if(!valid){
-					var func = function(){};
-					_NOFY.init({mode:'error', msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>', cb:func});
+					_NOFY.raise_error(data);
 					
 				}else{
 					parsed = sdata.substring(0, sdata.indexOf('</textar'));
@@ -1801,10 +1785,9 @@ var _AJAX = {
 			_AJAX.ajaxPID('edit');
 			if(typeof(cb_before)=='function') cb_before();
 			gvar.edit_mode = 1;
-			var uri, pos, href; 
+			var uri, href; 
 			href = trimStr( obj.attr('href').toString() );
-			pos = href.indexOf('edit_post/');
-			uri = ( gvar.domain + href.substring(pos, href.length) );
+			uri = (href.indexOf(gvar.domain)==-1 ?gvar.domain.substring(0, gvar.domain.length-1) : '') + href;
 			
 			gvar.sTryRequest = $.get( uri, function(data) {
 				
@@ -1825,9 +1808,7 @@ var _AJAX = {
 				
 				// is_error checking
 				if(!valid){
-					var func = function(){};
-					_NOFY({mode:'error', msg:'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>', cb:func});
-					
+					_NOFY.raise_error(data);
 				}else{
 					$('#formform')
 						.attr('action', uri)
@@ -1878,7 +1859,7 @@ var _AJAX = {
 
 						// check if fjb and is first post
 						el = $('select[name="prefixid"]', $(sdata));
-						if( gvar.classbody == 'fjb' && el.length ){
+						if( gvar.classbody.match(/\bfjb\b/i) && el.length ){
 							ttitle = {
 								 tipe: 		el.find('option[selected="selected"]').val()
 								,harga: 	$('input[name="harga"]:first', $(sdata)).val()
@@ -1887,6 +1868,9 @@ var _AJAX = {
 							};
 							clog('got fjbdetail = ' + JSON.stringify(ttitle) )
 							_TEXT.set_fjbdetail( ttitle );
+						}
+						else{
+							_TEXT.set_fjbdetail(null);
 						}
 						
 						// layouting ...
@@ -2005,33 +1989,41 @@ var _NOFY = {
 	cb		: null,
 	// ----
 	init: function( args ){
+		var _ME = this;
 		for(field in args){
 			if( !isString(field) ) continue;
-			_NOFY[ field.toString() ] = args[field];
+			_ME[ field.toString() ] = args[field];
 		}	
-		
+
 		clog('_NOFY inside :: ' + JSON.stringify(args) );
-		_NOFY.exec();
+		_ME.exec();
 	},
 	exec: function(mode){
-		var emsg = $('#notify_msg');
-		if(_NOFY.msg){
-			emsg.html(_NOFY.msg);
+		var _ME, emsg = $('#notify_msg');
+		_ME = this;
+		if( _ME.msg ){
+			emsg.html(_ME.msg);
+
+			// default dismiss of btn-dismiss class
+			if( $('#notify_msg .btn-dismiss').length && !$('#notify_msg .btn-dismiss').hasClass('events') )
+				$('#notify_msg .btn-dismiss').click(function(){ _ME.dismiss() });
 		}
 		else { // if(null == _NOFY.msg)
-			emsg.html('Unknown error, please <a id="qr_unknown_posterror" href="javascript:;">reload the page</a>');
-			$('#qr_unknown_posterror').click(function(){
-				setTimeout(function(){ location.reload(false) }, 50);
+			emsg.html('Unknown error, please <a class="btn-reload" href="javascript:;">reload the page</a>');
+			$('#notify_msg .btn-reload').click(function(){
+				window.setTimeout(function(){ location.reload(false) }, 50);
 			});
+
 			// this should be just here, avoid editor-focused on click multi-quote
 			close_popup(); 
+			_ME.btnset = false;
 		}
-		
+
 		//neutralizing
 		emsg.removeClass('qrerror');
 		$.each(['scancel_edit','quote_btnset'], function(){ $('#'+this).hide() });
-		
-		switch(_NOFY.mode){
+
+		switch(_ME.mode){
 			case "error":
 				emsg.addClass('qrerror');
 			break;
@@ -2042,12 +2034,63 @@ var _NOFY = {
 				$('#scancel_edit').show();
 			break;
 		}
-		if(!_NOFY.btnset)
+		if(!_ME.btnset)
 			$('.qr-m-panel').hide();
 		else
 			$('.qr-m-panel').show();
 		$('#notify_msg, #notify_wrap').show();
-		if(typeof(_NOFY.cb)=='function') _NOFY.cb();
+		if(typeof(_ME.cb)=='function') _ME.cb();
+	},
+	raise_error: function(data){
+		var _ME, func=null, _msg='';
+		_ME = this;
+
+		// session lost; invalid post?
+		if( data.match(/\byou\sdo\snot\shave\spermission\sto\sac/i) ||
+			data.match(/<div\s*class=[\'\"]login-form-(?:wrap|center)[\'\"]/i) 
+		){
+			_msg = 'You do not have permission to do this. <a class="btn-reload" href="javascript:;">Reload page?</a>';
+			func = function(){
+				if( !_AJAX.e.ajaxrun )
+					$('#box_preview').html('<div class="qrerror errorwrap">'+_msg+'</div>');
+
+				$('.btn-reload').each(function(){
+					$(this).click(function(){
+						window.setTimeout(function(){ location.reload(false) }, 50);
+					});
+				})
+			};
+		}
+		else if(data.match(/\bkepenuhan\b/i)){
+			// bad guessing, i knew.. x()
+			_msg = 'Kaskus Kepenuhan? <a class="btn-retry" '+(_AJAX.e.ajaxrun ? 'data-toretry="'+_AJAX.e.ajaxrun+'"' : '')+'href="javascript:;">Try Again</a> | <a class="btn-dismiss" href="javascript:;">Dismiss</a>';
+			func = function(){
+				if( !_AJAX.e.ajaxrun ){
+					$('#box_preview').html('<div class="qrerror errorwrap">'+_msg+'</div>');
+					$('.btn-retry').each(function(){
+						$(this).click(function(){ _BOX.preview() })
+					})
+				}
+				else{
+					$('#notify_msg .btn-retry:first').click(function(){
+						var toretry, $tgt, $par = $(this).closest('.col');
+						toretry = $(this).data('toretry');
+						if(toretry == 'edit'){
+							$tgt = $par.find('.user-tools a[href*="/edit_post/"]:first');
+							$tgt.length && $tgt.click();
+						}
+						else{
+							$('#squote_post').click();
+						}
+					})
+				}
+			};
+		}
+		else{
+			_msg = null;
+		}
+		_ME.btnset = false;
+		_ME.init({mode:'error', msg:_msg, cb:func});
 	},
 	dismiss: function(){
 		$('.qr-m-panel').show();
@@ -2098,15 +2141,20 @@ var _TEXT = {
 			$el.removeAttr('checked');
 	},
 	set_fjbdetail: function(data){
-		$('.ts_fjb-tags input[type="text"]').val(data['tags']);
-		$('.ts_fjb-price input[type="text"]').val(data['harga']);
-		$('.ts_fjb-type').find('option[selected="selected"]').removeAttr('selected');
-		$('.ts_fjb-type').find('option[value="'+data['tipe']+'"]').attr('selected', 'selected');
+		if(!data){
+			$('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').hide();
+		}
+		else{
+			$('.ts_fjb-tags input[type="text"]').val(data['tags']);
+			$('.ts_fjb-price input[type="text"]').val(data['harga']);
+			$('.ts_fjb-type').find('option[selected="selected"]').removeAttr('selected');
+			$('.ts_fjb-type').find('option[value="'+data['tipe']+'"]').attr('selected', 'selected');
 
-		$('.ts_fjb-kondisi').find('option[selected="selected"]').removeAttr('selected');
-		$('.ts_fjb-kondisi').find('option[value="'+data['kondisi']+'"]').attr('selected', 'selected');
+			$('.ts_fjb-kondisi').find('option[selected="selected"]').removeAttr('selected');
+			$('.ts_fjb-kondisi').find('option[value="'+data['kondisi']+'"]').attr('selected', 'selected');
 
-		$('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').show();
+			$('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').show();
+		}
 	},
 	set: function(value){
 		this.content = value;
@@ -2286,7 +2334,6 @@ var _TEXTCOUNT = {
 				 _tc.$target.find('.preload').show().text(' (+'+_tc.preload_length+')');
 			else
 				_tc.$target.find('.preload').hide();
-
 
 			_tc.$target = _tc.$target.find('.numero:first');
 			_tc.$target.text(_tc.count_it(_tc));
@@ -4607,11 +4654,18 @@ function tokcap_parser(page, mode){
 		clog('secondary result of page = ' + page)		
 	}
 	
+	/*
+	* never get through this page; nor token is exist there;
+	* assume it's alrite
+	*/
+	if(page.match(/<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i)){
+		return 1;
+	}
+	
 	var cucok, match, rets=[0,0];
 	if(cucok = /out\/\?\&hash=([^\'\"]+)/i.exec(page) ){
 		
 		clog('old securitytoken=' + gvar._securitytoken);
-		
 		//if( mode && mode!='quote' )
 		{
 			gvar._securitytoken = rets[1] = cucok[1];
@@ -4623,7 +4677,6 @@ function tokcap_parser(page, mode){
 			+'securitytoken onfield = ' + $('#qr-securitytoken').val()
 			+'\n'
 		);
-		
 	}else{
 		clog('Page is not containing securitytoken, update failed');
 		clog('sdata - page='+page);
@@ -4712,9 +4765,10 @@ function inteligent_width( mode ){
 	}, 10);
 }
 
-function clear_quoted(){
+function clear_quoted($el){
 	$('.multi-quote.blue').removeClass('blue').addClass('white');
 	$('#qr_remoteDC').click();
+	$el.length && $el.addClass('events');
 	_NOFY.dismiss();
 }
 
@@ -4724,14 +4778,15 @@ function precheck_quoted( injected ){
 		_NOFY.dismiss(); return;
 	}
 	cb_after = function(){
-		$('#sdismiss_quote').click(function(){ clear_quoted() });
+		$('#notify_msg .btn-dismiss').click(function(){ clear_quoted($(this)) });
 		var mq_ids = $("#tmp_chkVal").val().split(',');
 		$.each(mq_ids, function(){
 			if( !$('#mq_' + this).hasClass('blue') )
 				$('#mq_' + this).addClass('blue').removeClass('white');
 		});
 	};
-	_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" href="javascript:;">Dismiss</a>', cb:cb_after, btnset:true});
+	//_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" href="javascript:;">Dismiss</a>', cb:cb_after, btnset:true});
+	_NOFY.init({mode:'quote',msg:'You have selected one or more posts. <a id="sdismiss_quote" class="btn-dismiss" href="javascript:;">Dismiss</a>', cb:cb_after, btnset:true});
 }
 
 function close_popup(){
@@ -5207,12 +5262,13 @@ function eventsTPL(){
 	});
 	$('#squote_post').click(function(){
 		_AJAX.quote( $(this), function(){
-			var func = function(){
-				$('#dismiss_request').click(function(){ _NOFY.dismiss() });
+			func = function(){
+				gvar.sTryRequest && gvar.sTryRequest.abort();
 			};
-			_NOFY.init({msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
+			_NOFY.init({msg:'Fetching... <a class="btn-dismiss" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
 		}, function(){
-			clear_quoted();
+			var $him = $('#notify_msg .btn-dismiss');
+			clear_quoted($him);
 			_TEXT.lastfocus();
 		});
 	});
@@ -5816,9 +5872,12 @@ function start_Main(){
 				// ignite show..
 				$('#markItUpReply-messsage').show();
 				
+				var isInGroup = (gvar.thread_type == 'group');
 				$('.user-tools').each(function(idx){
-					if(gvar.thread_type == 'group')
+					if( isInGroup ){
 						$(this).closest('.row').attr('id', 'grpost_' + idx);
+						
+					}
 						
 					var qqid, entry_id = $(this).closest('.row').attr('id');
 					
@@ -5861,29 +5920,9 @@ function start_Main(){
 								_TEXT.lastfocus();
 						}else dothat( $(this) );
 					});
-					
-					// add-event to multi-quote
-					$(this).find('a[id^="mq_"]').click(function(ev){
-						if(gvar.sTry_canceling){
-							delete(gvar.sTry_canceling);
-							return;
-						}
-						if( gvar.edit_mode == 1 ){
-							if( _AJAX.edit_cancel(false) ){
-								window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
-							}else{
-								gvar.sTry_canceling = 1;
-								$(this).click();
-							}
-						}else{
-							window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
-						}
-						if(!$(this).hasClass(mq_class))
-							$(this).addClass(mq_class)
-					}).addClass(mq_class);
-					
+
 					// event for quick edit
-					$(this).find('a[href*="/edit_post/"]').each(function(){
+					$(this).find('a[href*="/edit_"]').each(function(){
 						$(this).click(function(ev){
 							do_an_e(ev);
 							_AJAX.edit( $(this), function(){
@@ -5898,8 +5937,34 @@ function start_Main(){
 							slideAttach( $(this) );
 						});
 					});
+					
+					if( !isInGroup ){
+						// add-event to multi-quote
+						$(this).find('a[id^="mq_"]').click(function(ev){
+							if(gvar.sTry_canceling){
+								delete(gvar.sTry_canceling);
+								return;
+							}
+							if( gvar.edit_mode == 1 ){
+								if( _AJAX.edit_cancel(false) ){
+									window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+								}else{
+									gvar.sTry_canceling = 1;
+									$(this).click();
+								}
+							}else{
+								window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+							}
+							if(!$(this).hasClass(mq_class))
+								$(this).addClass(mq_class)
+						}).addClass(mq_class);
+					}
 				});
 				// end each of user-tools
+
+				if( isInGroup ){
+					$('#mnu_add_title, .markItUpSeparator:first').hide();
+				}
 				
 				// kill href inside markItUpHeader
 				$('.markItUpHeader a').each(function(){
@@ -5912,7 +5977,6 @@ function start_Main(){
 				
 				eventsTPL();
 				// almost-done
-
 
 				if( trimStr(gvar.tmp_text) && gvar.settings.qrdraft ){
 					_DRAFT.switchClass('gbtn');
