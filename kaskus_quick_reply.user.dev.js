@@ -10,26 +10,27 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.5
-// @dtversion      1301024105
-// @timestamp      1357140858497
+// @dtversion      1303174105
+// @timestamp      1363517325942
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include        http://imageshack.us/*
 // @include        http://*.imageshack.us/*
+// @include        http://www.imgzzz.com/*
+// @include        http://cubeupload.com/*
+// @include        http://www.imagetoo.com/*
+// @include        http://imagetoo.com/*
 // @include        http://imgur.com/*
 // @include        http://imagevenue.com/*
-// @include        http://www.imgzzz.com/*
-// @include        http://www.imagetoo.com/*
-// @include        http://uploadimage.co.uk/*
-// @include        http://*.uploadimage.co.uk/*
-// @include        http://uploadimage.in/*
-// @include        http://*.uploadimage.in/*
-// @include        http://cubeupload.com/*
 //
 // -!--latestupdate
 //
-// v4.1.0.5 - 2013-01-02 . 1357140858497
+// v4.1.0.5 - 2013-03-17 . 1363517325942
+//   Fix multiquote (Chrome)
+//   Fix shortcut. Thx=[jocrong]
+//   reimplement simulateclick for do_click remotely
+//   deprecate uploader (uploadimage_uk, uploadimage_in)
 //   event click on raise_error
 //   fix edit & behaviour in Groupee. Thx=[S4nJi,coolkips]
 //
@@ -78,8 +79,8 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.5';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1357140858497 // version.timestamp
-	,dtversion: 1301024105 // version.date
+	 timestamp: 1363517325942 // version.timestamp
+	,dtversion: 1303174105 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -517,7 +518,7 @@ var rSRC = {
 			+ '</div>'
 
 			   // remote button to chkVal
-			+  '<input id="qr_chkval" type="button" style="display:none;" value="cv" />' 
+			+  '<input id="qr_chkval" type="button" style="display:none" value="cv" />' 
 			   // remote to check MultiQuote
 			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
 			   // remote button to delete-mQ
@@ -584,7 +585,7 @@ var rSRC = {
 
 		+'<div id="box_wrap" class="ycapcay">'
 		+(gvar.edit_mode ? 
-		 '' : '<div><label for="recaptcha_response_field" style="width:100%!important; float:none!important;">Prove you\'re not a robot</label></div>'
+		 '' : '<div><label for="recaptcha_response_field" style="width:100%!important; float:none!important;">'+(gvar.user.isDonatur ? 'Submit post...' : 'Prove you\'re not a robot') + '</label></div>'
 		 )
 		+ '<div id="box_response_msg" class="ghost"></div>'
 		+ '<div id="box_recaptcha_container" class="entry-content">'
@@ -897,13 +898,21 @@ var rSRC = {
 		+ 	'element, {theme:"custom", lang:"en", custom_theme_widget:"recaptcha_widget"});'
 		+ '}'
 		+'}'
+		+'function SimulateMouse(elem,event,preventDef) {'
+		+'  if("object" != typeof elem) return;'
+		+'  var evObj = document.createEvent("MouseEvents");'
+		+'  preventDef = ("undefined" != typeof preventDef && preventDef ? true : false);'
+		+'  evObj.initEvent(event, preventDef, true);'
+		+'  try{ elem.dispatchEvent(evObj) }'
+		+'  catch(e){ console && console.log && console.log("Error. elem.dispatchEvent is not function."+e) }'
+		+'}'
 		
 		+'var __mq="kaskus_multiquote", __tmp="tmp_chkVal";'
 		+'function deleteMultiQuote(){$.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
-		+'function chkMultiQuote(){var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); $("#qr_chkval").click() }'
-		+'chkMultiQuote();'
+		+'function chkMultiQuote(){var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
+		+'try{chkMultiQuote()}catch(e){alert(e)};'
 		+''
-		
+
 		+'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
 		+''
 		+''
@@ -1289,7 +1298,9 @@ var _BOX = {
 		$('body').addClass('hideflow');
 	},
 	boxEvents: function(){
-		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
+		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){
+			close_popup()
+		});
 		$('#box_preview').bind("scroll", function(){
 			var $par = $('#box_wrap');
 			if( $(this).scrollTop() === 0 )
@@ -1503,7 +1514,7 @@ var _BOX = {
 
 					if(!gvar.user.isDonatur){
 						_BOX.postloader(false);
-						$('#hidrecap_reload_btn').click();
+						do_click($('#hidrecap_reload_btn').get(0));
 						
 						if( gvar.postlimit ){
 							_CTDOWN.init(gvar.postlimit, '#rspbox_cntdown');
@@ -1526,7 +1537,7 @@ var _BOX = {
 				}else if( cucok = /[\'\"]err-msg[\'\"]+(?:[^>]+)?>([^<]+)/i.exec(sdata) ){
 					// find recapcay error | this only happen on nondonatur (assumed)
 					_BOX.postloader(false);
-					$('#hidrecap_reload_btn').click();
+					do_click($('#hidrecap_reload_btn').get(0));
 					$('#box_response_msg').html( cucok[1] ).removeClass('ghost').addClass('g_notice').addClass('qrerror').show();
 					$('#recaptcha_response_field').val('').addClass('twt-glowerror');
 				}else if( !valid ){
@@ -1614,7 +1625,7 @@ var _BOX = {
 		
 		if( false === gvar.user.isDonatur && !gvar.edit_mode && gvar.thread_type != 'group' ){
 			if( !isCloned )
-				$('#hidrecap_btn').click();
+				do_click($('#hidrecap_btn').get(0));
 			
 			gvar.sITryFocusOnLoad = gvar.$w.setInterval(function() {
 				var field = $('#recaptcha_response_field');
@@ -1625,7 +1636,9 @@ var _BOX = {
 				}
 				_BOX.attach_userphoto('#cont_button .qr_current_user');
 				// events
-				$('#recaptcha_instructions_image, #recaptcha_image').click(function(){ field.focus() });
+				$('#recaptcha_instructions_image, #recaptcha_image').click(function(){
+					field.focus()
+				});
 				$('#box_post').click(function(){
 					if(field.val()==""){
 						alert('Belum Masukin Capcay,...');
@@ -1636,10 +1649,12 @@ var _BOX = {
 				$(field).keydown(function(ev){
 					var A = ev.keyCode, ab=null;
 					if( A===13 ){ // mijit enter
-						$('#box_post').click(); ab=1;
+						do_click($('#box_post').get(0));
+						ab=1;
 						
 					}else if( (ev.altKey && A===82) || (A===33||A===34) ) { //** Alt+R(82) | Pg-Up(33) | Pg-Down(34)
-						$('#hidrecap_reload_btn').click(); ab=1;
+						do_click($('#hidrecap_reload_btn').get(0));
+						ab=1;
 					}
 					if( ab ) 
 						do_an_e(ev);
@@ -2006,14 +2021,15 @@ var _NOFY = {
 
 			// default dismiss of btn-dismiss class
 			if( $('#notify_msg .btn-dismiss').length && !$('#notify_msg .btn-dismiss').hasClass('events') )
-				$('#notify_msg .btn-dismiss').click(function(){ _ME.dismiss() });
+				$('#notify_msg .btn-dismiss').click(function(){
+					_ME.dismiss()
+				});
 		}
 		else { // if(null == _NOFY.msg)
 			emsg.html('Unknown error, please <a class="btn-reload" href="javascript:;">reload the page</a>');
 			$('#notify_msg .btn-reload').click(function(){
 				window.setTimeout(function(){ location.reload(false) }, 50);
 			});
-
 			// this should be just here, avoid editor-focused on click multi-quote
 			close_popup(); 
 			_ME.btnset = false;
@@ -2068,7 +2084,9 @@ var _NOFY = {
 				if( !_AJAX.e.ajaxrun ){
 					$('#box_preview').html('<div class="qrerror errorwrap">'+_msg+'</div>');
 					$('.btn-retry').each(function(){
-						$(this).click(function(){ _BOX.preview() })
+						$(this).click(function(){
+							_BOX.preview()
+						})
 					})
 				}
 				else{
@@ -2077,10 +2095,10 @@ var _NOFY = {
 						toretry = $(this).data('toretry');
 						if(toretry == 'edit'){
 							$tgt = $par.find('.user-tools a[href*="/edit_post/"]:first');
-							$tgt.length && $tgt.click();
+							$tgt.length && do_click($tgt.get(0));
 						}
 						else{
-							$('#squote_post').click();
+							do_click($('#squote_post').get(0));
 						}
 					})
 				}
@@ -2117,8 +2135,7 @@ var _TEXT = {
 	set_title: function(data){
 		$('.title-message').slideDown(1, function(){
 			$('.title-message #form-title').focus().val( data.text );
-			$('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).click();
-
+			do_click($('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).get(0));
 			data.text && $('#close_title').show();
 		});
 	},
@@ -2388,7 +2405,7 @@ var _CTDOWN = {
 				&& !$(box).find('#box_post').hasClass('jfk-button-disabled')
 			){
 				gvar.$w.setTimeout(function(){
-					$(box).find('#box_post').click();
+					do_click($(box).find('#box_post').get(0));
 				}, 500);
 			}
 		}
@@ -2432,7 +2449,9 @@ var _DRAFT= {
 			_DRAFT.title( blank_tmp ? '' : 'continue');
 			_DRAFT.switchClass( blank_tmp ? 'jfk-button-disabled' : 'gbtn');
 			_DRAFT.dsc.html( blank_tmp ? 'blank' : '<a href="javascript:;" id="clear-draft" title="Clear Draft">clear</a> | available');
-			$('#clear-draft').click(function(){ _DRAFT.clear() });
+			$('#clear-draft').click(function(){
+				_DRAFT.clear()
+			});
 			if( !blank_tmp ) return true;
 		}
 		return false;
@@ -2581,7 +2600,9 @@ var _UPL_ = {
 							var P=$(this), T = P.find('img'), tc='modal-dialog-title-close';
 							if( P.hasClass('event') ) return;
 
-							P.find('img').click(function(){ do_smile( $(this) ) });
+							P.find('img').click(function(){
+								do_smile( $(this) )
+							});
 							P.find('.'+tc).click(function(){
 								if(confirm('Agan yakin mau delete gambar ini?')){
 									$(this).closest('.preview-image-unit').remove();
@@ -2604,12 +2625,10 @@ var _UPL_ = {
 					+'<ifr'+'ame id="'+ ifname +'" src="http://'+ gvar.uploader[target]['src'] +'" style="width:100%; height:300px"></if'+'rame>'
 				;
 				$('#'+tgt).html( tpl );
-				
 				$('#ifrm_reload_'+target).click(function(){
 					var itgt = $(this).attr('id').replace(/ifrm_reload_/,''), _src = $(this).data('src');
 					$('#' + 'ifrm_' + gvar.upload_sel[itgt].replace(/\W/g,'') ).attr('src', 'http://' + _src);
 				});
-				
 			}
 		}
 		$('#' + tgt).parent().find('.content_uploader.curent').removeClass('curent').hide();
@@ -2716,9 +2735,9 @@ var _SML_ = {
 				_SML_.refresh_menus();
 				
 				if( $('#tbgrup_' + last_mod ).get(0) )
-					$('#tbgrup_' + last_mod ).click();
+					do_click($('#tbgrup_' + last_mod ).get(0));
 				else
-					$('#tbgrup_0').click();
+					do_click($('#tbgrup_0').get(0));
 			});
 		});
 		
@@ -2738,7 +2757,7 @@ var _SML_ = {
 			$('#manage_help, #manage_cancel, #custom_bottom, #custom_addgroup_container, #dv_menu_disabler').show();
 			$('#scustom_container, #title_group').hide();
 			$('#delete_grupname').hide();
-			$('#label_group').click();
+			do_click($('#label_group').get(0));
 			$('#scustom_todo').val('add');
 		});
 		// menus only
@@ -2806,9 +2825,9 @@ var _SML_ = {
 		}).keydown(function(ev){
 			if(ev.keyCode==13){
 				do_an_e(ev);
-				$('#manage_btn').click();
+				do_click($('#manage_btn').get(0));
 			}else if(ev.keyCode==27){
-				$('#manage_cancel').click()
+				do_click($('#manage_cancel').get(0));
 			}
 		});
 		
@@ -3017,7 +3036,7 @@ var _SML_ = {
 			var cGrp = $('#current_grup').val();
 			if( confirm('You are about to delete this Group.\n'+'Name: '+cGrp+'\n\nContinue delete this group?\n') ){
 				$('#scustom_todel').val( cGrp );
-				$('#manage_btn').click();
+				do_click($('#manage_btn').get(0));
 			}
 		});
 		
@@ -3045,10 +3064,14 @@ var _SML_ = {
 	
 	event_img: function(tgt, label){
 		$(tgt + ' img').each(function(){
-			$(this).click(function(){ do_smile( $(this) ) })
+			$(this).click(function(){
+				do_smile( $(this) )
+			})
 		});
 		$(tgt + ' span').each(function(){
-			$(this).click(function(){ do_smile( $(this) ) })
+			$(this).click(function(){
+				do_smile( $(this) )
+			})
 		});
 		_SML_.setClassEvents(label);
 	},
@@ -3085,7 +3108,7 @@ var _SML_ = {
 					
 					_SML_.init_scustom(target, smilies);
 					_SML_.event_scustom();
-					$('#tbgrup_0').click();
+					do_click($('#tbgrup_0').get(0));
 				}
 				if( $('#' + target).html != '' )
 					$('#' + target).addClass('filled');
@@ -3113,9 +3136,9 @@ var _SML_ = {
 			$(bs + ', ' + bb).show();
 			$('.'+_SML_.sibl).hide();
 			if($('.box-smiley .goog-tab-selected').get(0))
-				$('.box-smiley .goog-tab-selected').click();
+				do_click($('.box-smiley .goog-tab-selected').get(0));
 			else
-				$('#tkecil').click();
+				do_click($('#tkecil').get(0));
 		}else{
 			$(bs + ', ' + bb).hide();
 		}
@@ -3211,7 +3234,8 @@ var _STG = {
 			});
 		});
 		$('#edit_tpl_cancel').click(function(){
-			$('#misc_autolayout').removeAttr('checked').click().removeAttr('checked')
+			do_click($('#misc_autolayout').get(0));
+			$('#misc_autolayout').removeAttr('checked');
 		});
 		$('#qr-box_setting .goog-tab').each(function(){
 			var id, $T = $(this);
@@ -3220,18 +3244,11 @@ var _STG = {
 				function(){$(this).removeClass('goog-tab-hover')}
 			);
 			$T.click(function(){
-				var $par = $(this).parent();
+				var $par = $(this).parent(), mode = $(this).attr('id').replace(/^tkbd-/, '');
 				$par.find('.goog-tab-selected').removeClass('goog-tab-selected');
 				$(this).addClass('goog-tab-selected');
-				$par.parent().find('.itemkbd').each(function(){
-					var $me = $(this);
-					if($me.hasClass('active')){
-						$me.removeClass('active').hide();
-					}
-					else{
-						$me.addClass('active').show();
-					}
-				});
+				$par.parent().find('.itemkbd').removeClass('active').hide();
+				$par.parent().find('#tabs-itemkbd-'+mode).addClass('active').show();
 			});
 		});
 		
@@ -3350,8 +3367,8 @@ var _STG = {
 							gvar.$w.setTimeout(function(){
 								getSettings( gvar.settings );
 								_STG.cold_boot();
-								
-								$('#modal_setting_box #box_cancel').click();
+
+								do_click($('#modal_setting_box #box_cancel').get(0));
 							}, 200);
 						});
 					});
@@ -3367,7 +3384,9 @@ var _STG = {
 				if( gvar.buftxt && raw == trimStr(gvar.buftxt) ){
 					$(btn).val('Nothing changed..');
 					if(gvar.buftxt) delete( gvar.buftxt );
-					window.setTimeout(function(){ $('#box_cancel').click() }, 750);
+					window.setTimeout(function(){
+						do_click($('#box_cancel').get(0));
+					}, 750);
 				}
 				else{
 					if( !confirm(''
@@ -3427,9 +3446,11 @@ var _STG = {
 			_STG.reset_settings()
 		});
 		
-		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
+		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){
+			close_popup()
+		});
 		
-		$('#qr-box_setting .curent').click();
+		do_click($('#qr-box_setting .curent').get(0));
 		$('#'+gvar.tID).blur();
 	},
 	cold_boot: function(){
@@ -3626,8 +3647,12 @@ var _CSS = {
 			else{
 				var mtitle = 'Your QR CSS not correctly loaded';
 				_CSS.dialog_html('<span rel="tooltip" title="'+mtitle+'" data-title="'+mtitle+'" data-placement="bottom">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
-				$('#'+_id).find('.'+_id+'-qrR').click(function(){ _CSS.dialog_retry() });
-				$('#'+_id).find('.'+_id+'-qrS').click(function(){ _STG.reset_settings() });
+				$('#'+_id).find('.'+_id+'-qrR').click(function(){
+					_CSS.dialog_retry()
+				});
+				$('#'+_id).find('.'+_id+'-qrS').click(function(){
+					_STG.reset_settings()
+				});
 				if( !gvar.isOpera )
 					$('#'+_id).find('*[rel="tooltip"]').tooltip();
 			}
@@ -3674,7 +3699,7 @@ var _UPD = {
 					_UPD.initiatePopup(r.responseText);
 					if( gvar.updateForced ){
 						close_popup();
-						$('#nav-wrapper .update').click();
+						do_click($('#nav-wrapper .update').get(0));
 					}
 				}else {
 					if(gvar.updateForced){
@@ -3720,7 +3745,9 @@ var _UPD = {
 		$('#content_update').addClass('help-content').html( tpl );
 	}
 	,event: function(){
-		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){ close_popup() });
+		$('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){
+			close_popup()
+		});
 		
 		$("#content_update h4").click(function(){
 			var isclose, cont, h4 = $(this);
@@ -3764,7 +3791,7 @@ var _UPD = {
 var _QQparse = {
 	init:function(calee, cb){
 		var par, mqs_id = [];
-		$('.multi-quote.blue').each(function(){
+		$('a[data-btn="multi-quote"].blue').each(function(){
 			par = $(this).closest('.row');
 			if( $(par).get(0) ) mqs_id.push( $(par).attr('id') );
 		});
@@ -3773,7 +3800,7 @@ var _QQparse = {
 			par = $(calee).closest('.row');
 			if( $(par).get(0) ) mqs_id.push( $(par).attr('id') );
 		}else{
-			$('#sdismiss_quote').click();
+			do_click($('#sdismiss_quote').get(0));
 		}
 		this.cb = cb;
 		this.mqs_id = mqs_id;
@@ -4388,6 +4415,17 @@ function entity_decode(S){
 function entity_encode(S){
 	return S.replace(/>/gm,'&gt;').replace(/</gm,'&lt;');
 }
+function SimulateMouse(elem,event,preventDef) {
+  if("object" != typeof elem) return;
+  var evObj = document.createEvent('MouseEvents');
+  preventDef = ( "undefined" != typeof preventDef && preventDef ? true : false);
+  evObj.initEvent(event, preventDef, true);
+  try{elem.dispatchEvent(evObj);}
+   catch(e){ clog('Error. elem.dispatchEvent is not function.'+e)}
+}
+function do_click(el){
+	SimulateMouse(el, 'click', true);
+}
 
 function createTextEl(a) {
 	return document.createTextNode(a)
@@ -4766,19 +4804,22 @@ function inteligent_width( mode ){
 }
 
 function clear_quoted($el){
-	$('.multi-quote.blue').removeClass('blue').addClass('white');
-	$('#qr_remoteDC').click();
+	$('a[data-btn="multi-quote"].blue').removeClass('blue').addClass('white');
+	do_click($('#qr_remoteDC').get(0));
 	$el.length && $el.addClass('events');
 	_NOFY.dismiss();
 }
 
 function precheck_quoted( injected ){
-	var cb_after, no_mqs = ($('.multi-quote.blue').length == 0);
+	var cb_after, no_mqs = ($('a[data-btn="multi-quote"].blue').length == 0);
+
 	if(!injected && no_mqs && $("#tmp_chkVal").val()==""){
 		_NOFY.dismiss(); return;
 	}
 	cb_after = function(){
-		$('#notify_msg .btn-dismiss').click(function(){ clear_quoted($(this)) });
+		$('#notify_msg .btn-dismiss').click(function(){
+			clear_quoted($(this))
+		});
 		var mq_ids = $("#tmp_chkVal").val().split(',');
 		$.each(mq_ids, function(){
 			if( !$('#mq_' + this).hasClass('blue') )
@@ -5012,7 +5053,7 @@ function eventsController(){
 	});
 	$("#fakefocus_icon").blur(function () {
 		if ($("#menu_posticon").is(":visible")) gvar.sTryEvent = gvar.$w.setTimeout(function () {
-			$("#pick_icon").click()
+			do_click($('#pick_icon').get(0));
 		}, 200)
 	});
 	
@@ -5201,7 +5242,7 @@ function eventsController(){
 						_SML_.toggletab(true);
 						
 						if(tgt_autoload && gvar.freshload)
-								$('div.goog-tab#t'+tgt_autoload).click();
+							do_click($('div.goog-tab#t'+tgt_autoload).get(0));
 						
 					}else{
 						_SML_.toggletab(false);
@@ -5374,16 +5415,17 @@ function eventsTPL(){
 		};
 		if(ev.ctrlKey){
 
-			if( $.inArray( A, [13,66,73,85,69,76,82] ) != -1 ){
-				do_an_e(ev);
-				if(A===13)
-					$('#sbutton').click();
-				else
+			if( $.inArray( A, [13, 66,73,85, 69,76,82] ) != -1 ){
+				if(A===13){
+					_BOX.init();
+					_BOX.presubmit();
+				}else
 					click_BIU( asocKey[A] );
+				do_an_e(ev);
 			}
 		}else if(ev.altKey){
 			do_an_e(ev);
-			$('#' + asocKey[A]).click();
+			do_click($('#' + asocKey[A]).get(0));
 		}
 	}).keyup(function(ev){
 		$('#clear_text').toggle( $(this).val()!=="" );
@@ -5429,18 +5471,18 @@ function eventsTPL(){
 			if(A == 81) { // keyCode for Q
 				doThi = 1;
 				scrollToQR();
-				$('#squote_post').click();
+				do_click($('#squote_post').get(0));
 			}
 			break;
 		case CSA_tasks.ctrlshift:
 			if(A == 81) { // keyCode for Q
 				doThi=1;
-				$('#sdismiss_quote').click()
+				do_click($('#sdismiss_quote').get(0));
 			}else if(A == 68 // keyCode for D
 				  && !$('#qrdraft').hasClass('jfk-button-disabled') ){
 					doThi=1;
 					scrollToQR();
-					$('#qrdraft').click();
+					do_click($('#qrdraft').get(0));
 			}
 			break;
 		};
@@ -5628,8 +5670,8 @@ function getUploaderSetting(){
 		,imgzzz:'imgzzz.com'
 		,cubeupload:'cubeupload.com'
 		,imagetoo:'imagetoo.com'
-		,uploadimage_uk:'uploadimage.co.uk'
-		,uploadimage_in:'uploadimage.in'
+		//,uploadimage_uk:'uploadimage.co.uk'
+		//,uploadimage_in:'uploadimage.in'
 		,imgur:'imgur.com'
 		,imagevenue:'imagevenue.com'
 	};
@@ -5736,8 +5778,8 @@ function finalizeTPL(){
 		$('#qr-groupid').val(gvar.pID);
 	}
 
-	$('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999; bottom:-9999;"></div>')
-	$('body').prepend('<input id="remote_tooltip" type="button" value="_" style="position:absolute!important; left:-9999; bottom:-9999; visibility:hidden; height:0;" onclick="remote_xtooltip(this)"/>');
+	$('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999px; top:-99999px;"></div>')
+	$('body').prepend('<input id="remote_tooltip" type="button" value="_" style="position:absolute!important; top:-99999px; top:-99999px; visibility:hidden; height:0;" onclick="remote_xtooltip(this)"/>');
 	
 	
 	if( !gvar.user.isDonatur ){
@@ -5804,7 +5846,7 @@ function slideAttach(that, cb){
 }
 
 function scrollToQR(){
-	$('#' + gvar.qID).closest('.row').find('.button_qr').click();
+	do_click($('#' + gvar.qID).closest('.row').find('.button_qr').get(0));
 }
 
 // eval tooltip crossed dom, due to issue Opera
@@ -5812,7 +5854,7 @@ function xtip(sel, dofind){
 	var $tgt = $('#remote_tooltip');
 	$tgt.attr('data-selector', sel);
 	dofind && $tgt.attr('data-selector_find', dofind);
-	$tgt.click();
+	do_click($tgt.get(0));
 }
 
 function start_Main(){
@@ -5927,7 +5969,9 @@ function start_Main(){
 							do_an_e(ev);
 							_AJAX.edit( $(this), function(){
 								var func = function(){
-									$('#dismiss_request').click(function(){ _NOFY.dismiss() });
+									$('#dismiss_request').click(function(){
+										_NOFY.dismiss()
+									});
 								};
 								_NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
 							}, function(){
@@ -5941,23 +5985,28 @@ function start_Main(){
 					if( !isInGroup ){
 						// add-event to multi-quote
 						$(this).find('a[id^="mq_"]').click(function(ev){
+							clog('mq_' + $(this).attr('id'));
+							var isSelected = $(this).hasClass('blue');
+
 							if(gvar.sTry_canceling){
 								delete(gvar.sTry_canceling);
 								return;
 							}
 							if( gvar.edit_mode == 1 ){
 								if( _AJAX.edit_cancel(false) ){
-									window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+									window.setTimeout(function(){
+										do_click($('#qr_chkcookie').get(0));
+									}, 100);
 								}else{
 									gvar.sTry_canceling = 1;
-									$(this).click();
+									do_click($(this).get(0));
 								}
 							}else{
-								window.setTimeout(function(){$('#qr_chkcookie').click()}, 100);
+								window.setTimeout(function(){
+									do_click($('#qr_chkcookie').get(0));
+								}, 100);
 							}
-							if(!$(this).hasClass(mq_class))
-								$(this).addClass(mq_class)
-						}).addClass(mq_class);
+						}).attr('data-btn', mq_class);
 					}
 				});
 				// end each of user-tools
@@ -5969,7 +6018,9 @@ function start_Main(){
 				// kill href inside markItUpHeader
 				$('.markItUpHeader a').each(function(){
 					$(this).attr('href', 'javascript:;'); 
-					$(this).click(function(e){ do_an_e(e) });
+					$(this).click(function(e){
+						do_an_e(e)
+					});
 				});				
 				
 				finalizeTPL();
@@ -5982,16 +6033,22 @@ function start_Main(){
 					_DRAFT.switchClass('gbtn');
 					_DRAFT.title('continue');
 					$('#draft_desc').html( '<a href="javascript:;" id="clear-draft" title="Clear Draft">clear</a> | available' );
-					$('#draft_desc #clear-draft').click(function(){ _DRAFT.clear() });
+					$('#draft_desc #clear-draft').click(function(){
+						_DRAFT.clear()
+					});
 				}
 				
 				// infiltrate default script
 				GM_addGlobalScript( rSRC.getSCRIPT() );
-				(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){ $('.ev_smiley:first').click() }, 50);
+				(gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){
+					do_click($('.ev_smiley:first').get(0));
+				}, 50);
 
 				// trigger preload recapcay
 				if(gvar.thread_type != 'group')
-					window.setTimeout(function(){ $('#hidrecap_btn').click(); }, 100);
+					window.setTimeout(function(){
+						do_click($('#hidrecap_btn').get(0));
+					}, 100);
 
 				if( !gvar.noCrossDomain && gvar.settings.updates && isQR_PLUS == 0 ){
 					window.setTimeout(function(){
@@ -6000,7 +6057,7 @@ function start_Main(){
 						gvar.freshload=null;
 					}, 2000);
 				}
-				$('.bottom-frame').is(':visible') && $('.btm-close').click();
+				$('.bottom-frame').is(':visible') && do_click($('.btm-close').get(0));
 				
 				// opera is need backup evaluating js
 				if(gvar.isOpera){
@@ -6164,6 +6221,9 @@ function outSideForumTreat(){
 			}catch(e){};
 		}, 300);
 		gallery = imgur = null;
+	}
+	else if(loc == 'imagetoo'){
+		Dom.remove($D('#topbar', null, true));
 	}
 	return false;
 }
