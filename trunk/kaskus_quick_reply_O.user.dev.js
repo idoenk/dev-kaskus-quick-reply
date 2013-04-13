@@ -9,9 +9,9 @@
 // @include        *kaskus.co.id/show_post/*
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
-// @version        4.1.0.4
-// @dtversion      1212304104
-// @timestamp      1356801568918
+// @version        4.1.0.5
+// @dtversion      1304144105
+// @timestamp      1365873189493
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,11 +29,14 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.4 - 2012-12-30 . 1356801568918
-//  Forked version from 4.1.0.4 (adapting Opera)
+// v4.1.0.5 - 2012-04-14 . 1365873189493
+//  Forked version from 4.1.0.5 (adapting Opera)
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v4.1.0.4 - 2012-12-30 . 1356801568918
+//  Forked version from 4.1.0.4 (adapting Opera)
 //
 // v4.1.0 - 2012-12-09 . 1355016895853
 //  This version forked from 4.1.0 adapting to Opera
@@ -1815,9 +1818,11 @@ var _AJAX = {
               ttitle = {
                 subscriptions: el.html(),
                 rating: $('select[name="rating"]', $(sdata)).find('option[selected="selected"]').val()||null,
+                emailupdate: $('select[name="emailupdate"]', $(sdata)).find('option[selected="selected"]').val()||null,
                 convertlink: $('input[name="parseurl"]', $(sdata)).is(':checked')
               };
               _TEXT.set_additionl_opt( ttitle );
+              $('#additionalopts').show();
             }
 
             // check if fjb and is first post
@@ -2042,6 +2047,12 @@ var _TEXT = {
       $el.attr('checked', "checked");
     else
       $el.removeAttr('checked');
+
+    $el = $('#additionalopts select[name="emailupdate"]');
+    if( data['emailupdate'] ){
+      $el.find('option[selected="selected"]').removeAttr('selected');
+      $el.find('option[value="'+data['emailupdate']+'"]').attr('selected', 'selected');
+    }
   },
   set_fjbdetail: function(data){
     $('.ts_fjb-tags input[type="text"]').val(data['tags']);
