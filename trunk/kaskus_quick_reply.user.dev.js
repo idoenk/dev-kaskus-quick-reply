@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.5
-// @dtversion      1303174105
-// @timestamp      1363517325942
+// @dtversion      1304144105
+// @timestamp      1365873189493
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.5 - 2013-03-17 . 1363517325942
+// v4.1.0.5 - 2013-04-14 . 1365873189493
+//   Fix additionalopts (subscriptions). Thx=[gretongerz]
 //   Fix multiquote (Chrome)
 //   Fix shortcut. Thx=[jocrong]
 //   reimplement simulateclick for do_click remotely
@@ -79,8 +80,8 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.5';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1363517325942 // version.timestamp
-	,dtversion: 1303174105 // version.date
+	 timestamp: 1365873189493 // version.timestamp
+	,dtversion: 1304144105 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1867,9 +1868,11 @@ var _AJAX = {
 							ttitle = {
 								subscriptions: el.html(),
 								rating: $('select[name="rating"]', $(sdata)).find('option[selected="selected"]').val()||null,
+								emailupdate: $('select[name="emailupdate"]', $(sdata)).find('option[selected="selected"]').val()||null,
 								convertlink: $('input[name="parseurl"]', $(sdata)).is(':checked')
 							};
 							_TEXT.set_additionl_opt( ttitle );
+							$('#additionalopts').show();
 						}
 
 						// check if fjb and is first post
@@ -2156,6 +2159,12 @@ var _TEXT = {
 			$el.attr('checked', "checked");
 		else
 			$el.removeAttr('checked');
+
+		$el = $('#additionalopts select[name="emailupdate"]');
+		if( data['emailupdate'] ){
+			$el.find('option[selected="selected"]').removeAttr('selected');
+			$el.find('option[value="'+data['emailupdate']+'"]').attr('selected', 'selected');
+		}
 	},
 	set_fjbdetail: function(data){
 		if(!data){
