@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.5
-// @dtversion      1304144105
-// @timestamp      1365873189493
+// @version        4.1.0.6
+// @dtversion      1304234106
+// @timestamp      1366657711740
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,6 +26,12 @@
 //
 // -!--latestupdate
 //
+// v4.1.0.6 - 2013-04-23 . 1366657711740
+//   fix qq-parser list/italic. Thx=[coolkips,S4nJi]
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.1.0.5 - 2013-04-14 . 1365873189493
 //   Fix additionalopts (subscriptions). Thx=[gretongerz]
 //   Fix multiquote (Chrome)
@@ -34,9 +40,6 @@
 //   deprecate uploader (uploadimage_uk, uploadimage_in)
 //   event click on raise_error
 //   fix edit & behaviour in Groupee. Thx=[S4nJi,coolkips]
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.1.0.4 - 2012-12-30 . 1356801568918
 //   fix qq-parser spoiler when wrapped with any tags; Thx[p1nky,coolkips]
@@ -77,11 +80,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.5';
+gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1365873189493 // version.timestamp
-	,dtversion: 1304144105 // version.date
+	 timestamp: 1366657711740 // version.timestamp
+	,dtversion: 1304234106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1274,6 +1277,11 @@ gvar.smkecil = [
 };
 //=== rSRC
 
+
+/*
+* object urusan ajax (modal-boxed)
+* method yg dihandle: preview, submit, presubmit
+*/
 var _BOX = {
 	e: {
 		 dialogname: 'qr-modalBoxFaderLayer' // [modalBoxFaderLayer, modal_dialog]
@@ -1682,7 +1690,11 @@ var _BOX = {
 	}
 };
 
-// outside _BOX doin ajaxify; eg. quote; edit;
+/*
+* object urusan ajax
+* method yg dihandle: quote, edit, 
+* outside _BOX doin ajaxify; eg. quote; edit;
+*/
 var _AJAX = {
 	e: {
 		 task: "quote" //[quote, edit]
@@ -1998,6 +2010,11 @@ var _AJAX = {
 	}
 };
 
+/*
+* object urusan notifikasi
+* any event that will lead to notification 
+* above textarea handled on this object
+*/
 var _NOFY = {
 	// whether [quote, edit, error]
 	// ----
@@ -2122,6 +2139,11 @@ var _NOFY = {
 	}
 };
 
+/*
+* object urusan text (textarea)
+* any controller button will be depend on this
+* eg. set any bb-tag, clear, autogrow, etc
+*/
 var _TEXT = {
 	e	: null, eNat : null,
 	content		: "",
@@ -2342,6 +2364,11 @@ var _TEXT = {
 	}
 };
 
+/*
+* object urusan textcount
+* event keypress di textarea trigger this object
+* to show remaining char
+*/
 var _TEXTCOUNT = {
 	init: function( target ){
 		var cUL, _tc = this;
@@ -2379,6 +2406,10 @@ var _TEXTCOUNT = {
 	}
 };
 
+/*
+* object urusan countdown
+* next-post count-down
+*/
 var _CTDOWN = {
 	init: function(num, tgt){
 		if( !gvar.settings.txtcount )
@@ -2421,13 +2452,16 @@ var _CTDOWN = {
 	}
 };
 
+/*
+* object urusan draft
+* event check for any change in textarea to keep it drafted
+*/
 var _DRAFT= {
 	el: null, dsc: null
 	,_construct: function(){
 		_DRAFT.el = $('#qrdraft');
 		_DRAFT.dsc= $('#draft_desc');
 	}
-	
 
 	,check: function(){
 		clog('checking draft..');
@@ -2504,9 +2538,12 @@ var _DRAFT= {
 		var to_rem = (to_add=="gbtn" ? "jfk-button-disabled" : "gbtn" );
 		_DRAFT.el.addClass(to_add).removeClass(to_rem);;
 	}
-	
 };
 
+/*
+* object urusan uploader
+* kaskus & custom uploader
+*/
 var _UPL_ = {
 	init: function(){
 		_UPL_.tcui = 'tabs-content-upl-inner';
@@ -2654,6 +2691,10 @@ var _UPL_ = {
 	}
 };
 
+/*
+* object urusan smilies
+* kecil-besar-custom will be maintained here
+*/
 var _SML_ = {
 	init: function(def){
 		_SML_.tci = 'tabs-content-inner';
@@ -3154,6 +3195,10 @@ var _SML_ = {
 	}
 };
 
+/*
+* object urusan settings
+* design s/d events & reset-settings
+*/
 var _STG = {
 	e:{
 		 dialogname: 'qr-modalBoxFaderLayer'
@@ -3565,6 +3610,11 @@ var _STG = {
 	}
 };
 
+/*
+* object urusan CSS preloader
+* first-time use will be trigger this object to work
+* cache the css fetched from googlecode
+*/
 var _CSS = {
 	engage:false,
 	init:function(){
@@ -3669,9 +3719,12 @@ var _CSS = {
 		gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
 	}
 };
-// utk cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
-// customized from FFixer & userscript_updater
-// previous name was : Updater
+
+/*
+* cek update (one_day = 1000*60*60*24 = 86400000 ms) // milisecs * seconds * minutes * hours
+* customized from FFixer & userscript_updater
+* previous name was : Updater
+*/
 var _UPD = {
 	caller:''
 	,check: function(forced){
@@ -3797,6 +3850,10 @@ var _UPD = {
 };
 // -end UPD
 
+/*
+* object urusan parsing text
+* mostly quick-quote purpose
+*/
 var _QQparse = {
 	init:function(calee, cb){
 		var par, mqs_id = [];
@@ -3869,7 +3926,7 @@ var _QQparse = {
 		var $pCon,pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength,LT,pairedEmote;
 		var ret, contentsep, pos;
 		
-		LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[]};
+		LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[],'list':[]};
 		pairedEmote = false;
 		
 		var revealQuoteCode = function(html){
@@ -3929,16 +3986,19 @@ var _QQparse = {
 			}
 		}
 		,parseSerials = function(S,$1,$2){
-			var mct, parts, pRet, lastIdx, tag;
+			var mct, parts, pRet, lastIdx, tag, _2up;
+			_2up = $2.toUpperCase();
+			clog('inside parseSerials 2up=[' + _2up + ']');
 
-			//clog('inside parseSerials 2up=[' + $2.toUpperCase() + ']');
-			// parse BIU
-			if ( $.inArray($2.toUpperCase(), ['B','I','U']) != -1 ){
-				return '[' + ($1 ? '/' : '') + $2.toUpperCase() + ']';
+			// parse BIU -> I is using EM by now
+			if ( $.inArray(_2up, ['B','EM','U']) != -1 ){
+				clog('bbcode recognized: ['+_2up+']');
+				(_2up == 'EM') && (_2up = 'I');
+				return '[' + ($1 ? '/' : '') + _2up + ']';
 			}else
 			
 			// parse code
-			if( /^pre\s/i.test($2) || $2.toUpperCase()=='PRE' ){
+			if( /^pre\s/i.test($2) || _2up=='PRE' ){
 				mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
 				
 				if( isDefined(mct[1]) ){
@@ -3948,8 +4008,10 @@ var _QQparse = {
 				}
 				
 				openTag= ( mct && mct[1] );
-				if( openTag )
+				if( openTag ){
 					mct[1] = mct[1].toUpperCase();
+					clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+				}
 				lastIdx = LT.coder.length-1;
 				
 				pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.coder[lastIdx]) ? '['+'/'+LT.coder[lastIdx].toUpperCase()+']' : '') );
@@ -3958,9 +4020,50 @@ var _QQparse = {
 					LT.coder.splice(lastIdx,1);
 				return pRet;
 			}else
+
+			// parse list (number/bullet)
+			if( /^ul|ol\s/i.test($2) || _2up=='OL' || _2up=='UL'){
+				mct = [];
+				if( $2.indexOf('decimal;')!=-1 ){
+					mct = ['','LIST=1']; // numbering...
+				}else
+				if( $2.indexOf(':disc;')!=-1 ){
+					mct = ['', 'LIST']; // list
+				}
+
+				if( isDefined(mct[1]) ){
+					mct[1] = mct[1].toUpperCase();
+					LT.list.push( mct[1] );
+				}else{
+					mct[1] = false;
+				}
+
+				openTag = ( mct && mct[1] );
+				if( openTag ){
+					mct[1] = mct[1].toUpperCase();
+					clog('bbcode recognized: ['+mct[1]+']');
+				}
+				lastIdx = LT.list.length-1;
+
+				pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.list[lastIdx]) ? '['+'/'+LT.list[lastIdx].replace(/\=[^\b]+/g, '').toUpperCase()+']' : '') );
+				
+				if( !openTag )
+					LT.list.splice(lastIdx,1);
+				return pRet;
+			}else
+
+			// parse hand of list
+			if( /^li/i.test($2) || _2up=='LI' ){
+				if( (openTag = !$1) ){
+					clog('bbcode recognized: [*]');
+				}
+				pRet= (openTag ? '[*]' : '');
+
+				return pRet;
+			}else
 			
 			// parse align | color | font | size;
-			if( /^span\s/i.test($2) || $2.toUpperCase()=='SPAN'){
+			if( /^span\s/i.test($2) || _2up=='SPAN'){
 				if( $2.indexOf('-align:')!=-1 ){
 					
 					mct = $2.match(/\/?span(?:(?:[^\-]+).align\:(\w+))?/i);
@@ -4004,6 +4107,7 @@ var _QQparse = {
 				
 				if( openTag ){
 					mct[1] = mct[1].toUpperCase();
+					clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
 				}
 				lastIdx = LT.align.length-1;
 				
@@ -4015,7 +4119,7 @@ var _QQparse = {
 			}else
 			
 			// parse html | php | indent
-			if( /^div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+			if( /^div\s/i.test($2) || _2up=='DIV'){
 				if( mct = $2.toLowerCase().match(/\s1em\s40px/) )
 					mct = [$2, 'INDENT'];
 				else
@@ -4028,8 +4132,10 @@ var _QQparse = {
 					mct[1] = false;
 				}				
 				openTag= ( mct && mct[1] );
-				if( openTag )
+				if( openTag ){
 					mct[1] = mct[1].toUpperCase();
+					clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+				}
 				lastIdx = LT.coder.length-1;
 				
 				pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.coder[lastIdx]) ? '['+'/'+LT.coder[lastIdx].toUpperCase()+']' : '') );
@@ -4040,7 +4146,7 @@ var _QQparse = {
 			}else
 			
 			// parse linkify
-			if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
+			if( /\shref=/i.test($2) || _2up=='A' ){
 				mct = $2.match(/\/?a\s*(?:(?:target|style|title|linkid)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
 				if( isDefined(mct[1]) ){
 					tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
@@ -4051,6 +4157,10 @@ var _QQparse = {
 					mct[1] = false;
 				}
 				openTag = (mct && mct[1]);
+				if( openTag ){
+					mct[1] = mct[1].toUpperCase();
+					clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+				}
 				lastIdx = LT.a.length-1;
 				pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+'='+mct[1]+']':'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
 				
@@ -4066,6 +4176,7 @@ var _QQparse = {
 				if( mct && isDefined(mct[1]) ){
 
 					if( /^embed\s*/i.test($2) && (cucok = mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&\?]+)/i)) ){
+						clog('bbcode recognized: [YOUTUBE]');
 						return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
 					} else
 					if( cucok = $2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
@@ -4082,6 +4193,7 @@ var _QQparse = {
 							return ( isDefined(pairedEmote[tag]) ? pairedEmote[tag] : '[IMG]' + mct[1] + '[/IMG]' );
 						}
 					}else {
+						clog('bbcode recognized: [IMG]');
 						return '[IMG]' + mct[1] + '[/IMG]';
 					}
 				}else{
@@ -4197,7 +4309,9 @@ var _QQparse = {
 	}
 };
 
-// cross-browser XHR method
+/*
+* cross-browser XHR method
+*/
 var GM_XHR = {
 	uri:null,
 	returned:null,
@@ -4233,7 +4347,10 @@ var GM_XHR = {
 			GM_xmlhttpRequest( pReq_xhr );
 	}
 };
-// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+
+/*
+* native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+*/
 var NAT_xmlhttpRequest=function(obj) {
 	var request = new XMLHttpRequest();
 	request.onreadystatechange=function() {
