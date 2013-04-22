@@ -9,9 +9,9 @@
 // @include        *kaskus.co.id/show_post/*
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
-// @version        4.1.0.5
-// @dtversion      1304144105
-// @timestamp      1365873189493
+// @version        4.1.0.6
+// @dtversion      1304234106
+// @timestamp      1366657711740
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,11 +29,14 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.5 - 2012-04-14 . 1365873189493
-//  Forked version from 4.1.0.5 (adapting Opera)
+// v4.1.0.6 - 2013-04-23 . 1366657711740
+//  Forked version from 4.1.0.6 (adapting Opera)
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v4.1.0.5 - 2012-04-14 . 1365873189493
+//  Forked version from 4.1.0.5 (adapting Opera)
 //
 // v4.1.0.4 - 2012-12-30 . 1356801568918
 //  Forked version from 4.1.0.4 (adapting Opera)
@@ -55,12 +58,12 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.4';
+gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1356801568918 // version.timestamp
+  timestamp: 1366657711740 // version.timestamp
   //timestamp: 999 // version.timestamp for test update
   
-  ,dtversion: 1212304104 // version.date
+  ,dtversion: 1304234106 // version.date
   
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -702,7 +705,7 @@ var rSRC = {
       +'<div class="st_contributor" style="height:190px; vertical-align:top; overflow:auto; border:1px solid rgb(228, 228, 228); clip: rect(auto, auto, auto, auto);">'
       +'<b>Contributors</b><br>'
       +'<div class="contr_l" style="width:45%; float:left;">'
-      +'s4nji<br>riza_kasela<br>p1nky<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>'
+      +'S4nJi<br>riza_kasela<br>p1nk3d_books<br>b3g0<br>fazar<br>bagosbanget<br>eric.<br>bedjho<br>Piluze<br>intruder.master<br>'
       +'Rh354<br>drupalorg<br>'
       +'</div>'
       +'<div class="contr_r" style="width:45%; float:left;">'
@@ -824,7 +827,7 @@ var rSRC = {
   },
 
   /*
-   * Livebeta Widefix -by s4nji
+   * Livebeta Widefix -by S4nJi
    * userstyles.org/styles/68408
    */
   getCSSWideFix: function(){
@@ -1212,6 +1215,10 @@ gvar.smkecil = [
 };
 //=== rSRC
 
+/*
+* object urusan ajax (modal-boxed)
+* method yg dihandle: preview, submit, presubmit
+*/
 var _BOX = {
   e: {
      dialogname: 'qr-modalBoxFaderLayer' // [modalBoxFaderLayer, modal_dialog]
@@ -1329,14 +1336,10 @@ var _BOX = {
           
           $('#box_preview').css('max-height', mH + 'px');
           
-          if(!valid){           
-            msg = 'Kaskus Kepenuhan? <a href="javascript:;">Try Again</a> | <a href="javascript:;">Dismiss</a>';
-            func = function(){
-              $('#box_preview').html('<div class="qrerror">'+msg+'</div>');
-            };
-            _NOFY.btnset = false;
-            _NOFY.init({mode:'error', msg:msg, cb:func});
+          if(!valid){
             
+            _NOFY.raise_error(data);
+
           }else{
             
             try{
@@ -1431,7 +1434,7 @@ var _BOX = {
       clog('query=' + JSON.stringify(query) )
       
       gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
-        var parsed, cucok, sdata, is_error=false;
+        var valid = tokcap_parser(data), cucok, sdata;
         
         try{
           // warning this may trigger error
@@ -1444,9 +1447,8 @@ var _BOX = {
         parsed = sdata.substring(0, sdata.indexOf(gvar.eof));
 
         var args, txt_msg, re;
-        // determine any error raises
+        // determine is there any specific error raised
         if( cucok = />Error<\/h3>(?:<ul>|\s*|<li>)+([^<]+)/i.exec(sdata) ){
-          is_error = 1;
           gvar.postlimit = false;
           re = new RegExp('ry\\s*again\\s*in\\s*(\\d+)\\s*sec', "");
 
@@ -1487,12 +1489,12 @@ var _BOX = {
           $('#hidrecap_reload_btn').click();
           $('#box_response_msg').html( cucok[1] ).removeClass('ghost').addClass('g_notice').addClass('qrerror').show();
           $('#recaptcha_response_field').val('').addClass('twt-glowerror');
+        }else if( !valid ){
+          close_popup();
+          _NOFY.raise_error(data);
         }
         // err-msg =====
-
-        
-        if( !is_error ){
-          
+        else{
           if( cucok = /<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*URL=([^\"\']+)/i.exec(sdata) ){
             // try to flush draft, before reload
             setValue(KS+'TMP_TEXT', '');
@@ -1503,13 +1505,13 @@ var _BOX = {
             })();
             return;
           }else{
-            var args, msg  = 'redirect link not found, post might fail. please try again.';
-            clog(msg);
-            args = {mode:'error', msg:cucok };
-            if(!gvar.edit_mode) args.btnset = false;
+            txt_msg  = 'redirect link not found, post might fail. please try again.';
+            clog(txt_msg);
+            args = {mode:'error', msg:txt_msg, btnset:false };
             _NOFY.init(args);
           }
         }
+
         // update token
         tokcap_parser(data);
       });
@@ -1627,7 +1629,11 @@ var _BOX = {
   }
 };
 
-// outside _BOX doin ajaxify; eg. quote; edit;
+/*
+* object urusan ajax
+* method yg dihandle: quote, edit, 
+* outside _BOX doin ajaxify; eg. quote; edit;
+*/
 var _AJAX = {
   e: {
      task: "quote" //[quote, edit]
@@ -1748,10 +1754,9 @@ var _AJAX = {
       _AJAX.ajaxPID('edit');
       if(typeof(cb_before)=='function') cb_before();
       gvar.edit_mode = 1;
-      var uri, pos, href; 
+      var uri, href; 
       href = trimStr( obj.attr('href').toString() );
-      pos = href.indexOf('edit_post/');
-      uri = ( gvar.domain + href.substring(pos, href.length) );
+      uri = (href.indexOf(gvar.domain)==-1 ?gvar.domain.substring(0, gvar.domain.length-1) : '') + href;
       
       gvar.sTryRequest = $.get( uri, function(data) {
         
@@ -1836,6 +1841,9 @@ var _AJAX = {
               };
               clog('got fjbdetail = ' + JSON.stringify(ttitle) )
               _TEXT.set_fjbdetail( ttitle );
+            }
+            else{
+              _TEXT.set_fjbdetail(null);
             }
 
             
@@ -1947,6 +1955,11 @@ var _AJAX = {
   }
 };
 
+/*
+* object urusan notifikasi
+* any event that will lead to notification 
+* above textarea handled on this object
+*/
 var _NOFY = {
   // whether [quote, edit, error]
   // ----
@@ -2000,6 +2013,59 @@ var _NOFY = {
     $('#notify_msg, #notify_wrap').show();
     if(typeof(_NOFY.cb)=='function') _NOFY.cb();
   },
+  raise_error: function(data){
+    var _ME, func=null, _msg='';
+    _ME = this;
+
+    // session lost; invalid post?
+    if( data.match(/\byou\sdo\snot\shave\spermission\sto\sac/i) ||
+      data.match(/<div\s*class=[\'\"]login-form-(?:wrap|center)[\'\"]/i) 
+    ){
+      _msg = 'You do not have permission to do this. <a class="btn-reload" href="javascript:;">Reload page?</a>';
+      func = function(){
+        if( !_AJAX.e.ajaxrun )
+          $('#box_preview').html('<div class="qrerror errorwrap">'+_msg+'</div>');
+
+        $('.btn-reload').each(function(){
+          $(this).click(function(){
+            window.setTimeout(function(){ location.reload(false) }, 50);
+          });
+        })
+      };
+    }
+    else if(data.match(/\bkepenuhan\b/i)){
+      // bad guessing, i knew.. x()
+      _msg = 'Kaskus Kepenuhan? <a class="btn-retry" '+(_AJAX.e.ajaxrun ? 'data-toretry="'+_AJAX.e.ajaxrun+'"' : '')+'href="javascript:;">Try Again</a> | <a class="btn-dismiss" href="javascript:;">Dismiss</a>';
+      func = function(){
+        if( !_AJAX.e.ajaxrun ){
+          $('#box_preview').html('<div class="qrerror errorwrap">'+_msg+'</div>');
+          $('.btn-retry').each(function(){
+            $(this).click(function(){
+              _BOX.preview()
+            })
+          })
+        }
+        else{
+          $('#notify_msg .btn-retry:first').click(function(){
+            var toretry, $tgt, $par = $(this).closest('.col');
+            toretry = $(this).data('toretry');
+            if(toretry == 'edit'){
+              $tgt = $par.find('.user-tools a[href*="/edit_post/"]:first');
+              $tgt.length && do_click($tgt.get(0));
+            }
+            else{
+              do_click($('#squote_post').get(0));
+            }
+          })
+        }
+      };
+    }
+    else{
+      _msg = null;
+    }
+    _ME.btnset = false;
+    _ME.init({mode:'error', msg:_msg, cb:func});
+  },
   dismiss: function(){
     $('.qr-m-panel').show();
     $('#notify_msg, #notify_wrap').hide();
@@ -2009,6 +2075,11 @@ var _NOFY = {
   }
 };
 
+/*
+* object urusan text (textarea)
+* any controller button will be depend on this
+* eg. set any bb-tag, clear, autogrow, etc
+*/
 var _TEXT = {
   e : null, eNat : null,
   content   : "",
@@ -2225,6 +2296,11 @@ var _TEXT = {
   }
 };
 
+/*
+* object urusan textcount
+* event keypress di textarea trigger this object
+* to show remaining char
+*/
 var _TEXTCOUNT = {
   init: function( target ){
     var cUL, _tc = this;
@@ -2263,6 +2339,10 @@ var _TEXTCOUNT = {
   }
 };
 
+/*
+* object urusan countdown
+* next-post count-down
+*/
 var _CTDOWN = {
   init: function(num, tgt){
     if( !gvar.settings.txtcount )
@@ -2305,6 +2385,10 @@ var _CTDOWN = {
   }
 };
 
+/*
+* object urusan draft
+* event check for any change in textarea to keep it drafted
+*/
 var _DRAFT= {
   el: null, dsc: null
   ,_construct: function(){
@@ -2389,6 +2473,10 @@ var _DRAFT= {
   
 };
 
+/*
+* object urusan uploader
+* kaskus & custom uploader
+*/
 var _UPL_ = {
   init: function(){
     _UPL_.tcui = 'tabs-content-upl-inner';
@@ -2536,6 +2624,10 @@ var _UPL_ = {
   }
 };
 
+/*
+* object urusan smilies
+* kecil-besar-custom will be maintained here
+*/
 var _SML_ = {
   init: function(def){
     _SML_.tci = 'tabs-content-inner';
@@ -3036,6 +3128,10 @@ var _SML_ = {
   }
 };
 
+/*
+* object urusan settings
+* design s/d events & reset-settings
+*/
 var _STG = {
   e:{
      dialogname: 'qr-modalBoxFaderLayer'
@@ -3431,6 +3527,10 @@ var _STG = {
   }
 };
 
+/*
+* object urusan parsing text
+* mostly quick-quote purpose
+*/
 var _QQparse = {
   init:function(calee, cb){
     var par, mqs_id = [];
@@ -3503,7 +3603,7 @@ var _QQparse = {
     var $pCon,pCon,els,el,el2,eIner,cucok,openTag,sBox,nLength,LT,pairedEmote;
     var ret, contentsep, pos;
     
-    LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[]};
+    LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[],'list':[]};
     pairedEmote = false;
     
     var revealQuoteCode = function(html){
@@ -3563,16 +3663,19 @@ var _QQparse = {
       }
     }
     ,parseSerials = function(S,$1,$2){
-      var mct, parts, pRet, lastIdx, tag;
+      var mct, parts, pRet, lastIdx, tag, _2up;
+      _2up = $2.toUpperCase();
+      clog('inside parseSerials 2up=[' + _2up + ']');
 
-      //clog('inside parseSerials 2up=[' + $2.toUpperCase() + ']');
-      // parse BIU
-      if ( $.inArray($2.toUpperCase(), ['B','I','U']) != -1 ){
-        return '[' + ($1 ? '/' : '') + $2.toUpperCase() + ']';
+      // parse BIU -> I is using EM by now
+      if ( $.inArray(_2up, ['B','EM','U']) != -1 ){
+        clog('bbcode recognized: ['+_2up+']');
+        (_2up == 'EM') && (_2up = 'I');
+        return '[' + ($1 ? '/' : '') + _2up + ']';
       }else
       
       // parse code
-      if( /^pre\s/i.test($2) || $2.toUpperCase()=='PRE' ){
+      if( /^pre\s/i.test($2) || _2up=='PRE' ){
         mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
         
         if( isDefined(mct[1]) ){
@@ -3582,8 +3685,10 @@ var _QQparse = {
         }
         
         openTag= ( mct && mct[1] );
-        if( openTag )
+        if( openTag ){
           mct[1] = mct[1].toUpperCase();
+          clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+        }
         lastIdx = LT.coder.length-1;
         
         pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.coder[lastIdx]) ? '['+'/'+LT.coder[lastIdx].toUpperCase()+']' : '') );
@@ -3592,9 +3697,50 @@ var _QQparse = {
           LT.coder.splice(lastIdx,1);
         return pRet;
       }else
+
+      // parse list (number/bullet)
+      if( /^ul|ol\s/i.test($2) || _2up=='OL' || _2up=='UL'){
+        mct = [];
+        if( $2.indexOf('decimal;')!=-1 ){
+          mct = ['','LIST=1']; // numbering...
+        }else
+        if( $2.indexOf(':disc;')!=-1 ){
+          mct = ['', 'LIST']; // list
+        }
+
+        if( isDefined(mct[1]) ){
+          mct[1] = mct[1].toUpperCase();
+          LT.list.push( mct[1] );
+        }else{
+          mct[1] = false;
+        }
+
+        openTag = ( mct && mct[1] );
+        if( openTag ){
+          mct[1] = mct[1].toUpperCase();
+          clog('bbcode recognized: ['+mct[1]+']');
+        }
+        lastIdx = LT.list.length-1;
+
+        pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.list[lastIdx]) ? '['+'/'+LT.list[lastIdx].replace(/\=[^\b]+/g, '').toUpperCase()+']' : '') );
+        
+        if( !openTag )
+          LT.list.splice(lastIdx,1);
+        return pRet;
+      }else
+
+      // parse hand of list
+      if( /^li/i.test($2) || _2up=='LI' ){
+        if( (openTag = !$1) ){
+          clog('bbcode recognized: [*]');
+        }
+        pRet= (openTag ? '[*]' : '');
+
+        return pRet;
+      }else
       
       // parse align | color | font | size;
-      if( /^span\s/i.test($2) || $2.toUpperCase()=='SPAN'){
+      if( /^span\s/i.test($2) || _2up=='SPAN'){
         if( $2.indexOf('-align:')!=-1 ){
           
           mct = $2.match(/\/?span(?:(?:[^\-]+).align\:(\w+))?/i);
@@ -3638,6 +3784,7 @@ var _QQparse = {
         
         if( openTag ){
           mct[1] = mct[1].toUpperCase();
+          clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
         }
         lastIdx = LT.align.length-1;
         
@@ -3649,7 +3796,7 @@ var _QQparse = {
       }else
       
       // parse html | php | indent
-      if( /^div\s/i.test($2) || $2.toUpperCase()=='DIV'){
+      if( /^div\s/i.test($2) || _2up=='DIV'){
         if( mct = $2.toLowerCase().match(/\s1em\s40px/) )
           mct = [$2, 'INDENT'];
         else
@@ -3662,8 +3809,10 @@ var _QQparse = {
           mct[1] = false;
         }       
         openTag= ( mct && mct[1] );
-        if( openTag )
+        if( openTag ){
           mct[1] = mct[1].toUpperCase();
+          clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+        }
         lastIdx = LT.coder.length-1;
         
         pRet= (openTag ? '['+mct[1]+']' : (isDefined(LT.coder[lastIdx]) ? '['+'/'+LT.coder[lastIdx].toUpperCase()+']' : '') );
@@ -3674,7 +3823,7 @@ var _QQparse = {
       }else
       
       // parse linkify
-      if( /\shref=/i.test($2) || $2.toUpperCase()=='A' ){
+      if( /\shref=/i.test($2) || _2up=='A' ){
         mct = $2.match(/\/?a\s*(?:(?:target|style|title|linkid)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
         if( isDefined(mct[1]) ){
           tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
@@ -3685,6 +3834,10 @@ var _QQparse = {
           mct[1] = false;
         }
         openTag = (mct && mct[1]);
+        if( openTag ){
+          mct[1] = mct[1].toUpperCase();
+          clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+        }
         lastIdx = LT.a.length-1;
         pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+'='+mct[1]+']':'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
         
@@ -3700,6 +3853,7 @@ var _QQparse = {
         if( mct && isDefined(mct[1]) ){
 
           if( /^embed\s*/i.test($2) && (cucok = mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&\?]+)/i)) ){
+            clog('bbcode recognized: [YOUTUBE]');
             return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
           } else
           if( cucok = $2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
@@ -3716,6 +3870,7 @@ var _QQparse = {
               return ( isDefined(pairedEmote[tag]) ? pairedEmote[tag] : '[IMG]' + mct[1] + '[/IMG]' );
             }
           }else {
+            clog('bbcode recognized: [IMG]');
             return '[IMG]' + mct[1] + '[/IMG]';
           }
         }else{
@@ -3832,7 +3987,9 @@ var _QQparse = {
 };
 
 
-// cross-browser XHR method
+/*
+* cross-browser XHR method
+*/
 var GM_XHR = {
   uri:null,
   returned:null,
@@ -3868,7 +4025,10 @@ var GM_XHR = {
       GM_xmlhttpRequest( pReq_xhr );
   }
 };
-// native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+
+/*
+* native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
+*/
 var NAT_xmlhttpRequest=function(obj) {
   var request = new XMLHttpRequest();
   request.onreadystatechange=function() {
