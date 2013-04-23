@@ -3,7 +3,7 @@
 // @namespace     http://userscripts.org/scripts/show/90164
 // @description   De-obfuscates words 'censored' by kaskus + antibetmen
 // @author        hermawanadhis, idx
-// @version       0.7.4.2
+// @version       0.7.4.3
 // @include       *.kaskus.co.id/thread/*
 // @include       *.kaskus.co.id/lastpost/*
 // @include       *.kaskus.co.id/post/*
@@ -27,6 +27,9 @@ Skrip ini bertujuan mengembalikan semua kata-kata yang disensor pada situs KasKu
 This script replaces all obfuscated words in kaskus (e.g., "rapid*share") and replaces it with the unobfuscated word.
 Changelog:
 ------------
+0.7.4.3
+- fix evaluate link contains https
+- pre-check text optimized
 0.7.4.2
 - menambah dukungan old.kaskus.co.id, archive.kaskus.co.id, kaskus.co.id (baru)
 - mengurangi dukungan m.kaskus.co.id 
@@ -160,6 +163,8 @@ v0.1   : First release
             
         if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )        
             s = s.replace(/\.{2,}(com|net|in|to|ly)\b/g, '.$1' );
+
+        clog('fixing become=' + s);
         return s;
     };
     
@@ -175,19 +180,24 @@ v0.1   : First release
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
         s = node.data;
-        if(!s || s.length<5 || !s.match(/[a-z0-9\.]/i) ) continue; // pre-check        
+        
+        if(!(s && s.length>5 && /[\w\.]/i.test(s)
+            && ['SCRIPT','STYLE'].indexOf(String(node.parentNode.nodeName)) === -1
+        )) continue; // pre-check
+
         s = fixme( s );
         node.data = s;
     }
 
     // Now, retrieve the A nodes. default: //a
     // Optimized, we just need all this specified href links
-    thenodes = document.evaluate('//a[contains(@href,"http\:\/\/") and not(contains(@href,"\.kaskus\.co\.id")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
+    thenodes = document.evaluate('//a[contains(@href,"\:\/\/") and not(contains(@href,"\.kaskus\.co\.id")) and not(contains(@href,"\.kaskusnetworks\.com\/"))]',
                document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-    
+
     // Finally, perform a replacement over all A nodes
     for (var i = 0; i < thenodes.snapshotLength; i++) {
         node = thenodes.snapshotItem(i);
+
         // Here's the key! We must replace the "href" instead of the "data"
         s = fixme( decodeURI( node.href ) );
 
@@ -208,18 +218,20 @@ v0.1   : First release
             newWindow.focus(); return false;
         }, true);
         return a; 
-    };    
+    };
     
     var pnode, pnodes;
     // perform anti-batman @container id
     pnodes = document.evaluate("//*[@class='entry']", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-    
+
     if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
         pnode = pnodes.snapshotItem(i);        
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-        
+        clog(thenodes.snapshotLength);
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
+            clog(node);
+
             if( isBatman(node.innerHTML) ){
                
                  var inps, inerDiv = node.getElementsByTagName('div');
