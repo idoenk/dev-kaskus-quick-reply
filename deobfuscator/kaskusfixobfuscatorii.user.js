@@ -164,7 +164,6 @@ v0.1   : First release
         if( /\w{3,}\.{2,}(?:com|net|in|to|ly)\b/i.test(s) )        
             s = s.replace(/\.{2,}(com|net|in|to|ly)\b/g, '.$1' );
 
-        clog('fixing become=' + s);
         return s;
     };
     
@@ -227,10 +226,9 @@ v0.1   : First release
     if(pnodes.snapshotLength > 0) for (var i = 0; i < pnodes.snapshotLength; i++) {
         pnode = pnodes.snapshotItem(i);        
         thenodes = document.evaluate(".//a", pnode, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-        clog(thenodes.snapshotLength);
+
         if(thenodes.snapshotLength >0 ) for (var j = 0; j < thenodes.snapshotLength; j++) {
             node = thenodes.snapshotItem(j);
-            clog(node);
 
             if( isBatman(node.innerHTML) ){
                
