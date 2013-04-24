@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
-// @dtversion      1304234106
-// @timestamp      1366657711740
+// @dtversion      1304254106
+// @timestamp      1366836110194
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-04-23 . 1366657711740
+// v4.1.0.6 - 2013-04-25 . 1366836110194
+//   fix autotext smiley custom containing quot, use safe_uesc (prevent xss);
 //   fix qq-parser list/italic. Thx=[coolkips,S4nJi]
 //
 // -/!latestupdate---
@@ -83,7 +84,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1366657711740 // version.timestamp
+	 timestamp: 1366836110194 // version.timestamp
 	,dtversion: 1304234106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -2724,7 +2725,7 @@ var _SML_ = {
 		;
 		$('#custom_bottom').append( tpl );
 		if( gvar.settings.scustom_noparse )
-				$('#scustom_noparse').attr('checked', true);
+			$('#scustom_noparse').attr('checked', true);
 		
 		// container rightside: #scustom_container
 		gruptpl='<select id="pos_group_sets" tabindex="505" style="width: 50px;" class="gbtn">';
@@ -2743,7 +2744,6 @@ var _SML_ = {
 			$('#manage_help, #manage_cancel, #dv_menu_disabler').hide();
 			$('#custom_bottom, #title_group').show();
 		}
-		
 	},
 	menus_scustom: function(){
 		var gL, ret, spacer='<div style="height:1px"></div>';
@@ -2816,7 +2816,13 @@ var _SML_ = {
 			 $(this).click(function(){
 
 				var retEl, subtpl, ch= $(this).find('div:first'), id, lbl, gL, grup, islink;
-				var uesc = function(txt){ return unescape(txt) };
+				var safe_uesc = function(txt){
+					return do_sanitize( unescape(txt) )
+						.replace(/\'/g, '&apos;')
+						.replace(/\"/g, '&quot;')
+						.replace(/>/g, '&gt;')
+						.replace(/</g, '&lt;')
+				};
 				id = ch.attr('id').replace(/tbgrup_/gi,'');
 				grup = gvar.smgroup[id];
 				if( $('#content_scustom_container_'+grup).get(0) ){
@@ -2835,13 +2841,13 @@ var _SML_ = {
 					for(var k=0; k<gL; k++){
 						
 						if( !isString(gvar.smcustom[grup][k]) ){
-							clog( gvar.smcustom[grup][k][0] )
+							clog('AUO='+ gvar.smcustom[grup][k][0] )
 							if( isLink( gvar.smcustom[grup][k][0] ) != null ){
 								islink = 1;
 								subtpl+='<img src="'+ gvar.smcustom[grup][k][0] +'" alt="_alt_'+ gvar.smcustom[grup][k][1] +'" title="[['+ gvar.smcustom[grup][k][1] + '] &#8212;' + gvar.smcustom[grup][k][0] +'" /> ';
 							}else{
 								try{
-									subtpl+= '<span title="[['+ gvar.smcustom[grup][k][1] +'] '+ HtmlUnicodeDecode('&#8212;') +' '+ uesc( gvar.smcustom[grup][k][0] ) +'" class="nothumb">'+ uesc( gvar.smcustom[grup][k][0] ) +'</span>' + ' ';
+									subtpl+= '<span title="[['+ gvar.smcustom[grup][k][1] +'] '+ HtmlUnicodeDecode('&#8212;') +' '+ safe_uesc( gvar.smcustom[grup][k][0] ) +'" class="nothumb">'+ safe_uesc(gvar.smcustom[grup][k][0]) +'</span>' + ' ';
 								}catch(e){}
 							}
 						}else{
