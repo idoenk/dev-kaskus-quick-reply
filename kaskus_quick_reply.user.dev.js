@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
-// @dtversion      1304254106
-// @timestamp      1366836110194
+// @dtversion      1305204106
+// @timestamp      1368989414499
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-04-25 . 1366836110194
+// v4.1.0.6 - 2013-05-20 . 1368989414499
+//   fix avoid URL Link converted to uppercase. Thx=[zoolcar9|LouCypher]
 //   fix autotext smiley custom containing quot, use safe_uesc (prevent xss);
 //   fix qq-parser list/italic. Thx=[coolkips,S4nJi]
 //
@@ -84,8 +85,8 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1366836110194 // version.timestamp
-	,dtversion: 1304234106 // version.date
+	 timestamp: 1368989414499 // version.timestamp
+	,dtversion: 1305204106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -648,7 +649,11 @@ var rSRC = {
 			+'</div>' // #custom_bottom
 
 			+'<div id="scustom_container" style="max-width: 829px;">'
-			+ '<div style="margin:8px 0">Custom Smiley Not Found</div>'
+			+ '<div style="margin:8px 0">'
+			+  'Custom Smiley Not Found, <a href="http://goo.gl/vBPK8" target="_blank">what is this?</a>'
+			+  '<br/><br/>'
+			+  'Browse to <a href="http://kask.us/gWtme" target="_blank">Emoticon Corner</a>'
+			+ '</div>'
 			+'</div>'
 
 			// manage | add_group properties
@@ -4164,8 +4169,8 @@ var _QQparse = {
 				}
 				openTag = (mct && mct[1]);
 				if( openTag ){
-					mct[1] = mct[1].toUpperCase();
-					clog('bbcode recognized: ['+mct[1].toUpperCase()+']');
+					mct[1] = (isLink ? mct[1] : mct[1].toUpperCase());
+					clog('bbcode recognized: ['+mct[1]+']');
 				}
 				lastIdx = LT.a.length-1;
 				pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+'='+mct[1]+']':'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
