@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
 // @version        4.1.0.6
-// @dtversion      1305204106
-// @timestamp      1368989414499
+// @dtversion      1305304106
+// @timestamp      1369928264746
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,7 +29,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-05-20 . 1368989414499
+// v4.1.0.6 - 2013-05-30 . 1369928264746
 //  Forked version from 4.1.0.6 (adapting Opera)
 //
 // -/!latestupdate---
@@ -60,10 +60,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1368989414499 // version.timestamp
+  timestamp: 1369928264746 // version.timestamp
   //timestamp: 999 // version.timestamp for test update
   
-  ,dtversion: 1305204106 // version.date
+  ,dtversion: 1305304106 // version.date
   
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -3839,11 +3839,11 @@ var _QQparse = {
         }
         openTag = (mct && mct[1]);
         if( openTag ){
-          mct[1] = (isLink ? mct[1] : mct[1].toUpperCase());
+          mct[1] = (isLink(mct[1]) ? mct[1] : mct[1].toUpperCase());
           clog('bbcode recognized: ['+mct[1]+']');
         }
         lastIdx = LT.a.length-1;
-        pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+'='+mct[1]+']':'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
+        pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+(LT.a[lastIdx].toUpperCase()=='URL' ? '='+mct[1]+']':''):'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
         
         if( !openTag )
           LT.a.splice(lastIdx,1);
