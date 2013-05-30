@@ -3843,7 +3843,7 @@ var _QQparse = {
           clog('bbcode recognized: ['+mct[1]+']');
         }
         lastIdx = LT.a.length-1;
-        pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+(LT.a[lastIdx].toUpperCase()=='URL' ? '='+mct[1]+']':''):'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
+        pRet = (mct && mct[1] ? (isDefined(LT.a[lastIdx]) ? '['+LT.a[lastIdx].toUpperCase()+(LT.a[lastIdx].toUpperCase()=='URL' ? '='+mct[1]:'') +']' :'') : (isDefined(LT.a[lastIdx]) ? '['+'/'+LT.a[lastIdx].toUpperCase()+']' : '') );
         
         if( !openTag )
           LT.a.splice(lastIdx,1);
