@@ -3,21 +3,24 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        1.0
-// @dtversion      121231100
-// @timestamp      1356991338499
+// @version        1.0.1
+// @dtversion      130608101
+// @timestamp      1370706033417
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0 - 2012-12-31 . 1356991338499
-//  new kaskus; rewrite code adapting KQR full-web (80409)
+// v1.0.1 - 2013-06-08 . 1370706033417
+//  fix xhr (webkit) Thx=[paipo,FlurryBerry]
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v1.0 - 2012-12-31 . 1356976426495
+//  new kaskus; rewrite code adapting KQR full-web (80409)
 //
 // v0.3.4 - 2011-04-07
 //  Fix always use native-XHR.
@@ -39,9 +42,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '1.0';
+  gvar.sversion = 'v' + '1.0.1';
   gvar.scriptMeta = {
-    timestamp: 1356991338499 // version.timestamp
+    timestamp: 1370706033417 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -49,7 +52,7 @@
   window.alert(new Date().getTime());
   */
   //========-=-=-=-=--=========
-  gvar.__DEBUG__ = 0; // development debug
+  gvar.__DEBUG__ = !1; // development debug
   //========-=-=-=-=--=========
 
   const GMSTORAGE_PATH = 'GM_';
@@ -58,6 +61,7 @@
   // predefined registered key_save
   var OPTIONS_BOX = {
      KEY_SAVE_AUTHORIZED_USERS: ['']
+    ,KEY_SAVE_AVATARS_USERS: ['']
     ,KEY_SAVE_WIDE_THREAD: ['0']
     ,KEY_SAVE_TMP_TEXT: [''] // temporary text
     ,KEY_SAVE_TMP_TITLE: [''] // temporary text-title
@@ -90,7 +94,8 @@
             _gmxhr.returned = ret;
         }
       };
-      return NAT_xmlhttpRequest( pReq_xhr );  
+      //return NAT_xmlhttpRequest(pReq_xhr); // somehow this is not work in webkit
+      return GM_xmlhttpRequest(pReq_xhr);
     }
     return this;
   };
@@ -159,13 +164,43 @@
     return root.getElementsByTagName(q);
   };
   // native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
-  var NAT_xmlhttpRequest=function(obj) {
-    var request=new XMLHttpRequest();
-    request.onreadystatechange=function() { if(obj.onreadystatechange) { obj.onreadystatechange(request); }; if(request.readyState==4 && obj.onload) { obj.onload(request); } }
-    request.onerror=function() { if(obj.onerror) { obj.onerror(request); } }
-    try { request.open(obj.method, obj.url, true); } catch(e) { if(obj.onerror) { obj.onerror( {readyState:4,responseHeaders:'',responseText:'',responseXML:'',status:403,statusText:'Forbidden'} ); }; return; }
-    if(obj.headers) { for(name in obj.headers) { request.setRequestHeader(name,obj.headers[name]); } }
-    request.send(obj.data); return request;
+  var NAT_xmlhttpRequest = function (obj) {
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+      if (obj.onreadystatechange) {
+        obj.onreadystatechange(request);
+      };
+      if (request.readyState == 4 && obj.onload) {
+        obj.onload(request);
+      }
+    }
+    request.onerror = function () {
+      if (obj.onerror) {
+        obj.onerror(request);
+      }
+    }
+    try {
+      request.open(obj.method, obj.url, true);
+      if (obj.headers) {
+        for (name in obj.headers) {
+          request.setRequestHeader(name, obj.headers[name]);
+        }
+      }
+      request.send(obj.data);
+      return request;
+    } catch (e) {
+      if (obj.onerror) {
+        obj.onerror({
+            readyState: 4,
+            responseHeaders: '',
+            responseText: '',
+            responseXML: '',
+            status: 403,
+            statusText: 'Forbidden'
+          });
+      };
+      return;
+    }
   };
 
   // Redefine GM_addGlobalStyle/GM_addGlobalScript with a better routine
@@ -413,6 +448,10 @@
       
       this.set(bufValue);
       st2 = (start + ('['+tag+(title?'='+title:'')+']').length);
+
+      clog('s,e=' + start + ','+end);
+      clog(st2 + ';' + (st2+this.subStr(start, end).length));
+
       this.caretChk( st2, (st2+this.subStr(start, end).length) );
       return bufValue; 
     },
@@ -905,7 +944,7 @@
       return ''
       +'.btn.qq{margin-left:5px;}'
       +'.btn.qf{margin-right:-1px;}'
-      +'.btn .throb{display:none;background:url('+BTN.throb_fetch+') no-repeat;width:10px;height:8px;margin-right:2px;}'
+      +'.btn .throb, .c-avt .throb{display:none;background:url('+BTN.throb_fetch+') no-repeat;width:10px;height:8px;margin-right:2px;}'
       +'.bling{color:#999;}'
       +'.bling .throb{display:inline-block;}'
       +'.btn.btn-thr{width:10px!important;height:10px!important; cursor:default!important;float:right;margin-right:15px;border:0;background:transparent;}'
@@ -914,6 +953,11 @@
       +'#site-header.fx hr.sxln{top:29px;height:2px;}'
       +'#site-header.fx .main-h.r{margin-top:30px}'
       +'#site-header #donatflag{color:#F00000!important;margin-left:2px;}'
+      +'.c-avt{padding:0; margin:0; margin-right:5px;display:inline-block; height:18px; cursor:pointer;}'
+      +'.c-avt img{max-width:18px; margin-bottom:-5px;}'
+      +'.c-avt.bling img{display:none;}'
+      //+'.c-2.x .c-dnt{color:red; font-weight:bold; margin-left:3px;}'
+      +'.hide{display:none!important;}'
 
       +'.mQR .throb-bl{background:url('+BTN.throbber_gif+') no-repeat;display:inline-block;width:16px; height:16px;margin-right:5px;}'
       +'.mQR .legend, .mQR .form-input{margin-bottom:0;border-bottom:0;}'
@@ -989,7 +1033,6 @@
       +'.mQR .sayapkanan label{margin-left:2px;}'
 
       +'.sxln{margin:0;padding:0;border:0;height:1px;background:-webkit-gradient(linear,left top,right top,color-stop(0%,hsla(0,0%,0%,.04)),color-stop(50%,hsla(0,0%,0%,.35)),color-stop(100%,hsla(0,0%,0%,.04)));background:-webkit-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-moz-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-ms-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:-o-linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%);background:linear-gradient(left,hsla(0,0%,0%,.04) 0,hsla(0,0%,0%,.35) 50%,hsla(0,0%,0%,.04) 100%)}​'
-      // #f9f9f9
       
       +'.mktH{background-color:#f9f9f9;zoom:1;filter:progid:DXImageTransform.Microsoft.gradient(gradientType=0,startColorstr="#FFF9F9F9",endColorstr="#FFF0F0F0");background-image:linear-gradient(top,#f9f9f90%,#f0f0f0100%)}.mktH:after{content:"";display:block;clear:both;height:0;visibility:hidden}.mktH ul li{list-style:none;float:left;position:relative;height:20px}.mktH ul .mDM{margin-right:5px;background:transparent url('+imgcdn2+'menu.png) no-repeat right center}.mktH ul .mDM li{margin-right:0}.mktH ul .mSP{width:1px;height:16px;background-color:#ddd;overflow:hidden;text-indent:-999px;margin:0 2px}.mktH ul ul{display:none;position:absolute;top:18px;left:0;background:#f5f5f5;height:inherit;z-index:10}.mktH ul ul li{float:none;border-bottom:1px solid #d6d6d6}.mktH ul li:hover>ul{display:block}.mktH ul a{display:block;width:16px;height:16px;text-indent:-10000px;background-repeat:no-repeat;margin:0;padding:3px}.mktH ul ul a{display:block;text-indent:0;width:120px;padding:5px 5px 5px 25px}.mktH ul ul a:hover{background-color:#ddd}.mQR .mBT1 a{background-image:url('+imgcdn1+'bold.gif)}.mQR .mBT2 a{background-image:url('+imgcdn1+'italic.gif)}.mQR .mBT3 a{background-image:url('+imgcdn1+'underline.gif)}.mQR .mBT4 a{background-image:url('+imgcdn1+'justifyleft.gif)}.mQR .mBT5 a{background-image:url('+imgcdn1+'justifycenter.gif)}.mQR .mBT6 a{background-image:url('+imgcdn1+'justifyright.gif)}.mQR .mBT7 a{background-image:url('+imgcdn1+'insertunorderedlist.gif)}.mQR .mBT8 a{background-image:url('+imgcdn1+'insertorderedlist.gif)}.mQR .mBT9 a{background-image:url('+imgcdn1+'indent.gif)}.mQR .mBT10 a{background-image:url('+imgcdn1+'outdent.gif)}.mQR .mBT11 a{background-image:url('+imgcdn1+'createlink.gif)}.mQR .mBT12 a{background-image:url('+imgcdn1+'unlink.gif)}.mQR .mBT13 a{background-image:url('+imgcdn1+'email.gif)}.mQR .mBT14 a{background-image:url('+imgcdn1+'insertimage.gif)}.mQR .mBT15 a{background-image:url('+imgcdn1+'quote.gif)}.mQR .mBT16 a{background-image:url('+imgcdn1+'code.gif)}.mQR .mBT17 a{background-image:url('+imgcdn1+'removeformat.gif)}.mQR .mBT18{width:25px}.mQR .mBT18 a{background-image:url('+imgcdn1+'color.gif)}.mQR .mBT18 ul{width:81px;padding:1px}.mQR .mBT18 li{width:24px;height:24px;overflow:hidden;float:left;border:0;margin:1px 2px;padding:0}.mQR .mBT18 ul a{width:22px;height:22px;overflow:hidden;text-indent:-9999px;display:block;border-radius:3px;opacity:.68;border:solid 1px #ddd;margin:0;padding:0}.mQR .mBT18 ul a:hover{opacity:1;border-color:#ccc}.mQR .mBT18 .col1-1 a{background:#FF0}.mQR .mBT18 .col1-2 a{background:orange}.mQR .mBT18 .col1-3 a{background:red}.mQR .mBT18 .col2-1 a{background:blue}.mQR .mBT18 .col2-2 a{background:purple}.mQR .mBT18 .col2-3 a{background:green}.mQR .mBT18 .col3-1 a{background:#FFF}.mQR .mBT19 a{width:45px;text-indent:0;text-align:center;line-height:14px;background:#fff;padding:1px}.mQR .mBT19 li a{padding:4px 5px}.mQR .mBT19 ul a{width:120px;line-height:16px;height:16px;font-weight:500;text-indent:0!important;text-align:left}.mQR .mBT19 .font-arial a{font-family:Arial,"DejaVu Sans","Liberation Sans",Freesans,sans-serif}.mQR .mBT19 .font-arialblack a{font-family:"Arial Black",Gadget,sans-serif}.mQR .mBT19 .font-arialnarrow a{font-family:"Arial Narrow","Nimbus Sans L",sans-serif}.mQR .mBT19 .font-bookantiqua a{font-family:Times New Roman,Times,serif}.mQR .mBT19 .font-centurygothic a{font-family:"Century Gothic",futura,"URW Gothic L",Verdana,sans-serif}.mQR .mBT19 .font-comicsansms a{font-family:"Comic Sans MS",cursive}.mQR .mBT19 .font-couriernew a{font-family:"Courier New",Courier,"Nimbus Mono L",monospace}.mQR .mBT19 .font-georgia a{font-family:Constantina,Georgia,"Nimbus Roman No9 L",serif}.mQR .mBT19 .font-impact a{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif}.mQR .mBT19 .font-lucidaconsole a{font-family:"Lucida Sans Unicode","Lucida Grande","Lucida Sans","DejaVu Sans Condensed",sans-serif}.mQR .mBT19 .font-timesnewroman a{font-family:Cambria,"Times New Roman","Nimbus Roman No9 L",Freeserif,Times,serif}.mQR .mBT19 .font-Trebucher a{font-family:"Trebuchet MS",sans-serif}.mQR .mBT19 .font-Verdana a{font-family:Verdana,Geneva,"DejaVu Sans",sans-serif}.mQR .mBT20 a{background-image:url('+imgcdn3+'fonts.png);width:20px}.mQR .mBT20 li{height:auto}.mQR .mBT20 ul a{height:auto;text-align:center;padding:5px;display:block;line-height:16px;background-image:none}.mQR .mBT20 .size-1 a{font-size:10px;line-height:10px}.mQR .mBT20 .size-2 a{font-size:12px;line-height:12px}.mQR .mBT20 .size-5 a{font-size:20px;line-height:20px}.mQR .mBT20 .size-6 a{font-size:24px;line-height:24px}.mQR .mBT20 .size-7 a{font-size:28px;line-height:28px}.mQR .mBT22 a{width:25px;background:url('+imgcdn3+'youtube.gif) center top no-repeat}.mQR .mBT23 a{background:url('+imgcdn3+'vimeo.gif) center top no-repeat;width:25px}.mQR .mBT95{width:25px}.mQR .mBT95-wrapper{width:180px!important;padding:5px 2px}.mQR .mBT95 li{float:left!important;border:0!important;padding:0 3px 3px;height:15px!important}.mQR .mBT95 li a{overflow:hidden;text-indent:-9999px!important;display:block;-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;opacity:.78;height:10px!important;width:10px!important;border:solid 1px #ddd;padding:0}.mQR .mBT95 li a:hover{opacity:1;border-color:#333!important;background:#fff}.mQR .mBT95>a{background-image:url('+imgcdn1+'color.gif)}.mQR .mBT50 a{background-image:url('+imgcdn1+'html.gif)}.mQR .mBT51 a{background-image:url('+imgcdn1+'php.gif)}.mQR .mBT95,.mQR .mBT20,.mQR .mBT19{height:auto}.mQR .mBT95 li a,.mQR .mBT20 li a,.mQR .mBT19 li a{background:#f5f5f5}'
 
@@ -1006,6 +1049,10 @@
       +'body.nightmode .mQR #wrp_control {background:#666;}'
       +'body.nightmode .mktH ul ul li:hover{background:none;}'
       +'body.nightmode .mktH ul ul, body.nightmode .mktH ul ul a{background:#333;}'
+
+      /*hacky2-sharp-color*/ 
+      +'#content-wrapper .entry-content{color:#222!important;}'
+      +'#content-wrapper .entry-content .post-quote span:last-child{color:#333!important;}'
       ;
     },
     getCSSWideFix: function(){
@@ -1095,6 +1142,7 @@
     var kdomain = domainParse();
     gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
     gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
+    gvar.uavatar = gvar.kkcdn + 'user/avatar/';
     
     gvar.qID = 'mqr-content-wrapper';
     gvar.tID = 'reply-messsage';
@@ -1133,6 +1181,10 @@
     if( !hVal ) hVal = ['', '0'];
     gvar.user.isDonatur = (hVal[1] == '1');
 
+    hVal = getValueForId(gvar.user.id, 'AVATARS_USERS');
+    if( !hVal ) hVal = ['', 'male.jpg'];
+    gvar.user.avatar = gvar.uavatar + hVal[1];
+
     settings.widethread = (getValue(KS+'WIDE_THREAD') == '1');
     settings.tmp_text = getValue(KS+'TMP_TEXT');
     settings.tmp_title = getValue(KS+'TMP_TITLE');
@@ -1152,6 +1204,7 @@
       // is later be set after submission is performed and there is no capcay for sure
       isDonatur: null,
 
+      avatar: null,
       name: null,
       id: null
     }, node, cucok, el;
@@ -1163,8 +1216,8 @@
       if( cucok = /\bprofile\/([\d]+)/i.exec(getAttr('href', node)) )
         user.id = cucok[1];
 
-      el = createEl('span',{id:'donatflag'});
-      append(node, el);
+      /*el = createEl('span',{id:'donatflag'});
+      append(node, el);*/
     }
     return user;
   }
@@ -1199,7 +1252,7 @@
       GM_addGlobalScript(rSRC.getSCRIPT());
     }
 
-    var par, node, lg, el, nodes;
+    var par, node, lg, el, nodes, imgStr, profile_uri;
     // scan all quote
     nodes = $D('//a[contains(@class, "btn s") and contains(@href,"post_reply/")]')
     if(nodes.snapshotLength > 0){
@@ -1266,13 +1319,77 @@
       }
     }
 
+    /*
     node = $D('#donatflag');
     if( gvar.user.isDonatur ){
       node.innerHTML = '[$]';
     }
     else{
-      Dom.remove(node);
+      //Dom.remove(node);
+      node && addClass('hide', node);
     }
+    */
+
+    var profile_check = function(e){
+      var _el = (e.target||e);
+      (_el.nodeName == 'IMG') && (_el = _el.parentNode);
+      var _par = _el.parentNode
+      _el_dnt = $D('#donatflag', null, 1);
+      addClass('hide', _el_dnt);
+      addClass('bling', _el);
+
+      // xhr
+      var _xhr, _xhr_cb = function(ret, xhr){
+        var imguri, cucok, isDonatur;
+        ret && (ret = ret.responseText);
+
+        if( ret ){
+          cucok = ret.match(/<figure>\s*<img\s*(?:(?:alt|class|border|width|height)=['"](?:[^'"]+)?.\s*)*src=['"]([^\'\"]+)/i);
+
+          imguri = (cucok && cucok.length ? cucok[1] : '/male.jpg');
+          setValueForId(gvar.user.id, String(imguri), 'AVATARS_USERS');
+
+          setAttr('src', (/^https?\:/.test(imguri) ? '' : gvar.uavatar) + imguri, $D('//img[@class="c-avtr"]', null, 1));
+          removeClass('bling', _el);
+
+          if( (isDonatur = /class=[\'\"]fn[\'\"]\s*>.+><b>\[\$\]<\//i.test(ret)) ){
+            removeClass('hide', _el_dnt);
+          }
+          setValueForId(gvar.user.id, String(isDonatur ? '1':'0'), 'AUTHORIZED_USERS');
+        }
+        if(gvar.reqPID && xhr.pid && "undefined" != typeof gvar.reqPID[xhr.pid])
+          delete gvar.reqPID[xhr.pid];
+      };
+
+      (function(){
+        var profile_uri = String(gvar.domain);
+        profile_uri = profile_uri.substring(0, profile_uri.length-1);
+        profile_uri+= String(getAttr('href', node)).replace(gvar.domain, '');
+        profile_uri = profile_uri.replace('/profile/', '/profile/aboutme/');
+
+        var xhr = new GM_XHR();
+        xhr.uri = profile_uri;
+        xhr.cached = true;
+        xhr.pid = 'profile-' + String(gvar.user.id);
+        clog('GET profile detail...: ' + xhr.uri);
+        gvar.reqPID[xhr.pid] = xhr.request(null, 'GET', _xhr_cb);
+      })();
+    };
+
+    par = $D('//div[contains(@class, "c c-2 x")]', null, 1);
+    node = $D('.//a[contains(@href, "/profile/")]', par, 1);
+    el = createEl('span', {id:'donatflag', 'class':'hide'}, '[$]');
+    append(node, el);
+
+    imgStr = '<i class="throb"></i><img class="c-avtr" src="http://kkcdn-static.kaskus.co.id/user/avatar/male.jpg" />';
+    el = createEl('div', {'class':'c-avt'}, imgStr);
+    prepend(par, el);
+    Dom.Ev(el, 'click', function(e){ profile_check(e) });
+    profile_check(el);
+
+
+    
+
 
     clog('endof-design');
     // attach event
@@ -2190,12 +2307,15 @@
   // sp = array of records separator
   // gvar.user.id, 'LAYOUT_TPL', ['<!>','::'], function
   function getValueForId(userID, gmkey, sp){
-    if( !userID ) return null;    
+    if( !userID ) return null;
+    clog(gmkey + ' inside');
+    
     sp = [(isDefined(sp) && typeof(sp[0])=='string' ? sp[0] : ';'), (isDefined(sp) && typeof(sp[1])=='string' ? sp[1] : '::')];    
     var val, info, retValue=null;
 
     return (function(val){
       if( !val ) {
+
         clog(gmkey + ' blank; halted');
         retValue = null;
         return;
