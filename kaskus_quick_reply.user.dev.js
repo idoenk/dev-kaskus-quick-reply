@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
-// @dtversion      1305304106
-// @timestamp      1369928264746
+// @dtversion      1308114106
+// @timestamp      1376225355906
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-05-30 . 1369928264746
+// v4.1.0.6 - 2013-08-11 . 1376225355906
+//   silent missing cookie method, changed to clog
 //   fix avoid URL Link converted to uppercase. Thx=[zoolcar9|LouCypher]
 //   fix autotext smiley custom containing quot, use safe_uesc (prevent xss);
 //   fix qq-parser list/italic. Thx=[coolkips,S4nJi]
@@ -85,8 +86,8 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1369928264746 // version.timestamp
-	,dtversion: 1305304106 // version.date
+	 timestamp: 1376225355906 // version.timestamp
+	,dtversion: 1308114106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -526,9 +527,9 @@ var rSRC = {
 			   // remote button to chkVal
 			+  '<input id="qr_chkval" type="button" style="display:none" value="cv" />' 
 			   // remote to check MultiQuote
-			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){alert(e)}" />'
+			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){clog(e)}" />'
 			   // remote button to delete-mQ
-			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){alert(e)}" />'
+			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){clog(e)}" />'
 			+	'<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
@@ -920,7 +921,7 @@ var rSRC = {
 		+'var __mq="kaskus_multiquote", __tmp="tmp_chkVal";'
 		+'function deleteMultiQuote(){$.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
 		+'function chkMultiQuote(){var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
-		+'try{chkMultiQuote()}catch(e){alert(e)};'
+		+'try{chkMultiQuote()}catch(e){clog(e)};'
 		+''
 
 		+'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
@@ -1366,7 +1367,6 @@ var _BOX = {
 				if( val!="" ) arquery[name] = val;
 			}
 		});
-		//alert(dump(arquery));
 		!arquery['harga'] && (arquery['harga'] = 1);
 		!arquery['lokasi'] && (arquery['lokasi'] = 33); // N/A
 
@@ -4505,8 +4505,12 @@ function wrap_layout_tpl(text){
 
 // domain guest
 function domainParse(){
-	var r, l = location.hostname
-	return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'kkcdn-static.')};
+	var l = location.hostname
+	return {
+		"prot": location.protocol,
+		"host": l,
+		"statics" : l.replace(/^\w{3}\./i, 'kkcdn-static.')
+	};
 }
 
 
@@ -6382,6 +6386,7 @@ function init(){
 	gvar.titlename= gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
 	
 	var kdomain = domainParse();
+
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
 	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
 	gvar.kask_domain = 'http://kask.us/';
