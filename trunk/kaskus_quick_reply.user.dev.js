@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
 // @dtversion      1308114106
-// @timestamp      1376225355906
+// @timestamp      1376235000357
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-08-11 . 1376225355906
+// v4.1.0.6 - 2013-08-11 . 1376235000357
+//   failover handler loading jquery.cookie
 //   silent missing cookie method, changed to clog
 //   fix avoid URL Link converted to uppercase. Thx=[zoolcar9|LouCypher]
 //   fix autotext smiley custom containing quot, use safe_uesc (prevent xss);
@@ -86,7 +87,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1376225355906 // version.timestamp
+	 timestamp: 1376235000357 // version.timestamp
 	,dtversion: 1308114106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -527,9 +528,9 @@ var rSRC = {
 			   // remote button to chkVal
 			+  '<input id="qr_chkval" type="button" style="display:none" value="cv" />' 
 			   // remote to check MultiQuote
-			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){clog(e)}" />'
+			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
 			   // remote button to delete-mQ
-			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){clog(e)}" />'
+			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
 			+	'<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
@@ -918,11 +919,11 @@ var rSRC = {
 		+'  catch(e){ console && console.log && console.log("Error. elem.dispatchEvent is not function."+e) }'
 		+'}'
 		
+		+'function jq_cookie(){jQuery.cookie=function(d,e,b){if(arguments.length>1&&(e===null||typeof e!=="object")){b=jQuery.extend({},b);if(e===null){b.expires=-1}if(typeof b.expires==="number"){var g=b.expires,c=b.expires=new Date();c.setDate(c.getDate()+g)}return(document.cookie=[encodeURIComponent(d),"=",b.raw?String(e):encodeURIComponent(String(e)),b.expires?"; expires="+b.expires.toUTCString():"",b.path?"; path="+b.path:"",b.domain?"; domain="+b.domain:"",b.secure?"; secure":""].join(""))}b=e||{};var a,f=b.raw?function(h){return h}:decodeURIComponent;return(a=new RegExp("(?:^|; )"+encodeURIComponent(d)+"=([^;]*)").exec(document.cookie))?f(a[1]):null};}'
 		+'var __mq="kaskus_multiquote", __tmp="tmp_chkVal";'
-		+'function deleteMultiQuote(){$.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
-		+'function chkMultiQuote(){var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
-		+'try{chkMultiQuote()}catch(e){clog(e)};'
-		+''
+		+'function deleteMultiQuote(){!$.cookie && jq_cookie(); $.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
+		+'function chkMultiQuote(){!$.cookie && jq_cookie(); var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
+		+'try{chkMultiQuote()}catch(e){console && console.log && console.log(e)};'
 
 		+'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
 		+''
