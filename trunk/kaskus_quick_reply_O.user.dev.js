@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
 // @version        4.1.0.6
-// @dtversion      1308114106
-// @timestamp      1376235000357
+// @dtversion      1310284106
+// @timestamp      1382901501963
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,7 +29,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-08-11 . 1376235000357
+// v4.1.0.6 - 2013-10-28 . 1382901501963
 //  Forked version from 4.1.0.6 (adapting Opera)
 //
 // -/!latestupdate---
@@ -60,10 +60,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1376235000357 // version.timestamp
+  timestamp: 1382901501963 // version.timestamp
   //timestamp: 999 // version.timestamp for test update
   
-  ,dtversion: 1308114106 // version.date
+  ,dtversion: 1310284106 // version.date
   
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -3860,6 +3860,14 @@ var _QQparse = {
           if( /^embed\s*/i.test($2) && (cucok = mct[1].match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&\?]+)/i)) ){
             clog('bbcode recognized: [YOUTUBE]');
             return ( '[YOUTUBE]' + cucok[1] + '[/YOUTUBE]' );
+          } else
+          if( /^iframe\s*/i.test($2) && (cucok = mct[1].match(/\bvimeo\.com\/video\/([^&\b\?]+)/i)) ){
+            clog('bbcode recognized: [VIMEO]');
+            return ( '[VIMEO]' + cucok[1] + '[/VIMEO]' );
+          } else
+          if( /^iframe\s*/i.test($2) && (cucok = mct[1].match(/\bsoundcloud\.com\/tracks\/([^&\b\?]+)/i)) ){
+            clog('bbcode recognized: [SOUNDCLOUD]');
+            return ( '[SOUNDCLOUD]' + cucok[1] + '[/SOUNDCLOUD]' );
           } else
           if( cucok = $2.match(/img\s*(?:(?:alt|src|class|border)=['"](?:[^'"]+)?.\s*)*title=['"]([^'"]+)/i)){
             // is kaskus emotes?
