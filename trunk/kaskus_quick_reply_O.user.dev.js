@@ -11,7 +11,7 @@
 // @exclude        *kaskus.co.id/post_reply/*
 // @version        4.1.0.6
 // @dtversion      1310284106
-// @timestamp      1382901501963
+// @timestamp      1382906983052
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,7 +29,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-10-28 . 1382901501963
+// v4.1.0.6 - 2013-10-28 . 1382906983052
 //  Forked version from 4.1.0.6 (adapting Opera)
 //
 // -/!latestupdate---
@@ -60,7 +60,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1382901501963 // version.timestamp
+  timestamp: 1382906983052 // version.timestamp
   //timestamp: 999 // version.timestamp for test update
   
   ,dtversion: 1310284106 // version.date
@@ -3704,7 +3704,7 @@ var _QQparse = {
       }else
 
       // parse list (number/bullet)
-      if( /^ul|ol\s/i.test($2) || _2up=='OL' || _2up=='UL'){
+      if( /^(?:ul|ol)\s/i.test($2) || _2up=='OL' || _2up=='UL'){
         mct = [];
         if( $2.indexOf('decimal;')!=-1 ){
           mct = ['','LIST=1']; // numbering...
