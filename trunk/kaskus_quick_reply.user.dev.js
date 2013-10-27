@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
 // @dtversion      1310284106
-// @timestamp      1382901501963
+// @timestamp      1382906983052
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-10-28 . 1382901501963
+// v4.1.0.6 - 2013-10-28 . 1382906983052
+//   fix qq-parser list regex
 //   fix qq-parser vimeo,soundcloud; Thx[Sanji]
 //   failover handler loading jquery.cookie
 //   silent missing cookie method, changed to clog
@@ -88,7 +89,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1382901501963 // version.timestamp
+	 timestamp: 1382906983052 // version.timestamp
 	,dtversion: 1310284106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -4012,6 +4013,7 @@ var _QQparse = {
 			
 			// parse code
 			if( /^pre\s/i.test($2) || _2up=='PRE' ){
+				clog('parse PRE');
 				mct = $2.toLowerCase().match(/\/?pre(?:(?:\s*(?:\w+=['"][^'"]+.\s*)*)?\s?rel=['"]([^'"]+))?/i);
 				
 				if( isDefined(mct[1]) ){
@@ -4035,7 +4037,8 @@ var _QQparse = {
 			}else
 
 			// parse list (number/bullet)
-			if( /^ul|ol\s/i.test($2) || _2up=='OL' || _2up=='UL'){
+			if( /^(?:ul|ol)\s/i.test($2) || _2up=='OL' || _2up=='UL'){
+				clog('parse list UL');
 				mct = [];
 				if( $2.indexOf('decimal;')!=-1 ){
 					mct = ['','LIST=1']; // numbering...
@@ -4067,6 +4070,7 @@ var _QQparse = {
 
 			// parse hand of list
 			if( /^li/i.test($2) || _2up=='LI' ){
+				clog('parse list LI');
 				if( (openTag = !$1) ){
 					clog('bbcode recognized: [*]');
 				}
@@ -4077,6 +4081,7 @@ var _QQparse = {
 			
 			// parse align | color | font | size;
 			if( /^span\s/i.test($2) || _2up=='SPAN'){
+				clog('parse SPAN align | color | font | size');
 				if( $2.indexOf('-align:')!=-1 ){
 					
 					mct = $2.match(/\/?span(?:(?:[^\-]+).align\:(\w+))?/i);
@@ -4133,6 +4138,7 @@ var _QQparse = {
 			
 			// parse html | php | indent
 			if( /^div\s/i.test($2) || _2up=='DIV'){
+				clog('parse DIV html | php | indent');
 				if( mct = $2.toLowerCase().match(/\s1em\s40px/) )
 					mct = [$2, 'INDENT'];
 				else
@@ -4160,6 +4166,7 @@ var _QQparse = {
 			
 			// parse linkify
 			if( /\shref=/i.test($2) || _2up=='A' ){
+				clog('parse A');
 				mct = $2.match(/\/?a\s*(?:(?:target|style|title|linkid)=[\'\"][^\'\"]+.\s*)*(?:\s?href=['"]([^'"]+))?/i);
 				if( isDefined(mct[1]) ){
 					tag = (/^mailto:/.test(mct[1]) ? 'EMAIL' : 'URL' );
@@ -4183,7 +4190,8 @@ var _QQparse = {
 			}else
 			
 			// parse img
-			if( /\ssrc=/i.test($2) ){
+			if( /\sSRC=/i.test(_2up) ){
+				clog('parse SRC');
 				mct = $2.match(/\ssrc=['"]([^'"]+)/i);
 				
 				if( mct && isDefined(mct[1]) ){
@@ -4223,6 +4231,7 @@ var _QQparse = {
 			}else{
 				return S;
 			}
+
 		}
 		,double_encode= function(x){
 			x = br2nl(x);
