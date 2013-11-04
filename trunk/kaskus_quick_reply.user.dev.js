@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.6
-// @dtversion      1310284106
-// @timestamp      1382906983052
+// @dtversion      1311044106
+// @timestamp      1383574109058
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,7 +26,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-10-28 . 1382906983052
+// v4.1.0.6 - 2013-11-04 . 1383574109058
+//   fix broken cdn kaskus hostname; Thx[AMZMA]
 //   fix qq-parser list regex
 //   fix qq-parser vimeo,soundcloud; Thx[Sanji]
 //   failover handler loading jquery.cookie
@@ -89,7 +90,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1382906983052 // version.timestamp
+	 timestamp: 1383574109058 // version.timestamp
 	,dtversion: 1310284106 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -883,7 +884,8 @@ var rSRC = {
 		+"#box_preview {max-height:" + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + "px;}"
 		+".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
 		+".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
-		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"		
+		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
+		+".hfeed.editpost{background: #DFC;}"
 	},
 
 	/*
@@ -2028,6 +2030,7 @@ var _NOFY = {
 	// whether [quote, edit, error]
 	// ----
 	mode	: 'quote',
+	row_id	: '', // active row being edit
 	btnset	: true,
 	msg		: '',
 	cb		: null,
@@ -2140,8 +2143,15 @@ var _NOFY = {
 		_ME.init({mode:'error', msg:_msg, cb:func});
 	},
 	dismiss: function(){
+		var _ME = this;
 		$('.qr-m-panel').show();
 		$('#notify_msg, #notify_wrap').hide();
+		
+		if( _ME.row_id ){
+			clog('releasing editpost');
+			$( '#'+_ME.row_id ).find('.editpost').removeClass('editpost');
+			_ME.row_id = '';
+		}
 		try{
 			gvar.sTryRequest.abort();
 		}catch(e){}
@@ -4522,13 +4532,13 @@ function wrap_layout_tpl(text){
 	return (conf[1] == 1 ? gvar.settings.userLayout.template.replace(/{message}/gi, text) : text);
 }
 
-// domain guest
+// domain guess for static or cdn
 function domainParse(){
 	var l = location.hostname
 	return {
 		"prot": location.protocol,
 		"host": l,
-		"statics" : l.replace(/^\w{3}\./i, 'kkcdn-static.')
+		"statics" : 'cdn.kaskus.com'
 	};
 }
 
@@ -5373,7 +5383,7 @@ function eventsController(){
 					var cbs = '.box-smiley', tgt_autoload = null;
 					if( !$(cbs).is(':visible') ){
 						if( !$(cbs).hasClass('events') ){
-								clog('bloom ber events')
+							clog('bloom ber events');
 							$(cbs + ' .goog-tab').each(function(){
 								var id, T = $(this);
 								$(this).hover(
@@ -5398,6 +5408,7 @@ function eventsController(){
 								tgt_autoload = gvar.settings.autoload_smiley[1];
 							
 							_SML_.init();
+							$(cbs).addClass('events');
 						}
 						_SML_.toggletab(true);
 						
@@ -6127,7 +6138,8 @@ function start_Main(){
 					$(this).find('a[href*="/edit_"]').each(function(){
 						$(this).click(function(ev){
 							do_an_e(ev);
-							_AJAX.edit( $(this), function(){
+							var $me = $(this);
+							_AJAX.edit($me, function(){
 								var func = function(){
 									$('#dismiss_request').click(function(){
 										_NOFY.dismiss()
@@ -6137,8 +6149,12 @@ function start_Main(){
 							}, function(){
 								_NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
 								_TEXT.lastfocus();
+
+								var $row = $me.closest('.row');
+								_NOFY.row_id = ($row.length ? $row.attr('id') : '');
+								$me.closest('.hfeed').addClass('editpost');
 							});
-							slideAttach( $(this) );
+							slideAttach( $me );
 						});
 					});
 					
@@ -6402,15 +6418,17 @@ function init(){
 			submit	: "Save Changes"
 		}
 	};
-	gvar.titlename= gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
+	gvar.titlename = gvar.inner.reply.title + (isQR_PLUS!==0?'+':'');
 	
 	var kdomain = domainParse();
 
 	gvar.domain = kdomain.prot + '//' + kdomain.host +'/';
-	gvar.olddomain = gvar.domain.replace(/livebeta\./i, 'www.');
-	gvar.kask_domain = 'http://kask.us/';
+	gvar.kask_domain = kdomain.prot+'//kask.us/';
 	gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
-	gvar.kqr_static = 'http://' + (gvar.__DEBUG__ ? 
+
+	// set true to simulate using css from googlecode, [debug-purpose]
+	gvar.force_live_css = null;
+	gvar.kqr_static = 'http://' + (!gvar.force_live_css && gvar.__DEBUG__ ? 
 		'127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
 		'dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/'
 	);
@@ -6441,7 +6459,7 @@ function init(){
 	
 	ApiBrowserCheck();
 	//gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '')  +'.css';
-	gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '.' + gvar.scriptMeta.cssREV)  +'.css';
+	gvar.css_default = 'kqr_quad'+ (!gvar.force_live_css && gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '.' + gvar.scriptMeta.cssREV)  +'.css';
 	
 	gvar.injected = false;
 	gvar.mx = 30; gvar.ix = 0;
@@ -6462,6 +6480,8 @@ function CSS_precheck(){
 				// check expired dari lastupdate (atleast 1 week)
 				var one_week, cucok, parts = ret.split(';');
 				one_week = parseInt(1000 * 60 * 60 * 24 * 7);
+
+				clog('CSS_META exists, '+dump(parts)+'; checking age..');
 				if( cucok = /kqr_quad\.([^\.]+).css/.exec( parts[0] ) ){
 					if( gvar.scriptMeta.cssREV != cucok[1] || ( (parseInt(parts[0]) + one_week ) < (new Date().getTime()) )  ){
 						/*
@@ -6469,11 +6489,13 @@ function CSS_precheck(){
 						*  -qr engine changed, so the required css file
 						*  -css_meta said that css_bulk is expired (> 7 days)
 						*/
+						clog('CSS_META is expired');
 						CSS_wait();
 						
 					}else{
 						getValue(KS + 'CSS_BULK', function(ret){
 							if( !ret ){
+								clog('CSS_META > CSS_BULK not found');
 								// not found CSS_BULK
 								CSS_wait(); return;
 							}
@@ -6481,16 +6503,19 @@ function CSS_precheck(){
 								_CSS.css_name = "kqr_quad." + cucok[1] + '.css';
 
 								// set css to DOM; update timestamp for next lastupdate check
+								clog('CSS_META > CSS_BULK found, we good togo');
 								_CSS.set_css(ret, start_Main);
 							}
 						});
 					}
 				}else{
 					// invalid value in CSS_META
+					clog('CSS_META has an invalid value');
 					CSS_wait();
 				}
 			}else{
 				// no meta yet, key deleted?
+				clog('CSS_META not found, first-run/reset?');
 				CSS_wait();
 			}
 		});
@@ -6503,12 +6528,20 @@ function CSS_precheck(){
 }
 
 function CSS_wait(refetch_only, cb){
+	clog('CSS_wait inside');
+
+	if( !gvar.force_live_css )
 	if( gvar.noCrossDomain || gvar.__DEBUG__ ) {
-		GM_addGlobalStyle(gvar.kqr_static + gvar.css_default + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV), 'direct_css', true);
+		clog('[debug-mode] OR crosdomain not possible, performing direct load css');
+
+		var css_uri = gvar.kqr_static + gvar.css_default + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV);
+		clog('GM_addGlobalStyle: '+css_uri);
+		GM_addGlobalStyle(css_uri, 'direct_css', true);
 		start_Main();
 		if( typeof cb == 'function' ) cb();
 		return;
 	}
+
 	if( !$('#xhr_css').length && gvar.ix < gvar.mx ){
 		if( !_CSS.engage ){
 			_CSS.init();
@@ -6541,6 +6574,7 @@ function jQ_wait2(){
 
 
 function jQ_wait() {
+	clog('jQ_wait Inside');
 	if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
 		gvar.$w.setTimeout(function () { jQ_wait() }, 200);
 		if( !gvar.injected ){
