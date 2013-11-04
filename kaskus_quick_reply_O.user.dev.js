@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
 // @version        4.1.0.6
-// @dtversion      1310284106
-// @timestamp      1382906983052
+// @dtversion      1311044106
+// @timestamp      1383574109058
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,7 +29,7 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-10-28 . 1382906983052
+// v4.1.0.6 - 2013-11-04 . 1383574109058
 //  Forked version from 4.1.0.6 (adapting Opera)
 //
 // -/!latestupdate---
@@ -60,10 +60,10 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 // gvar.scriptMeta.scriptID
 gvar.sversion = 'v' + '4.1.0.6';
 gvar.scriptMeta = {
-  timestamp: 1382906983052 // version.timestamp
+  timestamp: 1383574109058 // version.timestamp
   //timestamp: 999 // version.timestamp for test update
   
-  ,dtversion: 1310284106 // version.date
+  ,dtversion: 1311044106 // version.date
   
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -4183,10 +4183,14 @@ function wrap_layout_tpl(text){
   return (conf[1] == 1 ? gvar.settings.userLayout.template.replace(/{message}/gi, text) : text);
 }
 
-// domain guest
+// domain guess for static or cdn
 function domainParse(){
-  var r, l = location.hostname
-  return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'kkcdn-static.')};
+  var l = location.hostname
+  return {
+    "prot": location.protocol,
+    "host": l,
+    "statics" : 'cdn.kaskus.com'
+  };
 }
 
 
