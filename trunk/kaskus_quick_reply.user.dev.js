@@ -9,9 +9,9 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.6
-// @dtversion      1311044106
-// @timestamp      1383574109058
+// @version        4.1.0.7
+// @dtversion      1312074107
+// @timestamp      1386433463086
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -26,6 +26,12 @@
 //
 // -!--latestupdate
 //
+// v4.1.0.7 - 2013-12-07 . 1386433463086
+//   fix broken fetch quote
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.1.0.6 - 2013-11-04 . 1383574109058
 //   fix broken cdn kaskus hostname; Thx[AMZMA]
 //   fix qq-parser list regex
@@ -36,9 +42,6 @@
 //   fix autotext smiley custom containing quot, use safe_uesc (prevent xss);
 //   fix qq-parser list/italic. Thx=[coolkips,S4nJi]
 //
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v4.1.0.5 - 2013-04-14 . 1365873189493
 //   Fix additionalopts (subscriptions). Thx=[gretongerz]
 //   Fix multiquote (Chrome)
@@ -48,30 +51,6 @@
 //   event click on raise_error
 //   fix edit & behaviour in Groupee. Thx=[S4nJi,coolkips]
 //
-// v4.1.0.4 - 2012-12-30 . 1356801568918
-//   fix qq-parser spoiler when wrapped with any tags; Thx[p1nky,coolkips]
-//   +image-uploader (imagetoo,uploadimage,cubeupload)
-//   deprecate postimage
-//   fix invalid emoticon bbcode; Thx[Alfazaki]
-//   +edit post additional fields;
-//   fix qq-parser youtube tag. Thx=[IbrahimKh]
-//   get rid quot (") on wrap/parsing tags (font,size,color). Thx[coolkips]
-//
-// v4.1.0 - 2012-12-09 . 1355016895853
-//   +text counter settings
-//   +smilies
-//   fix size_mapper
-//   fix bad-css-checker, Lv.1 Thx=[p1nky]
-//   reimplement fixercod
-//   catch error text too long
-//   fix keep scrollTop pos when editor in scroll mode. Thx=[coolkips,p1nky]
-//   force scroll to bottom on lastfocus (editor)
-//   +bad-css-checker
-//   +character counter
-//   fix insert list (bullet,number)
-//   fix lastfocus on [edit post, continue draft]. Thx=[coolkips]
-//   fix quick-quote parser [align,size,font,indent]
-//   deprecate toCharRef. Thx=[mangudel]
 //
 //
 // v0.1 - 2010-06-29
@@ -87,11 +66,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.6';
+gvar.sversion = 'v' + '4.1.0.7';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1383574109058 // version.timestamp
-	,dtversion: 1310284106 // version.date
+	 timestamp: 1386433463086 // version.timestamp
+	,dtversion: 1311074107 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -1712,6 +1691,14 @@ var _AJAX = {
 		,ajaxrun: false // current-run
 	},
 	init: function(){},
+	get_formact_norm: function(){
+		var uri = $('#formform').attr('action');
+		if( uri.indexOf('post=') !== -1 )
+			uri = uri.replace(/\&?post=(?:[^\b\&]+)?/gi, '');
+		if( uri.indexOf('?') === -1 )
+			uri += '?';
+		return uri;
+	},
 	ajaxPID: function(mode, running){
 		if(!mode) return;
 		if( _AJAX.e.ajaxrun && running !== false ){
@@ -1729,13 +1716,14 @@ var _AJAX = {
 	quote: function(obj, cb_before, cb_after ){
 		
 		_AJAX.e.task = 'quote';
-		var post_ids, uri = $('#formform').attr('action');
+		var post_ids, uri = _AJAX.get_formact_norm();
 		post_ids = $('#tmp_chkVal').val();
-		if(post_ids)
+		if( post_ids )
 			post_ids = post_ids.split(',');
-		uri+= '/?post=' + post_ids[0];
-		
+
+		uri+= '&post='+post_ids[0];
 		clog('uri=' + uri);
+		
 		if( _AJAX.e.task && gvar.ajax_pid[_AJAX.e.task] ) {
 			clog('AJAX '+_AJAX.e.task+' is currently running, abort previous...');
 			try{
@@ -1790,7 +1778,6 @@ var _AJAX = {
 			
 			gvar.edit_mode = 0;
 			_AJAX.e.task = 'post';
-			var act = $('#formform').attr('action').toString();
 			$('#formform')
 				.attr('action', '/post_reply/' + gvar.pID )
 				.attr('name', 'postreply' );
@@ -1826,7 +1813,7 @@ var _AJAX = {
 			gvar.edit_mode = 1;
 			var uri, href; 
 			href = trimStr( obj.attr('href').toString() );
-			uri = (href.indexOf(gvar.domain)==-1 ?gvar.domain.substring(0, gvar.domain.length-1) : '') + href;
+			uri = (href.indexOf(gvar.domain)==-1 ? gvar.domain.substring(0, gvar.domain.length-1) : '') + href;
 			
 			gvar.sTryRequest = $.get( uri, function(data) {
 				

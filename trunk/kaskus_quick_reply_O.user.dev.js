@@ -9,9 +9,9 @@
 // @include        *kaskus.co.id/show_post/*
 // @license        (CC) by-nc-sa 3.0
 // @exclude        *kaskus.co.id/post_reply/*
-// @version        4.1.0.6
-// @dtversion      1311044106
-// @timestamp      1383574109058
+// @version        4.1.0.7
+// @dtversion      1312074107
+// @timestamp      1386433463086
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    s4nji, riza_kasela, p1nky, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -29,20 +29,18 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.6 - 2013-11-04 . 1383574109058
-//  Forked version from 4.1.0.6 (adapting Opera)
+// v4.1.0.7 - 2013-12-07 . 1386433463086
+//  Forked version from 4.1.0.7 (adapting Opera)
 //
 // -/!latestupdate---
 // ==/UserScript==
 //
+// v4.1.0.6 - 2013-11-04 . 1383574109058
+//  Forked version from 4.1.0.6 (adapting Opera)
+//
 // v4.1.0.5 - 2012-04-14 . 1365873189493
 //  Forked version from 4.1.0.5 (adapting Opera)
 //
-// v4.1.0.4 - 2012-12-30 . 1356801568918
-//  Forked version from 4.1.0.4 (adapting Opera)
-//
-// v4.1.0 - 2012-12-09 . 1355016895853
-//  This version forked from 4.1.0 adapting to Opera
 //
 //
 // v0.1 - 2010-06-29
@@ -1645,6 +1643,14 @@ var _AJAX = {
     ,ajaxrun: false // current-run
   },
   init: function(){},
+  get_formact_norm: function(){
+    var uri = $('#formform').attr('action');
+    if( uri.indexOf('post=') !== -1 )
+      uri = uri.replace(/\&?post=(?:[^\b\&]+)?/gi, '');
+    if( uri.indexOf('?') === -1 )
+      uri += '?';
+    return uri;
+  },
   ajaxPID: function(mode, running){
     if(!mode) return;
     if( _AJAX.e.ajaxrun && running !== false ){
@@ -1662,13 +1668,14 @@ var _AJAX = {
   quote: function(obj, cb_before, cb_after ){
     
     _AJAX.e.task = 'quote';
-    var post_ids, uri = $('#formform').attr('action');
+    var post_ids, uri = _AJAX.get_formact_norm();
     post_ids = $('#tmp_chkVal').val();
     if(post_ids)
       post_ids = post_ids.split(',');
-    uri+= '/?post=' + post_ids[0];
     
+    uri+= '&post=' + post_ids[0];
     clog('uri=' + uri);
+
     if( _AJAX.e.task && gvar.ajax_pid[_AJAX.e.task] ) {
       clog('AJAX '+_AJAX.e.task+' is currently running, abort previous...');
       try{
@@ -1724,7 +1731,6 @@ var _AJAX = {
       
       gvar.edit_mode = 0;
       _AJAX.e.task = 'post';
-      var act = $('#formform').attr('action').toString();
       $('#formform')
         .attr('action', '/post_reply/' + gvar.pID )
         .attr('name', 'postreply' );
