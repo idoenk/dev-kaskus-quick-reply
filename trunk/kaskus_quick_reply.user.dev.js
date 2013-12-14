@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.7
-// @dtversion      1312074107
-// @timestamp      1386433463086
+// @dtversion      1312154107
+// @timestamp      1387045224872
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -19,15 +19,16 @@
 // @include        http://*.imageshack.us/*
 // @include        http://www.imgzzz.com/*
 // @include        http://cubeupload.com/*
-// @include        http://www.imagetoo.com/*
-// @include        http://imagetoo.com/*
 // @include        http://imgur.com/*
 // @include        http://imagevenue.com/*
 //
 // -!--latestupdate
 //
-// v4.1.0.7 - 2013-12-07 . 1386433463086
+// v4.1.0.7 - 2013-12-15 . 1387045224872
 //   fix broken fetch quote
+//   fix character left on thread post upto 20k
+//   deprecate uploader imagetoo
+//   +(plus)quote, include quotes on quick-quote (experimental)
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -69,7 +70,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.7';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1386433463086 // version.timestamp
+	 timestamp: 1387045224872 // version.timestamp
 	,dtversion: 1311074107 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -109,6 +110,7 @@ var OPTIONS_BOX = {
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -S4nJi
+ ,KEY_SAVE_PLUS_QUOTE:   ['0'] // quoting quote inside post
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
@@ -513,13 +515,19 @@ var rSRC = {
 			+  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
 			   // remote button to delete-mQ
 			+  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
-			+	'<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '10000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
+			+	'<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '20000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
 			
 			+  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
 			+  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<div class="sub-bottom sayapkanan">'
-			+  '<input type="checkbox" tabindex="4" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+
+			+  '<div class="control">'
+			+  '<input type="checkbox" tabindex="4" id="chk_plusquote" '+(gvar.settings.plusquote ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Include Quotes on Quick-Quote" for="chk_plusquote">+Quotes</label></a>'
+			+  '</div>'
+			+  '<div class="control">'
+			+  '<input type="checkbox" tabindex="5" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+			+  '</div>'
 			+  '</div>'
 			
 			+(gvar.__DEBUG__ ? '<br/>':'')
@@ -785,7 +793,7 @@ var rSRC = {
 			+'<p><tt><kbd>Alt</kbd> + <kbd>S</kbd></tt><span>Post Reply</span></p>'
 			+'<p><tt><kbd>Alt</kbd> + <kbd>P</kbd></tt><span>Preview Quick Reply</span></p>'
 			+'<p><tt><kbd>Alt</kbd> + <kbd>X</kbd></tt><span>Go Advanced</span></p>'
-			+'<p><em>While focus on Editor / textarea</em></p>'
+			+'<p><em>While focus on reCaptcha form</em></p>'
 			+'<p><tt><kbd>Pg-Up</kbd> or <kbd>Pg-Down</kbd></tt><span>Reload reCaptcha</span></p>'
 			+'<p><tt><kbd>Alt</kbd> + <kbd>R</kbd></tt><span>Reload reCaptcha</span></p>'
 			+'</div>' // itemkbd
@@ -865,6 +873,7 @@ var rSRC = {
 		+".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
 		+".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
 		+".hfeed.editpost{background: #DFC;}"
+		+".sub-bottom.sayapkanan >.control{display:inline-block; margin-left:5px;}"
 	},
 
 	/*
@@ -2380,7 +2389,7 @@ var _TEXTCOUNT = {
 		var cUL, _tc = this;
 		cUL = String(gvar.settings.userLayout.config).split(',');
 
-		_tc.limitchar = (gvar.thread_type == 'group' ? 1000 : 10000);
+		_tc.limitchar = (gvar.thread_type == 'group' ? 1000 : 20000);
 		_tc.$editor = $('#'+gvar.tID);
 		_tc.$target = ("string" == typeof target ? $(target) : target);
 		_tc.preload_length = 0;
@@ -3529,7 +3538,7 @@ var _STG = {
 	},
 	load_rawsetting: function(){
 		// collect all settings from storage,. 
-		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
+		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD','PLUS_QUOTE'
 					,'HIDE_AVATAR','QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
 					,'TXTCOUNTER','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
 		];
@@ -3541,6 +3550,7 @@ var _STG = {
 			,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
 			,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
 			,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
+			,'PLUS_QUOTE':'Quoting quote inside post; validValue=[1,0]'
 			,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
 			,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
 			,'LAYOUT_CONFIG':'Layout Config; [userid=isNaN,isEnable_autoLAYOUT]; isEnable\'s validValue=[1,0]'
@@ -3597,7 +3607,7 @@ var _STG = {
 				keys = [
 				'SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE'
 				,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
-				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
+				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD','PLUS_QUOTE'
 				,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
 				,'LAYOUT_CONFIG','LAYOUT_TPL','PRELOAD_RATE'
 				,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
@@ -3940,7 +3950,34 @@ var _QQparse = {
 		LT = {'font':[],'sp':[],'a':[],'align':[],'coder':[],'list':[]};
 		pairedEmote = false;
 		
-		var revealQuoteCode = function(html){
+		var 
+		cleanup_quote = function(innerquote_html){
+			clog('inside cleanup_quote');
+			var cucok, rgx, href, brpos, newhtml_string='', newhtml, $wrapdiv = createEl('div', {}, innerquote_html);
+			$wrapdiv = $($wrapdiv);
+			newhtml_string = $wrapdiv.find('>span').last().html();
+
+			if( innerquote_html.match(/>Original\sPosted\sBy\s/) ){
+				clog('is original posted by, == '+ newhtml_string);
+
+				$wrapdiv = $( createEl('div', {}, newhtml_string) );
+				newhtml = ['','','']; // id,user,content
+
+				newhtml[0] = $wrapdiv.find('>b:first').text();
+				href = $wrapdiv.find('>a:first').attr('href');
+				if( cucok = /\#post([^\b]+)/i.exec(href) )
+					newhtml[1] = cucok[1];
+
+				rgx = new RegExp("^\\bOriginal\\sPosted\\sBy\\s[^\\"+HtmlUnicodeDecode('&#9658;')+"]+.<\\/a>(?:<br\\s*\\/?>)?");
+				newhtml[2] = newhtml_string.replace(rgx, '');
+			}
+			else{
+				newhtml = newhtml_string;
+			}
+			clog('CLEAN-QUOTE='+dump(newhtml));
+			return newhtml;
+		},
+		revealQuoteCode = function(html){
 
 			var els,el,el2,el2tmp,tag, cucok, XPathStr='.//span[@class="post-quote"]', rvCon = pCon;
 			if( isDefined(html) ){
@@ -3953,11 +3990,23 @@ var _QQparse = {
 			//clog(' quote objects len = ' + els.snapshotLength)
 			if(els.snapshotLength) for(var i=0;i<els.snapshotLength; i++){
 				el = els.snapshotItem(i);
-				if( $(el).html().match(/Quote:/) ){
+				var elhtml = $(el).html();
+				if( elhtml.match(/Quote:/) ){
 					//clog('ada Quote')
-					el2 = createTextEl('\n');
-					el.parentNode.replaceChild(el2,el);
-					
+					if( !gvar.settings.plusquote ){
+						el2 = createTextEl('\n');
+						el.parentNode.replaceChild(el2,el);
+					}
+					else{
+						var iner, _newhtml = cleanup_quote( elhtml );
+						if( _newhtml ){
+							_newhtml = ('[QUOTE'+(isString(_newhtml) ? '' : '='+_newhtml[0]+';'+_newhtml[1])+']'
+								+(_newhtml && isString(_newhtml) ? _newhtml : _newhtml[2]) +'[/QUOTE]');
+							iner = double_encode( _newhtml );
+							iner = createTextEl( _QQ.parseMSG( iner ) );
+							el.parentNode.replaceChild(iner, el);
+						}
+					}
 				}
 			}
 			// remove last edited
@@ -4085,7 +4134,6 @@ var _QQparse = {
 					openTag= ( mct && mct[1] );
 				}else 
 				if( $2.indexOf('color:')!=-1 ){
-
 					mct = $2.match(/\/?span(?:(?:[^\'\"]+).(color)\:([^\!]+))?/i);
 					openTag = (mct[1] && isDefined(mct[2]) && mct[2]);
 				}
@@ -4110,6 +4158,11 @@ var _QQparse = {
 						}
 						mct[2] = ( isDefined(size_maper[mct[2]]) ? size_maper[mct[2]] : '3');
 					}
+				}
+				else
+				if( $2.indexOf('post-quote') != -1 ){
+					mct = ['','quote', false];
+					openTag= true;
 				}
 				else{
 					mct = [0,false];
@@ -4253,7 +4306,7 @@ var _QQparse = {
 		$pCon = $(pCon);
 		// reveal simple quote
 		$pCon.html( revealQuoteCode() );	
-		//clog('pCon=' + $(pCon).html() );
+		clog('reveal simple quote; pCon=' + $(pCon).html() );
 		
 		// reveal title post
 		el = $('h2', $pCon);
@@ -5482,6 +5535,12 @@ function eventsTPL(){
 		}
 		setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
 	});
+	$('#chk_plusquote').click(function(){
+		var chk = $(this).is(':checked');
+		setValue(KS+'PLUS_QUOTE', (chk ? '1' : '0'));
+		gvar.settings.plusquote = chk;
+	});
+
 	$('#squick_quote').click(function(){
 		_QQparse.init();
 	});
@@ -5751,6 +5810,7 @@ function getSettings(stg){
 	getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
 	getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
 	getValue(KS+'WIDE_THREAD', function(ret){ settings.widethread=(ret=='1') });
+	getValue(KS+'PLUS_QUOTE', function(ret){ settings.plusquote=(ret=='1') });
 	
 	gvar.$w.setTimeout(function(){
 	getValue(KS+'UPDATES', function(ret){
@@ -5823,17 +5883,26 @@ function getSettings(stg){
 
 function getUploaderSetting(){
 	// uploader properties
-	gvar.upload_sel={
-		 imageshack:'imageshack.us'
-		,imgzzz:'imgzzz.com'
-		,cubeupload:'cubeupload.com'
-		,imagetoo:'imagetoo.com'
-		//,uploadimage_uk:'uploadimage.co.uk'
-		//,uploadimage_in:'uploadimage.in'
+	gvar.upload_sel = {
+		 cubeupload:'cubeupload.com'
 		,imgur:'imgur.com'
+		,imgzzz:'imgzzz.com'
 		,imagevenue:'imagevenue.com'
+		,imageshack:'imageshack.us'
 	};
-	gvar.uploader={
+	gvar.uploader = {
+		cubeupload:{
+			src:'cubeupload.com',noCross:'1' 
+		},
+		imgur:{
+			src:'imgur.com',noCross:'1' 
+		},
+		imgzzz:{
+			src:'imgzzz.com',noCross:'1' 
+		},
+		imagevenue:{
+			src:'imagevenue.com/host.php',noCross:'1' 
+		},
 		imageshack:{
 			src:'imageshack.us'
 			,post:'post.imageshack.us/'
@@ -5842,27 +5911,6 @@ function getUploaderSetting(){
 				 refer:'http://'+'imageshack.us/?no_multi=1'
 				,uploadtype:'on'
 			}
-		}
-		,imgur:{
-			src:'imgur.com',noCross:'1' 
-		}
-		,imgzzz:{
-			src:'imgzzz.com',noCross:'1' 
-		}
-		,cubeupload:{
-			src:'cubeupload.com',noCross:'1' 
-		}
-		,imagevenue:{
-			src:'imagevenue.com/host.php',noCross:'1' 
-		}
-		,imagetoo:{
-			src:'imagetoo.com',noCross:'1' 
-		}
-		,uploadimage_uk:{
-			src:'uploadimage.co.uk',noCross:'1' 
-		}
-		,uploadimage_in:{
-			src:'uploadimage.in',noCross:'1' 
 		}
 	};
 	// set last-used host
@@ -6263,9 +6311,12 @@ function outSideForumTreat(){
 	switch(loc){
 		case "imageshack":
 		CSS=''
-		+'h1,#top,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col,ins,div>iframe{display:none'+i+'}'
+		+'.logo,.reducetop,#panel,#fbcomments,#langForm,.menu-bottom,#done-popup-lightbox,.ad-col,ins,div>iframe{display:none'+i+'}'
 		+'.main-title{border-bottom:1px dotted rgb(204, 204, 204);padding:5px 0 2px 0;margin:5px 0 2px 0}'
 		+'.right-col input{padding:0;width:99%;font-family:"Courier New";font-size:8pt}'
+		+'#top{height: 60px;}'
+		+'#top .top_form{float: left;margin-top: -15px;margin-left: 5%;}'
+		+'#top .top_form .search-box{margin-top:0;}'
 		;break;
 		case "imgur":
 		CSS=''
@@ -6298,20 +6349,6 @@ function outSideForumTreat(){
 		+'#footer{padding:0}'
 		+'#overlay .content{top:3px'+i+'}'
 		+'#overlay{position:absolute'+i+'}'
-		;break;
-		case "imagetoo":
-		CSS=''
-		+'#topbar, div#top{display:none'+i+'}'
-		;break;
-		case "uploadimage_uk":
-		CSS=''
-		+'ins{display:none'+i+'}'
-		+'input[type="text"].location{width:80%}'
-		;break;
-		case "uploadimage_in":
-		CSS=''
-		+'#logo, p.teaser{display:none'+i+'}'
-		+'#header{padding:0; height:25px'+i+';}'
 		;break;
 	};
 	// end switch loc
@@ -6384,9 +6421,6 @@ function outSideForumTreat(){
 			}catch(e){};
 		}, 300);
 		gallery = imgur = null;
-	}
-	else if(loc == 'imagetoo'){
-		Dom.remove($D('#topbar', null, true));
 	}
 	return false;
 }
