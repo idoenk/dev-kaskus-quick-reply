@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.7
 // @dtversion      1312154107
-// @timestamp      1387045224872
+// @timestamp      1387126177523
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,11 +24,12 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.7 - 2013-12-15 . 1387045224872
+// v4.1.0.7 - 2013-12-15 . 1387126177523
 //   fix broken fetch quote
 //   fix character left on thread post upto 20k
 //   deprecate uploader imagetoo
 //   +(plus)quote, include quotes on quick-quote (experimental)
+//   deprecate (plus)quotes visibility. really? ~XD
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -70,8 +71,8 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.7';
 gvar.scriptMeta = {
 	 //timestamp: 999 // version.timestamp for test update
-	 timestamp: 1387045224872 // version.timestamp
-	,dtversion: 1311074107 // version.date
+	 timestamp: 1387126177523 // version.timestamp
+	,dtversion: 1312154107 // version.date
 
 	,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
 	,scriptID: 80409 // script-Id
@@ -110,7 +111,6 @@ var OPTIONS_BOX = {
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
  ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -S4nJi
- ,KEY_SAVE_PLUS_QUOTE:   ['0'] // quoting quote inside post
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
@@ -522,9 +522,6 @@ var rSRC = {
 			+  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
 			+  '<div class="sub-bottom sayapkanan">'
 
-			+  '<div class="control">'
-			+  '<input type="checkbox" tabindex="4" id="chk_plusquote" '+(gvar.settings.plusquote ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Include Quotes on Quick-Quote" for="chk_plusquote">+Quotes</label></a>'
-			+  '</div>'
 			+  '<div class="control">'
 			+  '<input type="checkbox" tabindex="5" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
 			+  '</div>'
@@ -3538,7 +3535,7 @@ var _STG = {
 	},
 	load_rawsetting: function(){
 		// collect all settings from storage,. 
-		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD','PLUS_QUOTE'
+		var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
 					,'HIDE_AVATAR','QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
 					,'TXTCOUNTER','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
 		];
@@ -3550,7 +3547,6 @@ var _STG = {
 			,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
 			,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
 			,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
-			,'PLUS_QUOTE':'Quoting quote inside post; validValue=[1,0]'
 			,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
 			,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
 			,'LAYOUT_CONFIG':'Layout Config; [userid=isNaN,isEnable_autoLAYOUT]; isEnable\'s validValue=[1,0]'
@@ -3607,7 +3603,7 @@ var _STG = {
 				keys = [
 				'SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR','MIN_ANIMATE'
 				,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
-				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD','PLUS_QUOTE'
+				,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
 				,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
 				,'LAYOUT_CONFIG','LAYOUT_TPL','PRELOAD_RATE'
 				,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
@@ -3958,7 +3954,7 @@ var _QQparse = {
 			newhtml_string = $wrapdiv.find('>span').last().html();
 
 			if( innerquote_html.match(/>Original\sPosted\sBy\s/) ){
-				clog('is original posted by, == '+ newhtml_string);
+				//clog('is original posted by, == '+ newhtml_string);
 
 				$wrapdiv = $( createEl('div', {}, newhtml_string) );
 				newhtml = ['','','']; // id,user,content
@@ -5535,11 +5531,6 @@ function eventsTPL(){
 		}
 		setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
 	});
-	$('#chk_plusquote').click(function(){
-		var chk = $(this).is(':checked');
-		setValue(KS+'PLUS_QUOTE', (chk ? '1' : '0'));
-		gvar.settings.plusquote = chk;
-	});
 
 	$('#squick_quote').click(function(){
 		_QQparse.init();
@@ -5810,7 +5801,7 @@ function getSettings(stg){
 	getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
 	getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
 	getValue(KS+'WIDE_THREAD', function(ret){ settings.widethread=(ret=='1') });
-	getValue(KS+'PLUS_QUOTE', function(ret){ settings.plusquote=(ret=='1') });
+	settings.plusquote = null;
 	
 	gvar.$w.setTimeout(function(){
 	getValue(KS+'UPDATES', function(ret){
@@ -6155,8 +6146,11 @@ function start_Main(){
 						do_an_e(ev);
 						var dothat = function(that){
 							slideAttach(that, function(el){
+								gvar.settings.plusquote = (ev ? ev : window.event).shiftKey ? true : null;
+
 								_QQparse.init(el, function(){
 									_TEXT.lastfocus();
+									gvar.settings.plusquote = null;
 								});
 							});
 						}, that = $(this);
