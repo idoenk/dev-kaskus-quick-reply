@@ -2048,16 +2048,13 @@
     update_token(ret);
   }
   function xhrpost(){
-    clog('inside xhrpost');
     var xhr = new GM_XHR();
-    clog('xhr initieted');
     xhr.cached = true;
     xhr.uri = (gvar.edit_mode ? gvar.act_uri_edit : gvar.act_uri);
     xhr.pid = (gvar.edit_mode ? '_editpost_' : '_newpost_');
 
     clog('POST '+(gvar.edit_mode ? 'edit':'')+'post...: ' + xhr.uri);
     var sdata = build_data_form(true);
-    clog('sdata='+dump(sdata));
     gvar.reqPID[xhr.pid] = xhr.request(sdata, 'POST', (gvar.edit_mode ? xhrpost_cb_update : xhrpost_cb_new));
   }
 
