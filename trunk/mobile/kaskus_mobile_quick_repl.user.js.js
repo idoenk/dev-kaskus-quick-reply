@@ -3,27 +3,25 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        1.0.1
-// @dtversion      130608101
-// @timestamp      1370706033417
+// @version        1.0.2
+// @dtversion      140131102
+// @timestamp      1391108629548
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0.1 - 2013-06-08 . 1370706033417
-//  fix xhr (webkit) Thx=[paipo,FlurryBerry]
+// v1.0.2 - 2014-01-31 . 1391108629548
+//  fix submit failure, (invalid token)
+//
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
-// v1.0 - 2012-12-31 . 1356976426495
-//  new kaskus; rewrite code adapting KQR full-web (80409)
-//
-// v0.3.4 - 2011-04-07
-//  Fix always use native-XHR.
+// v1.0.1 - 2013-06-08 . 1370706033417
+//  fix xhr (webkit) Thx=[paipo,FlurryBerry]
 //
 //
 // more...
@@ -42,9 +40,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '1.0.1';
+  gvar.sversion = 'v' + '1.0.2';
   gvar.scriptMeta = {
-    timestamp: 1370706033417 // version.timestamp
+    timestamp: 1391108629548 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -153,14 +151,18 @@
     if ( typeof q == 'object') return q;
     root = root || document;
     if (q[0]=='/' || (q[0]=='.' && q[1]=='/')) {
-        if (single) { return document.evaluate(q, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; }
+        if (single) {
+          return document.evaluate(q, root, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        }
         return document.evaluate(q, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
     }
     else if (q[0]=='.') {
       el = root.getElementsByClassName(q.substr(1));
       return single ? el[0] : el;
     }
-    else { return root.getElementById( (q[0]=='#' ? q.substr(1):q.substr(0)) ); }
+    else {
+      return root.getElementById( (q[0]=='#' ? q.substr(1):q.substr(0)) );
+    }
     return root.getElementsByTagName(q);
   };
   // native/generic XHR needed for Multifox, failed using GM_xmlhttpRequest.
@@ -792,7 +794,7 @@
         // fake capcay.controller [create,reload]
       + '<input id="hidrecap_btn" value="reCAPTCHA" type="button" onclick="showRecaptcha();" class="ninja" />' 
       + '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" onclick="Recaptcha.reload();" class="ninja" />'
-      + '<input type="hidden" name="securitytoken" id="securitytoken" value="" />'
+      + '<input type="hidden" name="securitytoken" id="mqr_securitytoken" value="" />'
       + '<input type="hidden" name="preview" value="Preview post" />'
 
       + '<div class="in-btn action">' // [btn-red,blue]
@@ -1283,15 +1285,16 @@
       append(par, el);
 
       // bottom controls
-      if(par = par.nextSibling){
+      if( par = $D('.controls', null, 1) ){
         el = $D('.//a[contains(@href,"/post_reply/")]', par, 1);
         gvar.act_uri = getAttr('href', el);
         if( gvar.act_uri.indexOf('http:')==-1 )
           gvar.act_uri = gvar.domain + gvar.act_uri.substr(1);
       }
 
-      if(el = $D('//a[contains(@href,"/logout/")]',null,1))
+      if( el = $D('.//a[contains(@href,"/logout/")]', Dom.g('site-footer'), 1) ){
         update_token( getAttr('href', el) );
+      }
     }
 
     // fixed topnav
@@ -1606,13 +1609,13 @@
         if(gvar.edit_mode){
           _TOGGLER.baloon_save(true);
           window.setTimeout(function(){ xhrpost() }, 212);
-          return 0;
+          return !1;
         }
 
         var gogo = function(){
           _TOGGLER.response_field(true);
           window.setTimeout(function(){ xhrpost() }, 212);
-          return 0;
+          return !1;
         };
 
         if( !gvar.user.isDonatur ){
@@ -1962,13 +1965,14 @@
   function restore_token(){
     var tok = gvar.tkset[(gvar.edit_mode ? 'edit':'post')];
     tok && (gvar.sec_tok = tok);
-    $D('#securitytoken').value = gvar.sec_tok;
+    $D('#mqr_securitytoken').value = gvar.sec_tok;
   }
   function update_token(text){
     var cucok = /\bhash=([\w-]+)/gi.exec(String(text));
-    cucok && (gvar.sec_tok = cucok[1]);
-    $D('#securitytoken').value = gvar.sec_tok;
-
+    if( cucok ){
+      gvar.sec_tok = cucok[1]
+      $D('#mqr_securitytoken').value = gvar.sec_tok;
+    }
     gvar.tkset[(gvar.edit_mode ? 'edit':'post')] = gvar.sec_tok;
   }
 
@@ -2044,13 +2048,16 @@
     update_token(ret);
   }
   function xhrpost(){
+    clog('inside xhrpost');
     var xhr = new GM_XHR();
+    clog('xhr initieted');
     xhr.cached = true;
     xhr.uri = (gvar.edit_mode ? gvar.act_uri_edit : gvar.act_uri);
     xhr.pid = (gvar.edit_mode ? '_editpost_' : '_newpost_');
 
     clog('POST '+(gvar.edit_mode ? 'edit':'')+'post...: ' + xhr.uri);
     var sdata = build_data_form(true);
+    clog('sdata='+dump(sdata));
     gvar.reqPID[xhr.pid] = xhr.request(sdata, 'POST', (gvar.edit_mode ? xhrpost_cb_update : xhrpost_cb_new));
   }
 
