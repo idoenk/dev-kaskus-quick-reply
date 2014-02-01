@@ -3,22 +3,26 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        1.0.2
-// @dtversion      140131102
-// @timestamp      1391108629548
+// @version        1.0.3
+// @dtversion      140201103
+// @timestamp      1391220996742
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
+// @include        http://m.kaskus.co.id/lastpost/*
 // @license        (CC) by-nc-sa 3.0
 //
 // -!--latestupdate
 //
-// v1.0.2 - 2014-01-31 . 1391108629548
-//  fix submit failure, (invalid token)
-//
+// v1.0.3 - 2014-02-01 . 1391220996742
+//  fix statics-cdn, css;
+//  +include /lastpost/*
 //
 // -/!latestupdate---
 // ==/UserScript==
 /*
+//
+// v1.0.2 - 2014-01-31 . 1391108629548
+//  fix submit failure, (invalid token)
 //
 // v1.0.1 - 2013-06-08 . 1370706033417
 //  fix xhr (webkit) Thx=[paipo,FlurryBerry]
@@ -40,9 +44,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '1.0.2';
+  gvar.sversion = 'v' + '1.0.3';
   gvar.scriptMeta = {
-    timestamp: 1391108629548 // version.timestamp
+    timestamp: 1391220996742 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -277,7 +281,6 @@
 
         _TEXT.init();
         _TEXT.wrapValue( pTag[title], '' );
-        //_TEXT.pracheck();
       },
       // action insert font/color/size/list
       tagHibrid: function(tag, value, $caleer){
@@ -436,7 +439,6 @@
       $D('#'+gvar.tID).value = this.content;
       this.init();
 
-      //this.saveDraft();
       this.pracheck();
     },
     wrapValue : function(tag, title){
@@ -462,7 +464,6 @@
       if( $D('#'+gvar.tID).value != "" )
         this.content+= newline;
       $D('#'+gvar.tID).value = ( this.content + text );
-      //this.saveDraft();
       this.pracheck(false);
       
       window.setTimeout(function(){
@@ -513,7 +514,6 @@
       // scroll to bottom editor line
       !_TEXT.e && (_TEXT.e = $D('#'+gvar.tID));
       try{
-        //_TEXT.e &&_TEXT.e.scrollTop(_TEXT.e[0].scrollHeight);
         _TEXT.e &&_TEXT.e.scrollTop(_TEXT.e.scrollHeight);
       } catch(e){}
     },
@@ -847,8 +847,10 @@
       var li_cls = rSRC.mCls, item = ['Arial','Arial Black','Arial Narrow','Book Antiqua','Century Gothic','Comic Sans MS','Courier New','Georgia','Impact','Lucida Console','Times New Roman','Trebucher','Verdana'], buff, lf=item.length;
       buff='<li class="'+li_cls[0]+' '+li_cls[0] + id + ' fonts '+li_cls[1]+'"><a title="Fonts" href="javascript:;">Fonts</a><ul>';
       for(var i=0; i<lf; i++)
-        //buff+='<li class="'+li_cls[0]+' '+li_cls[0] + id +'-'+(i+1)+' font-'+item[i].toLowerCase()+'"><a title="'+item[i]+'" class="ev_font" href="javascript:;">'+item[i]+'</a></li>';
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +id+ ' font-'+item[i].toLowerCase().replace(/\s/gi,'')+'"><a title="'+item[i]+'" class="ev_font" href="javascript:;">'+item[i]+'</a></li>';
+        buff+= ''
+          +'<li class="'+li_cls[0]+' '+li_cls[0] +id+ ' font-'+item[i].toLowerCase().replace(/\s/gi,'')+'">'
+          +'<a title="'+item[i]+'" class="ev_font" href="javascript:;">'+item[i]+'</a></li>'
+        ;
       buff+='</ul></li>';
       return buff;
     },
@@ -940,7 +942,7 @@
       var imgcdn1,imgcdn2,imgcdn3, BTN;
       imgcdn1 = gvar.kkcdn + 'images/editor/';
       imgcdn2 = gvar.kkcdn + 'img/editor/';
-      imgcdn3 = gvar.kkcdn + 'css_v0.1/img/editor/';
+      imgcdn3 = gvar.kkcdn + 'themes_2.0/img/editor/';
       BTN = rSRC.getSetOf('button');
 
       return ''
@@ -958,7 +960,6 @@
       +'.c-avt{padding:0; margin:0; margin-right:5px;display:inline-block; height:18px; cursor:pointer;}'
       +'.c-avt img{max-width:18px; margin-bottom:-5px;}'
       +'.c-avt.bling img{display:none;}'
-      //+'.c-2.x .c-dnt{color:red; font-weight:bold; margin-left:3px;}'
       +'.hide{display:none!important;}'
 
       +'.mQR .throb-bl{background:url('+BTN.throbber_gif+') no-repeat;display:inline-block;width:16px; height:16px;margin-right:5px;}'
@@ -988,7 +989,7 @@
       +'.mQR #wrp_title input[type="text"]{width:94%;}'
       +'.mQR .in-txt input[type="text"], .mQR .in-txt #'+gvar.tID+'{color:#333;}'
       +'.mQR .tgctr{position:absolute;top:2px; right:3px;padding:5px 3px; font-size:1.2em; line-height:0.7em; cursor:pointer;}'
-      +'.mQR .tgctr:hover{color:#333!important;}'
+      +'.mQR .tgctr:hover{color:#333;}'
       +'.mQR .tgctr.Qct {background:url('+BTN.contr_stg+') no-repeat;opacity:.25;width:12px;height:12px;}'
       +'.mQR .tgctr.Qct:hover, .mQR .Qct.active{opacity:.8;}'
       +'.mQR .tgctr.Qxc, .mQR .tgctr.QxM{color:#666;right:25px;border:0;}'
@@ -1007,7 +1008,7 @@
       +'.box-cnt {padding:8px 0; text-align:center; line-height:1.1em; font-size:1.2em;}'
       +'.box-cnt.sip {background:#DFC;border:1px solid #47FF0A;}'
       +'.box-cnt.ups {background:#ffd7ff;border-color:#FF0A0A;}'
-      +'.mqr-cpcy #recaptcha_image {margin-top:5px;}'
+      +'.mqr-cpcy #recaptcha_image {margin-top:5px;text-align:center;}'
       +'.mqr-cpcy #recaptcha_stg {background:url('+BTN.goog_stg+') no-repeat;}'
       +'.mqr-cpcy #recaptcha_reload_btn {background:url(http://ssl.gstatic.com/accounts/recaptcha-sprite.png) -63px;}'
       +'.mqr-cpcy #recaptcha_whatsthis_btn {background:url(http://ssl.gstatic.com/accounts/recaptcha-sprite.png);}'
@@ -1045,12 +1046,16 @@
       +'body.nightmode .mQR .qrtitle{background:#444;text-shadow:1px 1px #737373;}'
       +'body.nightmode .mQR .qrtitle.editmode{background:#093858;}'
       +'body.nightmode .mQR .in-txt input[type="text"], body.nightmode .mQR .in-txt #'+gvar.tID+'{color:#f0f0f0;}'
-      +'body.nightmode .mQR .tgctr:hover{color:#eee!important;}'
+      +'body.nightmode .mQR .Qcp.tgctr{color:#333!important;}'
+      +'body.nightmode .mQR .QxM.tgctr:hover, body.nightmode .mQR .Qcp.tgctr:hover{color:#fff!important;}'
       +'body.nightmode .mQR #txtLen{color:#333;}'
       +'body.nightmode .mQR #txtLen.ffc{color:#999!important;}'
       +'body.nightmode .mQR #wrp_control {background:#666;}'
       +'body.nightmode .mktH ul ul li:hover{background:none;}'
       +'body.nightmode .mktH ul ul, body.nightmode .mktH ul ul a{background:#333;}'
+      +'body.nightmode .in_balonbox{background:#ccc;}'
+      +'body.nightmode .mqr-cpcy{background:#333;}'
+      +'body.nightmode .mqr-cpcy #recaptcha_challenge_image{opacity:.8;}'
 
       /*hacky2-sharp-color*/ 
       +'#content-wrapper .entry-content{color:#222!important;}'
@@ -1217,9 +1222,6 @@
 
       if( cucok = /\bprofile\/([\d]+)/i.exec(getAttr('href', node)) )
         user.id = cucok[1];
-
-      /*el = createEl('span',{id:'donatflag'});
-      append(node, el);*/
     }
     return user;
   }
@@ -1384,7 +1386,7 @@
     el = createEl('span', {id:'donatflag', 'class':'hide'}, '[$]');
     append(node, el);
 
-    imgStr = '<i class="throb"></i><img class="c-avtr" src="http://kkcdn-static.kaskus.co.id/user/avatar/male.jpg" />';
+    imgStr = '<i class="throb"></i><img class="c-avtr" src="'+gvar.uavatar+'male.jpg" />';
     el = createEl('div', {'class':'c-avt'}, imgStr);
     prepend(par, el);
     Dom.Ev(el, 'click', function(e){ profile_check(e) });
@@ -2114,9 +2116,8 @@
 
   // domain guest
   function domainParse(){
-    var r, l = location.hostname
-    //return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w{3}\./i, 'static.')};
-    return {"prot": location.protocol, "host": l, "statics" : l.replace(/^\w+\./i, 'kkcdn-static.')};
+    var l = location.hostname;
+    return {"prot": location.protocol, "host": l, "statics" : 'cdn.kaskus.com'};
   }
 
   function getPosDim(el) {
