@@ -58,7 +58,7 @@
   window.alert(new Date().getTime());
   */
   //========-=-=-=-=--=========
-  gvar.__DEBUG__ = 1; // development debug
+  gvar.__DEBUG__ = !1; // development debug
   //========-=-=-=-=--=========
 
   const GMSTORAGE_PATH = 'GM_';
