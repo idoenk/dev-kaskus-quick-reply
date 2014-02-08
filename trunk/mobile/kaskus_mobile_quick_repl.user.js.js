@@ -1013,6 +1013,8 @@
       +'.in_balonbox {width:310px;position:absolute; z-index:999; bottom:53px; background:#e3e3e3;-moz-border-radius:10px;-webkit-border-radius:10px; border-radius:10px;border-top:solid 1px #ccc;border-right:solid 1px #ddd;border-bottom:solid 1px #ddd;border-left:solid 1px #ccc;margin:20px -20px 0; padding:10px; padding-bottom:5px;}'
       +'.in_balonbox .cpcy-title{font-size:1.1em; color:#666; margin:4px 0;}'
       +'.in_balonbox .recaptcha_only_if_image, .in_balonbox .cpcy-title, .in_balonbox .g_notice{padding-left:.4em;}'
+      +'.in_balonbox .g_notice{color:#333;}'
+      +'.in_balonbox .g_notice.qrerror{color:red;}'
       +'.mqr-cpcy, .box-cnt {width:310px;min-height:25px;background:#fff;border:1px solid #e5e5e5;}'
       +'.box-cnt {padding:8px 0; text-align:center; line-height:1.1em; font-size:1.2em;}'
       +'.box-cnt.sip {background:#DFC;border:1px solid #47FF0A;}'
