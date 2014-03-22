@@ -10,8 +10,8 @@
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.7
-// @dtversion      1402054107
-// @timestamp      1391537600315
+// @dtversion      1403224107
+// @timestamp      1395506569355
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,7 +24,8 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.7 - 2014-02-05 . 1391537600315
+// v4.1.0.7 - 2014-03-22 . 1395506569355
+//   CSS; fix broken cdn static files; Thx[rock2steel,AMZZZMA]
 //   fix broken post/preview youtube link; Thx[p1nky]
 //   fix broken fetch quote
 //   fix character left on thread post upto 20k
@@ -72,12 +73,12 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.7';
 gvar.scriptMeta = {
    //timestamp: 999 // version.timestamp for test update
-   timestamp: 1391537600315 // version.timestamp
-  ,dtversion: 1402054107 // version.date
+   timestamp: 1395506569355 // version.timestamp
+  ,dtversion: 1403224107 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
-  ,cssREV: 1212194103 // css revision date; only change this when you change your external css
+  ,cssREV: 1403224107 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -292,7 +293,7 @@ var rSRC = {
     d = '<ul id="menu_posticon" style="display:none;" class="menu-post-icon" >';
     for (icon in g) {
       d += '<li class="' + c[0] + ' fonts "><a title="" href="javascript:;" data-rel="' + e + '" data-name="'+ (!g[icon] ? '' : g[icon].replace(/\./g,'')) +'">' 
-      + (g[icon] ? '<img src="' + gvar.domain + f + g[icon] + '" border=0>' + icon : "No Icon") + "</a></li>";
+      + (g[icon] ? '<img src="' + gvar.kkcdn + f + g[icon] + '" border=0>' + icon : "No Icon") + "</a></li>";
       e++
     }
     d += "</ul>";
@@ -703,7 +704,7 @@ var rSRC = {
       +'</div>'
 
       +'</td><td>'
-      +'<div class="wrap_stlmenu"><label for="misc_hotkey" class="stlmenu"><input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/>QR-Hotkey</label></div><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<label for="misc_hotkey_ctrl">ctrl <input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /></label>'+nb+'<label for="misc_hotkey_alt">alt <input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_shift">shift <input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'+'+nb+'<label for="misc_hotkey_char">'+nb+'</label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></div>'
+      +'<div class="wrap_stlmenu"><label for="misc_hotkey" class="stlmenu"><input id="misc_hotkey" class="optchk" type="checkbox"'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? ' checked="checked"' : '') +'/>QR-Hotkey</label></div><div id="misc_hotkey_child" class="smallfont" style="margin:-3px 0 0 15px; display:'+ (String(gvar.settings.hotkeykey)!='0,0,0' ? 'block' : 'none') +'">'+nb+'<label for="misc_hotkey_ctrl">ctrl <input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /></label>'+nb+'<label for="misc_hotkey_alt">alt <input id="misc_hotkey_alt" type="checkbox"'+ (hk[2]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_shift">shift <input id="misc_hotkey_shift" type="checkbox"'+ (hk[1]=='1' ? ' checked="checked"':'') +' /></label>'+nb+'<label for="misc_hotkey_char"> + <input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ gvar.settings.hotkeychar +'" style="width: 20px; padding:0;" maxlength="1" type="text" /></label></div>'
       +'<div class="wrap_stlmenu"><label for="misc_txtcount" class="stlmenu"><input id="misc_txtcount" class="optchk" type="checkbox"'+ (gvar.settings.txtcount ? ' checked="checked"' : '') +'/>Text Counter</label></div>'
       +'</td>'
       +'</tr></table>'
@@ -871,7 +872,6 @@ var rSRC = {
     +".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
     +".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
     +".hfeed.editpost{background: #DFC;}"
-    +".sub-bottom.sayapkanan >.control{display:inline-block; margin-left:5px;}"
   },
 
   /*
@@ -887,6 +887,7 @@ var rSRC = {
     +"#forum-listing .entry {width: auto !important; padding: 1% 0 5% 1% !important;margin-top: -1px !important; }"
     +".bottom-frame, .ads300, .skin, .l-link, .r-link, .banner-top-ads, .baloon-track {display: none !important; }"
     +".footer .row .col.grid-8,#forum-listing > .row > .col.grid-12 > .header .thread-control .col.grid-8, #forum-listing > .row > .col.grid-12 > .header .thread-navigate .col.grid-8 {float: right !important; }"
+    +".qr-editor{padding-right:1.2%!important;}"
   },
   getSCRIPT: function(){
     return ''
