@@ -11,7 +11,7 @@
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
 // @version        4.1.0.8
 // @dtversion      1405104108
-// @timestamp      1399755495890
+// @timestamp      1399841479552
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.user.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -27,7 +27,9 @@
 //
 // -!--latestupdate
 //
-// v4.1.0.8 - 2014-05-10 . 1399755495890
+// v4.1.0.8 - 2014-05-10 . 1399841479552
+//   Enhanced mediacrush [+url, upload-history];
+//   Fix last used uploader;
 //   [alpha] hid-qr on locked and single post (Ctrl+` activate readonly mode); Thx[AMZMA]
 //   CSS update;
 //   +uploader mediacru.sh
@@ -81,7 +83,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '4.1.0.8';
 gvar.scriptMeta = {
    //timestamp: 999 // version.timestamp for test update
-   timestamp: 1399755495890 // version.timestamp
+   timestamp: 1399841479552 // version.timestamp
   ,dtversion: 1405104108 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -126,6 +128,7 @@ var OPTIONS_BOX = {
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
  
  ,KEY_SAVE_UPLOAD_LOG:  [''] // history upload (kaskus)
+ ,KEY_SAVE_UPLOAD_LOG_MC:  [''] // history upload (mediacrush)
  ,KEY_SAVE_EXC_PLACES:  [''] // excluced places for autolayout
  ,KEY_SAVE_INC_PLACES:  [''] // excluced places for autolayout
  ,KEY_SAVE_ALL_PLACES:  [''] // flag for all places for autolayout
@@ -538,8 +541,8 @@ var rSRC = {
       +  '</div>'
       
       +(gvar.__DEBUG__ ? '<br/>':'')
-      +  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" />\n\n'
-      +  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="current_ckck" />\n\n' // current ck.credential
+      +  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="tmp_chkVal" style="margin-top:5px;" />\n\n'
+      +  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" value="" id="current_ckck" style="margin-top:5px;" />\n\n' // current ck.credential
       + '</div>' // button-bottom
       +'</div>' // cont-bottom
       
@@ -932,23 +935,24 @@ var rSRC = {
   getSCRIPT_UPL: function(){
     return ''
       +'function ajaxFileUpload() {'
-      +'$("#loading_wrp").show();'
-      +'$("#image-control").addClass("blured");'
+      +'var $parent = $("#content_uploader_kaskus");'
+      +'var $throb = $parent.find(".throbber_wrp");'
+      +'var $imgc = $parent.find(".image-control");'
+      +'$throb.show(); $imgc.addClass("blured");'
       +'$.ajaxFileUpload ({'
       + 'url:"/misc/upload_image",'
       + 'secureuri:false,'
       + 'fileElementId:"browse",'
       + 'dataType: "json",'
       + 'success: function (data, status){'
-      +   '$("#image-control").removeClass("blured");'
-      +   '$("#loading_wrp").hide();'
+      +   '$imgc.removeClass("blured"); $throb.hide();'
       +   'if(data.status == "ok"){'
       +     'var t=\'\';'
       +     't+=\'<div class="preview-image-unit">\';'
       +     't+=\'<img src="\'+data.url+\'" width="46" height="46" alt="[IMG]\'+data.url+\'[/IMG]" />\';'
       +     't+=\'<span title="remove" class="modal-dialog-title-close imgremover"/>\';'
       +     't+=\'</div>\';'
-      +     '$("#preview-image").prepend( t );'
+      +     '$parent.find(".preview-image-inner").prepend( t );'
       +   '}else{'
       +     'alert(data.error);'
       +   '}'
@@ -2578,10 +2582,10 @@ var _UPL_ = {
       ret+=''
         +'<li><div style="padding-left:30px;"><b>:: Services :: </b></div></li>'
         +'<li>'+spacer+'</li>'
-        +'<li class="qrt curent"><div id="tphost_0" title="kaskus.us" data-host="kaskus">kaskus</div></li>'
+        +'<li class="qrt'+("undefined" != typeof gvar.upload_tipe && gvar.upload_tipe == 'kaskus' ? ' curent':'')+'"><div id="tphost_0" title="kaskus.us" data-host="kaskus">kaskus</div></li>'
       ;
       for(var host in gvar.upload_sel){
-        ret+='<li class="qrt"><div id="tphost_'+(idx+1)+'" title="'+gvar.upload_sel[host]+'" data-host="'+host+'">' + host + ' <a class="externurl right" title="Goto this site" target="_blank" href="http://'+gvar.upload_sel[host]+'"><i class="icon-resize-full"></i></a></div></li>';
+        ret+='<li class="qrt'+("undefined" != typeof gvar.upload_tipe && gvar.upload_tipe == host ? ' curent':'')+'"><div id="tphost_'+(idx+1)+'" title="'+gvar.upload_sel[host]+'" data-host="'+host+'">' + host + ' <a class="externurl right" title="Goto this site" target="_blank" href="http://'+gvar.upload_sel[host]+'"><i class="icon-resize-full"></i></a></div></li>';
         idx++;
       }
     }
@@ -2591,13 +2595,16 @@ var _UPL_ = {
     $('#tabs-content-upl .qrt').each(function(){
       $(this).click(function(e){
         if( (e.target||e).nodeName === 'DIV' ){
-          var subtpl, ch= $(this).find('div:first'), id, lbl, gL, host;
+          var $me = $(this);
+          var subtpl, ch = $me.find('div:first'), id, lbl, gL, host;
           id = ch.attr('id').replace(/tphost_/gi,'');
           host = ch.attr('data-host');
-          _UPL_.switch_tab( host );
-          
-          $(this).closest('#ul_group').find('.curent').removeClass('curent');
-          $(this).addClass('curent');
+
+          setValue(KS+'LAST_UPLOADER', host, function(){
+            _UPL_.switch_tab( host );
+            $me.closest('#ul_group').find('.curent').removeClass('curent');
+            $me.addClass('curent');
+          });
         }
       });
     });
@@ -2631,99 +2638,161 @@ var _UPL_ = {
       tpl+=_UPL_.tplcont(host);
       
     $('#'+iner+' #uploader_container').html( tpl );
-    _UPL_.switch_tab(_UPL_.def);
+    // _UPL_.switch_tab(_UPL_.def);
+    _UPL_.switch_tab("undefined" != typeof gvar.upload_tipe ? gvar.upload_tipe : _UPL_.def);
     
     $('.'+_UPL_.self).addClass('events');
     _UPL_.toggletab(true);
   },
   switch_tab: function(target){
     if( !target ) return;
-    var tpl, ifname, tgt = 'content_uploader_'+ target;
+    var tpl, ifname, options, tgt = 'content_uploader_'+ target;
     var $partab = $('#'+tgt);
     
     if( $partab.html()=='' ){
+      options = {
+        mode: '',
+        parent_selector: '#'+tgt,
+        preview_wrap_selector: '.preview-image-inner'
+      };
+
       if(target ==_UPL_.def){
-        
         tpl = ''
-          +'<div id="preview-image-outer">'
-          + '<div id="preview-image" class="preview-image-inner" />'
+          +'<div class="preview-image-outer">'
+          + '<div class="preview-image-inner" />'
           +'</div>'
-          +'<div id="loading_wrp" class="throbber_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
-          +'<div id="image-control" class="">'
+          +'<div class="throbber_wrp" style="display:none"><div class="mf-spinner" /></div>'
+          +'<div class="image-control">'
           + '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
           + '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse" class="small white"/>'
           +'</div>'
         ;
         $partab.html( tpl );
-        inteligent_width();
+
+        // fill in with cached uploaded images
+        options.KEY_STR = 'UPLOAD_LOG';
+        inteligent_width( options );
 
         GM_addGlobalScript( gvar.kkcdn + 'themes_2.0/js/ajaxfileupload.js' );
         GM_addGlobalScript( rSRC.getSCRIPT_UPL() );
         
-        $('#'+_UPL_.tcui+' #preview-image').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
+        $('#'+_UPL_.tcui+' .preview-image-inner').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
           if( ev.type == 'DOMNodeInserted' ){
-            $('#'+_UPL_.tcui+' .preview-image-unit').each(function(){
-              var P=$(this), T = P.find('img'), tc='modal-dialog-title-close';
+            $(this).find('.preview-image-unit').each(function(){
+              var P = $(this);
               if( P.hasClass('event') ) return;
 
-              P.find('img').click(function(){
-                do_smile( $(this) )
-              });
-              P.find('.'+tc).click(function(){
-                if(confirm('Agan yakin mau delete gambar ini?')){
+              P.find('img').click(function(){ do_smile($(this)) });
+              P.find('.modal-dialog-title-close').click(function(){
+                if( confirm('Agan yakin mau delete gambar ini?') ){
                   $(this).closest('.preview-image-unit').remove();
-                  inteligent_width('remove');
+                  options.mode = 'remove';
+                  inteligent_width( options );
                 }
               });
               P.addClass('event');
             });
-            inteligent_width('insert');
+
+            options.mode = 'insert';
+            inteligent_width( options );
           }
         });
 
       }else if( target == _UPL_.mediacru ){
+
         var selector_str = 'fileToUpload_'+target;
         tpl=''
-          +'<div style="margin:10px 3px 15px 30px; display:inline-block;">'
+          +'<div class="host">'
           + '<a target="_blank" title="Goto '+ target +'" href="http://'+gvar.upload_sel[target]+'"><b>http://' + gvar.upload_sel[target] + '</b></a>'
           +'</div>'
-          
-          +'<div class="inline_uploader_'+target+'" style="position:relative">'
-          + '<div id="preview-result-'+target+'" class="preview-image-inner"></div>'
-          + '<div id="loading_wrp_'+target+'" class="throbber_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
-          + '<div class="clickthumb hide">*Click thumbnail image to add to post content</div>'
-          + '<span id="'+selector_str+'"></span>'
+
+          +'<div class="preview-image-outer">'
+          +  '<div class="preview-image-inner" />'
+          +'</div>'
+          +'<div class="throbber_wrp" style="display:none; top: 100px;"><div class="mf-spinner" /></div>'
+          +'<div class="image-control">'
+          + '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
+
+          + '<div style="-moz-user-select: none;" class="goog-inline-block jfk-button jfk-button-standard method browse active">'
+          +  '<span>Browse &amp; Upload</span>'
+          +  '<span id="'+selector_str+'"></span>'
+          + '</div>'
+          + '<button style="-moz-user-select: none;" class="goog-inline-block jfk-button jfk-button-standard method url" type="button">Use URL</button>'
+          + '<div class="wrap-use-url hide">'
+          + '<input type="text" id="mdcr_url" placeholder="Paste your URL here.." autocomplete="off"/>&nbsp;<button type="button" class="goog-inline-block jfk-button jfk-button-action btn_upload_mdcr">Upload</button>'
+          + '</div>'
           +'</div>'
         ;
-        $('#'+tgt).html( tpl );
+        $partab.html( tpl );
         GM_addGlobalScript('https://mediacru.sh/static/mediacrush.js', 'mediacrush-base', true);
+
+        // fill in with cached uploaded images
+        options.KEY_STR = 'UPLOAD_LOG_MC';
+        options.item_class = 'mediacrush';
+        inteligent_width( options );
+
 
         var mdcr_init = function mdcr_init(){
           var target = 'mediacrush';
-          var selector_str = 'fileToUpload_'+target;
           var $partab = $('#content_uploader_'+target);
+          var selector_str = 'fileToUpload_'+target;
           var rebuild_file = function rebuild_file(){
             $partab.find('#'+selector_str).replaceWith($('<input type="file" id="'+selector_str+'" />'));
             $partab.find('#'+selector_str).change(function(){
-              mc_do_upload();
+              var file = $partab.find('#'+selector_str).get(0).files[0];
+              mc_do_upload( file );
             });
           };
-          var mc_do_upload = function mc_do_upload(){
+          var mc_init_events = function mc_init_events(){
+            var $wrapurl = $partab.find('.wrap-use-url');
+            $wrapurl.find('.btn_upload_mdcr').click(function(){
+              if( $(this).hasClass('.jfk-button-disabled') )
+                return;
+              var url = $wrapurl.find('[type=text]').val();
+              url && mc_do_upload( url );
+            });
+            $wrapurl.find('[type=text]').keydown(function(ev){
+              if(ev.keyCode==13){
+                ev.stopPropagation();
+                ev.preventDefault();
+                $wrapurl.find('.btn_upload_mdcr').trigger('click');
+              }
+            });
+            rebuild_file();
+          };
+          var mc_do_upload = function mc_do_upload(objectfile){
+
+            var file = objectfile;
+            var $throbber = $partab.find('.throbber_wrp');
+            $throbber.show();
+            $partab.find('[type=text]').prop('disabled', true);
+            $partab.find('.jfk-button').addClass('jfk-button-disabled');
+            $partab.find('.image-control').addClass('blured');
+
+            return mc_upload_(file, function(){
+              rebuild_file();
+            });
+          };
+          var mc_upload_ = function(file, cb){
             if("undefined" == typeof MediaCrush){
               console.log('MediaCrush is not defined');
               return !1;
             }
-            var $throbber = $partab.find('#loading_wrp_'+target);
-            var file = $('#'+selector_str).get(0).files[0];
-            $throbber.show();
             MediaCrush.upload(file, function(media) {
               console.log('Processing...');
               media.wait(function() { // Wait for it to finish processing
                 if(media && media.url){
                   mc_append_uploaded_image(media.hash);
-                  rebuild_file();
+                  if("function" == typeof cb)
+                    cb();
                 }
-                $throbber.hide();
+                else{
+                  console.log(media);
+                }
+                $partab.find('.throbber_wrp').hide();
+                $partab.find('[type=text]').val('').prop('disabled', false);
+                $partab.find('.jfk-button').removeClass('jfk-button-disabled');
+                $partab.find('.image-control').removeClass('blured');
                 $partab.find('.clickthumb').removeClass('hide');
               });
             });
@@ -2731,36 +2800,71 @@ var _UPL_ = {
           };
           var mc_append_uploaded_image = function mc_append_uploaded_image(hash){
             MediaCrush.get(hash, function(media) {
-              var $item = $('<div class="mediacrush" '
-                +'data-media="'+hash+'"><img src="'+media.files[0].url+'" width="46" height="46" alt="[IMG]'+media.files[0].url+'[/IMG]"/></div>');
-              $partab.find('#preview-result-'+target).append( $item );
+              var $item = $('<div class="mediacrush">'
+                + '<img src="'+media.files[0].url+'" width="46" height="46" alt="[IMG]'+media.files[0].url+'[/IMG]"/>'
+                + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
+                +'</div>');
+              $partab.find('.preview-image-inner').append( $item );
             });
           };
           
-          setTimeout(function(){ rebuild_file(); }, 123);
-        }
-        GM_addGlobalScript('('+String(mdcr_init)+')()', 'mediacrush-igniter', true);
+          setTimeout(function(){
+            // rebuild_file()
+            mc_init_events();
+          }, 123);
+        };
+        var mdcr_delete = function mdcr_delete(){
+          alert(9)
+        };
+        GM_addGlobalScript('('+String(mdcr_init)+')();'+String(mdcr_delete), 'mediacrush-igniter', true);
 
-        $('#preview-result-'+target).bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
+
+        $partab.find('.preview-image-inner').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
           if( ev.type == 'DOMNodeInserted' ){
             $(this).find('.mediacrush').each(function(){
-              var $me = $(this);
-              if( $me.hasClass('events') )
-                return true;
-              $me.find('img').click(function(){ do_smile( $(this) ) });
-              $me.addClass('events');
-            })
+              var P = $(this);
+              if( P.hasClass('event') ) return;
+
+              P.find('img').click(function(){ do_smile($(this)) });
+              P.find('.modal-dialog-title-close').click(function(){
+                if( confirm('Agan yakin mau delete gambar ini?') ){
+                  $(this).closest('.mediacrush').remove();
+                  options.mode = 'remove';
+                  inteligent_width( options );
+                }
+              });
+              P.addClass('event');
+            });
+
+            options.mode = 'insert';
+            inteligent_width( options );
           }
         });
+
+        $partab.find('.jfk-button.method').each(function(){
+          $(this).click(function(){
+            var $me = $(this);
+            var $imgc = $me.closest('.image-control');
+            var $tgt = $imgc.find('.wrap-use-url');
+            $imgc.find('.active').removeClass('active');
+            $me.addClass('active');
+            if( $me.hasClass('url') ){
+              $tgt.removeClass('hide').find('[type=text]').focus();
+            }
+            else{
+              $tgt.addClass('hide');
+            }
+          });
+        })
 
       }else{
         ifname = 'ifrm_' + gvar.upload_sel[target].replace(/\W/g,'');
         tpl=''
-          +'<a style="position:absolute; top:10px; right:20px; height:16px; width:50px; border:0; font-weight:normal" href="javascript:;" id="ifrm_reload_'+target+'" data-src="'+gvar.uploader[target]['src']+'">reload</a>'
-          +'<div style="margin:10px 3px 15px 30px; display:inline-block;">'
+          +'<div class="host">'
           +'<a target="_blank" title="Goto '+ target +'" href="http://'+gvar.upload_sel[target]+'"><b>http://' + gvar.upload_sel[target] + '</b></a>'
           +'</div>'
-          +'<ifr'+'ame id="'+ ifname +'" src="http://'+ gvar.uploader[target]['src'] +'" style="width:100%; height:300px"></if'+'rame>'
+          +'<a class="btn_ifrm_reload" href="javascript:;" id="ifrm_reload_'+target+'" data-src="'+gvar.uploader[target]['src']+'">reload</a>'
+          +'<ifr'+'ame id="'+ ifname +'" src="http://'+ gvar.uploader[target]['src'] +'"></if'+'rame>'
         ;
         $('#'+tgt).html( tpl );
         $('#ifrm_reload_'+target).click(function(){
@@ -2904,7 +3008,7 @@ var _SML_ = {
     // menus only
     $('#tabs-sb-tcustom .qrt').each(function(){
       if( !$(this).hasClass('add_group') )
-       $(this).click(function(){
+      $(this).click(function(){
 
         var retEl, subtpl, ch= $(this).find('div:first'), id, lbl, gL, grup, islink;
         var safe_uesc = function(txt){
@@ -2957,7 +3061,6 @@ var _SML_ = {
           $('#content_scustom_container_'+grup).html( subtpl );
           _SML_.event_img('#'+_SML_.tci+' #tabs-sb-tcustom', 'tcustom');
         }
-      
       });
     });
   
@@ -5041,7 +5144,64 @@ function try_solve(sol){
 }
 //==
 
-function inteligent_width( mode ){
+/**
+* the callback after append and remove item from preview list of images
+* @param
+*  options.mode String of task todo ['','delete']
+*  options.parent_selector String of parent wrapper
+*  options.preview_wrap_selector String of unit item wrapper
+*/
+function inteligent_width(options){
+  var mode = (options.mode ? options.mode : '');
+  var $parent = $(options.parent_selector);
+  var $preview_wrap = $parent.find(options.preview_wrap_selector);
+
+  // inteligent width-detector
+  gvar.$w.setTimeout(function(){
+    var $ct, L, leb, upkey, itemclass, imgs=[];
+    itemclass = (options.item_class ? options.item_class : 'preview-image-unit');
+    $ct = $parent.find('.clickthumb');
+    leb = parseInt( $parent.find('.'+itemclass).length );
+    
+    L = ( leb > 0 ? (leb * 57)+'px' : '100%');
+    if( leb > 0 ) 
+      $ct.show();
+    else
+      $ct.hide();
+
+    $preview_wrap.css('width',  L);
+    
+    // update log
+    $preview_wrap.find('img').each(function(){
+      imgs.push($(this).attr('src'));
+    });
+    
+    upkey = (options.KEY_STR ? options.KEY_STR : 'UPLOAD_LOG');
+    if( mode=='' ){
+      // save history upload
+      getValue(KS + upkey, function(ret){
+        imgs = ret.split(',');
+        if( ret && imgs.length > 0 ){
+          $.each(imgs, function(){
+            var tpl, _src=this;
+            tpl = ''
+              +'<div class="'+itemclass+'">'
+              + '<img src="'+ _src +'" width="46" height="46" alt="[IMG]'+ _src +'[/IMG]" />'
+              + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
+              +'</div>'
+            ;
+            $preview_wrap.append( tpl );
+          });
+        }
+      });
+    }else{
+      // whether is [insert, delete]
+      setValue(KS + upkey, String(imgs));
+    }
+  }, 10);
+}
+
+function inteligent_width_OLD( mode ){
   if(!mode) mode = '';
   // inteligent width-detector
   gvar.$w.setTimeout(function(){
@@ -5056,7 +5216,7 @@ function inteligent_width( mode ){
       $(ct).hide();
     }   
     $('#preview-image').css('width',  L);
-    $('#preview-image-outer').css('visibility', 'visible');
+    // $('#preview-image-outer').css('visibility', 'visible');
     
     // update log
     $('#preview-image img').each(function(){
@@ -5085,7 +5245,6 @@ function inteligent_width( mode ){
       // whether is [insert, delete]
       setValue(KS + upkey, String(imgs));
     }
-    
   }, 10);
 }
 
@@ -5878,10 +6037,10 @@ function getSettings(stg){
   */
   var capsulate_done, settings = { lastused:{}, userLayout:{} };
   
-  getValue(KS+'LAST_UPLOADER', settings.lastused.uploader);
+  getValue(KS+'LAST_UPLOADER', function(ret){ settings.lastused.uploader=ret});
   
   settings.userLayout.config = [];
-  getValue(KS+'LAYOUT_TPL', settings.userLayout.template);
+  getValue(KS+'LAYOUT_TPL', function(ret){settings.userLayout.template=ret});
   
   getValue(KS+'HIDE_AVATAR', function(ret){ settings.hideavatar=(ret=='1') });
   getValue(KS+'MIN_ANIMATE', function(ret){ settings.minanimate=(ret=='1') });
@@ -5959,6 +6118,8 @@ function getSettings(stg){
     if( !capsulate_done ){
       gvar.$w.setTimeout(function(){ waitTillDone(stg) }, 1)
     }else{
+      clog('all settings');
+      clog(JSON.stringify(settings));
       stg = settings;
       return settings;
     }
