@@ -5201,53 +5201,6 @@ function inteligent_width(options){
   }, 10);
 }
 
-function inteligent_width_OLD( mode ){
-  if(!mode) mode = '';
-  // inteligent width-detector
-  gvar.$w.setTimeout(function(){
-    var ct, L, leb, upkey, imgs=[];
-    ct =' .clickthumb';
-    leb = parseInt($('#preview-image .preview-image-unit').length);
-    
-    L = ( leb > 0 ? (leb * 57)+'px' : '100%');
-    if( leb > 0 ) {
-      $(ct).show();
-    }else{
-      $(ct).hide();
-    }   
-    $('#preview-image').css('width',  L);
-    // $('#preview-image-outer').css('visibility', 'visible');
-    
-    // update log
-    $('#preview-image img').each(function(){
-      imgs.push($(this).attr('src'));
-    });
-    
-    upkey = 'UPLOAD_LOG';
-    if( mode=='' ){
-      // save history upload
-      getValue(KS + upkey, function(ret){
-        imgs = ret.split(',');
-        if( ret && imgs.length > 0 ){
-          $.each(imgs, function(){
-            var tpl, _src=this;
-            tpl = ''
-              +'<div class="preview-image-unit">'
-              + '<img src="'+ _src +'" width="46" height="46" alt="[IMG]'+ _src +'[/IMG]" />'
-              + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
-              +'</div>'
-            ;
-            $('#preview-image').append( tpl );
-          });
-        }
-      });
-    }else{
-      // whether is [insert, delete]
-      setValue(KS + upkey, String(imgs));
-    }
-  }, 10);
-}
-
 function clear_quoted($el){
   $('a[data-btn="multi-quote"].blue').removeClass('blue').addClass('white');
   do_click($('#qr_remoteDC').get(0));
