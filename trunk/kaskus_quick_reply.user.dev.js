@@ -6071,8 +6071,6 @@ function getSettings(stg){
     if( !capsulate_done ){
       gvar.$w.setTimeout(function(){ waitTillDone(stg) }, 1)
     }else{
-      clog('all settings');
-      clog(JSON.stringify(settings));
       stg = settings;
       return settings;
     }
