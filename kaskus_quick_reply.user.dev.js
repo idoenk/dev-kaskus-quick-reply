@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply New
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
+// @namespace      http://userscripts.org/scripts/show/80409
 // @include        /^https?://(|www\.)kaskus.co.id/thread/*/
 // @include        /^https?://(|www\.)kaskus.co.id/lastpost/*/
 // @include        /^https?://(|www\.)kaskus.co.id/post/*/
@@ -9,9 +9,12 @@
 // @include        /^https?://(|www\.)kaskus.co.id/show_post/*/
 // @license        (CC) by-nc-sa 3.0
 // @exclude        /^https?://(|www\.)kaskus.co.id/post_reply/*/
-// @version        4.1.0.7
-// @dtversion      1403224107
-// @timestamp      1395506569355
+// @version        4.1.0.8
+// @dtversion      1405104108
+// @timestamp      1399755495890
+// @homepageURL    https://greasyfork.org/scripts/96
+// @updateURL      https://greasyfork.org/scripts/96/code.user.js
+// @downloadURL    https://greasyfork.org/scripts/96/code.user.js
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @author         idx(302101; http://userscripts.org/users/idx); bimatampan(founder);
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
@@ -24,6 +27,14 @@
 //
 // -!--latestupdate
 //
+// v4.1.0.8 - 2014-05-10 . 1399755495890
+//   [alpha] hid-qr on locked and single post (Ctrl+` activate readonly mode); Thx[AMZMA]
+//   CSS update;
+//   +uploader mediacru.sh
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v4.1.0.7 - 2014-03-22 . 1395506569355
 //   CSS; fix broken cdn static files; Thx[rock2steel,AMZZZMA]
 //   fix broken post/preview youtube link; Thx[p1nky]
@@ -32,9 +43,6 @@
 //   deprecate uploader imagetoo
 //   +(plus)quote, include quotes on quick-quote (experimental)
 //   deprecate (plus)quotes visibility. really? ~XD
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v4.1.0.6 - 2013-11-04 . 1383574109058
 //   fix broken cdn kaskus hostname; Thx[AMZMA]
@@ -70,15 +78,15 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '4.1.0.7';
+gvar.sversion = 'v' + '4.1.0.8';
 gvar.scriptMeta = {
    //timestamp: 999 // version.timestamp for test update
-   timestamp: 1395506569355 // version.timestamp
-  ,dtversion: 1403224107 // version.date
+   timestamp: 1399755495890 // version.timestamp
+  ,dtversion: 1405104108 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
-  ,cssREV: 1403224107 // css revision date; only change this when you change your external css
+  ,cssREV: 1405104108 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -302,14 +310,14 @@ var rSRC = {
   
   getTPL: function(){
     var _sp = rSRC.mCls[2], lc=rSRC.mCls[0]
-    , iner_head = '<span class="inner_title">'+gvar.inner.reply.title+ '</span> &nbsp;<a class="qrlink" target="_blank" href="'+(isQR_PLUS==0 ? 'http://'+'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID.toString() : 'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'">'+gvar.sversion+'</a>';
+    , iner_head = '<span class="inner_title">'+gvar.inner.reply.title+ '</span> &nbsp;<a class="qrlink" target="_blank" href="'+(isQR_PLUS==0 ? 'http://'+'userscripts.org:8080/scripts/show/'+gvar.scriptMeta.scriptID.toString() : 'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'">'+gvar.sversion+'</a>';
         return ''
-    +'<div id="' + gvar.qID + '" class="xkqr" style="clear:both">' 
+    +'<div id="' + gvar.qID + '" class="xkqr'+(gvar.readonly ? ' hide':'')+'" style="clear:both">' 
     +'<div class="xkqr-entry-content">'
     +'<div class="xkqr-entry-head'+(gvar.thread_type == 'group' ? ' bar0' : '')+'">'
     + '<div class="qrhead-title lefty">'+iner_head+'</div>'
     + '<div class="righty">'
-    +   '<span id="draft_desc" style="">blank</span>' 
+    +   '<span id="draft_desc">blank</span>' 
     +   '<div id="qrdraft" class="goog-inline-block jfk-button jfk-button-standard jfk-button-disabled" style="position:absolute; z-index:31; top:5px; right:45px; ">Draft</div>'
     +  '<div id="settings-button" title="Settings"></div>'
     +  '<div id="qrtoggle-button" title="Toggle QR" class="goog-inline-block jfk-button jfk-button-standard"> &#9650;</div>'
@@ -321,7 +329,7 @@ var rSRC = {
     +  '<div class="qr-m-panel" style="display:block;">'
     +   '<a id="scancel_edit" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="display:none;">Cancel Edit</a>'
     +   '<span id="quote_btnset" style="display:none;">'
-    +    '<a id="squote_post" class="goog-inline-block jfk-button jfk-button-standard btnlink" style="">Fetch Quote</a>&nbsp;&nbsp;'
+    +    '<a id="squote_post" class="goog-inline-block jfk-button jfk-button-standard btnlink'+(gvar.readonly ? ' jfk-button-disabled':'')+'" style="">Fetch Quote</a>&nbsp;&nbsp;'
     +    '<a id="squick_quote" class="goog-inline-block jfk-button jfk-button-standard btnlink g_warn" style="display:">Quick Quote</a>'
     +   '</span>'
     +  '</div>'
@@ -519,9 +527,9 @@ var rSRC = {
       +  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
       + '<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '20000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
       
-      +  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +'"/>'
-      +  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard"/>'
-      +  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard"/>'
+      +  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +(gvar.readonly ? ' jfk-button-disabled':'')+'"/>'
+      +  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard'+(gvar.readonly ? ' jfk-button-disabled':'')+'"/>'
+      +  '<input type="submit" tabindex="3" value="Go Advanced" name="sadvanced" id="sadvanced" class="goog-inline-block jfk-button jfk-button-standard'+(gvar.readonly ? ' jfk-button-disabled':'')+'"/>'
       +  '<div class="sub-bottom sayapkanan">'
 
       +  '<div class="control">'
@@ -718,8 +726,8 @@ var rSRC = {
   getTPLAbout: function(){
     return ''
       +'<b>'+ gvar.scriptMeta.fullname +' &#8212; '+ gvar.sversion +'</b> <small>'+gvar.scriptMeta.dtversion+'</small><br>'
-      +'<div style="height: 3px;"></div><a href="http://userscripts.org/scripts/show/'+ gvar.scriptMeta.scriptID +'" target="_blank">'+ gvar.scriptMeta.fullname +'</a> is an improvement of `kaskusquickreply` (Firefox Add-Ons) initially founded by bimatampan<br>'
-      +'<div style="height: 7px;"></div><a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" border="0" height="33"></a>&nbsp;&#183;&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"></a><br>'
+      +'<div style="height: 3px;"></div><a href="http://userscripts.org:8080/scripts/show/'+ gvar.scriptMeta.scriptID +'" target="_blank">'+ gvar.scriptMeta.fullname +'</a> is an improvement of `kaskusquickreply` (Firefox Add-Ons) initially founded by bimatampan<br>'
+      +'<div style="height: 7px;"></div><a href="https://greasyfork.org/scripts/96" target="_blank"><img src="https://cdn.mediacru.sh/QSTjcx4jsGLn.png" title="Kaskus Quick Reply on Greasyfork" border="0" height="33" style="border-radius:2px; -moz-border-radius:2px;"></a>&nbsp;&#183;&nbsp;<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" border="0" height="33"></a>&nbsp;&#183;&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"></a><br>'
       +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
       +'<div style="height: 7px;"></div>KASKUS brand is a registered trademark of '+ gvar.domain.replace(/^[^\.]+./gi,'') +'<br>'
       + gvar.scriptMeta.fullname + ' (QR) is not related to or endorsed by '+ gvar.domain.replace(/^[^\.]+./gi,'') +' in any way.<br>'
@@ -746,7 +754,7 @@ var rSRC = {
       +'kakilangit, judotens, matriphe, mursid88, robee_, cheanizer<br/>'
       +'<br/>'
       +'<b>QR Topic</b><br>&nbsp;CCPB <span title="CCPB (#14) UserAgent Fans Club Comunity">UA-FCC</span><br>'
-      +' &#167;<a href="'+ gvar.kask_domain +'16414069" target="_blank" title="All About Mozilla Firefox (Add-ons, Scripts, Fans Club)">Firefox</a> <a href="/profile/809411" target="_blank" title="TS: p1nk3d_books">*</a>'
+      +' &#167;<a href="'+ gvar.kask_domain +'hCZmM" target="_blank" title="All About Mozilla Firefox (Add-ons, Scripts, Fans Club)">Firefox</a> <a href="/profile/809411" target="_blank" title="TS: p1nk3d_books">*</a>'
       +' &#167;<a href="'+ gvar.kask_domain +'6595796" target="_blank" title="[Rebuild] Opera Community">Opera</a> <a href="/profile/786407" target="_blank" title="TS: ceroberoz"> * </a>'
       +' &#167;<a href="'+ gvar.kask_domain +'3319338" target="_blank" title="[Updated] Extensions/ Addons Google Chrome">Google-Chrome</a> <a href="/profile/449547" target="_blank" title="TS: Aerialsky"> * </a><br>'
       +'&nbsp;Other</b><br>'
@@ -937,7 +945,7 @@ var rSRC = {
       +   'if(data.status == "ok"){'
       +     'var t=\'\';'
       +     't+=\'<div class="preview-image-unit">\';'
-      +     't+=\'<img src="\'+data.url+\'" width="46" height="46" alt="[img]\'+data.url+\'[/img]" />\';'
+      +     't+=\'<img src="\'+data.url+\'" width="46" height="46" alt="[IMG]\'+data.url+\'[/IMG]" />\';'
       +     't+=\'<span title="remove" class="modal-dialog-title-close imgremover"/>\';'
       +     't+=\'</div>\';'
       +     '$("#preview-image").prepend( t );'
@@ -2560,6 +2568,7 @@ var _UPL_ = {
     _UPL_.self = 'box-upload';
     _UPL_.sibl = 'box-smiley';
     _UPL_.def  = 'kaskus';
+    _UPL_.mediacru  = 'mediacrush';
     
     _UPL_.main();
   },
@@ -2571,7 +2580,7 @@ var _UPL_ = {
         +'<li>'+spacer+'</li>'
         +'<li class="qrt curent"><div id="tphost_0" title="kaskus.us" data-host="kaskus">kaskus</div></li>'
       ;
-      for(host in gvar.upload_sel){
+      for(var host in gvar.upload_sel){
         ret+='<li class="qrt"><div id="tphost_'+(idx+1)+'" title="'+gvar.upload_sel[host]+'" data-host="'+host+'">' + host + ' <a class="externurl right" title="Goto this site" target="_blank" href="http://'+gvar.upload_sel[host]+'"><i class="icon-resize-full"></i></a></div></li>';
         idx++;
       }
@@ -2618,7 +2627,7 @@ var _UPL_ = {
     _UPL_.event_menus();
     
     tpl = _UPL_.tplcont(_UPL_.def);
-    for(host in gvar.upload_sel)
+    for(var host in gvar.upload_sel)
       tpl+=_UPL_.tplcont(host);
       
     $('#'+iner+' #uploader_container').html( tpl );
@@ -2629,22 +2638,23 @@ var _UPL_ = {
   },
   switch_tab: function(target){
     if( !target ) return;
-    var tpl, tgt = 'content_uploader_'+ target;
+    var tpl, ifname, tgt = 'content_uploader_'+ target;
+    var $partab = $('#'+tgt);
     
-    if( $('#'+tgt).html()=='' ){
+    if( $partab.html()=='' ){
       if(target ==_UPL_.def){
         
         tpl = ''
           +'<div id="preview-image-outer">'
-          + '<div id="preview-image" />'
+          + '<div id="preview-image" class="preview-image-inner" />'
           +'</div>'
-          +'<div id="loading_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
+          +'<div id="loading_wrp" class="throbber_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
           +'<div id="image-control" class="">'
           + '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
           + '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse" class="small white"/>'
           +'</div>'
         ;
-        $('#' + tgt ).html( tpl );
+        $partab.html( tpl );
         inteligent_width();
 
         GM_addGlobalScript( gvar.kkcdn + 'themes_2.0/js/ajaxfileupload.js' );
@@ -2670,9 +2680,81 @@ var _UPL_ = {
             inteligent_width('insert');
           }
         });
-      }else
-      {
-        var ifname = 'ifrm_' + gvar.upload_sel[target].replace(/\W/g,'');
+
+      }else if( target == _UPL_.mediacru ){
+        var selector_str = 'fileToUpload_'+target;
+        tpl=''
+          +'<div style="margin:10px 3px 15px 30px; display:inline-block;">'
+          + '<a target="_blank" title="Goto '+ target +'" href="http://'+gvar.upload_sel[target]+'"><b>http://' + gvar.upload_sel[target] + '</b></a>'
+          +'</div>'
+          
+          +'<div class="inline_uploader_'+target+'" style="position:relative">'
+          + '<div id="preview-result-'+target+'" class="preview-image-inner"></div>'
+          + '<div id="loading_wrp_'+target+'" class="throbber_wrp" style="display:none"><div class="mf-spinner chrome-spinner-delay" id="upl_loading" /></div>'
+          + '<div class="clickthumb hide">*Click thumbnail image to add to post content</div>'
+          + '<span id="'+selector_str+'"></span>'
+          +'</div>'
+        ;
+        $('#'+tgt).html( tpl );
+        GM_addGlobalScript('https://mediacru.sh/static/mediacrush.js', 'mediacrush-base', true);
+
+        var mdcr_init = function mdcr_init(){
+          var target = 'mediacrush';
+          var selector_str = 'fileToUpload_'+target;
+          var $partab = $('#content_uploader_'+target);
+          var rebuild_file = function rebuild_file(){
+            $partab.find('#'+selector_str).replaceWith($('<input type="file" id="'+selector_str+'" />'));
+            $partab.find('#'+selector_str).change(function(){
+              mc_do_upload();
+            });
+          };
+          var mc_do_upload = function mc_do_upload(){
+            if("undefined" == typeof MediaCrush){
+              console.log('MediaCrush is not defined');
+              return !1;
+            }
+            var $throbber = $partab.find('#loading_wrp_'+target);
+            var file = $('#'+selector_str).get(0).files[0];
+            $throbber.show();
+            MediaCrush.upload(file, function(media) {
+              console.log('Processing...');
+              media.wait(function() { // Wait for it to finish processing
+                if(media && media.url){
+                  mc_append_uploaded_image(media.hash);
+                  rebuild_file();
+                }
+                $throbber.hide();
+                $partab.find('.clickthumb').removeClass('hide');
+              });
+            });
+            return true;
+          };
+          var mc_append_uploaded_image = function mc_append_uploaded_image(hash){
+            MediaCrush.get(hash, function(media) {
+              var $item = $('<div class="mediacrush" '
+                +'data-media="'+hash+'"><img src="'+media.files[0].url+'" width="46" height="46" alt="[IMG]'+media.files[0].url+'[/IMG]"/></div>');
+              $partab.find('#preview-result-'+target).append( $item );
+            });
+          };
+          
+          setTimeout(function(){ rebuild_file(); }, 123);
+        }
+        GM_addGlobalScript('('+String(mdcr_init)+')()', 'mediacrush-igniter', true);
+
+        $('#preview-result-'+target).bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
+          if( ev.type == 'DOMNodeInserted' ){
+            $(this).find('.mediacrush').each(function(){
+              var $me = $(this);
+              if( $me.hasClass('events') )
+                return true;
+              $me.find('img').click(function(){ do_smile( $(this) ) });
+              $me.addClass('events');
+            })
+          }
+        });
+
+      }else{
+        ifname = 'ifrm_' + gvar.upload_sel[target].replace(/\W/g,'');
         tpl=''
           +'<a style="position:absolute; top:10px; right:20px; height:16px; width:50px; border:0; font-weight:normal" href="javascript:;" id="ifrm_reload_'+target+'" data-src="'+gvar.uploader[target]['src']+'">reload</a>'
           +'<div style="margin:10px 3px 15px 30px; display:inline-block;">'
@@ -4991,7 +5073,7 @@ function inteligent_width( mode ){
             var tpl, _src=this;
             tpl = ''
               +'<div class="preview-image-unit">'
-              + '<img src="'+ _src +'" width="46" height="46" alt="[img]'+ _src +'[/img]" />'
+              + '<img src="'+ _src +'" width="46" height="46" alt="[IMG]'+ _src +'[/IMG]" />'
               + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
               +'</div>'
             ;
@@ -5305,7 +5387,7 @@ function eventsController(){
       // close dropmenu if click outside
       $(document).one('click', function() { $(that).find('> ul').hide() });
     }, function() {
-      gvar.$w.clearTimeout( gvar.sTryHoverMenu );
+      gvar.sTryHoverMenu && gvar.$w.clearTimeout( gvar.sTryHoverMenu );
       $(this).find('> ul').hide()
     });
   });
@@ -5488,6 +5570,7 @@ function eventsController(){
 
 // proses event triger setelah start_main selesai me-layout template
 function eventsTPL(){
+  clog('inside eventsTPL');
   gvar.sTryEvent = null;
   
   $('#sbutton').click(function(ev){
@@ -5623,6 +5706,8 @@ function eventsTPL(){
 
       if( $.inArray( A, [13, 66,73,85, 69,76,82] ) != -1 ){
         if(A===13){
+          if( gvar.readonly )
+            return;
           _BOX.init();
           _BOX.presubmit();
         }else
@@ -5630,6 +5715,8 @@ function eventsTPL(){
         do_an_e(ev);
       }
     }else if(ev.altKey){
+      if( gvar.readonly )
+        return;
       do_an_e(ev);
       do_click($('#' + asocKey[A]).get(0));
     }
@@ -5655,6 +5742,12 @@ function eventsTPL(){
       $("#" + gvar.tID).focus();
       return;
     }
+
+    if( pCSA == '1,0,0' && A == 192 ){ // 192 for `: open the hive
+      $('.button_qrmod,.button_qq,.xkqr').removeClass('hide');
+      doThi = 1;
+      scrollToQR();
+    }
     
     if( (pCSA=='0,0,0' || pCSA=='0,1,0') || A < 65 || A > 90 )
       return;
@@ -5665,33 +5758,36 @@ function eventsTPL(){
       ,ctrlshift: '1,1,0' // Ctrl+Shift+..., due to Ctrl+Alt will be used above
     };
     
-    switch(pCSA){ // key match in [Ctrl-Shift-Alt Combination]
-    case CSA_tasks.quickreply:
-      var cCode = gvar.settings.hotkeychar.charCodeAt();
-      if(A == cCode) {
-        doThi = 1;
-        scrollToQR();
-      }
-      break;
-    case CSA_tasks.fetchpost:
-      if(A == 81) { // keyCode for Q
-        doThi = 1;
-        scrollToQR();
-        do_click($('#squote_post').get(0));
-      }
-      break;
-    case CSA_tasks.ctrlshift:
-      if(A == 81) { // keyCode for Q
-        doThi=1;
-        do_click($('#sdismiss_quote').get(0));
-      }else if(A == 68 // keyCode for D
-          && !$('#qrdraft').hasClass('jfk-button-disabled') ){
-          doThi=1;
+    if( !gvar.readonly )
+      switch(pCSA){ // key match in [Ctrl-Shift-Alt Combination]
+      case CSA_tasks.quickreply:
+        var cCode = gvar.settings.hotkeychar.charCodeAt();
+        if(A == cCode) {
+          doThi = 1;
           scrollToQR();
-          do_click($('#qrdraft').get(0));
-      }
-      break;
-    };
+        }
+        break;
+      case CSA_tasks.fetchpost:
+        if(A == 81) { // keyCode for Q
+          doThi = 1;
+          scrollToQR();
+          do_click($('#squote_post').get(0));
+        }
+        break;
+      case CSA_tasks.ctrlshift:
+        if(A == 81) { // keyCode for Q
+          doThi=1;
+          do_click($('#sdismiss_quote').get(0));
+        }else if(A == 68 // keyCode for D
+            && !$('#qrdraft').hasClass('jfk-button-disabled') ){
+            doThi=1;
+            scrollToQR();
+            do_click($('#qrdraft').get(0));
+        }
+        break;
+      };
+
+
     if(doThi) do_an_e(ev);
   }).resize(function () {
     var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
@@ -5758,7 +5854,7 @@ function get_userdetail() {
   b = /\/profile\/(\d+)/.exec($(c).html());
   d = $(c).find('.fig img');
   a = {
-     id: ("undefined" != typeof b[1] ? b[1] : null)
+     id: (b && "undefined" != typeof b[1] ? b[1] : null)
     ,name: $(c).find('.fn').text()
     ,photo:$(d).attr('src')
     ,isDonatur: ($('#quick-reply').get(0) ? true : false)
@@ -5873,13 +5969,17 @@ function getSettings(stg){
 function getUploaderSetting(){
   // uploader properties
   gvar.upload_sel = {
-     cubeupload:'cubeupload.com'
-    ,imgur:'imgur.com'
-    ,imgzzz:'imgzzz.com'
-    ,imagevenue:'imagevenue.com'
-    ,imageshack:'imageshack.us'
+    mediacrush:'mediacru.sh',
+    cubeupload:'cubeupload.com',
+    imgur:'imgur.com',
+    imgzzz:'imgzzz.com',
+    imagevenue:'imagevenue.com',
+    imageshack:'imageshack.us'
   };
   gvar.uploader = {
+    mediacrush:{
+      src:'mediacru.sh', noCross:'0'
+    },
     cubeupload:{
       src:'cubeupload.com',noCross:'1' 
     },
@@ -6058,14 +6158,15 @@ function start_Main(){
   gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
   gvar.classbody = String($('body').attr('class')).trim(); // [fjb,forum,group]
   
-  if(gvar.thread_type == 'singlepost')
-    return fixerCod();
+  // if(gvar.thread_type == 'singlepost')
+  //   return fixerCod();
 
   gvar.user = get_userdetail();
   // do nothin if not login | locked thread
   if( !gvar.user.id || $('.icon-lock').get(0) || !$('*[name="securitytoken"]').val() ){
-    clog('Not login, no securitytoken, locked thread, wotever, get the "F"-out');
-    return
+    // clog('Not login, no securitytoken, locked thread, wotever, get the "F"-out');
+    // return
+    gvar.readonly = true;
   }
   GM_addGlobalStyle( rSRC.getCSS() ); 
   gvar.bodywidth = $('#main .col:first').width(); 
@@ -6122,8 +6223,8 @@ function start_Main(){
           $(this).find('.button_qr').remove();
 
           $(this)
-            .append('<a href="#" id="button_qr_'+ entry_id +'" class="button small white button_qr button_qrmod" rel="nofollow" onclick="return false" style="margin-left:5px;"> Quick Reply</a>')
-            .append('<a href="#" id="button_qq_'+ entry_id +'" class="button small green button_qq" data-original-title="Quick Quote" rel="tooltip" onclick="return false" style="margin-left:-7px; padding:0 10px 0 12px;"><i class="icon-share-alt icon-large"></i> </a>')
+            .append('<a href="#" id="button_qr_'+ entry_id +'" class="button small white button_qr button_qrmod'+(gvar.readonly ? ' hide':'')+'" rel="nofollow" onclick="return false" style="margin-left:5px;"> Quick Reply</a>')
+            .append('<a href="#" id="button_qq_'+ entry_id +'" class="button small green button_qq'+(gvar.readonly ? ' hide':'')+'" data-original-title="Quick Quote" rel="tooltip" onclick="return false" style="margin-left:-7px; padding:0 10px 0 12px;"><i class="icon-share-alt icon-large"></i> </a>')
           ;
           // event for quick reply
           $(this).find('.button_qr').click(function(ev){
