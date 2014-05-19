@@ -1,21 +1,22 @@
 // ==UserScript==
 // @id             beta.kaskus.co.id-305460d2-a581-436e-af55-255cb62965c3
-// @name           Kaskus Quick Reply (beta)
+// @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0
-// @namespace      Kaskus-Quick-Reply
-// @dtversion      1405135000
-// @timestamp      1399923493992
+// @version        5.0.1
+// @namespace      Kaskus-Quick-Reply-96
+// @dtversion      1405205010
+// @timestamp      1400525165393
 // @homepageURL    https://greasyfork.org/scripts/96
-// @updateURL      https://greasyfork.org/scripts/96/code.user.js
+// @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
 // @description    provide a quick reply feature, under circumstances capcay required.
-// @include        /^https?://beta.kaskus.co.id/thread/*/
-// @include        /^https?://beta.kaskus.co.id/lastpost/*/
-// @include        /^https?://beta.kaskus.co.id/post/*/
-// @include        /^https?://beta.kaskus.co.id/group/discussion/*/
-// @include        /^https?://beta.kaskus.co.id/show_post/*/
+// @include        /^https?://www.kaskus.co.id/thread/*/
+// @include        /^https?://www.kaskus.co.id/lastpost/*/
+// @include        /^https?://www.kaskus.co.id/post/*/
+// @include        /^https?://www.kaskus.co.id/group/discussion/*/
+// @include        /^https?://www.kaskus.co.id/show_post/*/
 // @author         Idx
+// @exclude        /^https?://www.kaskus.co.id/post_reply/*/
 // @contributor    S4nJi, riza_kasela, p1nk3d_books, b3g0, fazar, bagosbanget, eric., bedjho, Piluze, intruder.master, Rh354, gr0, hermawan64, slifer2006, gzt, Duljondul, reongkacun, otnaibef, ketang8keting, farin, drupalorg, .Shana, t0g3, & all-kaskuser@t=3170414
 // @include        http://imageshack.us/*
 // @include        http://*.imageshack.us/*
@@ -28,12 +29,15 @@
 //
 // -!--latestupdate
 //
-// v5.0 - 2014-05-13 . 1399923493992
-//   Draft adapting kaskus-beta (themes_3.0)
+// v5.0.1 - 2014-05-20 . 1400525165393
+//   deprecated fixerCod,.
+//   Reroute update check end-point
 //
 // -/!latestupdate---
 // ==/UserScript==
 //
+// v5.0 - 2014-05-13 . 1399923493992
+//   Draft adapting kaskus-beta (themes_3.0)
 //
 //
 // v0.1 - 2010-06-29
@@ -50,14 +54,15 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0';
+gvar.sversion = 'v' + '5.0.1';
 gvar.scriptMeta = {
    //timestamp: 999 // version.timestamp for test update
-   timestamp: 1399841479552 // version.timestamp
-  ,dtversion: 1405135000 // version.date
+   timestamp: 1400525165393 // version.timestamp
+  ,dtversion: 1405205010 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
+  ,scriptID_GF: 96 // script-Id @Greasyfork
   ,cssREV: 1405135000 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
@@ -91,7 +96,7 @@ var OPTIONS_BOX = {
  
  ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
  
- ,KEY_SAVE_WIDE_THREAD:  ['1'] // initial state of thread, widefix -S4nJi
+ ,KEY_SAVE_WIDE_THREAD:  ['0'] // initial state of thread, widefix -S4nJi
  ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
  ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
  ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
@@ -672,7 +677,7 @@ var rSRC = {
     return ''
       +'<table border="0"><tr>'
       +'<td style="width:45%">'
-      +'<div class="wrap_stlmenu"><label for="misc_updates" class="stlmenu" title="Check Userscripts.org for QR latest update"><input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' />Updates</label></div>'+nb+nb 
+      +'<div class="wrap_stlmenu"><label for="misc_updates" class="stlmenu" title="Check for latest QR"><input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' />Updates</label></div>'+nb+nb 
       + ( !gvar.noCrossDomain ? '<a id="chk_upd_now" class="gbtn" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking..&nbsp;<img src="'+gvar.B.throbber_gif+'" border=0/></span>' : '')
       + '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval</label><input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</div><div style="height: 1px;"></div>'
 
@@ -2696,7 +2701,6 @@ var _UPL_ = {
         options.item_class = 'mediacrush';
         inteligent_width( options );
 
-
         var mdcr_init = function mdcr_init(){
           var target = 'mediacrush';
           var $partab = $('#content_uploader_'+target);
@@ -2773,15 +2777,8 @@ var _UPL_ = {
             });
           };
           
-          setTimeout(function(){
-            // rebuild_file()
-            mc_init_events();
-          }, 123);
+          setTimeout(function(){ mc_init_events() }, 123);
         };
-        var mdcr_delete = function mdcr_delete(){
-          alert(9)
-        };
-        GM_addGlobalScript('('+String(mdcr_init)+')();'+String(mdcr_delete), 'mediacrush-igniter', true);
 
 
         $partab.find('.preview-image-inner').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
@@ -3710,7 +3707,7 @@ var _STG = {
     nn = '\n'; 
     gvar.buftxt = '# QR-Settings Raw-Data'+'\n';
     gvar.buftxt+= '# Version: QR'+(isQR_PLUS!==0?'+':'')+' '+gvar.sversion+'\n';
-    gvar.buftxt+= '# Source: http://'+ 'userscripts.org/scripts/show/'+gvar.scriptMeta.scriptID+'\n';
+    gvar.buftxt+= '# Source: https://'+ 'greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'\n';
     gvar.buftxt+= '# User-Agent: '+parse_UA_Vers()+'\n';
     gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
     gvar.buftxt+= nn;
@@ -3737,7 +3734,7 @@ var _STG = {
   },
   reset_settings: function(){
     getValue(KS+'CUSTOM_SMILEY', function(ret){
-      var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org/topics/58227'];
+      var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org:8080/topics/58227'];
       space = '';
       for(var i=0;i<20;i++) space+=' ';
       csmiley = ret.replace(/^\s+|\n|\s+$/g, "");
@@ -3903,7 +3900,8 @@ var _UPD = {
         gvar.updateForced = forced;
         if(!forced) _UPD.caller='';
 
-        GM_XHR.uri = 'http://' + 'userscripts.org'+'/scripts/source/' + gvar.scriptMeta.scriptID + '.meta.js';
+        // rerouting the origin
+        GM_XHR.uri = 'https://greasyfork.org/scripts/' + gvar.scriptMeta.scriptID_GF + '/code.meta.js';
         GM_XHR.cached = false;
         GM_XHR.forceGM = true;
         GM_XHR.request(null, 'GET', _UPD.callback);
@@ -3959,8 +3957,8 @@ var _UPD = {
   ,design: function(){
     var tpl = ''
       +'<b>New'+' '+gvar.titlename+'</b> (v'+ _UPD.meta.cvv[1]+') is available'
-      +'<div style="float:right;"><a class="qbutton" href="http://'+ 'userscripts.org'
-      +'/scripts/show/'+gvar.scriptMeta.scriptID+'" target="_blank" title="QR Home in userscripts.org"><b>v'+ _UPD.meta.cvv[1]+'</b></a></div>'
+      +'<div style="float:right;"><a class="qbutton" href="https://'+ 'greasyfork.org'
+      +'/scripts/'+gvar.scriptMeta.scriptID_GF+'" target="_blank" title="QR in greasyfork.org"><b>v'+ _UPD.meta.cvv[1]+'</b></a></div>'
     ;
     $('#box_update_title').html( tpl );
     tpl = ''
@@ -3994,7 +3992,7 @@ var _UPD = {
     $('#box_update').click(function(){
       var fake = 'hid_updateframe', disb = 'jfk-button-disabled';
       if( $('#'+fake).get(0) ) $('#'+fake).remove();
-      $('#content_update').append('<ifr'+'ame id="'+fake+'" src="http://' + 'userscripts.org/scripts/source/' + gvar.scriptMeta.scriptID + '.user.js" style="visibility:hidden; position:absolute; border:0; height:0; width:0;"></if'+'rame>');
+      $('#content_update').append('<ifr'+'ame id="'+fake+'" src="https://' + 'greasyfork.org/scripts/' + gvar.scriptMeta.scriptID_GF + '/code.user.js" style="visibility:hidden; position:absolute; border:0; height:0; width:0;"></if'+'rame>');
       $(this).addClass(disb);
       gvar.$w.setTimeout(function(){ $('#box_update').removeClass(disb) }, 4000);
     });
@@ -6093,10 +6091,10 @@ function getUploaderSetting(){
   gvar.upload_sel = {
     mediacrush:'mediacru.sh',
     cubeupload:'cubeupload.com',
-    imgur:'imgur.com',
     imgzzz:'imgzzz.com',
     imagevenue:'imagevenue.com',
-    imageshack:'imageshack.us'
+    imageshack:'imageshack.us',
+    imgur:'imgur.com'
   };
   gvar.uploader = {
     mediacrush:{
@@ -6207,23 +6205,6 @@ function finalizeTPL(){
   if( gvar.settings.widethread ){
     GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
   }
-  fixerCod();
-}
-
-// <br/> inside <pre>? ergh
-function fixerCod(){
-  $('.hfeed >.entry').each(function(){
-    var rx, $e, $pre = $(this).find('pre');
-    if( !$pre.length ) return true;
-
-    $e = $pre.find('a:last');
-    rx = /\[\/CODE\](?:.+)?/i;
-    if($e.length && (cucok = rx.exec( $e.attr('href') )) )
-      $e.attr('href', $e.attr('href').replace(rx, '') );
-
-    $pre.find('br')
-      .attr('style', 'display:block; margin-top:-12px;');
-  });
 }
 
 function slideAttach(that, cb){
@@ -6322,7 +6303,6 @@ function start_Main(){
       
       // need a delay to get all this settings
       gvar.$w.setTimeout(function(){
-        
         // push qr-tpl
         if(gvar.last_postwrap){
           $_1stlanded = $('#'+gvar.last_postwrap);
@@ -6331,7 +6311,6 @@ function start_Main(){
           $_1stlanded = $('.hfeed:last').closest('.row');
         }
         $_1stlanded.find('.col').append( rSRC.getTPL() );
-        $('#'+gvar.qID).removeClass('hide');
 
         var isInGroup = (gvar.thread_type == 'group');
         $('.user-tools').each(function(idx){
@@ -6448,11 +6427,12 @@ function start_Main(){
           $(this).click(function(e){
             do_an_e(e)
           });
-        });       
+        });
+
+        if( !gvar.readonly )
+          finalizeTPL();
         
-        finalizeTPL();
         $('#quick-reply').remove();
-        
         eventsTPL();
         // almost-done
 
@@ -6472,7 +6452,8 @@ function start_Main(){
         }, 50);
 
         // trigger preload recapcay
-        if(gvar.thread_type != 'group')
+        if( !gvar.readonly )
+        if( gvar.thread_type != 'group' )
           window.setTimeout(function(){
             do_click($('#hidrecap_btn').get(0));
           }, 100);
