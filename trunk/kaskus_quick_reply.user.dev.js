@@ -4,7 +4,7 @@
 // @version        5.0.1
 // @namespace      Kaskus-Quick-Reply-96
 // @dtversion      1405205010
-// @timestamp      1400525165393
+// @timestamp      1400528967424
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,7 +28,7 @@
 //
 // -!--latestupdate
 //
-// v5.0.1 - 2014-05-20 . 1400525165393
+// v5.0.1 - 2014-05-20 . 1400528967424
 //   deprecated fixerCod,.
 //   Reroute update check end-point
 //
@@ -2778,6 +2778,7 @@ var _UPL_ = {
           
           setTimeout(function(){ mc_init_events() }, 123);
         };
+        GM_addGlobalScript('('+String(mdcr_init)+')()', 'mediacrush-igniter', true);
 
 
         $partab.find('.preview-image-inner').bind('DOMNodeInserted DOMNodeRemoved', function(ev) {
@@ -6535,16 +6536,6 @@ function outSideForumTreat(){
     case "cubeupload":
     CSS=''
     +'.bsap{display:none'+i+'}'
-    ;break;
-    case "photoserver":
-    CSS=''
-    +'body,.content{margin:0'+i+';margin-top:35px'+i+'}'
-    +'body>img,#topbar{top:0'+i+'}'
-    +'body{background-color:#fff}'
-    +'#loginbar{top:38px'+i+';display:block}'
-    +'#footer{padding:0}'
-    +'#overlay .content{top:3px'+i+'}'
-    +'#overlay{position:absolute'+i+'}'
     ;break;
   };
   // end switch loc
