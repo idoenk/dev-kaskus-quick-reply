@@ -2,7 +2,7 @@
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @version        5.0.1
-// @namespace      Kaskus-Quick-Reply-96
+// @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1405205010
 // @timestamp      1400528967424
 // @homepageURL    https://greasyfork.org/scripts/96
