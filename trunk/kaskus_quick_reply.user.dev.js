@@ -4,7 +4,7 @@
 // @version        5.0.2
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1405295020
-// @timestamp      1401381641011
+// @timestamp      1401384664827
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,7 +28,8 @@
 //
 // -!--latestupdate
 //
-// v5.0.2 - 2014-05-29 . 1401381641011
+// v5.0.2 - 2014-05-29 . 1401384664827
+//   allow edit in single post;
 //   fix edit to quote malfunction;
 //   proper update link (GF)
 //   fix avatar
@@ -61,7 +62,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1401381641011 // version.timestamp
+   timestamp: 1401384664827 // version.timestamp
   ,dtversion: 1405295020 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -1787,7 +1788,14 @@ var _AJAX = {
       $("#hid_iconid").val(0);
       $("#form-title").val("");
       $("#img_icon").attr("src", "#");
-      $(".edit-options, #img_icon, #close_title, .title-message, .edit-reason, .ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price").hide()
+      $(".edit-options, #img_icon, #close_title, .title-message, .edit-reason, .ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price").hide();
+
+      if( gvar.readonly ){
+        $('#'+gvar.qID).find('[type=submit]').addClass('jfk-button-disabled');
+
+        if( $('.button_qrmod').hasClass('hide') )
+          $('.xkqr').addClass('hide').hide();
+      }
     }
     return conf;
   },
@@ -1832,6 +1840,25 @@ var _AJAX = {
           _NOFY.raise_error(data);
 
         }else{
+          if( gvar.readonly ){
+            // restore disable mode, abort disability            
+            clog('restore from disable-mode');
+            
+            if( !gvar.user.photo ){
+              if( cucok = /<li\s+id=.\bafter-login[^>]+.((?:<[^>]+.){3}Hi,\s([^<]+))/i.exec(data) ){
+                gvar.user["name"] = ("undefined" != cucok[2] ? cucok[2] : "");
+                
+                cucok = /\b(http\:\/\/[^\'\"]+)/.exec(cucok[1]);
+                cucok && (gvar.user.photo = cucok[1]);
+              }
+            }
+
+            if( !$('#qr-modalBoxFaderLayer').length )
+              finalizeTPL();
+
+            $('#'+gvar.qID).find('[type=submit].jfk-button-disabled').removeClass('jfk-button-disabled');
+          }
+
           $('#formform')
             .attr('action', uri)
             .attr('name', 'edit_postreply');
@@ -5997,9 +6024,12 @@ function eventsTPL(){
     && gvar.on_demand_csscheck();
 }
 
-function get_userdetail() {
+function get_userdetail($sparent) {
   var a={}, b, $p, $c, d;
-  $p = $('#after-login');
+  if("undefined" == typeof $sparent)
+    $sparent = $('body');
+
+  $p = $('#after-login', $sparent);
   $c = $p.find('#menu-accordion .accordion-dd a[href*="/profile/about"]');
   b = /\/profile\/aboutme\/(\d+)/.exec($c.attr('href'));
   d = /\b(http\:\/\/[^\'\"]+)/.exec($p.find('.tools>.vcard').attr('style'));
