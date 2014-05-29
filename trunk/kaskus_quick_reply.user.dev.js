@@ -3,8 +3,8 @@
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @version        5.0.1
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1405205010
-// @timestamp      1400528967424
+// @dtversion      1405295020
+// @timestamp      1401373743199
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,12 +28,16 @@
 //
 // -!--latestupdate
 //
-// v5.0.1 - 2014-05-20 . 1400528967424
-//   deprecated fixerCod,.
-//   Reroute update check end-point
+// v5.0.2 - 2014-05-20 . 1401373743199
+//   proper update link (GF)
+//   fix avatar
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v5.0.1 - 2014-05-20 . 1400528967424
+//   deprecated fixerCod,.
+//   Reroute update check end-point
 //
 // v5.0 - 2014-05-13 . 1399923493992
 //   Draft adapting kaskus-beta (themes_3.0)
@@ -53,16 +57,16 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.1';
+gvar.sversion = 'v' + '5.0.2';
 gvar.scriptMeta = {
-   //timestamp: 999 // version.timestamp for test update
-   timestamp: 1400525165393 // version.timestamp
-  ,dtversion: 1405205010 // version.date
+   // timestamp: 999 // version.timestamp for test update
+   timestamp: 1401373743199 // version.timestamp
+  ,dtversion: 1405295020 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1405135000 // css revision date; only change this when you change your external css
+  ,cssREV: 1405295020 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -840,7 +844,7 @@ var rSRC = {
     + '<div id="content_update"></div><div class="spacer"></div>'
     +'</div>' // box_wrap
     +'<div id="cont_button" class="modal-dialog-buttons" style="display:;">'
-    + '<button id="box_update" class="goog-inline-block jfk-button jfk-button-action" style="-moz-user-select: none;">Update</button>'
+    + '<a id="box_update" href="javascript:;" class="goog-inline-block jfk-button jfk-button-action" style="-moz-user-select: none;">Update</a>'
     + '<button id="box_cancel" class="goog-inline-block jfk-button jfk-button-standard" style="-moz-user-select: none;">Cancel</button>'
     +'</div>'
     +'</div>' // modal_dialog_box
@@ -855,7 +859,6 @@ var rSRC = {
     +".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
     +".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
     +".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
-    +".hfeed.editpost{background: #DFC;}"
   },
 
   /*
@@ -1657,7 +1660,7 @@ var _BOX = {
     neim = gvar.user.name + (gvar.user.isDonatur ? ' [$]' : '');
     !dt_ori && (dt_ori = 'Post as ');
     $tgt.html('');
-    $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="bottom" />');
+    $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="top" />');
     imgtip = 'img[rel="tooltip"]';
     try{
       xtip(target, imgtip);
@@ -3921,20 +3924,21 @@ var _UPD = {
       }
       try{
         if( r && r.responseText.match(/@timestamp(?:[^\d]+)([\d\.]+)/)[1] > gvar.scriptMeta.timestamp ){
-          _UPD.initiatePopup(r.responseText);
-          if( gvar.updateForced ){
-            close_popup();
-            do_click($('#nav-wrapper .update').get(0));
-          }
+          _UPD.initiatePopup(r.responseText, function(){
+            if( gvar.updateForced )
+              close_popup();
+          },function(){
+            if( gvar.updateForced )
+              $('.baloon-update a').trigger('click');
+          });
         }else {
-          if(gvar.updateForced){
-            alert("No update is available for QR.");
-          }
+          if(gvar.updateForced)
+            alert("No update is available for QR.")
         }
       }catch(e){}
     });
   }
-  ,initiatePopup: function(rt){
+  ,initiatePopup: function(rt, cb_early, cb_lazy){
 
     if($('.baloon-update').get(0))
       $('.baloon-update').remove();
@@ -3942,7 +3946,7 @@ var _UPD = {
       $('#modal_update_box').remove();
       
     $('.xkqr-entry-content').prepend('<div class="baloon-update" style="display:none"><a href="javascript:;">&nbsp;</a></div>');
-    $('.baloon-update').fadeIn(1500, function(){
+    $('.baloon-update').fadeIn(985, function(){
       $('.baloon-update a').click(function(){
         _UPD.meta = _UPD.mparser( rt );
         $('#qr-modalBoxFaderLayer').css('visibility', 'visible').show();
@@ -3952,7 +3956,12 @@ var _UPD = {
         });
         resize_popup_container(450);
       });
+
+      if("function" == typeof cb_lazy)
+        cb_lazy();
     });
+    if("function" == typeof cb_early)
+      cb_early();
   }
   ,design: function(){
     var tpl = ''
@@ -3962,8 +3971,8 @@ var _UPD = {
     ;
     $('#box_update_title').html( tpl );
     tpl = ''
-      +'<h4 class="isclose"><span>&#9654;</span> What\'s New</h4>'
-      +'<div class="update-panel toggle-panel" style="display:none;">'
+      +'<h4><span>&#9660;</span> What\'s New</h4>'
+      +'<div class="update-panel toggle-panel" style="display:block;">'
       + _UPD.meta.news + '<br/>'
       +'</div>'
     ;
@@ -3989,13 +3998,11 @@ var _UPD = {
         $(h4).find('span').html( isclose ? '&#9660;' : '&#9654;');
       });
     });
-    $('#box_update').click(function(){
-      var fake = 'hid_updateframe', disb = 'jfk-button-disabled';
-      if( $('#'+fake).get(0) ) $('#'+fake).remove();
-      $('#content_update').append('<ifr'+'ame id="'+fake+'" src="https://' + 'greasyfork.org/scripts/' + gvar.scriptMeta.scriptID_GF + '/code.user.js" style="visibility:hidden; position:absolute; border:0; height:0; width:0;"></if'+'rame>');
-      $(this).addClass(disb);
-      gvar.$w.setTimeout(function(){ $('#box_update').removeClass(disb) }, 4000);
-    });
+
+    $('#box_update')
+      .attr('target', '_blank')
+      .attr('href', 'https://greasyfork.org/scripts/' + gvar.scriptMeta.scriptID_GF + '/code.user.js?nocache='+Math.random().toString().replace('0.',''))
+    ;
   } 
   ,mparser: function(rt){
     var ret = {
@@ -5971,14 +5978,15 @@ function eventsTPL(){
 }
 
 function get_userdetail() {
-  var a={}, b, $p, $c; 
+  var a={}, b, $p, $c, d;
   $p = $('#after-login');
   $c = $p.find('#menu-accordion .accordion-dd a[href*="/profile/about"]');
   b = /\/profile\/aboutme\/(\d+)/.exec($c.attr('href'));
+  d = /\b(http\:\/\/[^\'\"]+)/.exec($p.find('.tools>.vcard').attr('style'));
   a = {
      id: (b && "undefined" != typeof b[1] ? b[1] : null)
     ,name: String($p.find('.tools').text()).replace(/^Hi,\s/,'')
-    ,photo: $p.find('.tools>.vcard img').first().attr('src')
+    ,photo: (d && "undefined" != typeof d[1] ? d[1] : '')
     ,isDonatur: ($('#quick-reply').get(0) ? true : false)
   };
   return a
