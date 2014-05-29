@@ -4,7 +4,7 @@
 // @version        5.0.1
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1405295020
-// @timestamp      1401373743199
+// @timestamp      1401378461011
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,7 +28,7 @@
 //
 // -!--latestupdate
 //
-// v5.0.2 - 2014-05-20 . 1401373743199
+// v5.0.2 - 2014-05-20 . 1401378461011
 //   proper update link (GF)
 //   fix avatar
 //
@@ -60,7 +60,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1401373743199 // version.timestamp
+   timestamp: 1401378461011 // version.timestamp
   ,dtversion: 1405295020 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -290,7 +290,7 @@ var rSRC = {
   
   getTPL: function(){
     var _sp = rSRC.mCls[2], lc=rSRC.mCls[0]
-    , iner_head = '<span class="inner_title">'+gvar.inner.reply.title+ '</span> &nbsp;<a class="qrlink" target="_blank" href="'+(isQR_PLUS==0 ? 'http://'+'userscripts.org:8080/scripts/show/'+gvar.scriptMeta.scriptID.toString() : 'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'">'+gvar.sversion+'</a>';
+    , iner_head = '<span class="inner_title">'+gvar.inner.reply.title+ '</span> &nbsp;<a class="qrlink" target="_blank" href="'+(isQR_PLUS==0 ? 'https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF : 'https://'+'addons.mozilla.org/en-US/firefox/addon/kaskus-quick-reply/')+'">'+gvar.sversion+'</a>';
         return ''
     +'<div id="' + gvar.qID + '" class="xkqr'+(gvar.readonly ? ' hide':'')+'" style="clear:both">' 
     +'<div class="xkqr-entry-content">'
@@ -686,9 +686,9 @@ var rSRC = {
 
       +'<div class="wrap_stlmenu"><label for="misc_autoshow_smile" class="stlmenu"><input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/>AutoLoad&nbsp;Smiley</label></div>'
       +'<div id="misc_autoshow_smile_child" class="smallfont" style="margin:-3px 0 0 20px;'+(gvar.settings.autoload_smiley[0]=='1' ? '':'display:none;')+'">'
-      +'<label for="misc_autoshow_smile_kecil">kecil <input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/></label>&nbsp;'
-      +'<label for="misc_autoshow_smile_besar">besar <input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/></label>&nbsp;'
-      +'<label for="misc_autoshow_smile_custom">custom <input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/></label>'
+      +'<label for="misc_autoshow_smile_kecil"><input name="cb_autosmiley" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(gvar.settings.autoload_smiley[1]=='kecil' ? 'CHECKED':'')+'/> kecil</label>&nbsp;'
+      +'<label for="misc_autoshow_smile_besar"><input name="cb_autosmiley" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(gvar.settings.autoload_smiley[1]=='besar' ? 'CHECKED':'')+'/> besar</label>&nbsp;'
+      +'<label for="misc_autoshow_smile_custom"><input name="cb_autosmiley" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(gvar.settings.autoload_smiley[1]=='custom' ? 'CHECKED':'')+'/> custom</label>'
       +'</div>'
 
       +'</td><td>'
@@ -706,8 +706,11 @@ var rSRC = {
   getTPLAbout: function(){
     return ''
       +'<b>'+ gvar.scriptMeta.fullname +' &#8212; '+ gvar.sversion +'</b> <small>'+gvar.scriptMeta.dtversion+'</small><br>'
-      +'<div style="height: 3px;"></div><a href="http://userscripts.org:8080/scripts/show/'+ gvar.scriptMeta.scriptID +'" target="_blank">'+ gvar.scriptMeta.fullname +'</a> is an improvement of `kaskusquickreply` (Firefox Add-Ons) initially founded by bimatampan<br>'
-      +'<div style="height: 7px;"></div><a href="https://greasyfork.org/scripts/96" target="_blank"><img src="https://cdn.mediacru.sh/QSTjcx4jsGLn.png" title="Kaskus Quick Reply on Greasyfork" border="0" height="33" style="border-radius:2px; -moz-border-radius:2px;"></a>&nbsp;&#183;&nbsp;<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" border="0" height="33"></a>&nbsp;&#183;&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"></a><br>'
+      +'<div style="height: 3px;"></div>'
+      // +'<a href="http://userscripts.org:8080/scripts/show/'+ gvar.scriptMeta.scriptID +'" target="_blank">'+ gvar.scriptMeta.fullname +'</a>'
+      +'<a href="https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'" target="_blank">'+ gvar.scriptMeta.fullname +'</a>'
+      +' is an improvement of `kaskusquickreply` (Firefox Add-Ons) initially founded by bimatampan<br>'
+      +'<div style="height: 7px;"></div><a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" border="0" height="33"></a>&nbsp;&#183;&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"></a><br>'
       +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
       +'<div style="height: 7px;"></div>KASKUS brand is a registered trademark of '+ gvar.domain.replace(/^[^\.]+./gi,'') +'<br>'
       + gvar.scriptMeta.fullname + ' (QR) is not related to or endorsed by '+ gvar.domain.replace(/^[^\.]+./gi,'') +' in any way.<br>'
@@ -3737,7 +3740,10 @@ var _STG = {
   },
   reset_settings: function(){
     getValue(KS+'CUSTOM_SMILEY', function(ret){
-      var msg, space, csmiley, keys, yakin, home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org:8080/topics/58227'];
+      var msg, space, csmiley, keys, yakin,
+        // home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org:8080/topics/58227'];
+        home=[gvar.kask_domain+'hCZmM','https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'/feedback'];
+
       space = '';
       for(var i=0;i<20;i++) space+=' ';
       csmiley = ret.replace(/^\s+|\n|\s+$/g, "");
