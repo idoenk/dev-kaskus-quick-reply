@@ -4,7 +4,7 @@
 // @version        5.0.2
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1405295020
-// @timestamp      1401378461011
+// @timestamp      1401381641011
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,7 +28,8 @@
 //
 // -!--latestupdate
 //
-// v5.0.2 - 2014-05-20 . 1401378461011
+// v5.0.2 - 2014-05-29 . 1401381641011
+//   fix edit to quote malfunction;
 //   proper update link (GF)
 //   fix avatar
 //
@@ -60,7 +61,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1401378461011 // version.timestamp
+   timestamp: 1401381641011 // version.timestamp
   ,dtversion: 1405295020 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -1683,9 +1684,10 @@ var _AJAX = {
   },
   init: function(){},
   get_formact_norm: function(){
-    var uri = $('#formform').attr('action');
-    if( uri.indexOf('post=') !== -1 )
-      uri = uri.replace(/\&?post=(?:[^\b\&]+)?/gi, '');
+    var uri = trimStr( $('#formform').attr('action') );
+    uri = uri.replace(/\&?post=(?:[^\b\&]+)?/gi, '');
+    if( uri.lastIndexOf('/') !== (uri.length -1) )
+      uri += '/';
     if( uri.indexOf('?') === -1 )
       uri += '?';
     return uri;
@@ -1762,7 +1764,7 @@ var _AJAX = {
   edit_cancel: function(focus){
     var conf = confirm('You are currently editing a post.\n\nDiscard anyway?');
     if( conf ){
-      clog('edit canceling; now switching Token:\nold=' + gvar._securitytoken + '; now using:' + gvar._securitytoken_prev);
+      clog('edit canceling; switching Token:\nold=' + gvar._securitytoken + '; now using:' + gvar._securitytoken_prev);
       
       gvar._securitytoken = gvar.inner['reply']['stoken'];
       $('#qr-securitytoken').val(gvar._securitytoken);
@@ -1820,12 +1822,15 @@ var _AJAX = {
         }
         // better check wheter page is loaded or not before doin below actions
         // is_error checking
-        gvar.inner['reply']['stoken'] = gvar._securitytoken_prev = gvar._securitytoken;
+        gvar._securitytoken_prev = gvar._securitytoken;
+        gvar.inner['reply']['stoken'] = gvar._securitytoken_prev;
         valid = tokcap_parser(data);
         
         // is_error checking
-        if(!valid){
+        if( !valid || is_locked(data) ){
+          
           _NOFY.raise_error(data);
+
         }else{
           $('#formform')
             .attr('action', uri)
@@ -2113,6 +2118,10 @@ var _NOFY = {
           })
         }
       };
+    }
+    else if( data.match(/\bSorry!\sThis\sthread\sis\sclosed!/) ){
+      alert('Sorry! This thread is closed!');
+      return;
     }
     else{
       _msg = null;
@@ -5104,6 +5113,11 @@ function tokcap_parser(page, mode){
   return (cucok ? rets : false);
 }
 
+function is_locked(data){
+  var ret, $wrap = $(data);
+  return $wrap.find('#message-wrapper .message').text();
+}
+
 //==
 function try_solve(sol){
   var a, r;
@@ -6301,8 +6315,13 @@ function start_Main(){
     if( tt == 'group' ){
       cck = /\/group\/discussion\/([^\/]+)\b/i.exec( location.href );
       gvar.discID = (cck ? cck[1] : null);
+
+    }else if( tt == 'forum' ){
+      cck = /\/post_reply\/([^\/]+)\b/.exec( href );
     }
-    cck = (tt == 'forum' ? /\/post_reply\/([^\/]+)\b/.exec( href ) : /\/reply_discussion\/([^\/]+)\b/.exec( href ) );
+    else{
+      cck = /\/reply_discussion\/([^\/]+)\b/.exec( href );
+    }
     return (cck ? cck[1] : false);
   })( $('#act-post').attr('href') );  
   getSettings( gvar.settings );
@@ -6392,13 +6411,16 @@ function start_Main(){
                 _NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
               }, function(){
                 _NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
-                _TEXT.lastfocus();
+                
 
                 var $row = $me.closest('.row');
                 _NOFY.row_id = ($row.length ? $row.attr('id') : '');
                 $me.closest('.hfeed').addClass('editpost');
+
+                slideAttach($me, function(){
+                  _TEXT.lastfocus()
+                });
               });
-              slideAttach( $me );
             });
           });
           
