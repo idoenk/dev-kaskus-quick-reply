@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.2
+// @version        5.0.2.1
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1405295020
-// @timestamp      1401384664827
+// @dtversion      1405305021
+// @timestamp      1401459777078
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,14 +28,17 @@
 //
 // -!--latestupdate
 //
+// v5.0.2.1 - 2014-05-30 . 1401459777078
+//   fix post in group, mismatch group-id; Thx=[go.png]
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.0.2 - 2014-05-29 . 1401384664827
 //   allow edit in single post;
 //   fix edit to quote malfunction;
 //   proper update link (GF)
 //   fix avatar
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v5.0.1 - 2014-05-20 . 1400528967424
 //   deprecated fixerCod,.
@@ -59,11 +62,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.2';
+gvar.sversion = 'v' + '5.0.2.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1401384664827 // version.timestamp
-  ,dtversion: 1405295020 // version.date
+   timestamp: 1401459777078 // version.timestamp
+  ,dtversion: 1405305021 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -6338,22 +6341,19 @@ function start_Main(){
   
   // may reffer to groupid
   gvar.pID = (function get_thread_id(href){
-    // *.kaskus.*/group/reply_discussion/6124
+    // *.kaskus.*/group/reply_discussion/123456
     // *.kaskus.*/post_reply/000000000000000007710877
-    
     var cck, tt = gvar.thread_type;
-    if( tt == 'group' ){
-      cck = /\/group\/discussion\/([^\/]+)\b/i.exec( location.href );
-      gvar.discID = (cck ? cck[1] : null);
-
-    }else if( tt == 'forum' ){
+    if( gvar.thread_type == 'forum' ){
       cck = /\/post_reply\/([^\/]+)\b/.exec( href );
     }
-    else{
-      cck = /\/reply_discussion\/([^\/]+)\b/.exec( href );
+    else{ // [group]
+      cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
+      gvar.discID = (cck ? cck[1] : null);
     }
     return (cck ? cck[1] : false);
-  })( $('#act-post').attr('href') );  
+  })( $('#act-post').attr('href') );
+
   getSettings( gvar.settings );
   
   var maxTry = 50, iTry=0,
