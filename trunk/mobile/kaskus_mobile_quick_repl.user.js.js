@@ -3,9 +3,9 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        2.0
-// @dtversion      140524200
-// @timestamp      1400867093736
+// @version        2.1
+// @dtversion      140622201
+// @timestamp      1403371408997
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @include        http://m.kaskus.co.id/lastpost/*
@@ -13,13 +13,16 @@
 //
 // -!--latestupdate
 //
-// v2.0 - 2014-05-24 . 1400867093736
-//  adapting mobile-kaskus-evo
+// v2.1 - 2014-06-22 . 1403371408997
+//  missing char on submit post
 //  
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
+// v2.0 - 2014-05-24 . 1400867093736
+//  adapting mobile-kaskus-evo
+//  
 // v1.0.4 - 2014-02-08 . 1391881722727
 //  fix css nighmode, Thx[Prothire]
 //  fix elastic height editor, on window resize
@@ -40,9 +43,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '2.0';
+  gvar.sversion = 'v' + '2.1';
   gvar.scriptMeta = {
-    timestamp: 1400867093736 // version.timestamp
+    timestamp: 1403371408997 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -2111,7 +2114,7 @@
           field = trimStr( String(getAttr('name', node)) );
           if( fields.indexOf(field) == -1) continue;
           if(toString)
-            data+='&' + field + '=' + trimStr(node.value);
+            data+='&' + field + '=' + encodeURIComponent( trimStr(node.value));
           else
             data[field] = trimStr(node.value);
         }
