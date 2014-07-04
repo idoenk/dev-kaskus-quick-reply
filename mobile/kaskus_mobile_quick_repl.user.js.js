@@ -3,9 +3,9 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        2.1
-// @dtversion      140622201
-// @timestamp      1403371408997
+// @version        2.2
+// @dtversion      140704220
+// @timestamp      1404492166878
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @include        http://m.kaskus.co.id/lastpost/*
@@ -13,13 +13,17 @@
 //
 // -!--latestupdate
 //
-// v2.1 - 2014-06-22 . 1403371408997
-//  missing char on submit post
+// v2.2 - 2014-07-04 . 1404492166878
+//  fix changed dom (avatar-wraper)
+//  handle defect-hash callback after posting
 //  
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
+// v2.1 - 2014-06-22 . 1403371408997
+//  missing char on submit post
+//  
 // v2.0 - 2014-05-24 . 1400867093736
 //  adapting mobile-kaskus-evo
 //  
@@ -43,9 +47,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '2.1';
+  gvar.sversion = 'v' + '2.2';
   gvar.scriptMeta = {
-    timestamp: 1403371408997 // version.timestamp
+    timestamp: 1404492166878 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -1196,6 +1200,22 @@
     
 
     design();
+
+
+    // handle defect-hash callback after posting, +prefix: post{ID}
+    var lhash = location.hash;
+    if( lhash && /\#[\da-zA-Z]{24}$/.test(lhash) ){
+
+      var el, pid, title, url = location.protocol+'//'+location.hostname+location.pathname;
+      title = $$('title', null, 1);
+      pid = '#post'+lhash.replace(/\#/g, '');
+      setTimeout(function(){
+        try{
+          title && window.history.pushState(null, title.innerText, url+pid);
+          window.scrollTo(0, getAbsoluteTop($$(pid, null, 1)) );
+        }catch(e){}
+      }, 345);
+    }
   }
 
   function getSettings(stg){
@@ -1402,26 +1422,25 @@
       })();
     };
 
-    par = $$('#site-header .c.c-1', null, 1);
-    node = $$('#site-header .u>a', par, 1);
-    el = createEl('span', {id:'donatflag', 'class':'hide'}, '[$]');
-    append(node, el);
+    par = $$('#site-header .c:last-child', null, 1);
+    if( par ){
+      node = $$('#site-header .u>a', par, 1);
+      el = createEl('span', {id:'donatflag', 'class':'hide'}, '[$]');
+      append(node, el);
 
-    imgStr = '<i class="throb"></i><img class="c-avtr" src="'+gvar.uavatar+'male.jpg" />';
-    el = createEl('div', {'class':'c-avt'}, imgStr);
-    append(par, el);
-    Dom.Ev(el, 'click', function(e){ profile_check(e) });
-    
-    
+      imgStr = '<i class="throb"></i><img class="c-avtr" src="'+gvar.uavatar+'male.jpg" />';
+      el = createEl('div', {'class':'c-avt'}, imgStr);
+      append(par, el);
+      Dom.Ev(el, 'click', function(e){ profile_check(e) });
+    }    
 
     if( gvar.user.isDonatur )
       removeClass('hide', $$('#donatflag', null, 1));
 
-
     if( gvar.user.avatar ){
       el = $$('#site-header .c-avt .c-avtr', null, 1);
       gvar.user.avatar = gvar.user.avatar.replace(gvar.uavatar, '');
-      setAttr('src', (gvar.uavatar + gvar.user.avatar), el);
+      el && setAttr('src', (gvar.uavatar + gvar.user.avatar), el);
     }
     else{
       profile_check(el);
