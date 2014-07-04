@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.2.1
+// @version        5.0.2.2
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1405305021
-// @timestamp      1401459777078
+// @dtversion      1407055022
+// @timestamp      1404497105998
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,11 +28,14 @@
 //
 // -!--latestupdate
 //
-// v5.0.2.1 - 2014-05-30 . 1401459777078
-//   fix post in group, mismatch group-id; Thx=[go.png]
+// v5.0.2.2 - 2014-07-05 . 1404497105998
+//   [uploader] reverse order uploaded item (left: latest)
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v5.0.2.1 - 2014-05-30 . 1401459777078
+//   fix post in group, mismatch group-id; Thx=[go.png]
 //
 // v5.0.2 - 2014-05-29 . 1401384664827
 //   allow edit in single post;
@@ -62,11 +65,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.2.1';
+gvar.sversion = 'v' + '5.0.2.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1401459777078 // version.timestamp
-  ,dtversion: 1405305021 // version.date
+   timestamp: 1404497105998 // version.timestamp
+  ,dtversion: 1407055022 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -2817,7 +2820,7 @@ var _UPL_ = {
                 + '<img src="'+media.files[0].url+'" width="46" height="46" alt="[IMG]'+media.files[0].url+'[/IMG]"/>'
                 + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
                 +'</div>');
-              $partab.find('.preview-image-inner').append( $item );
+              $partab.find('.preview-image-inner').prepend( $item );
             });
           };
           
@@ -5210,12 +5213,13 @@ function inteligent_width(options){
               + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
               +'</div>'
             ;
-            $preview_wrap.append( tpl );
+            $preview_wrap.prepend( tpl );
           });
         }
       });
     }else{
       // whether is [insert, delete]
+      imgs = imgs.reverse();
       setValue(KS + upkey, String(imgs));
     }
   }, 10);
