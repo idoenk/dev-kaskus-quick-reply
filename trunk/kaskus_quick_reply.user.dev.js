@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.2.2
+// @version        5.0.2.3
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407125022
-// @timestamp      1405128189178
+// @dtversion      1407135023
+// @timestamp      1405191757727
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,12 +28,13 @@
 //
 // -!--latestupdate
 //
-// v5.0.2.2 - 2014-07-12 . 1405128189178
+// v5.0.2.3 - 2014-07-13 . 1405191757727
 //   [uploader] reverse order uploaded item (left: latest)
 //   [raw-data] append uploader log
 //   cleanup unnecessary key
 //   prevent load on exist dom of QR-wrapper
 //   css box_preview
+//   optimze getCSSWideFix for kaskus-evo; Thx=[S4nJi]
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -69,10 +70,10 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.2.2';
+gvar.sversion = 'v' + '5.0.2.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1405128189178 // version.timestamp
+   timestamp: 1405191757727 // version.timestamp
   ,dtversion: 1407125022 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -121,6 +122,7 @@ var OPTIONS_BOX = {
  ,KEY_SAVE_INC_PLACES:  [''] // excluced places for autolayout
  ,KEY_SAVE_ALL_PLACES:  [''] // flag for all places for autolayout
  ,KEY_SAVE_CSS_BULK:  [''] // bulk of ext css
+ ,KEY_SAVE_CSS_WIDE:  [''] // bulk of widefix css
  ,KEY_SAVE_CSS_META:  [''] // meta of css [filename;lastupdate]
 }, KS       = 'KEY_SAVE_'
 , GMSTORAGE_PATH  = 'GM_'
@@ -460,7 +462,7 @@ var rSRC = {
       +  '</div>' // box-bottom
 
       // ========
-      + '<div class="button-bottom" style="padding-bottom:5px">'
+      + '<div class="button-bottom">'
         // wrapper additional edit-options
       + '<div class="edit-options" style="display:none;">'
       +   '<div class="edit-reason condensed" style="display:none;">' 
@@ -524,7 +526,7 @@ var rSRC = {
 
       +  '<div class="sub-bottom sayapkanan">'
       +  '<div class="control">'
-      +  '<input type="checkbox" tabindex="5" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">Expand</label></a>'
+      +  '<input type="checkbox" tabindex="5" id="chk_fixups" '+(gvar.settings.widethread ? 'checked="checked"' : (gvar.is_kfs4 ? ' checked="checked" disabled="disabled" title="Your Kaskus Fixed is Enabled. This toggle is not applicable"':''))+(!gvar.is_kfs4 ? ' title="Hold Shift: refetch resource"':'')+'><a href="javascript:;"><label title="Wider Thread" for="chk_fixups">'+(gvar.is_kfs4 ? 'Wide-Thread by Kaskus-Fixups-S4' : 'Expand')+'</label></a>'
       +  '</div>'
       +  '</div>'
       
@@ -875,23 +877,18 @@ var rSRC = {
     +".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
     +".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
     +".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
+    // +(gvar.is_kfs4 ? ""
+    //   +"#modal_dialog_box #cont_button{margin-bottom:-40px!important;}"
+    //   +"#modal_dialog_box #box_wrap{margin-right:-1px}"
+    // :"")
+  },
+  getCSS_AdjustKFS4: function(){
+    return ""
+    +"#modal_dialog_box #cont_button{margin-bottom:-40px!important;}"
+    +"#modal_dialog_box #box_wrap{margin-right:-1px}"
+    ;
   },
 
-  /*
-   * Livebeta Widefix -by S4nJi
-   * userstyles.org/styles/68408
-   */
-  getCSSWideFix: function(){
-    return ""
-    +"#main > .row, #main > .row .col { width: 98% !important;margin: 0 1% !important; }"
-    +"pre > br {display: none !important; }"
-    +"#forum-listing .row .col.grid-12 {width: 98% !important; margin: 0 1% !important}"
-    +"#forum-listing .author {width: 120px !important}"
-    +"#forum-listing .entry {width: auto !important; padding: 1% 0 5% 1% !important;margin-top: -1px !important; }"
-    +".bottom-frame, .ads300, .skin, .l-link, .r-link, .banner-top-ads, .baloon-track {display: none !important; }"
-    +".footer .row .col.grid-8,#forum-listing > .row > .col.grid-12 > .header .thread-control .col.grid-8, #forum-listing > .row > .col.grid-12 > .header .thread-navigate .col.grid-8 {float: right !important; }"
-    +".qr-editor{padding-right:1.2%!important;}"
-  },
   getSCRIPT: function(){
     return ''
     +'if(typeof $ == "undefined") $ = jQuery;'
@@ -2664,7 +2661,6 @@ var _UPL_ = {
       tpl+=_UPL_.tplcont(host);
       
     $('#'+iner+' #uploader_container').html( tpl );
-    // _UPL_.switch_tab(_UPL_.def);
     _UPL_.switch_tab("undefined" != typeof gvar.upload_tipe ? gvar.upload_tipe : _UPL_.def);
     
     $('.'+_UPL_.self).addClass('events');
@@ -2942,8 +2938,9 @@ var _SML_ = {
   },
   init_scustom: function(target, smilies){
     // smiley custom thingie
-    $('#'+target).html( rSRC.getTPLCustom( _SML_.menus_scustom() ) );
+    var $ptarget = $('#'+target);
     var gruptpl, tpl = '', idx=0;
+    $ptarget.html( rSRC.getTPLCustom( _SML_.menus_scustom() ) );
     tpl = ''
       +'<input type="hidden" id="current_grup" value="'+ (gvar.smgroup && gvar.smgroup.length > 0 ? gvar.smgroup[0] : '') +'" />'
       +'<input type="hidden" id="current_order" value="'+ (gvar.smgroup ? '0':'') +'" />'
@@ -3452,7 +3449,7 @@ var _STG = {
     myfadeIn( $('#'+_STG.e.boxsetting), 130, function(){
       _STG.event_main()
     });   
-    resize_popup_container(650);
+    resize_popup_container(720);
   },
   design:function(){
     var mnus, mL, idx=0, tpl = '';
@@ -3478,8 +3475,10 @@ var _STG = {
     $box_setting.find('.st_contributor').scrollTop(0);
     $('#modal_setting_box .modal-dialog-title-text').css('left', '0');
     setTimeout(function(){
-      $box_setting.find('.cs_right').css('width', '540px');
-    }, 150)
+      var wtreshold = 10;
+      $box_setting = $('#qr-box_setting');
+      $box_setting.find('.cs_right').css('width', ($box_setting.width()-$box_setting.find('.cs_left').width()-wtreshold)+'px');
+    }, 212)
   },
   event_main:function(){
     // menus
@@ -3861,7 +3860,7 @@ var _STG = {
         ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
         ,'LAYOUT_CONFIG','LAYOUT_TPL','PRELOAD_RATE'
         ,'QR_LastUpdate','QR_COLLAPSE','QR_LASTPOST'
-        ,'UPLOAD_LOG','CSS_BULK','CSS_META','SCUSTOM_NOPARSE'
+        ,'UPLOAD_LOG','CSS_BULK','CSS_WIDE','CSS_META','SCUSTOM_NOPARSE'
         ,'EXC_PLACES','INC_PLACES','ALL_PLACES'
         ,'DYNAMIC_QR','COUNTDOWN'
         ];
@@ -3895,7 +3894,11 @@ var _CSS = {
     _CSS.css_name = '';
     _CSS.DialogId = null;
 
-    _CSS.run(gvar.css_default, _CSS.callback);
+    _CSS.widefix_id = 'css_inject_widefix';
+    _CSS.widefix_adjust_id = 'QR-kfs4-adjust';
+    _CSS.widefix_filename = 'kfs4.1407125022.css';
+
+    // _CSS.run(gvar.css_default, _CSS.callback);
   },
   dialog: function(doshow){
     if( !_CSS.DialogId )
@@ -3927,6 +3930,7 @@ var _CSS = {
     // reset localstorage before refetching
     setValue(KS + 'CSS_BULK', '', function(){
       _CSS.init();
+      _CSS.run(gvar.css_default, _CSS.callback);
     });
   },
   run: function(fn, cb){
@@ -3937,7 +3941,7 @@ var _CSS = {
     clog('fetch css: ' + GM_XHR.uri);
     GM_XHR.cached = false;
     GM_XHR.forceGM = true;
-    GM_XHR.request(null, 'GET', _CSS.callback_fin);
+    GM_XHR.request(null, 'GET', "function" == typeof cb ? cb : _CSS.callback_fin);
   },
   callback_fin: function(x){
     x = trimStr( String( x.responseText ) );
@@ -3994,6 +3998,37 @@ var _CSS = {
       }
     }, 890);
     gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
+  },
+
+
+  widefix_callback_fin: function(x){
+    x = trimStr( String( x.responseText ) );
+    x && setValue(KS + 'CSS_WIDE', x, function(){
+      _CSS.widefix_setcss(x);
+
+      window.setTimeout(function(){
+        _CSS.dialog_dismiss();
+      }, 456);
+    });
+  },
+  widefix_setcss: function(css_str){
+    GM_addGlobalStyle(css_str, _CSS.widefix_id, 1);
+    GM_addGlobalStyle(rSRC.getCSS_AdjustKFS4(), _CSS.widefix_adjust_id);
+    clog('wide-thread activated');
+
+    gvar.is_kfs4 = true; // just to flag modal-dialog
+  },
+  widefix_add: function(e){
+    getValue(KS+'CSS_WIDE', function(c){
+      if( !c || (e && e.shiftKey) )
+        _CSS.run(_CSS.widefix_filename, _CSS.widefix_callback_fin);
+      else
+        _CSS.widefix_setcss(c);
+    });
+  },
+  widefix_remove: function(){
+    $('#'+_CSS.widefix_id+',#'+_CSS.widefix_adjust_id).remove();
+    gvar.is_kfs4 = null;
   }
 };
 
@@ -5240,9 +5275,10 @@ function try_solve(sol){
 *  options.item_class String of unit item image
 */
 function inteligent_width(options){
-  var mode = (options.mode ? options.mode : '');
+  var $wraper_custom, mode = (options.mode ? options.mode : '');
   var $parent = $(options.parent_selector);
   var $preview_wrap = $parent.find(options.preview_wrap_selector);
+  // $wraper_custom = $parent.closest('.wraper_custom');
 
   // inteligent width-adjustment
   return gvar.$w.setTimeout(function(){
@@ -5713,7 +5749,8 @@ function eventsController(){
           var cbs = '.box-smiley', tgt_autoload = null;
           if( !$(cbs).is(':visible') ){
             if( !$(cbs).hasClass('events') ){
-              clog('bloom ber events');
+              clog('initiate box-smiley-events');
+
               $(cbs + ' .goog-tab').each(function(){
                 var id, T = $(this);
                 $(this).hover(
@@ -5815,14 +5852,16 @@ function eventsTPL(){
       _TEXT.lastfocus();
     });
   });
-  $('#chk_fixups').click(function(){
+  $('#chk_fixups').click(function(e){
+    _CSS.init();
     var chk, cssid = 'css_inject_widefix';
     if( chk = $(this).is(':checked')) {
-      if($('#'+cssid).get(0))
+      if( $('#'+cssid).get(0) )
         $('#'+cssid).remove();
-      GM_addGlobalStyle(rSRC.getCSSWideFix(), cssid, 1);
+
+      _CSS.widefix_add(e);
     }else{
-      $('#'+cssid).remove();
+      _CSS.widefix_remove();
     }
     setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
   });
@@ -6238,30 +6277,40 @@ function toggleTitle(){
 function resize_popup_container(force_width){
   var mW  = ( $('.hfeed').find('.entry').width() + 163 ); 
   
-  var bW, bH = parseInt( getHeight() ), cTop=0;
+  var cWHalf, xleft, bW, bH = parseInt( getHeight() ), cTop=0;
   if( force_width )
     bW = force_width;
   else if( $(".modal-dialog").hasClass('static_width') )
     bW = $(".modal-dialog").width();
   else
-    bW = ( gvar.bodywidth-100 );
+    bW = gvar.bodywidth;
+
+  cWHalf = document.documentElement.clientWidth/2;
   
   if( $(".modal-dialog").length > 0){
-    var xleft = (document.documentElement.clientWidth/2) - ( (bW/2) + 50 );
+    xleft = cWHalf - ( (bW/2) + 0 );
+    if( "undefined" == typeof force_width )
+      xleft = (gvar.is_kfs4  ? 0 : xleft);
+    
+    clog('force_width='+force_width);
     clog('bW:'+bW);
-    clog('left:'+xleft);
+    clog('xleft:'+xleft);
 
+    // modal-dialog
     $('.modal-dialog')
       .css('top', gvar.offsetLayer + 'px')
       .css('width', bW + 'px')
-      .css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
+      .css('left', xleft + 'px');
 
+    // capcay-dialog
     cTop = (bH/2) - ( $('.modal-dialog').height()  ) - 5;
-    bW = 305;
+    bW = 295;
+    xleft = cWHalf - ( (bW/2) + 0 );
     $('.capcay-dialog')
       .css('top', cTop + 'px')
       .css('width', bW + 'px')
-      .css('left', ( (document.documentElement.clientWidth/2) - ( (bW/2) + 50 ) ) + 'px');
+      .css('left', xleft + 'px');
+
     $('#box_preview')
       .css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
   }
@@ -6297,8 +6346,9 @@ function finalizeTPL(){
     $('#wraper-hidden-thing').append( rSRC.getBOX_RC() );
   }
 
-  if( gvar.settings.widethread ){
-    GM_addGlobalStyle(rSRC.getCSSWideFix(), 'css_inject_widefix', 1);
+  if( gvar.settings.widethread && !gvar.is_kfs4 ){
+    _CSS.init();
+    _CSS.widefix_add();
   }
 }
 
@@ -6355,9 +6405,9 @@ function start_Main(){
   var _loc = location.href;
   gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
   gvar.classbody = String($('body').attr('class')).trim(); // [fjb,forum,group]
+
+  gvar.is_kfs4 = (window.getComputedStyle(document.body).getPropertyValue('content') === gvar.KSF4);
   
-  // if(gvar.thread_type == 'singlepost')
-  //   return fixerCod();
 
   gvar.user = get_userdetail();
   clog(JSON.stringify(gvar.user));
@@ -6368,7 +6418,10 @@ function start_Main(){
     clog('Readonly mode on');
     gvar.readonly = true;
   }
-  GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' ); 
+  GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' );
+  if( gvar.is_kfs4 )
+    GM_addGlobalStyle(rSRC.getCSS_AdjustKFS4(), 'QR-kfs4-adjust');
+
   gvar.bodywidth = $('#main .col:first').width(); 
   
   gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
@@ -6746,6 +6799,7 @@ function init(){
 
   // set true to simulate using css from googlecode, [debug-purpose]
   gvar.force_live_css = null;
+
   gvar.kqr_static = 'http://' + (!gvar.force_live_css && gvar.__DEBUG__ ? 
     '127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
     'dev-kaskus-quick-reply.googlecode.com/svn/trunk/statics/kqr/'
@@ -6767,8 +6821,12 @@ function init(){
   gvar.user = {id:null, name:"", isDonatur:false};
   gvar._securitytoken_prev = gvar._securitytoken= null;
   gvar.ajax_pid= {}; // each ajax performed {preview: timestamp, post: timestamp, edit: timestamp }
-  gvar.MQ_count = gvar.edit_mode = gvar.pID = gvar.maxH_editor = gvar.bodywidth = 0;
+  gvar.edit_mode = gvar.pID = gvar.maxH_editor = gvar.bodywidth = 0;
   gvar.upload_tipe = gvar.last_postwrap = "";
+
+  // identify kaskus-fixup-s4
+  gvar.KSF4 = 'fixups-s4-active';
+  gvar.is_kfs4 = null;
   
   
   gvar.offsetEditorHeight = 160; // buat margin top Layer
@@ -6865,6 +6923,7 @@ function CSS_wait(refetch_only, cb){
   if( !$('#xhr_css').length && gvar.ix < gvar.mx ){
     if( !_CSS.engage ){
       _CSS.init();
+      _CSS.run(gvar.css_default, _CSS.callback);
       _CSS.engage = 1;
     }
     gvar.$w.setTimeout(function () { CSS_wait(refetch_only, cb) }, 200);
