@@ -3,8 +3,8 @@
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
 // @version        5.0.2.2
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407055022
-// @timestamp      1404497105998
+// @dtversion      1407125022
+// @timestamp      1405128189178
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -28,8 +28,12 @@
 //
 // -!--latestupdate
 //
-// v5.0.2.2 - 2014-07-05 . 1404497105998
+// v5.0.2.2 - 2014-07-12 . 1405128189178
 //   [uploader] reverse order uploaded item (left: latest)
+//   [raw-data] append uploader log
+//   cleanup unnecessary key
+//   prevent load on exist dom of QR-wrapper
+//   css box_preview
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -68,13 +72,13 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.2.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1404497105998 // version.timestamp
-  ,dtversion: 1407055022 // version.date
+   timestamp: 1405128189178 // version.timestamp
+  ,dtversion: 1407125022 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1405295020 // css revision date; only change this when you change your external css
+  ,cssREV: 1407125022 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -93,7 +97,6 @@ var OPTIONS_BOX = {
  
  ,KEY_SAVE_UPDATES:          ['1'] // check update
  ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
- ,KEY_SAVE_HIDE_AVATAR:      ['1'] // hide avatar
  ,KEY_SAVE_QR_DRAFT:         ['1'] // activate qr-draft
  ,KEY_SAVE_CUSTOM_SMILEY:    [''] // custom smiley, value might be very large; limit is still unknown 
  ,KEY_SAVE_QR_HOTKEY_KEY:    ['1,0,0'] // QR hotkey, Ctrl,Shift,Alt
@@ -551,8 +554,9 @@ var rSRC = {
     +'</div>'
     
     +'<div id="box_wrap">'
+    + '<div id="box_preview" class="entry-content"><div style="margin:20px auto; text-align:center;"><img src="'+gvar.B.throbber_gif+'" border=0/>&nbsp;<i style="font-size:12px">loading...</i></div>'
+    + '</div>' // box_preview
     + '<div class="box_sp"></div>'
-    + '<div id="box_preview" class="entry-content"><div style="margin:20px auto; text-align:center;"><img src="'+gvar.B.throbber_gif+'" border=0/>&nbsp;<i style="font-size:12px">loading...</i></div></div>'
     + '<div class="spacer"></div>'
     +'</div>' // box_wrap
     
@@ -564,6 +568,7 @@ var rSRC = {
     +'</div>' // modal_dialog_box
     +'';
   },
+
   getBOX_RC: function(){
     // recaptcha BOX
     return ''
@@ -689,7 +694,7 @@ var rSRC = {
       +'<table border="0"><tr>'
       +'<td style="width:45%">'
       +'<div class="wrap_stlmenu"><label for="misc_updates" class="stlmenu" title="Check for latest QR"><input id="misc_updates" class="optchk" type="checkbox"'+ (gvar.settings.updates ? ' checked="checked"':'') +' />Updates</label></div>'+nb+nb 
-      + ( !gvar.noCrossDomain ? '<a id="chk_upd_now" class="gbtn" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking..&nbsp;<img src="'+gvar.B.throbber_gif+'" border=0/></span>' : '')
+      + ( !gvar.noCrossDomain ? '<a id="chk_upd_now" class="gbtn" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking...</span>' : '')
       + '<div id="misc_updates_child" class="smallfont" style="margin:-5px 0 0 20px; display:'+ (gvar.settings.updates ? 'block':'none') +'" title="Interval check update, 0 &lt; interval &lt;= 99"><label for="misc_updates_interval">Interval</label><input id="misc_updates_interval" value="'+ gvar.settings.updates_interval +'" maxlength="5" style="width:45px; padding:0; margin-top:2px;" type="text" />'+nb+'days</div><div style="height: 1px;"></div>'
 
       +'<div class="wrap_stlmenu"><label for="misc_autoshow_smile" class="stlmenu"><input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(gvar.settings.autoload_smiley[0]=='1' ? 'checked':'')+'/>AutoLoad&nbsp;Smiley</label></div>'
@@ -825,7 +830,7 @@ var rSRC = {
     +'<div id="box_wrap">'
     + '<div id="qr-box_setting" class="entry-content wraper_custom" style="position:relative; ">' //overflow:hidden;
     +  '<div class="sidsid stfloat cs_left" style="position:relative; height:100%!important;"></div>'   
-    +  '<div class="sidsid stfloat cs_right" style="width:540px;"></div>'
+    +  '<div class="sidsid stfloat cs_right" style="width:auto"></div>'
     +  '<div class="sidcorner" style=""><a href="javascript:;" id="reset_settings">reset settings</a></div>'
     + '</div>'
     + '<div class="spacer"></div>'
@@ -1001,7 +1006,7 @@ var rSRC = {
       case "button" :
       return {
        news_png : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA14gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B207ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC"
-      ,throbber_gif : "data:image/gif;base64,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%3D"
+      ,throbber_gif : "data:image/gif;base64,R0lGODlhEAAQAMZWAPzZr/mrTfrAe/eVH//9+/iiOv3kxf748PmoSPmzX/vJjfzasveXJPzQnf7z5veVIP3iw/eZJ/3q0vzctfeZKPeYJfeYJvmyXf3p0fvDgfq5bP/8+vq4afmpSf7y5PzUpfimQv7v3fmqS/vQm/3fu/q/ePzYrf/+/feXIv748fq7cPvKj/mtUfq8cfzYrPvKjv/68/737/zXq//58/mtUv737f/69fioR/inRfmrTvvHifieMvmxWfiiO/eUHvzVpf3lyPq8cvm1YvmxWvidMPibLPvIi/ijPP/79/7t2Pm1Y/q+dfibK/igN/7v3PmwV/rCfv3q0/zbtP3iwfeWIfeUHf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH/C05FVFNDQVBFMi4wAwEAAAAh/gNJZHgAIfkEBQMAfwAsAAAAABAAEAAAB0aAf4KDhIWGh4cBVACFioyDVZFVj3+Sk5CSVJiRmoKWAZtVoIICkoSlkYiqq6ytg46Ni4SWlLShnZWZoaO5kbyoVaemroSBACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAUDAH8ALAAAAAABAAEAAAcDgH+BACH5BAkDAH8ALAIAAgANAA0AAAdKgH8YEUdIf4d/Hhc6iYiOGIhUF44GhxGOjIgxh0eOf1SHHYiGoZ6eBpumqqumQVUPM44rVUJ/K6pBiBVVqryItaYPnhWHC4ixxYEAIfkECQMAfwAsAAAAABAAEAAAB1WAf4KDhIWGh4cLVCKIhBNVkFWDUJGEDJFVBIKYOYMsmIOYVISRS6GRJo2DCD4yqq9/mrBLlYMmVJ2kkYx/MqCnkKN/Pr+bkQuCCMWCLAwTulVQsIaBACH5BAkDAH8ALAAAAAAQABAAAAdZgH+Cg4SFhoeIPAMjiIQDVZBGgy04EoWQmIKYVQaEm0WamAyEDZgboZAgjYJDmASrggROhRtFVZKwm4x/BCAMnZ6YA6hVloObPH9OmzikkMO8my2wrZCwiIEAIfkECQMAfwAsAAAAABAAEAAAB1uAf4KDhIWGh4gHTUwhiIRVkFUwjn8ukVUlfw6QT4VJlx9/lxmFBZARgpdVlKKRGoQfJZODQJBEhBGRjZSXTIIaVaSFl01/RJGdhKaQB62Rhkkug6qstZAOrIiBACH5BAkDAH8ALAAAAAAQABAAAAdbgH+Cg4SFhoeIfxIUPTaJgg5VklWPfwmTVRCPCpg1UpIWh1SSCH+YSoQ1moSYlIIIk46CmC+DmD2DKQNVKqyTFH8vVaiGo5ISKpOhhgoJDqaYlbuTlSmTUpWJgQAh+QQFAwB/ACwAAAAAEAAQAAAHUIB/goOEhYaHiIM/DzSJgw1VkVWOf5KRlAWWhwqSJ5IKfweFlo2CHJKElg+Dljeskj+vkSiDJ5kNJCiuliSGEJoJOxCHO5aiiQmalJIclJSBACH5BAkDAH8ALAIAAgANAA0AAAcUgH+Cg4SFhoeIiYqLjI2Oj5CRkIEAIfkECQMAfwAsAAAAABAAEAAAB1aAf4KDhIWGh4iEL1VKiYMqVZEWjn+RloYTkn8DllWGnUoplhOfnYQ1U4WdL4MIljaDKZwqhJ09hlEUPbCdFIUOplSWUYUJnakKCQ6GCp01lMJVCJTUgQAh+QQJAwB/ACwAAAAAEAAQAAAHWIB/goOEhYaHiIUaVRmJg0RVkU+FDpKCkZiFmIx/m1Wam39AmA6gkRqOopFEhR8lMKl/FJghhQdNTLWdmEymVbCbTYQumyV/BZgHhEmbH4JJLofIVRSxsYEAIfkECQMAfwAsAAAAABAAEAAAB1uAf4KDhIWGh4iFBCAMBoYtOBKDVZRVkpOVjk6VVTiEnAx/BJwtn5UggkOVhaqUBImDBE6wtBtFVUaGPAMjmJS9gwOVuX+cA6arxZU8yFVFgg2Ux4TRlBu02H+BACH5BAkDAH8ALAAAAAAQABAAAAdUgH+Cg4SFhoeIhiZUOYVQVZCDMpCRg5RVjX8+l4SXVIIInJaUJqNVUIUIPjKJra6IBIYLVCKES5SEE6J/l7WCDJexvJSfgiy7lwudkEuELAwTr4aBACH5BAkDAH8ALAAAAAAQABAAAAdbgH+Cg4SFhoeHOhcehEhHERiEVFWUkYKUlIyXmBGCBphVF4OgR4IxoDqDHZhIqpRUhTEGiLS1tohCVSuEMw9VQYQVmMCblLvFlKOgypQPzFVCgwuYM9KUFbeGgQAh+QQFAwB/ACwAAAAAEAAQAAAHRoB/goOEhYaHhwFUAIWKjINVkVWPf5KTkJJUmJGagpYBm1WgggKShKWRiKqrrK2Djo2LhJaUtKGdlZmho7mRvKhVp6auhIEAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEBQMAfwAsAAAAAAEAAQAABwOAf4EAIfkEAQMAfwAsAAAAAAEAAQAABwOAf4EAOw=="
       };
       break;
       
@@ -1308,12 +1313,16 @@ var _BOX = {
     $('#box_cancel, .modal-dialog .modal-dialog-title-close').click(function(){
       close_popup()
     });
-    $('#box_preview').bind("scroll", function(){
-      var $par = $('#box_wrap');
-      if( $(this).scrollTop() === 0 )
-        $par.find('.box_sp').removeClass('box_sp-shadow')
+
+    var cb_scroll = function(){};
+    $('#box_preview').on("scroll", function(){
+      var $me = $(this);
+      var $par = $me.parent();
+      var $tgt = $par.find('.box_sp').first();
+      if( $me.scrollTop() > 0 )
+        !$tgt.hasClass('active') && $tgt.addClass('active')
       else
-        $par.find('.box_sp').addClass('box_sp-shadow')
+        $tgt.removeClass('active')
     });
   },
   buildQuery: function(topost){
@@ -2680,7 +2689,10 @@ var _UPL_ = {
           +'</div>'
           +'<div class="throbber_wrp" style="display:none"><div class="mf-spinner" /></div>'
           +'<div class="image-control">'
-          + '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
+          + '<div class="clickthumb" style="display:none">'
+          +  '*Click thumbnail image to add to post content'
+          +  '<a href="javascript:;" class="rmv-all pull-right">Remove&nbsp;All</a>'
+          + '</div>'
           + '<input type="file" onchange="ajaxFileUpload();" name="forumimg" id="browse" class="small white"/>'
           +'</div>'
         ;
@@ -2715,6 +2727,10 @@ var _UPL_ = {
           }
         });
 
+        $partab.find('.rmv-all').click(function(){
+          remove_log_uploader( options );
+        });
+
       }else if( target == _UPL_.mediacru ){
 
         var selector_str = 'fileToUpload_'+target;
@@ -2728,7 +2744,10 @@ var _UPL_ = {
           +'</div>'
           +'<div class="throbber_wrp" style="display:none; top: 100px;"><div class="mf-spinner" /></div>'
           +'<div class="image-control">'
-          + '<div class="clickthumb" style="display:none">*Click thumbnail image to add to post content</div>'
+          + '<div class="clickthumb" style="display:none">'
+          +  '*Click thumbnail image to add to post content'
+          +  '<a href="javascript:;" class="rmv-all pull-right">Remove&nbsp;All</a>'
+          + '</div>'
 
           + '<div style="-moz-user-select: none;" class="goog-inline-block jfk-button jfk-button-standard method browse active">'
           +  '<span>Browse &amp; Upload</span>'
@@ -2865,8 +2884,11 @@ var _UPL_ = {
               $tgt.addClass('hide');
             }
           });
-        })
+        });
 
+        $partab.find('.rmv-all').click(function(){
+          remove_log_uploader( options );
+        });
       }else{
         ifname = 'ifrm_' + gvar.upload_sel[target].replace(/\W/g,'');
         tpl=''
@@ -3434,6 +3456,7 @@ var _STG = {
   },
   design:function(){
     var mnus, mL, idx=0, tpl = '';
+    var $box_setting = $('#qr-box_setting');
     mnus = {
        gen:  ['General', rSRC.getTPLGeneral()]
       ,exim: ['Export \/ Import', rSRC.getTPLExim()]
@@ -3442,18 +3465,21 @@ var _STG = {
     };
     mL = 4; // banyak tab
     tpl='<ul id="ul_group" class="qrset_mnu settingmnu">'
-    $('#qr-box_setting .cs_right').html('');
+    $box_setting.find('.cs_right').html('');
     for(tipe in mnus){
       if(typeof tipe!='string') continue;
       
       tpl+= '<li data-ref="'+tipe+'" class="qrt'+(idx==0 ? ' curent': (idx==(mL-1) ? ' qrset_lasttab' : '')) +'"><div>'+mnus[tipe][0]+'</div></li>';
-      $('#qr-box_setting .cs_right').append('<div class="stg_content'+(idx==0 ? ' isopen':'')+'" id="stg_content_'+tipe+'" style="display:none;">'+ (mnus[tipe][1] ? mnus[tipe][1] : '') +'</div>');
+      $box_setting.find('.cs_right').append('<div class="stg_content'+(idx==0 ? ' isopen':'')+'" id="stg_content_'+tipe+'" style="display:none;">'+ (mnus[tipe][1] ? mnus[tipe][1] : '') +'</div>');
       idx++;
     }
-    tpl+='</ul>'
-    $('#qr-box_setting .cs_left').html( tpl );
-    $('#qr-box_setting .st_contributor').scrollTop(0);
+    tpl+='</ul>';
+    $box_setting.find('.cs_left').html( tpl );
+    $box_setting.find('.st_contributor').scrollTop(0);
     $('#modal_setting_box .modal-dialog-title-text').css('left', '0');
+    setTimeout(function(){
+      $box_setting.find('.cs_right').css('width', '540px');
+    }, 150)
   },
   event_main:function(){
     // menus
@@ -3528,6 +3554,7 @@ var _STG = {
     var val, pval, isChk = function(x){ return $(x).is(':checked') };
     $('#box_action').click(function(){
       
+      // general setting
       if( $(this).attr('data-act') == 'update' ){
         var misc, reserved_CSA, tpltext, errMsg='', isError = 0;
 
@@ -3639,7 +3666,7 @@ var _STG = {
         }, 400);
       } //=end act update
       
-      // import ==
+      // export/import setting==
       else{
         var rL, raw, btn='#box_action', tgt = '#textarea_rawdata', disb = 'jfk-button-disabled';
         $(tgt).addClass(disb);
@@ -3664,6 +3691,7 @@ var _STG = {
             $(btn).val('Saving..');
             raw = raw.split('\n'), rL = raw.length;
             var cucok, lastkey = false, line = 0;
+            var uplkeys = ['UPLOAD_LOG','UPLOAD_LOG_MC'];
             
             var query_save_setting = function(line){
               var newval = trimStr( raw[line] );
@@ -3673,11 +3701,17 @@ var _STG = {
                 lastkey = ( isDefined(OPTIONS_BOX[KS + cucok[1]]) ? cucok[1] : false ); // only allow registered key
               
               }else if( lastkey && newval && !newval.match(/^\#\s(?:\w.+)*/) ){
+                if( uplkeys.indexOf(lastkey) !== -1 )
+                  newval = entity_encode( newval.toString() )
+                            .replace(/\"/g, '&quot;')
+                            .replace(/\'/g, '&apos;')
+                          ;
+
                 // is lastkey is defined, newval is not blank and is not a komeng
                 try{
                   setValue(KS+lastkey, newval.toString(), function(){
-                    //query_save_setting(line);
-                    lastkey = false; // flushed, find next key
+                    // flushed, find next key
+                    lastkey = false;
                   });
                 }catch(e){};
               }
@@ -3729,7 +3763,7 @@ var _STG = {
   load_rawsetting: function(){
     // collect all settings from storage,. 
     var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
-          ,'HIDE_AVATAR','QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
+          ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
           ,'TXTCOUNTER','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
     ];
     var keykomeng = {
@@ -3737,7 +3771,6 @@ var _STG = {
       ,'UPDATES_INTERVAL':'Check update Interval (day); validValue=[0< interval < 99]'
       ,'QR_DRAFT':'Mode QR-Draft; validValue=[1,0]'
       ,'TXTCOUNTER':'Mode Text Couter; validValue=[1,0]'
-      ,'HIDE_AVATAR':'Mode Show Avatar. validValue=[1,0]'
       ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
       ,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
       ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
@@ -3746,6 +3779,12 @@ var _STG = {
       ,'LAYOUT_TPL':'Layout Template; [userid=LAYOUT]; validValue of LAYOUT is must contain escaped {MESSAGE}'
       ,'SCUSTOM_NOPARSE':'Smiley Custom Tags will not be parsed; validValue=[1,0]'   
       ,'CUSTOM_SMILEY':'Smiley Custom\'s Raw-Data; [tagname|smileylink]'
+    };
+    
+    var uplkeys = ['UPLOAD_LOG','UPLOAD_LOG_MC'];
+    var uplkeys_komeng = {
+      UPLOAD_LOG:'Kaskus Uploader Log',
+      UPLOAD_LOG_MC:'Mediacrush Uploader Log'
     };
     
     var z, nn, kL=keys.length, getToday = function(){var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];var d=new Date();return(d.getFullYear().toString() +'-'+ ((d.getMonth()+1).toString().length==1?'0':'')+(d.getMonth()+1)+'-'+(d.getDate().toString().length==1?'0':'')+d.getDate()+', '+days[d.getDay()]+'. '+(d.getHours().toString().length==1?'0':'')+d.getHours()+':'+(d.getMinutes().toString().length==1?'0':'')+d.getMinutes()+':'+(d.getSeconds().toString().length==1?'0':'')+d.getSeconds());};
@@ -3760,6 +3799,21 @@ var _STG = {
     gvar.buftxt+= '# Date-Taken: '+getToday()+'\n';
     gvar.buftxt+= nn;
     
+    // append uploader log
+    var query_uploaderlog = function(x){
+      getValue(KS + uplkeys[x], function(ret){
+        var cur_key = uplkeys[x];
+        if( ret && cur_key ){
+          gvar.buftxt+= '# '+uplkeys_komeng[cur_key] + nn;
+          gvar.buftxt+= '[' + cur_key + ']' + nn + ret + nn + nn;
+        }
+        if( (x+1) < kL ){
+          x++;
+          query_uploaderlog( x );
+        }
+      });
+    };
+
     var query_settings = function(z){
       getValue(KS + keys[z], function(ret){
         var cur_key = keys[z];
@@ -3771,6 +3825,10 @@ var _STG = {
           z++;
           query_settings( z );
         }else{
+          // switch to uploader
+          kL = uplkeys.length;
+          query_uploaderlog(0);
+
           gvar.$w.setTimeout(function(){
             $('#textarea_rawdata').val( gvar.buftxt ).removeAttr('readonly');
           }, 200);
@@ -3797,7 +3855,7 @@ var _STG = {
       + HtmlUnicodeDecode('&#187;')+' Continue with Reset?';        
       if( confirm(msg) ){
         keys = [
-        'SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER','HIDE_AVATAR'
+        'SAVED_AVATAR','LAST_SPTITLE','LAST_UPLOADER'
         ,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
         ,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
         ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
@@ -3893,12 +3951,12 @@ var _CSS = {
       setValue(KS + 'CSS_META', metacss, function(){
         if(typeof cb=='function') cb();
       });
-      //_CSS.dom_css_validate();
+
       gvar.on_demand_csscheck = _CSS.dom_css_validate;
       _CSS.dovalidate && ("function" === typeof gvar.on_demand_csscheck)
         && gvar.on_demand_csscheck();
     });
-    //!c && _CSS.dom_css_validate();
+
     !c && ( gvar.on_demand_csscheck = _CSS.dom_css_validate );
   },
   dom_css_validate: function(){
@@ -3927,6 +3985,12 @@ var _CSS = {
         });
         if( !gvar.isOpera )
           $('#'+_id).find('*[rel="tooltip"]').tooltip();
+
+        console.log('Failed-load-css-resource: '+gvar.kqr_static+gvar.css_default);
+
+        // failover try to keep it loaded
+        var csslink = createEl('link', {href: gvar.kqr_static+gvar.css_default, rel:'stylesheet', type:'text/css'});
+        $('body').prepend( $(csslink) );
       }
     }, 890);
     gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
@@ -5172,27 +5236,26 @@ function try_solve(sol){
 * @param
 *  options.mode String of task todo ['','delete']
 *  options.parent_selector String of parent wrapper
-*  options.preview_wrap_selector String of unit item wrapper
+*  options.preview_wrap_selector String of wrapper
+*  options.item_class String of unit item image
 */
 function inteligent_width(options){
   var mode = (options.mode ? options.mode : '');
   var $parent = $(options.parent_selector);
   var $preview_wrap = $parent.find(options.preview_wrap_selector);
 
-  // inteligent width-detector
-  gvar.$w.setTimeout(function(){
-    var $ct, L, leb, upkey, itemclass, imgs=[];
+  // inteligent width-adjustment
+  return gvar.$w.setTimeout(function(){
+    var $ct, upkey, itemclass, imgs=[];
     itemclass = (options.item_class ? options.item_class : 'preview-image-unit');
     $ct = $parent.find('.clickthumb');
     leb = parseInt( $parent.find('.'+itemclass).length );
-    
-    L = ( leb > 0 ? (leb * 57)+'px' : '100%');
     if( leb > 0 ) 
       $ct.show();
     else
       $ct.hide();
-
-    $preview_wrap.css('width',  L);
+    
+    $preview_wrap.css('max-width',  $parent.closest('.cs_right').width());
     
     // update log
     $preview_wrap.find('img').each(function(){
@@ -5225,51 +5288,18 @@ function inteligent_width(options){
   }, 10);
 }
 
-function inteligent_width_OLD( mode ){
-  if(!mode) mode = '';
-  // inteligent width-detector
-  gvar.$w.setTimeout(function(){
-    var ct, L, leb, upkey, imgs=[];
-    ct =' .clickthumb';
-    leb = parseInt($('#preview-image .preview-image-unit').length);
-    
-    L = ( leb > 0 ? (leb * 57)+'px' : '100%');
-    if( leb > 0 ) {
-      $(ct).show();
-    }else{
-      $(ct).hide();
-    }   
-    $('#preview-image').css('width',  L);
-    // $('#preview-image-outer').css('visibility', 'visible');
-    
-    // update log
-    $('#preview-image img').each(function(){
-      imgs.push($(this).attr('src'));
-    });
-    
-    upkey = 'UPLOAD_LOG';
-    if( mode=='' ){
-      // save history upload
-      getValue(KS + upkey, function(ret){
-        imgs = ret.split(',');
-        if( ret && imgs.length > 0 ){
-          $.each(imgs, function(){
-            var tpl, _src=this;
-            tpl = ''
-              +'<div class="preview-image-unit">'
-              + '<img src="'+ _src +'" width="46" height="46" alt="[IMG]'+ _src +'[/IMG]" />'
-              + '<span title="remove" class="modal-dialog-title-close imgremover"/>'
-              +'</div>'
-            ;
-            $('#preview-image').append( tpl );
-          });
-        }
-      });
-    }else{
-      // whether is [insert, delete]
-      setValue(KS + upkey, String(imgs));
-    }
-  }, 10);
+/**
+* remove all log uploader of given key_save
+*/
+function remove_log_uploader(options){
+  if( !options.KEY_STR ) return;
+  if( confirm('Agan yakin mau delete semua gambar ini?') ){
+    setValue(KS + options.KEY_STR, '');
+
+    var $parent = $(options.parent_selector);
+    $parent.find(options.preview_wrap_selector).html('');
+    $parent.find('.clickthumb').hide();
+  }
 }
 
 function clear_quoted($el){
@@ -5303,7 +5333,8 @@ function close_popup(){
   try {
     gvar.sTryEvent.abort();
     gvar.sTryRequest.abort();
-    if(gvar.$w.stop !== undefined){gvar.$w.stop()}
+    if(gvar.$w.stop !== undefined) gvar.$w.stop();
+    if(gvar.buftxt) delete( gvar.buftxt );
     else if(document.execCommand !== undefined){document.execCommand("Stop", false)}
   } catch (e) {}
   
@@ -6070,7 +6101,6 @@ function getSettings(stg){
   settings.userLayout.config = [];
   getValue(KS+'LAYOUT_TPL', function(ret){settings.userLayout.template=ret});
   
-  getValue(KS+'HIDE_AVATAR', function(ret){ settings.hideavatar=(ret=='1') });
   getValue(KS+'UPDATES_INTERVAL', function(ret){ settings.updates_interval=Math.abs(ret) });
   getValue(KS+'QR_DRAFT', function(ret){ settings.qrdraft=(ret!='0') });
   getValue(KS+'QR_HOTKEY_KEY', function(ret){ settings.hotkeykey=ret });
@@ -6338,7 +6368,7 @@ function start_Main(){
     clog('Readonly mode on');
     gvar.readonly = true;
   }
-  GM_addGlobalStyle( rSRC.getCSS() ); 
+  GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' ); 
   gvar.bodywidth = $('#main .col:first').width(); 
   
   gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
@@ -6376,6 +6406,16 @@ function start_Main(){
         }else{
           // di groups
           $_1stlanded = $('.hfeed:last').closest('.row');
+        }
+
+        // prevent appending same dom-wrapper
+        if( gID(gvar.qID) ){
+          return setTimeout(function(){
+            alert('QR-'+gvar.sversion+' load aborted.'+"\n"
+              +'You may have another version of QR installed.'
+            );
+            $('#QR-main-css').remove();
+          }, 1);
         }
         $_1stlanded.find('.col').append( rSRC.getTPL() );
 
@@ -6734,6 +6774,7 @@ function init(){
   gvar.offsetEditorHeight = 160; // buat margin top Layer
   gvar.offsetLayer = 10; // buat margin top Layer
   gvar.offsetMaxHeight = 115; // buat maxHeight adjustment
+
   
   ApiBrowserCheck();
   //gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '')  +'.css';
@@ -6756,8 +6797,9 @@ function CSS_precheck(){
     getValue(KS + 'CSS_META', function(ret){
       if( ret ){
         // check expired dari lastupdate (atleast 1 week)
+        // --the longer should be no problemo, 3month?
         var one_week, cucok, parts = ret.split(';');
-        one_week = parseInt(1000 * 60 * 60 * 24 * 7);
+        one_week = parseInt(1000 * 60 * 60 * 24 * 30*3);
 
         clog('CSS_META exists, '+dump(parts)+'; checking age..');
         if( cucok = /kqr_quad\.([^\.]+).css/.exec( parts[0] ) ){
@@ -6852,7 +6894,7 @@ function jQ_wait2(){
 
 
 function jQ_wait() {
-  clog('jQ_wait Inside');
+  clog('jQ_wait Inside, QR-'+gvar.sversion);
   if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
     gvar.$w.setTimeout(function () { jQ_wait() }, 200);
     if( !gvar.injected ){
