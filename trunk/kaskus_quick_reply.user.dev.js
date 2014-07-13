@@ -34,10 +34,6 @@
 //
 // -!--latestupdate
 //
-v5.0.3 - 2014-07-13 . 1405260007650
-  deprecated [jQ_wait, tooltip method from page (bootstrap)]
-  +require jQuery metadata, avoid bad practice using unsafewindow
-  +grand metadata required by GM-2.0
 // v5.0.3 - 2014-07-13 . 1405260007650
 //   deprecated [jQ_wait, tooltip method from page (bootstrap)]
 //   +require jQuery metadata, avoid bad practice using unsafewindow
