@@ -1680,13 +1680,9 @@ var _BOX = {
     var neim, $tgt = $(target), imgtip;
     neim = gvar.user.name + (gvar.user.isDonatur ? ' [$]' : '');
     !dt_ori && (dt_ori = 'Post as ');
-    $tgt.html('');
-    // $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="top" />');
-    $tgt.append('<img src="'+ gvar.user.photo +'" title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" />');
-    // imgtip = 'img[rel="tooltip"]';
-    // try{
-    //   xtip(target, imgtip);
-    // }catch(e){}
+    $tgt
+      .html('')
+      .append('<img src="'+ gvar.user.photo +'" title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" />');
   }
 };
 
@@ -6634,17 +6630,6 @@ function start_Main(){
           }, 2000);
         }
         $('.bottom-frame').is(':visible') && do_click($('.btm-close').get(0));
-        
-        // opera is need backup evaluating js
-        // if(gvar.isOpera){
-        //   window.setTimeout(function(){
-        //     xtip('.user-tools', '*[rel="tooltip"]');
-        //     xtip('#'+gvar.qID, '*[rel="tooltip"]');
-        //   }, 1500);
-        // }else{
-        //   $('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
-        // }
-
       }, 50);
       // settimeout pra-loaded settings 
     }
