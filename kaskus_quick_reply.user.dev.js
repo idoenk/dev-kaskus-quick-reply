@@ -1,13 +1,19 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.2.3
+// @version        5.0.3
+// @grant          GM_getValue
+// @grant          GM_setValue
+// @grant          GM_deleteValue
+// @grant          GM_xmlhttpRequest
+// @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407135023
-// @timestamp      1405191757727
+// @dtversion      1407135030
+// @timestamp      1405260007650
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
+// @require        https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js
 // @description    provide a quick reply feature, under circumstances capcay required.
 // @include        /^https?://www.kaskus.co.id/thread/*/
 // @include        /^https?://www.kaskus.co.id/lastpost/*/
@@ -28,6 +34,14 @@
 //
 // -!--latestupdate
 //
+// v5.0.3 - 2014-07-13 . 1405260007650
+//   deprecated [jQ_wait, tooltip method from page (bootstrap)]
+//   +require jQuery metadata, avoid bad practice using unsafewindow
+//   +grand metadata required by GM-2.0
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.0.2.3 - 2014-07-13 . 1405191757727
 //   [uploader] reverse order uploaded item (left: latest)
 //   [raw-data] append uploader log
@@ -35,9 +49,6 @@
 //   prevent load on exist dom of QR-wrapper
 //   css box_preview
 //   optimze getCSSWideFix for kaskus-evo; Thx=[S4nJi]
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v5.0.2.1 - 2014-05-30 . 1401459777078
 //   fix post in group, mismatch group-id; Thx=[go.png]
@@ -47,13 +58,6 @@
 //   fix edit to quote malfunction;
 //   proper update link (GF)
 //   fix avatar
-//
-// v5.0.1 - 2014-05-20 . 1400528967424
-//   deprecated fixerCod,.
-//   Reroute update check end-point
-//
-// v5.0 - 2014-05-13 . 1399923493992
-//   Draft adapting kaskus-beta (themes_3.0)
 //
 //
 // v0.1 - 2010-06-29
@@ -70,11 +74,11 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.2.3';
+gvar.sversion = 'v' + '5.0.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1405191757727 // version.timestamp
-  ,dtversion: 1407125022 // version.date
+   timestamp: 1405260007650 // version.timestamp
+  ,dtversion: 1407135030 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -361,12 +365,12 @@ var rSRC = {
       +  '<div class="input-prepend">'
       +  '<span class="add-on">'
       +   '<img id="img_icon" class="modal-dialog-title-imgicon" src="#" style="display:none;"/>' 
-      +   '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" data-original-title="Pick Icon" rel="tooltip"/>' 
+      +   '<ul class="ulpick_icon"><li id="pick_icon" class="modal-dialog-title-pickicon markItUpButton markItUpDropMenu" title="Pick Icon"/>'
       + rSRC.menuIcon() 
       +   '</li></ul>'
       +  '</span>'
       +  '<input id="form-title" type="text" name="title" title="(optional) Message Title" placeholder="'+gvar.def_title+'" autocomplete="off" />'
-      +  '<span id="close_title" class="modal-dialog-title-close" data-original-title="Remove Title Message" style="display:none;" rel="tooltip"/>' 
+      +  '<span id="close_title" class="modal-dialog-title-close" title="Remove Title Message" style="display:none;"/>' 
       +  '</div>'
       +  '</div>'
       + '</div>' // condensed
@@ -374,7 +378,7 @@ var rSRC = {
       + '<div class="title-message-sub ts_fjb-price condensed" style="display:none;">'
       +  '<div class="controlls">'
       +  '<div class="input-prepend">'
-      +   '<span class="add-on" data-original-title="Price (Rp)" rel="tooltip"><i class="icon-shopping-cart"></i></span>'
+      +   '<span class="add-on" title="Price (Rp)"><i class="icon-shopping-cart"></i></span>'
       +   '<input id="form-price" type="text" class="span4" name="harga" placeholder="Harga, eg. 30000" />'
       +  '</div>'
       +  '</div>'
@@ -382,7 +386,7 @@ var rSRC = {
 
       + '<div class="title-message-sub title-righty">'
       + '<div class="ts_fjb-kondisi condensed" style="display:none;">' 
-      + '<select name="kondisi" class="selectbox" data-original-title="Kondisi Barang" rel="tooltip">'
+      + '<select name="kondisi" class="selectbox" title="Kondisi Barang">'
       +  '<option value="1">New</option>'
       +  '<option value="2">Second</option>'
       +  '<option value="3">BNWOT</option>'
@@ -390,7 +394,7 @@ var rSRC = {
       + '</select>'
       + '</div>'  // condensed
       + '<div class="ts_fjb-type condensed" style="display:none;">' 
-      + '<select name="prefixid" class="selectbox" data-original-title="FJB Thread" rel="tooltip">'
+      + '<select name="prefixid" class="selectbox" title="FJB Thread">'
       +  '<option value="0">( no prefix )</option>'
       +  '<option value="SOLD">TERJUAL</option>'
       +  '<option value="WTB">BELI</option>'
@@ -423,7 +427,7 @@ var rSRC = {
 
       + '<div style="clear:left; position:relative;">'      
       + '<div class="qr-editor-wrap">'
-      +    '<span id="clear_text" class="modal-dialog-title-close" data-original-title="Clear Editor" style="display:none;right:10px" rel="tooltip" />'
+      +    '<span id="clear_text" class="modal-dialog-title-close" title="Clear Editor" style="display:none;right:10px"/>'
       +    '<textarea id="' + gvar.tID + '" rows="50" name="message" class="qr-editor twt-glow" style=""/>'
       + '<div>'
       + '</div>'
@@ -468,7 +472,7 @@ var rSRC = {
       +   '<div class="edit-reason condensed" style="display:none;">' 
       +    '<div class="controlls">'
       +    '<div class="input-prepend">'
-      +     '<span class="add-on" data-original-title="Edit Reason" data-placement="bottom" rel="tooltip"><i class="icon-pencil"></i></span>'
+      +     '<span class="add-on" title="Edit Reason" data-placement="bottom"><i class="icon-pencil"></i></span>'
       +     '<input id="form-edit-reason" type="text" class="span4" name="reason" placeholder="Reason for editing" />'
       +    '</div>'
       +    '</div>'
@@ -477,13 +481,13 @@ var rSRC = {
       +   '<div class="ts_fjb-tags condensed" style="display:none;">'
       +    '<div class="controlls">'
       +    '<div class="input-prepend">'
-      +    '<span class="add-on" data-original-title="Tags \/ Keyword search, separate with space" data-placement="bottom" rel="tooltip"><i class="icon-list-alt"></i></span>'
+      +    '<span class="add-on" title="Tags \/ Keyword search, separate with space"><i class="icon-list-alt"></i></span>'
       +    '<input id="form-tags" type="text" class="span4" name="tagsearch" placeholder="Eg: Electronics, Gadget, Cloths, etc" />'
       +    '</div>'
       +    '</div>'
       +   '</div>' // condensed
 
-      +   '<div class="additional_opt_toggle" data-original-title="Additional Options" data-placement="bottom" rel="tooltip"><i class="icon-th-list"></i></div>'
+      +   '<div class="additional_opt_toggle" title="Additional Options"><i class="icon-th-list"></i></div>'
       +   '<div id="additionalopts" class="goog-tab-content" style="display:none">'
       +   '<div class="additional-item adt-rating condensed">'
       +   '<select name="rating" class="selectbox">'
@@ -644,7 +648,7 @@ var rSRC = {
 
       +'<div id="scustom_container" style="max-width: 829px;">'
       + '<div style="margin:8px 0">'
-      +  'Custom Smiley Not Found, <a href="http://goo.gl/vBPK8" target="_blank">what is this?</a>'
+      +  'Custom Smiley Not Found, <a href="http://goo.gl/U5PPnD" target="_blank">what is this?</a>'
       +  '<br/><br/>'
       +  'Browse to <a href="http://kask.us/gWtme" target="_blank">Emoticon Corner</a>'
       + '</div>'
@@ -722,14 +726,13 @@ var rSRC = {
     return ''
       +'<b>'+ gvar.scriptMeta.fullname +' &#8212; '+ gvar.sversion +'</b> <small>'+gvar.scriptMeta.dtversion+'</small><br>'
       +'<div style="height: 3px;"></div>'
-      // +'<a href="http://userscripts.org:8080/scripts/show/'+ gvar.scriptMeta.scriptID +'" target="_blank">'+ gvar.scriptMeta.fullname +'</a>'
       +'<a href="https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'" target="_blank">'+ gvar.scriptMeta.fullname +'</a>'
       +' is an improvement of `kaskusquickreply` (Firefox Add-Ons) initially founded by bimatampan<br>'
       +'<div style="height: 7px;"></div><a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" border="0" height="33"></a>&nbsp;&#183;&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" border="0"></a><br>'
       +'Licensed under a <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License</a><br>'
       +'<div style="height: 7px;"></div>KASKUS brand is a registered trademark of '+ gvar.domain.replace(/^[^\.]+./gi,'') +'<br>'
       + gvar.scriptMeta.fullname + ' (QR) is not related to or endorsed by '+ gvar.domain.replace(/^[^\.]+./gi,'') +' in any way.<br>'
-      +'QR+ (Add-ons) is ported from the original QR (@userscripts.org) as specified by author.<br><div style="height: 3px;"></div>'
+      // +'QR+ (Add-ons) is ported from the original QR (@userscripts.org) as specified by author.<br><div style="height: 3px;"></div>'
       +'<b>Founded By:</b> bimatampan<br>'
       +'<b>Author By:</b> <a href="/profile/302101" class="nostyle" target="_blank"><b>Idx</b></a><br>'
       +'<b>Addons Ported By:</b> <a href="/profile/1323912" class="nostyle" target="_blank"><b>Piluze</b></a><br>'
@@ -916,7 +919,7 @@ var rSRC = {
     +'function chkMultiQuote(){!$.cookie && jq_cookie(); var mqs=$.cookie(__mq); $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
     +'try{chkMultiQuote()}catch(e){console && console.log && console.log(e)};'
 
-    +'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
+    // +'function remote_xtooltip(el){var $el, $tgt, sfind; $el=$(el); $tgt=$( $el.attr("data-selector") ); sfind=$el.attr("data-selector_find"); sfind && ($tgt = $tgt.find(sfind)); $tgt.tooltip();}'
     +''
     +''
     ;
@@ -1677,11 +1680,12 @@ var _BOX = {
     neim = gvar.user.name + (gvar.user.isDonatur ? ' [$]' : '');
     !dt_ori && (dt_ori = 'Post as ');
     $tgt.html('');
-    $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="top" />');
-    imgtip = 'img[rel="tooltip"]';
-    try{
-      xtip(target, imgtip);
-    }catch(e){}
+    // $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="top" />');
+    $tgt.append('<img src="'+ gvar.user.photo +'" title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" />');
+    // imgtip = 'img[rel="tooltip"]';
+    // try{
+    //   xtip(target, imgtip);
+    // }catch(e){}
   }
 };
 
@@ -3065,7 +3069,6 @@ var _SML_ = {
           for(var k=0; k<gL; k++){
             
             if( !isString(gvar.smcustom[grup][k]) ){
-              clog('AUO='+ gvar.smcustom[grup][k][0] )
               if( isLink( gvar.smcustom[grup][k][0] ) != null ){
                 islink = 1;
                 subtpl+='<img src="'+ gvar.smcustom[grup][k][0] +'" alt="_alt_'+ gvar.smcustom[grup][k][1] +'" title="[['+ gvar.smcustom[grup][k][1] + '] &#8212;' + gvar.smcustom[grup][k][0] +'" /> ';
@@ -3840,7 +3843,6 @@ var _STG = {
   reset_settings: function(){
     getValue(KS+'CUSTOM_SMILEY', function(ret){
       var msg, space, csmiley, keys, yakin,
-        // home=[gvar.kask_domain + '16414069','http:/'+'/userscripts.org:8080/topics/58227'];
         home=[gvar.kask_domain+'hCZmM','https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'/feedback'];
 
       space = '';
@@ -3903,6 +3905,7 @@ var _CSS = {
   dialog: function(doshow){
     if( !_CSS.DialogId )
       _CSS.DialogId = 'css_' + String(gvar.scriptMeta.timestamp);
+
     if(_CSS.DialogId && !$('#'+_CSS.DialogId).length ){
       $('body').append(''
        +'<div id="'+_CSS.DialogId+'" style="position:fixed;z-index:99991;top:38px;left:45%; filter:alpha(opacity=90); opacity:.90;background:#f9edbe; border:1px solid #f0c36d; border-radius:2px;-moz-border-radius:2px;-webkit-border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,0.2);font-size:90%;font-weight:bold;line-height:22px;padding:0 15px;display:'+(doshow ? '':'none')+';">'
@@ -3912,7 +3915,7 @@ var _CSS = {
       );
       $('#'+_CSS.DialogId).find('.close').click(function(){
         _CSS.dialog_dismiss();
-      })
+      });
     }
   },
   dialog_html: function(x){
@@ -3936,6 +3939,7 @@ var _CSS = {
   run: function(fn, cb){
     _CSS.dovalidate = 1;
     _CSS.dialog(1);
+
     GM_XHR.uri = _CSS.path_uri + fn + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV);
 
     clog('fetch css: ' + GM_XHR.uri);
@@ -3944,6 +3948,7 @@ var _CSS = {
     GM_XHR.request(null, 'GET', "function" == typeof cb ? cb : _CSS.callback_fin);
   },
   callback_fin: function(x){
+    clog('inside callback_fin');
     x = trimStr( String( x.responseText ) );
     _CSS.set_css(x);
   },
@@ -3980,15 +3985,15 @@ var _CSS = {
       }
       else{
         var mtitle = 'Your QR CSS not correctly loaded';
-        _CSS.dialog_html('<span rel="tooltip" title="'+mtitle+'" data-title="'+mtitle+'" data-placement="bottom">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
+        _CSS.dialog_html('<span title="'+mtitle+'" title="'+mtitle+'">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
         $('#'+_id).find('.'+_id+'-qrR').click(function(){
           _CSS.dialog_retry()
         });
         $('#'+_id).find('.'+_id+'-qrS').click(function(){
           _STG.reset_settings()
         });
-        if( !gvar.isOpera )
-          $('#'+_id).find('*[rel="tooltip"]').tooltip();
+        // if( !gvar.isOpera )
+        //   $('#'+_id).find('*[rel="tooltip"]').tooltip();
 
         console.log('Failed-load-css-resource: '+gvar.kqr_static+gvar.css_default);
 
@@ -5181,7 +5186,7 @@ function show_alert(msg, force) {
 }
 function clog(msg) {
   if(!gvar.__DEBUG__) return;
-  show_alert(msg);
+  show_alert('[QR:dbg] '+msg);
 }
 
 //=== functions
@@ -6338,7 +6343,7 @@ function finalizeTPL(){
   }
 
   $('body').prepend('<div id="qr-modalBoxFaderLayer" class="modal-dialog-bg" style="display:block; visibility:hidden;"></div><div id="wraper-hidden-thing" style="visibility:hidden; position:absolute; left:-99999px; top:-99999px;"></div>')
-  $('body').prepend('<input id="remote_tooltip" type="button" value="_" style="position:absolute!important; top:-99999px; top:-99999px; visibility:hidden; height:0;" onclick="remote_xtooltip(this)"/>');
+  // $('body').prepend('<input id="remote_tooltip" type="button" value="_" style="position:absolute!important; top:-99999px; top:-99999px; visibility:hidden; height:0;" onclick="remote_xtooltip(this)"/>');
   
   
   if( !gvar.user.isDonatur ){
@@ -6393,12 +6398,12 @@ function scrollToQR(){
 }
 
 // eval tooltip crossed dom, due to issue Opera
-function xtip(sel, dofind){
-  var $tgt = $('#remote_tooltip');
-  $tgt.attr('data-selector', sel);
-  dofind && $tgt.attr('data-selector_find', dofind);
-  do_click($tgt.get(0));
-}
+// function xtip(sel, dofind){
+//   var $tgt = $('#remote_tooltip');
+//   $tgt.attr('data-selector', sel);
+//   dofind && $tgt.attr('data-selector_find', dofind);
+//   do_click($tgt.get(0));
+// }
 
 function start_Main(){
 
@@ -6486,7 +6491,7 @@ function start_Main(){
 
           $(this)
             .append('<a href="#" id="button_qr_'+ entry_id +'" class="button small white button_qr button_qrmod'+(gvar.readonly ? ' hide':'')+'" rel="nofollow" onclick="return false" style="margin-left:5px;"> Quick Reply</a>')
-            .append('<a href="#" id="button_qq_'+ entry_id +'" class="button small green button_qq'+(gvar.readonly ? ' hide':'')+'" data-original-title="Quick Quote" rel="tooltip" onclick="return false" style="margin-left:-7px; padding:0 10px 0 12px;"><i class="icon-share-alt icon-large"></i> </a>')
+            .append('<a href="#" id="button_qq_'+ entry_id +'" class="button small green button_qq'+(gvar.readonly ? ' hide':'')+'" title="Quick Quote" onclick="return false" style="margin-left:-7px; padding:0 10px 0 12px;"><i class="icon-share-alt icon-large"></i> </a>')
           ;
           // event for quick reply
           $(this).find('.button_qr').click(function(ev){
@@ -6631,14 +6636,14 @@ function start_Main(){
         $('.bottom-frame').is(':visible') && do_click($('.btm-close').get(0));
         
         // opera is need backup evaluating js
-        if(gvar.isOpera){
-          window.setTimeout(function(){
-            xtip('.user-tools', '*[rel="tooltip"]');
-            xtip('#'+gvar.qID, '*[rel="tooltip"]');
-          }, 1500);
-        }else{
-          $('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
-        }
+        // if(gvar.isOpera){
+        //   window.setTimeout(function(){
+        //     xtip('.user-tools', '*[rel="tooltip"]');
+        //     xtip('#'+gvar.qID, '*[rel="tooltip"]');
+        //   }, 1500);
+        // }else{
+        //   $('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
+        // }
 
       }, 50);
       // settimeout pra-loaded settings 
@@ -6835,19 +6840,13 @@ function init(){
 
   
   ApiBrowserCheck();
-  //gvar.css_default = 'kqr_quad'+ (gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '')  +'.css';
   gvar.css_default = 'kqr_quad'+ (!gvar.force_live_css && gvar.__DEBUG__ && !gvar.isOpera ? '.dev' : '.' + gvar.scriptMeta.cssREV)  +'.css';
   
-  gvar.injected = false;
+
+  // treshold fetching css
   gvar.mx = 30; gvar.ix = 0;
-  
-  if('undefined' == typeof mothership){
-    gvar.noCrossDomain = gvar.isBuggedChrome = 1;
-    jQ_wait2(); 
-  }else{
-    /* default mostly for FF */
-    jQ_wait();
-  }
+  CSS_precheck();
+  return !1;
 }
 
 function CSS_precheck(){
@@ -6910,13 +6909,15 @@ function CSS_wait(refetch_only, cb){
 
   if( !gvar.force_live_css )
   if( gvar.noCrossDomain || gvar.__DEBUG__ ) {
-    clog('[debug-mode] OR crosdomain not possible, performing direct load css');
-
     var css_uri = gvar.kqr_static + gvar.css_default + '?nocache' + String(gvar.scriptMeta.timestamp) + '-' + String(gvar.scriptMeta.cssREV);
+    
+    clog('[debug-mode] OR crosdomain not possible, performing direct load css');
     clog('GM_addGlobalStyle: '+css_uri);
     GM_addGlobalStyle(css_uri, 'direct_css', true);
+
     start_Main();
-    if( typeof cb == 'function' ) cb();
+    if( typeof cb == 'function' )
+      cb();
     return;
   }
 
@@ -6937,42 +6938,17 @@ function CSS_wait(refetch_only, cb){
   }
 }
 
-function jQ_wait2(){
-  if( jQuery == "undefined" && gvar.ix < gvar.mx ){
-    gvar.$w.setTimeout(function () { jQ_wait2() }, 200);
-    gvar.injected = true;
-    gvar.ix++;
-  }else{
-    if( "undefined" == typeof jQuery ) return;
-    $ = jQuery = jQuery.noConflict(true);
-    gvar.ix = 0;
-    
-    CSS_precheck();
-  }
+
+// -=-= ready..
+this.$ = $||jQuery||null;
+this.jQuery = this.$;
+
+if( "undefined" === typeof $ ){
+  console.log("Unable to load jQuery, QR halted");
+  return !1;
 }
+return init();
 
-
-function jQ_wait() {
-  clog('jQ_wait Inside, QR-'+gvar.sversion);
-  if ( (unsafeWindow && typeof unsafeWindow.jQuery == "undefined") && gvar.ix < gvar.mx) {
-    gvar.$w.setTimeout(function () { jQ_wait() }, 200);
-    if( !gvar.injected ){
-      GM_addGlobalScript(location.protocol + "\/\/ajax.googleapis.com\/ajax\/libs\/jquery\/1.7.1\/jquery.min.js");
-      gvar.injected = true;
-    }
-    gvar.ix++;
-  } else {
-    if ("undefined" == typeof unsafeWindow.jQuery) return;
-    $ = unsafeWindow.$ = unsafeWindow.jQuery = unsafeWindow.jQuery.noConflict(true);
-    gvar.ix = 0;
-    
-    CSS_precheck();
-  }
-}
-
-if('undefined' == typeof mothership)
-  var $;
-init();
 }
 // main
 
