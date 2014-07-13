@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1407135030
-// @timestamp      1405260007650
+// @timestamp      1405290109714
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -34,10 +34,11 @@
 //
 // -!--latestupdate
 //
-// v5.0.3 - 2014-07-13 . 1405260007650
+// v5.0.3 - 2014-07-13 . 1405290109714
 //   deprecated [jQ_wait, tooltip method from page (bootstrap)]
 //   +require jQuery metadata, avoid bad practice using unsafewindow
 //   +grand metadata required by GM-2.0
+//   Fix matching content of kfs4 (Firefox); Thx=[S4nJi]
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -77,7 +78,7 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1405260007650 // version.timestamp
+   timestamp: 1405290109714 // version.timestamp
   ,dtversion: 1407135030 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
@@ -1680,7 +1681,12 @@ var _BOX = {
     neim = gvar.user.name + (gvar.user.isDonatur ? ' [$]' : '');
     !dt_ori && (dt_ori = 'Post as ');
     $tgt.html('');
+    // $tgt.append('<img src="'+ gvar.user.photo +'" data-original-title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" rel="tooltip" data-placement="top" />');
     $tgt.append('<img src="'+ gvar.user.photo +'" title="'+ dt_ori + neim +'" title="'+dt_ori + neim +'" />');
+    // imgtip = 'img[rel="tooltip"]';
+    // try{
+    //   xtip(target, imgtip);
+    // }catch(e){}
   }
 };
 
@@ -6392,14 +6398,21 @@ function scrollToQR(){
   do_click($('#' + gvar.qID).closest('.row').find('.button_qr').get(0));
 }
 
+// eval tooltip crossed dom, due to issue Opera
+// function xtip(sel, dofind){
+//   var $tgt = $('#remote_tooltip');
+//   $tgt.attr('data-selector', sel);
+//   dofind && $tgt.attr('data-selector_find', dofind);
+//   do_click($tgt.get(0));
+// }
+
 function start_Main(){
 
   var _loc = location.href;
   gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
   gvar.classbody = String($('body').attr('class')).trim(); // [fjb,forum,group]
 
-  gvar.is_kfs4 = (window.getComputedStyle(document.body).getPropertyValue('content') === gvar.KSF4);
-  
+  gvar.is_kfs4 = (new RegExp("\\b"+gvar.KSF4+"\\b")).test(window.getComputedStyle(document.body).getPropertyValue('content'));
 
   gvar.user = get_userdetail();
   clog(JSON.stringify(gvar.user));
@@ -6621,6 +6634,17 @@ function start_Main(){
           }, 2000);
         }
         $('.bottom-frame').is(':visible') && do_click($('.btm-close').get(0));
+        
+        // opera is need backup evaluating js
+        // if(gvar.isOpera){
+        //   window.setTimeout(function(){
+        //     xtip('.user-tools', '*[rel="tooltip"]');
+        //     xtip('#'+gvar.qID, '*[rel="tooltip"]');
+        //   }, 1500);
+        // }else{
+        //   $('.user-tools, #'+gvar.qID).find('*[rel="tooltip"]').tooltip();
+        // }
+
       }, 50);
       // settimeout pra-loaded settings 
     }
