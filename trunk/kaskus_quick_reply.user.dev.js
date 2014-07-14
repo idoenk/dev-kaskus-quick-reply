@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1407135030
-// @timestamp      1405290109714
+// @timestamp      1405366500941
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -34,11 +34,13 @@
 //
 // -!--latestupdate
 //
-// v5.0.3 - 2014-07-13 . 1405290109714
+// v5.0.3 - 2014-07-13 . 1405366500941
 //   deprecated [jQ_wait, tooltip method from page (bootstrap)]
 //   +require jQuery metadata, avoid bad practice using unsafewindow
 //   +grand metadata required by GM-2.0
 //   Fix matching content of kfs4 (Firefox); Thx=[S4nJi]
+//   CSS additionalopts; Thx=[booster.bs]
+//   Session-lost/XHR-failure handler message
 //
 // -/!latestupdate---
 // ==/UserScript==
@@ -78,13 +80,13 @@ var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as
 gvar.sversion = 'v' + '5.0.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1405290109714 // version.timestamp
-  ,dtversion: 1407135030 // version.date
+   timestamp: 1405366500941 // version.timestamp
+  ,dtversion: 1407155030 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1407125022 // css revision date; only change this when you change your external css
+  ,cssREV: 1407155030 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -1396,10 +1398,12 @@ var _BOX = {
       clog( 'boxaction=' + _BOX.e.boxaction ); clog( 'tosend='+ JSON.stringify(query) );
       if( gvar.sTryRequest ){
         clog('Other AJAX instance [sTryRequest] is currently running, killing him now.');
+        clog(JSON.stringify(gvar.sTryRequest));
         gvar.sTryRequest.abort();
       }
       try{
-         if( query!="" )
+        
+        if( query!="" )
         gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
           var valid, parsed, cucok, sdata, mH, imgTitle, titleStr, msg, func;
           valid = tokcap_parser(data);
@@ -1479,7 +1483,11 @@ var _BOX = {
 
             $('#box_prepost').focus().delay(1200);
           }
-        });
+        })
+          .fail(function(){
+            _AJAX.refetch_current_page();
+          })
+        ;
       }catch(e){}
     });
   },
@@ -1574,7 +1582,11 @@ var _BOX = {
             _NOFY.init(args);
           }
         }
-      });
+      })
+        .fail(function(){
+          _AJAX.refetch_current_page();
+        })
+      ;
     }catch(e){};
   },
   postloader: function(flag){
@@ -1769,7 +1781,11 @@ var _AJAX = {
           if(typeof(cb_after)=='function') cb_after();
         }
         _AJAX.ajaxPID('quote', false);
-      });
+      })
+        .fail(function(){
+          _AJAX.refetch_current_page();
+        })
+      ;
     }catch(e){
       clog('FAILED = ' + uri);
       _AJAX.ajaxPID('quote', false);
@@ -1968,7 +1984,11 @@ var _AJAX = {
           if(typeof(cb_after)=='function') cb_after();
         }
         _AJAX.ajaxPID('edit', false);
-      });
+      })
+        .fail(function(){
+          _AJAX.refetch_current_page();
+        })
+      ;
     }catch(e){ 
       gvar.edit_mode = 0;
       _AJAX.ajaxPID('edit', false);
@@ -2041,6 +2061,23 @@ var _AJAX = {
       }
     }
     return paired;
+  },
+  // refetch current page to make sure we still have session on page
+  refetch_current_page: function(){
+    gvar.sTryRequestValidate = $.get(location.href, function(data){
+      var valid = tokcap_parser(data),
+        mH = ( parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer );
+
+      $('#box_preview').length && 
+        $('#box_preview').css('max-height', mH + 'px');
+
+      if( !valid ){
+        if( $('#modal_capcay_box').length )
+          close_popup();
+
+        _NOFY.raise_error(data, true);
+      }
+    });
   }
 };
 
@@ -2112,13 +2149,14 @@ var _NOFY = {
     $('#notify_msg, #notify_wrap').show();
     if(typeof(_ME.cb)=='function') _ME.cb();
   },
-  raise_error: function(data){
+  raise_error: function(data, session_lost){
     var _ME, func=null, _msg='';
     _ME = this;
 
     // session lost; invalid post?
     if( data.match(/\byou\sdo\snot\shave\spermission\sto\sac/i) ||
-      data.match(/<div\s*class=[\'\"]login-form-(?:wrap|center)[\'\"]/i) 
+      data.match(/<div\s*class=[\'\"]login-form-(?:wrap|center)[\'\"]/i) ||
+      ("undefined" != typeof session_lost) && session_lost
     ){
       _msg = 'You do not have permission to do this. <a class="btn-reload" href="javascript:;">Reload page?</a>';
       func = function(){
