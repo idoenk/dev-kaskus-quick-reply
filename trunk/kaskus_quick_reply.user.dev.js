@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.3
+// @version        5.0.4
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407135030
-// @timestamp      1405366500941
+// @dtversion      1407265040
+// @timestamp      1406334495099
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -34,6 +34,16 @@
 //
 // -!--latestupdate
 //
+// v5.0.4 - 2014-07-26 . 1406334495099
+//   Fix broken kaskus-uploader (chromium v35+), forced killzone elements; Thx=[66.66]
+//   Adjust width of kfs4; Thx=[winkus,AeArc]
+//   Typo font "Trebuchet MS"; Thx=[rock2titan]
+//   CSSFix:overflow width preview uploaded images
+//   Fix sidebar failure, noConflict $
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.0.3 - 2014-07-13 . 1405366500941
 //   deprecated [jQ_wait, tooltip method from page (bootstrap)]
 //   +require jQuery metadata, avoid bad practice using unsafewindow
@@ -42,9 +52,6 @@
 //   CSS additionalopts; Thx=[booster.bs]
 //   Session-lost/XHR-failure handler message
 //
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v5.0.2.3 - 2014-07-13 . 1405191757727
 //   [uploader] reverse order uploaded item (left: latest)
 //   [raw-data] append uploader log
@@ -52,15 +59,6 @@
 //   prevent load on exist dom of QR-wrapper
 //   css box_preview
 //   optimze getCSSWideFix for kaskus-evo; Thx=[S4nJi]
-//
-// v5.0.2.1 - 2014-05-30 . 1401459777078
-//   fix post in group, mismatch group-id; Thx=[go.png]
-//
-// v5.0.2 - 2014-05-29 . 1401384664827
-//   allow edit in single post;
-//   fix edit to quote malfunction;
-//   proper update link (GF)
-//   fix avatar
 //
 //
 // v0.1 - 2010-06-29
@@ -77,16 +75,17 @@ function main(mothership){
 var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.3';
+gvar.sversion = 'v' + '5.0.4';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1405366500941 // version.timestamp
-  ,dtversion: 1407155030 // version.date
+   timestamp: 1406334495099 // version.timestamp
+  ,dtversion: 1407265040 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1407155030 // css revision date; only change this when you change your external css
+  ,cssREV: 1407265040 // css revision date; only change this when you change your external css
+  ,cssKFS4REV: 1407125030 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -231,7 +230,7 @@ var Dom = {
 var rSRC = {
   mCls: ['markItUpButton','markItUpDropMenu','<li class="markItUpSeparator">---------------</li>'],
   menuFont: function(id){
-    var li_cls = rSRC.mCls, item = ['Arial','Arial Black','Arial Narrow','Book Antiqua','Century Gothic','Comic Sans MS','Courier New','Georgia','Impact','Lucida Console','Times New Roman','Trebucher','Verdana'], buff, lf=item.length;
+    var li_cls = rSRC.mCls, item = ['Arial','Arial Black','Arial Narrow','Book Antiqua','Century Gothic','Comic Sans MS','Courier New','Georgia','Impact','Lucida Console','Times New Roman','Trebuchet MS','Verdana'], buff, lf=item.length;
     buff='<li class="'+li_cls[0]+' '+li_cls[0] + id + ' fonts '+li_cls[1]+'"><a title="Fonts" href="">Fonts</a><ul>';
     for(var i=0; i<lf; i++)
       buff+='<li class="'+li_cls[0]+' '+li_cls[0] + id +'-'+(i+1)+' font-'+item[i].toLowerCase()+'"><a title="'+item[i]+'" class="ev_font" href="">'+item[i]+'</a></li>';
@@ -525,7 +524,7 @@ var rSRC = {
       +  '<input id="qr_chkcookie" type="button" style="display:none;" value="cq" onclick="try{chkMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
          // remote button to delete-mQ
       +  '<input id="qr_remoteDC" type="button" style="display:none;" value="dc" onclick="try{deleteMultiQuote()}catch(e){console && console.log && console.log(e)}" />'
-      + '<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '20000') + '</tt> <b class="preload" style="display:none" title="Est. layout-template"></b></span>'
+      + '<span class="counter" style="'+(gvar.settings.txtcount ? '':'none')+'"><i>Characters left:</i> <tt class="numero">' + (gvar.thread_type == 'group' ? '1000' : '20000') + '</tt> <b class="qr_preload" style="display:none" title="Est. layout-template"></b></span>'
       
       +  '<input type="submit" tabindex="1" value="'+gvar.inner.reply.submit+'" name="sbutton" id="sbutton" class="goog-inline-block jfk-button '+ (gvar.user.isDonatur ? 'jfk-button-action' : 'g-button-red') +(gvar.readonly ? ' jfk-button-disabled':'')+'"/>'
       +  '<input type="submit" tabindex="2" value="Preview Post" name="spreview" id="spreview" class="goog-inline-block jfk-button jfk-button-standard'+(gvar.readonly ? ' jfk-button-disabled':'')+'"/>'
@@ -556,7 +555,7 @@ var rSRC = {
   getBOX: function(){
     // preview BOX
     return ''
-    +'<div id="modal_dialog_box" class="modal-dialog listing-wrapper" style="left: 523px; top: 181px; display:none;">'
+    +'<div id="modal_dialog_box" class="modal-dialog" style="left: 523px; top: 181px; display:none;">'
     +'<div class="modal-dialog-title">'
     + '<span class="modal-dialog-title-text">Preview '+(gvar.edit_mode ? gvar.inner.edit.title : gvar.inner.reply.title)+'</span><span class="modal-dialog-title-close popbox"/>'
     + '<h1 id="box_preview_title"></h1>'
@@ -687,7 +686,7 @@ var rSRC = {
       +'</div>' // cs_left
       +''
       +'<div class="sidsid cs_right sid_beloweditor">'
-      + '<div id="uploader_container" style="max-width:100%;"></div>'
+      + '<div id="uploader_container" style="max-width:auto;"></div>'
       +'</div>' // .cs_right
       +'<span id="toggle-sideuploader" class="toggle-sidebar" data-state="hide">&#9664;</span>'
       +'</div>' // .wraper_custom
@@ -890,6 +889,7 @@ var rSRC = {
   },
   getCSS_AdjustKFS4: function(){
     return ""
+    +"#modal_dialog_box.modal-dialog{padding-bottom:0!important;}"
     +"#modal_dialog_box #cont_button{margin-bottom:-40px!important;}"
     +"#modal_dialog_box #box_wrap{margin-right:-1px}"
     ;
@@ -948,11 +948,12 @@ var rSRC = {
       +     't+=\'<span title="remove" class="modal-dialog-title-close imgremover"/>\';'
       +     't+=\'</div>\';'
       +     '$parent.find(".preview-image-inner").prepend( t );'
+      +     '$("form[name*=\'jUploadForm\']").remove(); $("iframe[name*=\'jUploadFrame\']").remove();'
       +   '}else{'
-      +     'alert(data.error);'
+      +     'console.log(data.error);'
       +   '}'
       +   '},'
-      + 'error: function (data, status, e){alert(e);}'
+      + 'error: function (data, status, e){console.log(e)}'
       +'});'
       +'return false;'
       +'}' // ajaxFileUpload
@@ -2468,9 +2469,9 @@ var _TEXTCOUNT = {
 
     if( _tc.$target.length ){
       if(_tc.preload_length > 0)
-         _tc.$target.find('.preload').show().text(' (+'+_tc.preload_length+')');
+         _tc.$target.find('.qr_preload').show().text(' (+'+_tc.preload_length+')');
       else
-        _tc.$target.find('.preload').hide();
+        _tc.$target.find('.qr_preload').hide();
 
       _tc.$target = _tc.$target.find('.numero:first');
       _tc.$target.text(_tc.count_it(_tc));
@@ -3516,7 +3517,7 @@ var _STG = {
       var wtreshold = 10;
       $box_setting = $('#qr-box_setting');
       $box_setting.find('.cs_right').css('width', ($box_setting.width()-$box_setting.find('.cs_left').width()-wtreshold)+'px');
-    }, 212)
+    }, 345)
   },
   event_main:function(){
     // menus
@@ -3933,7 +3934,7 @@ var _CSS = {
 
     _CSS.widefix_id = 'css_inject_widefix';
     _CSS.widefix_adjust_id = 'QR-kfs4-adjust';
-    _CSS.widefix_filename = 'kfs4.1407125022.css';
+    _CSS.widefix_filename = 'kfs4.'+gvar.scriptMeta.cssKFS4REV+'.css';
 
     // _CSS.run(gvar.css_default, _CSS.callback);
   },
@@ -5330,9 +5331,8 @@ function inteligent_width(options){
       $ct.show();
     else
       $ct.hide();
-    
-    $preview_wrap.css('max-width',  $parent.closest('.cs_right').width());
-    
+
+
     // update log
     $preview_wrap.find('img').each(function(){
       imgs.push($(this).attr('src'));
@@ -5343,6 +5343,8 @@ function inteligent_width(options){
       // save history upload
       getValue(KS + upkey, function(ret){
         imgs = ret.split(',');
+        $preview_wrap.css('width',  (imgs.length * 60));
+
         if( ret && imgs.length > 0 ){
           $.each(imgs, function(){
             var tpl, _src=this;
@@ -6083,8 +6085,8 @@ function eventsTPL(){
 
     if(doThi) do_an_e(ev);
   }).resize(function () {
-    var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
-    gvar.bodywidth = b;
+    // var b = ($("#main > .row > .col").get(0) ? $("#main > .row > .col").width() : $('body').width());
+    // gvar.bodywidth = $('#main .hfeed').first().width();
     gvar.maxH_editor = parseInt( getHeight() ) - gvar.offsetEditorHeight;
     resize_popup_container();
   });
@@ -6315,26 +6317,26 @@ function toggleTitle(){
 }
 
 function resize_popup_container(force_width){
-  var mW  = ( $('.hfeed').find('.entry').width() + 163 ); 
-  
+  var mW  = $('#main .hfeed').first().width()+(gvar.is_kfs4 ? 163 : 0);
   var cWHalf, xleft, bW, bH = parseInt( getHeight() ), cTop=0;
+  
   if( force_width )
     bW = force_width;
   else if( $(".modal-dialog").hasClass('static_width') )
     bW = $(".modal-dialog").width();
   else
-    bW = gvar.bodywidth;
+    bW = mW;
 
   cWHalf = document.documentElement.clientWidth/2;
   
   if( $(".modal-dialog").length > 0){
     xleft = cWHalf - ( (bW/2) + 0 );
-    if( "undefined" == typeof force_width )
-      xleft = (gvar.is_kfs4  ? 0 : xleft);
     
-    clog('force_width='+force_width);
-    clog('bW:'+bW);
-    clog('xleft:'+xleft);
+    // clog('force_width='+force_width);
+    // clog('mW:'+mW);
+    // clog('bW:'+bW);
+    // clog('gvar.is_kfs4:'+gvar.is_kfs4);
+    // clog('xleft:'+xleft);
 
     // modal-dialog
     $('.modal-dialog')
@@ -6343,16 +6345,19 @@ function resize_popup_container(force_width){
       .css('left', xleft + 'px');
 
     // capcay-dialog
-    cTop = (bH/2) - ( $('.modal-dialog').height()  ) - 5;
-    bW = 295;
-    xleft = cWHalf - ( (bW/2) + 0 );
-    $('.capcay-dialog')
-      .css('top', cTop + 'px')
-      .css('width', bW + 'px')
-      .css('left', xleft + 'px');
+    if( $('.capcay-dialog').length ){
+      cTop = (bH/2) - ( $('.modal-dialog').height()  ) - 5;
+      bW = 295;
+      xleft = cWHalf - ( (bW/2) + 0 );
+      $('.capcay-dialog')
+        .css('top', cTop + 'px')
+        .css('width', bW + 'px')
+        .css('left', xleft + 'px');
+    }
 
-    $('#box_preview')
-      .css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
+    if( $('#box_preview').length )
+      $('#box_preview')
+        .css('max-height', ( bH - gvar.offsetMaxHeight - gvar.offsetLayer ) + 'px');
   }
   gvar.maxH_editor = ( bH - gvar.offsetEditorHeight );  
   _TEXT.setElastic(gvar.maxH_editor, 1);
@@ -6394,7 +6399,7 @@ function finalizeTPL(){
 
 function slideAttach(that, cb){
   var landed, tgt, destination, scOffset, prehide, isclosed, delay;
-  tgt = $(that).closest('.row').find('.col:first');
+  tgt = $(that).closest('.row').find('.col').first();
   
   prehide = ($('#'+gvar.qID).closest('.row').attr('id') != tgt.parent().attr('id') );
   isclosed = !$('#formqr').is(':visible');
@@ -6460,10 +6465,8 @@ function start_Main(){
   GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' );
   if( gvar.is_kfs4 )
     GM_addGlobalStyle(rSRC.getCSS_AdjustKFS4(), 'QR-kfs4-adjust');
-
-  gvar.bodywidth = $('#main .col:first').width(); 
   
-  gvar.last_postwrap = $('.hfeed:last').closest('.row').attr('id');
+  gvar.last_postwrap = $('.hfeed').last().closest('.row').attr('id');
   
   // may reffer to groupid
   gvar.pID = (function get_thread_id(href){
@@ -6497,7 +6500,7 @@ function start_Main(){
           $_1stlanded = $('#'+gvar.last_postwrap);
         }else{
           // di groups
-          $_1stlanded = $('.hfeed:last').closest('.row');
+          $_1stlanded = $('.hfeed').last().closest('.row');
         }
 
         // prevent appending same dom-wrapper
@@ -6849,7 +6852,7 @@ function init(){
   gvar.user = {id:null, name:"", isDonatur:false};
   gvar._securitytoken_prev = gvar._securitytoken= null;
   gvar.ajax_pid= {}; // each ajax performed {preview: timestamp, post: timestamp, edit: timestamp }
-  gvar.edit_mode = gvar.pID = gvar.maxH_editor = gvar.bodywidth = 0;
+  gvar.edit_mode = gvar.pID = gvar.maxH_editor = 0;
   gvar.upload_tipe = gvar.last_postwrap = "";
 
   // identify kaskus-fixup-s4
@@ -6963,8 +6966,11 @@ function CSS_wait(refetch_only, cb){
 
 
 // -=-= ready..
-this.$ = $||jQuery||null;
-this.jQuery = this.$;
+this.$ = jQuery ? jQuery.noConflict():null;
+if( this.$ ){
+  var $ = this.$;
+  delete this.$;
+}
 
 if( "undefined" === typeof $ ){
   console.log("Unable to load jQuery, QR halted");
