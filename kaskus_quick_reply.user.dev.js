@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.4
+// @version        5.0.4.1
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407265040
-// @timestamp      1406334495099
+// @dtversion      1407265041
+// @timestamp      1406390268385
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -34,15 +34,18 @@
 //
 // -!--latestupdate
 //
+// v5.0.4.1 - 2014-07-26 . 1406390268385
+//   Hot-Fix avoid redirect to playground;
+//
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.0.4 - 2014-07-26 . 1406334495099
 //   Fix broken kaskus-uploader (chromium v35+), forced killzone elements; Thx=[66.66]
 //   Adjust width of kfs4; Thx=[winkus,AeArc]
 //   Typo font "Trebuchet MS"; Thx=[rock2titan]
 //   CSSFix:overflow width preview uploaded images
 //   Fix sidebar failure, noConflict $
-//
-// -/!latestupdate---
-// ==/UserScript==
 //
 // v5.0.3 - 2014-07-13 . 1405366500941
 //   deprecated [jQ_wait, tooltip method from page (bootstrap)]
@@ -72,14 +75,14 @@
 
 function main(mothership){
 // Initialize Global Variables
-var gvar=function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
+var gvar = function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.4';
+gvar.sversion = 'v' + '5.0.4.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1406334495099 // version.timestamp
-  ,dtversion: 1407265040 // version.date
+   timestamp: 1406390268385 // version.timestamp
+  ,dtversion: 1407265041 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -897,7 +900,7 @@ var rSRC = {
 
   getSCRIPT: function(){
     return ''
-    +'if(typeof $ == "undefined") $ = jQuery;'
+    +'if(typeof $ == "undefined") $ = jQuery.noConflict();'
     +'function showRecaptcha(element){'
     + 'if( typeof(Recaptcha)!="object" ){'
     +   'window.setTimeout(function () { showRecaptcha() }, 200);'
@@ -6448,6 +6451,7 @@ function scrollToQR(){
 function start_Main(){
 
   var _loc = location.href;
+
   gvar.thread_type = (_loc.match(/\.kaskus\.[^\/]+\/group\/discussion\//) ? 'group' : (_loc.match(/\.kaskus\.[^\/]+\/show_post\//) ? 'singlepost' : 'forum') );
   gvar.classbody = String($('body').attr('class')).trim(); // [fjb,forum,group]
 
@@ -6462,9 +6466,12 @@ function start_Main(){
     clog('Readonly mode on');
     gvar.readonly = true;
   }
+  clog("Injecting getCSS");
   GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' );
-  if( gvar.is_kfs4 )
+  if( gvar.is_kfs4 ){
+    clog("is_kfs4 detected, injecting adjustment CSS");
     GM_addGlobalStyle(rSRC.getCSS_AdjustKFS4(), 'QR-kfs4-adjust');
+  }
   
   gvar.last_postwrap = $('.hfeed').last().closest('.row').attr('id');
   
@@ -6487,6 +6494,7 @@ function start_Main(){
   
   var maxTry = 50, iTry=0,
   wait_settings_done = function(){
+    clog("queue wait_settings_done");
     if( !gvar.settings.done && (iTry < maxTry) ){
       gvar.$w.setTimeout(function(){wait_settings_done() }, 100);
       iTry++;
@@ -6512,6 +6520,7 @@ function start_Main(){
             $('#QR-main-css').remove();
           }, 1);
         }
+        clog("Injecting getTPL");
         $_1stlanded.find('.col').append( rSRC.getTPL() );
 
         var isInGroup = (gvar.thread_type == 'group');
@@ -6651,6 +6660,7 @@ function start_Main(){
         }
         
         // infiltrate default script
+        clog("Injecting getSCRIPT");
         GM_addGlobalScript( rSRC.getSCRIPT() );
         (gvar.settings.autoload_smiley[0] == 1) && window.setTimeout(function(){
           do_click($('.ev_smiley:first').get(0));
@@ -6670,7 +6680,9 @@ function start_Main(){
             gvar.freshload=null;
           }, 2000);
         }
-        $('.bottom-frame').is(':visible') && do_click($('.btm-close').get(0));
+        // sorry, but you know..
+        clog("closing bottom-frame ads");
+        $('.bottom-frame').addClass("closed");
       }, 50);
       // settimeout pra-loaded settings 
     }
@@ -6976,8 +6988,10 @@ if( "undefined" === typeof $ ){
   console.log("Unable to load jQuery, QR halted");
   return !1;
 }
+else{
+  clog("acknowledge $ with noConflict");
+}
 return init();
-
 }
 // main
 
