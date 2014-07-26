@@ -350,7 +350,7 @@ var rSRC = {
     + '<input type="hidden" value="9999" name="emailupdate"/>' 
     + '<input type="hidden" value="0" name="folderid"/>' 
     + '<input type="hidden" value="0" name="rating"/>' 
-    + '<input id="hid_iconid" type="radio" name="iconid" value="0" style="position:absolute!important; z-index:-1; top:40px; width:1px; cursor:none;"/>'
+    + '<input id="hid_iconid" type="radio" name="iconid" value="0" style="position:absolute!important; z-index:-1; top:40px; width:1px; cursor:none; left:-9999; top:-9999; visibility:hidden;"/>'
       
       + ''
       + '<fieldset>'
