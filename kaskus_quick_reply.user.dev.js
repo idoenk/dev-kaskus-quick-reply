@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.0.4.1
+// @version        5.0.4.2
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1407265041
-// @timestamp      1406390268385
+// @dtversion      1408055042
+// @timestamp      1407185902609
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -34,11 +34,14 @@
 //
 // -!--latestupdate
 //
-// v5.0.4.1 - 2014-07-26 . 1406390268385
-//   Hot-Fix avoid redirect to playground;
+// v5.0.4.2 - 2014-08-05 . 1407185902609
+//   Rewrite defect-css of .post-quote; avoid interfering default style of quoted post; Thx=[Mendi Sadjo, KabeGoceng7033]
 //
 // -/!latestupdate---
 // ==/UserScript==
+//
+// v5.0.4.1 - 2014-07-26 . 1406390268385
+//   Hot-Fix avoid redirect to playground;
 //
 // v5.0.4 - 2014-07-26 . 1406334495099
 //   Fix broken kaskus-uploader (chromium v35+), forced killzone elements; Thx=[66.66]
@@ -78,11 +81,11 @@ function main(mothership){
 var gvar = function(){}, isQR_PLUS = 0; // purpose for QR+ pack, disable stated as = 0;
 
 // gvar.scriptMeta.scriptID
-gvar.sversion = 'v' + '5.0.4.1';
+gvar.sversion = 'v' + '5.0.4.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1406390268385 // version.timestamp
-  ,dtversion: 1407265041 // version.date
+   timestamp: 1407185902609 // version.timestamp
+  ,dtversion: 1408055042 // version.date
 
   ,titlename: 'Quick Reply' + ( isQR_PLUS !== 0 ? '+' : '' )
   ,scriptID: 80409 // script-Id
@@ -885,10 +888,9 @@ var rSRC = {
     +".message .markItUpButton50 a {background-image:url("+gvar.kkcdn+"images/editor/html.gif);}"
     +".message .markItUpButton51 a {background-image:url("+gvar.kkcdn+"images/editor/php.gif);}"
     +".markItUpButton95 > a {background-image:url("+gvar.kkcdn+"images/editor/color.gif);}"
-    // +(gvar.is_kfs4 ? ""
-    //   +"#modal_dialog_box #cont_button{margin-bottom:-40px!important;}"
-    //   +"#modal_dialog_box #box_wrap{margin-right:-1px}"
-    // :"")
+    
+    // while kaskus wont fix this defect-css, then rewrite it ._.
+    +".post-quote{width:100%; margin:auto;font-family:'Open Sans',Helvetica,Arial,Sans-serif;font-size:14px;font-style:normal;font-weight:normal;text-align:left;color: #484848; display:block;}"
   },
   getCSS_AdjustKFS4: function(){
     return ""
