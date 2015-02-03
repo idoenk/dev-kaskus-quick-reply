@@ -1740,10 +1740,11 @@ var _BOX = {
       clog('query=' + JSON.stringify(query) );
       
       gvar.sTryRequest = $.post( _BOX.e.boxaction, query, function(data) {
-        clog(data);
-        var msg = 'Unknown Error';
+        // clog(data);
+        var sdata, msg = 'Unknown Error';
         var redirect = null, is_error = null;
         
+        clog("edit_mode: " ? gvar.edit_mode : 'nope');
         // new-post
         if( !gvar.edit_mode ){
 
@@ -1800,14 +1801,26 @@ var _BOX = {
         }
         // update post
         else{
+          try{
+            // this may trigger error
+            sdata = data.replace(/(\r\n|\n|\r|\t|\s{2,})+/gm, "").replace(/\"/g, '"').toString();
+            clog(sdata);
+
+          }catch(e){
+            clog('submit post failed, '+e.message);
+          }
 
           if( cucok = /<meta\s*http\-equiv=[\"\']REFRESH[\"\']\s*content=[\"\']\d+;\s*url=([^\"\']+)/i.exec(sdata) ){
-            // flush draft, before reload
+
+            $("clear-draft").trigger("click");
             setValue(KS+'TMP_TEXT', '', function(){
               // NO-Error, grab redirect location
               location.href = cucok[1];
             });
-            return;
+
+            setTimeout(function(){
+              location.reload(false);
+            }, 567);
           }else{
             msg  = 'redirect link not found, post might fail. please try again.';
             clog(msg);
@@ -5708,14 +5721,14 @@ function do_insertTag(tag, value, $caleer){
 
 
 // action to insert BBCode:
-//  [IMG,CODE,QUOTE,CODE,PHP,HTML,URL,SPOILER,NOPARSE,YOUTUBE]
+//  [IMG,CODE,INDENT,QUOTE,CODE,PHP,HTML,URL,SPOILER,NOPARSE,YOUTUBE]
 // Including mod to [Transparent, Strikethrough]
 function do_insertCustomTag($el){
   _TEXT.init();
   
   var BBCode = ( "string" !== typeof $el && $el  ? $el.attr("data-bb") : $el );
   var text, prehead, tagprop, ptitle, selected, ret, prmpt;
-  var wrapped_bb = 'QUOTE,CODE,HTML,PHP'.split(",");
+  var wrapped_bb = 'INDENT,QUOTE,CODE,HTML,PHP'.split(",");
 
   var endFocus = function(){ _TEXT.focus(); return};
   if("undefined" == typeof BBCode) return endFocus();
@@ -6015,18 +6028,6 @@ function eventsController(){
       }
       $("#hid_iconid", $XK).prop("checked", true)
     }
-    // !$XK.find('.ts_fjb-type').is(':visible') &&
-    // $XK.find('#kqr-title_message').slideToggle(99, function(){
-    //   if( !$XK.find('#kqr-title_message').is(":visible") ){
-    //     $("#hid_iconid", $XK).val(0);
-    //     $("#img_icon", $XK).attr("src", "#").hide();
-    //     $("#form-title", $XK).val("");
-    //     $("#close_title", $XK).hide()
-    //   }else{
-    //     $("#form-title", $XK).focus()
-    //   }
-    //   $("#hid_iconid", $XK).attr("checked", true)
-    // });
   });
   
   // render font's fonts
@@ -6130,7 +6131,7 @@ function eventsController(){
         });
       break;
 
-      case "custom":
+      case "custom": case "indent":
         $el.click(function(){
           do_insertCustomTag( $(this) );
           
@@ -6207,32 +6208,6 @@ function eventsController(){
           }
         });
       break;
-     // case "upload":
-     //  el.click(function(){
-     //    var cbu = '.box-upload';
-     //    if( !$(cbu).is(':visible') ){
-     //      if( !$(cbu).hasClass('events') ){
-     //        $(cbu + ' .goog-tab').each(function(){
-     //          var id, T = $(this);
-     //          T.hover(
-     //            function(){T.addClass('goog-tab-hover')},
-     //            function(){T.removeClass('goog-tab-hover')}
-     //          ).click(function(){
-     //            if( !T.attr('id') ){
-     //              // it must be close tab //close-tab
-     //              _UPL_.toggletab(false);
-     //            }
-     //          });
-     //        });
-     //        _UPL_.init();
-     //      }else{
-     //        _UPL_.toggletab(true);
-     //      }
-     //    }else{
-     //      _UPL_.toggletab(false);
-     //    }
-     //  });
-     // break;
     } // end switch
 
 
