@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502025310
-// @timestamp      1422926097541
+// @timestamp      1422970302798
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-03 . 1422926097541
+// v5.3.1 - 2015-02-03 . 1422970302798
+//   QuickPatch finding last_postwrap
 //   Rewrite/adapting new kaskus theme 3.1 (bootstrap 3.0.1)
 //   Intervene global hotkeys onfocus editor
 //   +global hotkey QuickQuote (Alt+C)
@@ -66,9 +67,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1422926097541 // version.timestamp
+   timestamp: 1422970302798 // version.timestamp
   ,dtversion: 1502025310 // version.date
-  ,svnrev: 505 // build.rev
+  ,svnrev: 507 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -7055,7 +7056,7 @@ function start_Main(){
   clog("Injecting getCSS");
   GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' );
   
-  gvar.last_postwrap = $('.listing-wrapper #thread_post_list').find('>div[class="row"][id]').last().attr('id');
+  gvar.last_postwrap = $('#thread_post_list > [class*="row"][id]').last().attr('id');
 
   // may reffer to groupid
   gvar.pID = (function get_thread_id(href){
