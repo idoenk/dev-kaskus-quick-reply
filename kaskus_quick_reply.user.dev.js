@@ -8,8 +8,8 @@
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502025310
-// @timestamp      1422970302798
+// @dtversion      1502045311
+// @timestamp      1423045452428
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,9 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-03 . 1422970302798
+// v5.3.1 - 2015-02-04 . 1423045452428
+//   Clean run partialy outside included url;
+//   Patch fetch quote; Init active tab smiley; Identify locked thread; Groupee;
 //   QuickPatch finding last_postwrap
 //   Rewrite/adapting new kaskus theme 3.1 (bootstrap 3.0.1)
 //   Intervene global hotkeys onfocus editor
@@ -67,14 +69,14 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1422970302798 // version.timestamp
-  ,dtversion: 1502025310 // version.date
+   timestamp: 1423045452428 // version.timestamp
+  ,dtversion: 1502045311 // version.date
   ,svnrev: 507 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1502035310 // css revision date; only change this when you change your external css
+  ,cssREV: 1502045311 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -491,13 +493,13 @@ var rSRC = {
       +   '<div class="box-smiley" style="display:none">'
       +     '<div role="tabpanel">'
       +      '<ul class="nav nav-tabs" role="tablist">'
-      +       '<li class="active"><a href="#tkecil" role="tab" data-toggle="tab">Kecil</a></li>'
+      +       '<li><a href="#tkecil" role="tab" data-toggle="tab">Kecil</a></li>'
       +       '<li><a href="#tbesar" role="tab" data-toggle="tab">Besar</a></li>'
       +       '<li><a href="#tcustom" role="tab" data-toggle="tab" class="green-tab">Custom</a></li>'
       +       '<li class="li-tabclose pull-right"><a href="javascript:;" class="close-tab"><i class="kqr-icon-close"></i></a></li>'
       +      '</ul>'
       +      '<div class="tab-content">'
-      +       '<div class="tab-pane bbthumb active" id="tkecil"></div>'
+      +       '<div class="tab-pane bbthumb" id="tkecil"></div>'
       +       '<div class="tab-pane bbthumb" id="tbesar"></div>'
       +       '<div class="tab-pane" id="tcustom"></div>'
       +       '<div class="clearfix"></div>'
@@ -1100,12 +1102,15 @@ var rSRC = {
       break;
       case "c1024px":
         css+= ''
-          +'.main-content{float:none'+i+';margin:auto}'
-          +'.main-content,.user-control-stick{width:1024px}'
+          +'.main-content,.main-content-full{float:none'+i+';margin:auto}'
+          +'.main-content,.main-content-full,.user-control-stick{width:1024px}'
         ;
       break;
       case "centered":
-        css+= '.main-content{float:none'+i+';margin:auto}';
+        css+= ''
+          +'.main-content,.main-content-full{float:none'+i+';margin:auto}'
+          +'.main-content-full{width:860px}'
+        ;
       break;
     }
     return sb_kil+css;
@@ -1114,7 +1119,8 @@ var rSRC = {
 
   getSCRIPT: function(){
     return ''
-    +'if(typeof $ == "undefined") $ = jQuery.noConflict();'
+    +'var $ = $||jQuery.noConflict();'
+    +'var prfx = "";'
     +'function showRecaptcha(element){'
     + 'if( typeof(Recaptcha)!="object" ){'
     +   'window.setTimeout(function () { showRecaptcha() }, 200);'
@@ -1132,17 +1138,17 @@ var rSRC = {
     +'  try{ elem.dispatchEvent(evObj) }'
     +'  catch(e){ console && console.log && console.log("Error. elem.dispatchEvent is not function."+e) }'
     +'}'
-    
+    // no-needed for a moment
     +'function jq_cookie(){jQuery.cookie=function(d,e,b){if(arguments.length>1&&(e===null||typeof e!=="object")){b=jQuery.extend({},b);if(e===null){b.expires=-1}if(typeof b.expires==="number"){var g=b.expires,c=b.expires=new Date();c.setDate(c.getDate()+g)}return(document.cookie=[encodeURIComponent(d),"=",b.raw?String(e):encodeURIComponent(String(e)),b.expires?"; expires="+b.expires.toUTCString():"",b.path?"; path="+b.path:"",b.domain?"; domain="+b.domain:"",b.secure?"; secure":""].join(""))}b=e||{};var a,f=b.raw?function(h){return h}:decodeURIComponent;return(a=new RegExp("(?:^|; )"+encodeURIComponent(d)+"=([^;]*)").exec(document.cookie))?f(a[1]):null};$=jQuery}'
 
     +'var __mq="kaskus_multiquote", __tmp="tmp_chkVal";'
-    +'function deleteMultiQuote(){!$.cookie && jq_cookie(); $.cookie(__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
-    +'function chkMultiQuote(){ !($ && $.cookie) && jq_cookie(); var mqs=$.cookie(__mq)||""; $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
+    +'function deleteMultiQuote(){!$[prfx+"cookie"] && jq_cookie(); $[prfx+"cookie"](__mq,null, { expires: null, path: "/", secure: false }); $("#"+__tmp).val("")}'
+    +'function chkMultiQuote(){ !($ && $[prfx+"cookie"]) && jq_cookie(); var mqs=$[prfx+"cookie"](__mq)||""; $("#"+__tmp).val(mqs ? mqs.replace(/\s/g,"") : ""); SimulateMouse($("#qr_chkval").get(0), "click", true); }'
     +'try{chkMultiQuote()}catch(e){console && console.log && console.log(e)};'
 
     +'function ifrdone(el){'
-    +'$("#ifr_content").val( $(el).contents().find("#'+gvar.tID+'").val() );'
-    +'SimulateMouse($("#qr_getcont").get(0), "click", true);'
+    +'$("#ifr_content").val( $(el).contents().find("textarea[name=message]").first().val() );'
+    +'SimulateMouse( $("#qr_getcont").get(0), "click", true); $(el).remove();'
     +'}'
     +''
     ;
@@ -2131,14 +2137,13 @@ var _AJAX = {
             _TEXT.init();
             
             // dom-wrapper
-            // $sdata = $(sdata);
             parsed = data.replace(/<\/?script(?:[^>]+)?>/gi, '', data);
             $sdata = $(parsed);
             clog('cleanup while from script-tag='+parsed);
 
             // check for title
             ttitle = false;
-            el = $('#form-title', $sdata);
+            el = $('#title-message', $sdata);
             if( el.length ){
               ttitle = {
                  icon: $('#title-message ul.dropdown-menu [name=iconid]:checked', $sdata).val()
@@ -2147,9 +2152,9 @@ var _AJAX = {
               clog('ttitle-msg=');
               clog(ttitle);
             }
-            else{
-              clog("#form-title not found")
-            }
+            else
+              clog("#title-message not found")
+
             if( ttitle )
               _TEXT.set_title( ttitle );
 
@@ -2160,9 +2165,8 @@ var _AJAX = {
               ttitle = {text: el.val()};
               _TEXT.set_reason( ttitle );
             }
-            else{
+            else
               clog("[name=reason] not found")
-            }
 
             // check additionl opt
             ttitle = false;
@@ -2178,9 +2182,8 @@ var _AJAX = {
               $XK.find('#additionalopts').show();
               $XK.find('.additional_opt_toggle').addClass('active');
             }
-            else{
+            else
               clog("[name=folderid] not found");
-            }
 
             // check if fjb and is first post
             el = $('select[name=prefixid]', $sdata);
@@ -2535,14 +2538,8 @@ var _TEXT = {
     var $KTM = $("#"+gvar.qID).find("#kqr-title_message");
     $KTM.show();
     $KTM.find('#form-title').focus().val( data.text );
-    do_click( $('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).get(0));
     data && data.text && $('#close_title', $KTM).show();
-
-    // $KTM.slideDown(1, function(){
-    //   $KTM.find('#form-title').focus().val( data.text );
-    //   do_click( $('li a[data-name="'+ data.icon +'"]', $('#menu_posticon') ).get(0));
-    //   data.text && $('#close_title').show();
-    // });
+    do_click( $('li a[data-id="'+ data.icon +'"]', $('#menu_posticon') ).get(0));
   },
   set_reason: function(data){
     $('.edit-reason #form-edit-reason').val(data['text']);
@@ -5637,10 +5634,11 @@ function clear_quoted($el){
 }
 
 function precheck_quoted( injected ){
-  var cb_after, no_mqs = ( $('*[data-btn="multi-quote"].btn-orange').length == 0 );
-  clog("inside precheck_quoted, no_mqs="+no_mqs);
+  var cb_after, no_mqs = !($('*[data-btn="multi-quote"][class*=active]').length || $('*[data-btn="multi-quote"][class*=btn-orange]').length);
+  clog("inside precheck_quoted, no_mqs="+no_mqs+'; injected='+injected);
 
-  if(!injected && no_mqs && $("#tmp_chkVal").val()==""){
+  if( !injected && no_mqs ){
+
     _NOFY.dismiss(); return;
   }
 
@@ -6173,6 +6171,8 @@ function eventsController(){
             _SML_.toggletab(true);
             if(tgt_autoload && gvar.freshload)
               do_click( $boxSM.find('.nav.nav-tabs > li > a[href*="'+tgt_autoload+'"]').get(0) );
+            else if( !$boxSM.find(".tab-content.tab-pane.active").length )
+              do_click( $boxSM.find('.nav.nav-tabs > li').first().find("a").get(0) );
           }
           else{
 
@@ -6513,7 +6513,7 @@ function eventsTPL(){
 
     // fixed_markItUp
     if( gvar.settings.fixed_toolbar ){
-      clog("gvar.settings.fixed_toolbar enabled, activating onfocus event");
+      clog("activating onfocus event");
       gvar.sTryWatchWinScroll &&
         clearInterval(gvar.sTryWatchWinScroll);
       gvar.sTryWatchWinScroll = setInterval(function(){
@@ -6700,7 +6700,7 @@ function get_userdetail($sparent) {
   b = /\/profile\/aboutme\/(\d+)/.exec($c.attr('href'));
   d = /\b(http\:\/\/[^\'\"]+)/.exec($e.find('>.user-avatar').attr('style'));
   a = {
-     id: (b && "undefined" != typeof b[1] ? b[1] : null)
+     id: (b && "undefined" != typeof b[1] ? b[1] : false)
     ,name: trimStr( String($p.find('>.dropdown-toggle').text()).replace(/^Hi,\s/,'') )
     ,photo: (d && "undefined" != typeof d[1] ? d[1] : '')
     ,isDonatur: ($('#quick-reply').get(0) ? true : false)
@@ -7042,12 +7042,11 @@ function start_Main(){
   gvar.fresh_st = $('*[id="securitytoken"]').val();
 
   // do readonly if [not login, locked thread]
-  if( !gvar.user.id || $('.icon-lock').get(0) || !gvar.fresh_st ){
-    // clog('Not login, no securitytoken, locked thread, wotever, get the "F"-out');
+  if( !gvar.user.id || $('.fa.fa-lock').length || !gvar.fresh_st ){
 
     clog('Readonly mode on, coz:['
-      +(gvar.user.id ? 'user-not-login,':'')
-      +($('.icon-lock').get(0) ? 'thread-locked,':'')
+      +(!gvar.user.id ? 'user-not-login,':'')
+      +($('.fa.fa-lock').length ? 'thread-locked,':'')
       +(!gvar.fresh_st ? 'missing-securitytoken,':'')
       +']');
     gvar.readonly = true;
@@ -7089,6 +7088,12 @@ function start_Main(){
       if( gvar.settings.theme_fixups )
         set_theme_fixups();
 
+      // main identifier identify, or forget it.. 
+      if( !$(".user-tools").length || !gvar.user.id ){
+        clog("QR not support on this page"+(!gvar.user.id ? "/not-login":"")+", halted...");
+        return !1;
+      }
+
       var $_1stlanded, mq_class = 'multi-quote';
       
       // need a delay to get all this settings
@@ -7114,14 +7119,20 @@ function start_Main(){
 
 
         $('#quick-reply').remove();
+        var isInGroup = (gvar.thread_type == 'group');
 
+        if( isInGroup ){
+          if( !$_1stlanded.find(".user-tools").length ){
+            $_1stlanded = $_1stlanded.prev();
+            $_1stlanded.attr("id", 'grpost_'+$('.listing-wrapper > .row').length);
+          }
+        }
         clog("Injecting getTPL");
         QR_put_after( $_1stlanded );
         
 
-        var isInGroup = (gvar.thread_type == 'group');
         $('.user-tools').each(function(idx){
-          var $me = $(this);
+          var $btn, $me = $(this);
           if( isInGroup )
             $me.closest('.row').attr('id', 'grpost_' + idx);
             
@@ -7172,36 +7183,35 @@ function start_Main(){
           });
 
           // event for quick edit
-          $(this).find('a[href*="/edit_"]').each(function(){
-            $(this).click(function(ev){
-              do_an_e(ev);
-              var $me = $(this);
-              _AJAX.edit($me, function(){
-                var func = function(){
-                  $('#dismiss_request').click(function(){
-                    _NOFY.dismiss()
-                  });
-                };
-                _NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
-              }, function(){
-                _NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
-                
-
-                var $row = $me.closest('.row');
-                _NOFY.row_id = ($row.length ? $row.attr('id') : '');
-                $row.find('.postlist').first().addClass('editpost');
-
-                slideAttach($me, function(){
-                  _TEXT.lastfocus()
+          $me.find('a[href*="/edit_"]').click(function(ev){
+            do_an_e(ev);
+            var $me = $(this);
+            _AJAX.edit($me, function(){
+              var func = function(){
+                $('#dismiss_request').click(function(){
+                  _NOFY.dismiss()
                 });
+              };
+              _NOFY.init({mode:'quote', msg:'Fetching... <a id="dismiss_request" href="javascript:;">Dismiss</a>', cb:func, btnset:false});
+            }, function(){
+              _NOFY.init({mode:'edit', msg:'You are in <b>Edit-Mode</b>', btnset:true});
+              
+
+              var $row = $me.closest('.row');
+              _NOFY.row_id = ($row.length ? $row.attr('id') : '');
+              $row.find('.postlist').first().addClass('editpost');
+
+              slideAttach($me, function(){
+                _TEXT.lastfocus()
               });
             });
           });
           
           if( !isInGroup ){
             // add-event to multi-quote
-            $(this).find('a[id^="mq_"]').click(function(ev){
-
+            $btn = $me.find('a[id^="mq_"]');
+            $btn.click(function(ev){
+              var $dis = $(this);
               if( gvar.sTry_canceling ){
                 delete(gvar.sTry_canceling);
                 return;
@@ -7219,9 +7229,14 @@ function start_Main(){
               }else{
                 window.setTimeout(function(){
                   do_click($('#qr_chkcookie').get(0));
+                  if( !$dis.hasClass("btn-orange") )
+                    $dis.removeClass("active");
                 }, 100);
               }
             }).attr('data-btn', mq_class);
+
+            if( $btn.hasClass("active") )
+              $btn.addClass("btn-orange");
           }
         });
         // end each of user-tools
@@ -7499,7 +7514,7 @@ function CSS_wait(refetch_only, cb){
 this.$ = jQuery ? jQuery.noConflict():null;
 if( this.$ ){
   var $ = this.$;
-  // delete this.$;
+
 }
 
 if( "undefined" === typeof $ ){
