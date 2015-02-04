@@ -117,7 +117,6 @@ var KS = 'KEY_SAVE_',
     ,KEY_SAVE_WIDE_THREAD:  ['0'] // initial state of thread, widefix -S4nJi
     ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
     ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
-    ,KEY_SAVE_QR_LASTPOST:  ['0'] // lastpost timestamp
 
     ,KEY_SAVE_UPLOAD_LOG:  [''] // history upload (kaskus)
     ,KEY_SAVE_CSS_BULK:  [''] // bulk of ext css
@@ -3887,17 +3886,6 @@ var _STG = {
         }
         setValue(KS+'SHOW_SMILE', String( value ));
 
-        // txtcount
-        // value = '0';
-        // if( isChk($('#misc_txtcount')) ) {
-        //   gvar.settings.txtcount = true;
-        //   $('.counter').show();
-        //   value = '1';
-        // }
-        // else{
-        //   $('.counter').hide();
-        // }
-        // setValue(KS+'TXTCOUNTER', String( value ));
 
         // TXTCOUNTER
         value = (isChk($('#misc_txtcount')) ? '1' : '0');
@@ -4051,9 +4039,11 @@ var _STG = {
   },
   load_rawsetting: function(){
     // collect all settings from storage,. 
-    var keys  = ['UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
-          ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
-          ,'TXTCOUNTER','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
+    var keys  = [
+       'UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
+      ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
+      ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
+      ,'LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
     ];
     var keykomeng = {
        'UPDATES':'Check Update enabled? validValue=[1,0]'
@@ -4152,9 +4142,9 @@ var _STG = {
         ,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
         ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
         ,'LAYOUT_CONFIG','LAYOUT_TPL'
-        ,'QR_LastUpdate','QR_LASTPOST'
+        ,'QR_LastUpdate'
         ,'UPLOAD_LOG','CSS_BULK','CSS_WIDE','CSS_META','SCUSTOM_NOPARSE'
-        ,'ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
+        ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
         ];
         var kL=keys.length, waitfordel, alldone=0;
         for(var i=0; i<kL; i++){
