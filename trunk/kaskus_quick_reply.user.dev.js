@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502045311
-// @timestamp      1423045452428
+// @timestamp      1423057649298
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-04 . 1423045452428
+// v5.3.1 - 2015-02-04 . 1423057649298
+//   Adjust entry-body width on kaskus-switchview+cssFixups
 //   Clean run partialy outside included url;
 //   Patch fetch quote; Init active tab smiley; Identify locked thread; Groupee;
 //   QuickPatch finding last_postwrap
@@ -69,9 +70,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423045452428 // version.timestamp
+   timestamp: 1423057649298 // version.timestamp
   ,dtversion: 1502045311 // version.date
-  ,svnrev: 511 // build.rev
+  ,svnrev: 512 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -1093,23 +1094,27 @@ var rSRC = {
   getCSS_Fixups: function(mode){
     var css='', i='!important';
     var sb_kil = '#main .sidebar{display:none'+i+'}';
+    var sgpost_sel = (gvar.thread_type == 'singlepost' ? ',.container > section':'');
+    var ctpost_sel = 'body.response #thread_post_list .row.nor-post .postlist .entry-body';
     switch(mode){
       case "fullwidth":
         css+= ''
           +'.main-content,.user-control-stick{width:100%}'
           +'.user-control-stick{width:1170px}'
+          +ctpost_sel+'{width:1030px}'
         ;
       break;
       case "c1024px":
         css+= ''
-          +'.main-content,.main-content-full{float:none'+i+';margin:auto}'
-          +'.main-content,.main-content-full,.user-control-stick{width:1024px}'
+          +'.main-content,.main-content-full'+sgpost_sel+'{float:none'+i+';margin:auto}'
+          +'.main-content,.main-content-full,.user-control-stick'+sgpost_sel+'{width:1024px}'
+          +ctpost_sel+'{width:890px}'
         ;
       break;
-      case "centered":
+      case "centered": // kaskus.default
         css+= ''
-          +'.main-content,.main-content-full{float:none'+i+';margin:auto}'
-          +'.main-content-full{width:860px}'
+          +'.main-content,.main-content-full'+sgpost_sel+'{float:none'+i+';margin:auto}'
+          +'.main-content-full'+sgpost_sel+'{width:860px}'
         ;
       break;
     }
@@ -4250,34 +4255,39 @@ var _CSS = {
   },
   dom_css_validate: function(){
     window.setTimeout(function(){
-      var tgt, _id = _CSS.DialogId;
-      tgt = $D('#'+gvar.qID);
+      var $tgt, _id = _CSS.DialogId;
+      $tgt = $D('#'+gvar.qID);
 
 
       !(_id && $('#'+_id).length) && _CSS.dialog();
       _id = _CSS.DialogId;
 
-      if( tgt && tgt.offsetHeight >= 210 ){
+      if( $tgt && $tgt.length && $tgt.is(":visible") ){
+        if( $tgt.offsetHeight >= 210 ){
 
-        _CSS.dovalidate && _CSS.dialog_html('#okesip!');
-        window.setTimeout(function(){
-          _CSS.dialog_dismiss(!_CSS.dovalidate?0:222);
-        }, !_CSS.dovalidate?0:987);
+          _CSS.dovalidate && _CSS.dialog_html('#okesip!');
+          window.setTimeout(function(){
+            _CSS.dialog_dismiss(!_CSS.dovalidate?0:222);
+          }, !_CSS.dovalidate?0:987);
+        }
+        else{
+          var mtitle = 'Your QR CSS not correctly loaded';
+          _CSS.dialog_html('<span title="'+mtitle+'" title="'+mtitle+'">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
+          $('#'+_id).find('.'+_id+'-qrR').click(function(){
+            _CSS.dialog_retry()
+          });
+          $('#'+_id).find('.'+_id+'-qrS').click(function(){
+            _STG.reset_settings()
+          });
+          console.log('Failed-load-css-resource: '+gvar.kqr_static+gvar.css_default);
+
+          // failover try to keep it loaded
+          var csslink = createEl('link', {href: gvar.kqr_static+gvar.css_default, rel:'stylesheet', type:'text/css'});
+          $('body').prepend( $(csslink) );
+        }
       }
       else{
-        var mtitle = 'Your QR CSS not correctly loaded';
-        _CSS.dialog_html('<span title="'+mtitle+'" title="'+mtitle+'">oOops..</span> <a class="'+_id+'-qrR" href="javascript:;" title="Retry fetch CSS">retry?</a> or <a class="'+_id+'-qrS" href="javascript:;" title="Reset Settings">reset?</a>');
-        $('#'+_id).find('.'+_id+'-qrR').click(function(){
-          _CSS.dialog_retry()
-        });
-        $('#'+_id).find('.'+_id+'-qrS').click(function(){
-          _STG.reset_settings()
-        });
-        console.log('Failed-load-css-resource: '+gvar.kqr_static+gvar.css_default);
-
-        // failover try to keep it loaded
-        var csslink = createEl('link', {href: gvar.kqr_static+gvar.css_default, rel:'stylesheet', type:'text/css'});
-        $('body').prepend( $(csslink) );
+        // it might hidden, eg. locked thread. So, ignore css warn.
       }
     }, 890);
     gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
@@ -4291,6 +4301,7 @@ function set_theme_fixups(){
   $("#"+fxcss_id).length &&
     $("#"+fxcss_id).remove();
   GM_addGlobalStyle(rSRC.getCSS_Fixups(gvar.settings.theme_fixups), fxcss_id, 1);
+  $("#"+fxcss_id).attr('data-theme', gvar.settings.theme_fixups);
 }
 
 /*
@@ -7001,7 +7012,10 @@ function scrollToQR(){
 }
 
 function QR_put_after($el){
-  if( !($el && $el.length) ) return;
+  if( !($el && $el.length) ) {
+    clog("_1stlanded not defined");
+    return;
+  }
 
   var $ajaxqr = $el.next(),
     clasname = 'ajax_qr_area',
@@ -7040,6 +7054,7 @@ function start_Main(){
 
   gvar.user = get_userdetail();
   gvar.fresh_st = $('*[id="securitytoken"]').val();
+  clog('type:'+gvar.thread_type+'; classbody:'+gvar.classbody+'; fresh_st:'+gvar.fresh_st);
 
   // do readonly if [not login, locked thread]
   if( !gvar.user.id || $('.fa.fa-lock').length || !gvar.fresh_st ){
@@ -7053,24 +7068,32 @@ function start_Main(){
   }
 
   clog("Injecting getCSS");
-  GM_addGlobalStyle( rSRC.getCSS(), 'QR-main-css' );
+  GM_addGlobalStyle(rSRC.getCSS(), 'kqr-dynamic-css');
   
-  gvar.last_postwrap = $('#thread_post_list > [class*="row"][id]').last().attr('id');
+  // gvar.last_postwrap = $('#thread_post_list > [class*="row"][id]').last().attr('id');
 
-  // may reffer to groupid
-  gvar.pID = (function get_thread_id(href){
-    // *.kaskus.*/group/reply_discussion/123456
-    // *.kaskus.*/post_reply/000000000000000007710877
-    var cck, tt = gvar.thread_type;
-    if( gvar.thread_type == 'forum' ){
-      cck = /\/post_reply\/([^\/]+)\b/.exec( href );
-    }
-    else{ // [group]
-      cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
-      gvar.discID = (cck ? cck[1] : null);
-    }
-    return (cck ? cck[1] : false);
-  })( $('#act-post').attr('href') );
+  // // may reffer to groupid
+  // gvar.pID = (function get_thread_id(){
+  //   // *.kaskus.*/show_post/{pID}/9121/-
+  //   // *.kaskus.*/group/reply_discussion/{pID}
+  //   // *.kaskus.*/post_reply/{pID}
+  //   var cck, href, tt = gvar.thread_type;
+  //   if( gvar.thread_type == 'forum' ){
+  //     href = $('#act-post').attr('href');
+  //     cck = /\/post_reply\/([^\/]+)\b/.exec( href );
+  //   }
+  //   else if( gvar.thread_type == 'singlepost' ){
+      
+  //     cck = /\/show_post\/([^\/]+)\b/.exec( location.href );
+  //   }
+  //   // [group]
+  //   else{
+  //     href = $('a[href*=reply_discussion]').attr('href');
+  //     cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
+  //     gvar.discID = (cck ? cck[1] : null);
+  //   }
+  //   return (cck ? cck[1] : false);
+  // })();
 
   getSettings( gvar.settings );
   
@@ -7089,7 +7112,7 @@ function start_Main(){
         set_theme_fixups();
 
       // main identifier identify, or forget it.. 
-      if( !$(".user-tools").length || !gvar.user.id ){
+      if( !$(".user-tools").length || ( $("#thread_post_list").length && !gvar.user.id ) ){
         clog("QR not support on this page"+(!gvar.user.id ? "/not-login":"")+", halted...");
         return !1;
       }
@@ -7098,14 +7121,49 @@ function start_Main(){
       
       // need a delay to get all this settings
       gvar.$w.setTimeout(function(){
+
+        // may reffer to groupid
+        gvar.pID = (function get_thread_id(){
+          // *.kaskus.*/show_post/{pID}/9121/-
+          // *.kaskus.*/group/reply_discussion/{pID}
+          // *.kaskus.*/post_reply/{pID}
+          var cck, href, tt = gvar.thread_type;
+          if( gvar.thread_type == 'forum' ){
+            href = $('#act-post').attr('href');
+            cck = /\/post_reply\/([^\/]+)\b/.exec( href );
+
+            $_1stlanded = $('#thread_post_list > [class*="row"][id]').last();
+          }
+          else if( gvar.thread_type == 'singlepost' ){
+            
+            cck = /\/show_post\/([^\/]+)\b/.exec( location.href );
+
+            $_1stlanded = $('.container > section > .row').last();
+          }
+          // [group]
+          else{
+            href = $('a[href*=reply_discussion]').attr('href');
+            cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
+            gvar.discID = (cck ? cck[1] : null);
+
+            $_1stlanded = $('.listing-wrapper > row').last();
+            if( !$_1stlanded.find(".user-tools") )
+              $_1stlanded = $_1stlanded.prev();
+
+            // initialise the row-id
+            $_1stlanded.attr("id", 'grpost_'+$('.listing-wrapper > .row').length);
+          }
+          return (cck ? cck[1] : false);
+        })();
+
         // put QR-tpl on last element of row
-        if(gvar.last_postwrap){
-          // @thread
-          $_1stlanded = $('#'+gvar.last_postwrap);
-        }else{
-          // @groups
-          $_1stlanded = $('.hfeed').last().closest('.row');
-        }
+        // if(gvar.last_postwrap){
+        //   // @thread
+        //   $_1stlanded = $('#'+gvar.last_postwrap);
+        // }else{
+        //   // @groups
+        //   $_1stlanded = $('.hfeed').last().closest('.row');
+        // }
 
         // prevent appending if we found dom-wrapper
         if( gID(gvar.qID) ){
@@ -7121,12 +7179,12 @@ function start_Main(){
         $('#quick-reply').remove();
         var isInGroup = (gvar.thread_type == 'group');
 
-        if( isInGroup ){
-          if( !$_1stlanded.find(".user-tools").length ){
-            $_1stlanded = $_1stlanded.prev();
-            $_1stlanded.attr("id", 'grpost_'+$('.listing-wrapper > .row').length);
-          }
-        }
+        // if( isInGroup ){
+        //   if( !$_1stlanded.find(".user-tools").length ){
+        //     $_1stlanded = $_1stlanded.prev();
+        //     $_1stlanded.attr("id", 'grpost_'+$('.listing-wrapper > .row').length);
+        //   }
+        // }
         clog("Injecting getTPL");
         QR_put_after( $_1stlanded );
         
