@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502045311
-// @timestamp      1423061479649
+// @timestamp      1423078551766
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-04 . 1423061479649
+// v5.3.1 - 2015-02-04 . 1423078551766
+//   Parse input text for BBCode media embed
 //   Adjust entry-body width on kaskus-switchview+cssFixups
 //   Clean run partialy outside included url;
 //   Patch fetch quote; Init active tab smiley; Identify locked thread; Groupee;
@@ -70,9 +71,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423061479649 // version.timestamp
+   timestamp: 1423078551766 // version.timestamp
   ,dtversion: 1502045311 // version.date
-  ,svnrev: 520 // build.rev
+  ,svnrev: 522 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -5771,6 +5772,28 @@ function do_insertCustomTag($el){
         //  [URL,EMAIL,IMG, NOPARSE,TRANSPARENT, YOUTUBE,VIMEO,SOUNDCLOUD]
         
         var noPrompts = 'TRANSPARENT,NOPARSE,EMAIL'.split(",");
+        var is_mediaembed = function(media, text){
+          var rx, rxNaCd;
+          text = trimStr ( text );
+          clog( text);
+
+          switch(media){
+            case "YOUTUBE":
+              rx = text.match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i);
+              rxNaCd = !/^[\d\w-]+$/.test(text);
+            break;
+            case "SOUNDCLOUD":
+              rx = text.match(/\bsoundcloud\.com\/tracks\/(\d+)/i);
+              rxNaCd = !/^[\d\w]+$/.test(text);
+            break;
+            case "VIMEO":
+              rx = text.match(/\bvimeo\.com\/(\d+)/i);
+              rxNaCd = !/^[\d\w]+$/.test(text);
+            break;
+          }
+
+          text = ( rx && rx[1] ? rx[1] : null );
+        };
         var is_youtube_link = function(text){
           var rx;
           text = trimStr ( text );
@@ -5830,9 +5853,10 @@ function do_insertCustomTag($el){
               // prompting...
               if(text==null) return endFocus();
 
-              if(BBCode=='YOUTUBE')
-                text = is_youtube_link(text);
-              else if(BBCode=='URL' || BBCode=='IMG')
+              if( ['YOUTUBE','SOUNDCLOUD','VIMEO'].indexOf(BBCode) ){
+                text = is_mediaembed(BBCode, text);
+                text = (text ? text : null);
+              }else if(BBCode=='URL' || BBCode=='IMG')
                 text = (isLink(text) ? text : null);
             }
 
