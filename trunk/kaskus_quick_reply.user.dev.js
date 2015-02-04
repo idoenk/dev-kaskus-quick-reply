@@ -72,7 +72,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423058248524 // version.timestamp
   ,dtversion: 1502045311 // version.date
-  ,svnrev: 512 // build.rev
+  ,svnrev: 514 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -7077,7 +7077,7 @@ function start_Main(){
   getSettings( gvar.settings );
   
 
-  
+
   var maxTry = 50, iTry=0,
   wait_settings_done = function(){
     clog("queue wait_settings_done");
