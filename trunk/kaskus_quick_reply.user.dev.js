@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502045311
-// @timestamp      1423058248524
+// @timestamp      1423061479649
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-04 . 1423058248524
+// v5.3.1 - 2015-02-04 . 1423061479649
 //   Adjust entry-body width on kaskus-switchview+cssFixups
 //   Clean run partialy outside included url;
 //   Patch fetch quote; Init active tab smiley; Identify locked thread; Groupee;
@@ -70,9 +70,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423058248524 // version.timestamp
+   timestamp: 1423061479649 // version.timestamp
   ,dtversion: 1502045311 // version.date
-  ,svnrev: 514 // build.rev
+  ,svnrev: 517 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -4256,14 +4256,14 @@ var _CSS = {
   dom_css_validate: function(){
     window.setTimeout(function(){
       var $tgt, _id = _CSS.DialogId;
-      $tgt = $D('#'+gvar.qID);
+      $tgt = $('#'+gvar.qID);
 
 
       !(_id && $('#'+_id).length) && _CSS.dialog();
       _id = _CSS.DialogId;
 
       if( $tgt && $tgt.length && $tgt.is(":visible") ){
-        if( $tgt.offsetHeight >= 210 ){
+        if( $tgt.outerHeight() >= 210 ){
 
           _CSS.dovalidate && _CSS.dialog_html('#okesip!');
           window.setTimeout(function(){
@@ -4288,8 +4288,9 @@ var _CSS = {
       }
       else{
         // it might hidden, eg. locked thread. So, ignore css warn.
+        _CSS.dialog_dismiss();
       }
-    }, 890);
+    }, 1234);
     gvar.on_demand_csscheck && (delete gvar.on_demand_csscheck);
   }
 };
