@@ -8,8 +8,8 @@
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502045311
-// @timestamp      1423078551766
+// @dtversion      1502055310
+// @timestamp      1423080719879
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-04 . 1423078551766
+// v5.3.1 - 2015-02-05 . 1423080719879
 //   Parse input text for BBCode media embed
 //   Adjust entry-body width on kaskus-switchview+cssFixups
 //   Clean run partialy outside included url;
@@ -71,14 +71,14 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423078551766 // version.timestamp
-  ,dtversion: 1502045311 // version.date
-  ,svnrev: 522 // build.rev
+   timestamp: 1423080719879 // version.timestamp
+  ,dtversion: 1502055310 // version.date
+  ,svnrev: 524 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1502045311 // css revision date; only change this when you change your external css
+  ,cssREV: 1502055310 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
