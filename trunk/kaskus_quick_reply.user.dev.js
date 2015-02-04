@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502045311
-// @timestamp      1423057649298
+// @timestamp      1423058248524
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1 - 2015-02-04 . 1423057649298
+// v5.3.1 - 2015-02-04 . 1423058248524
 //   Adjust entry-body width on kaskus-switchview+cssFixups
 //   Clean run partialy outside included url;
 //   Patch fetch quote; Init active tab smiley; Identify locked thread; Groupee;
@@ -70,7 +70,7 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423057649298 // version.timestamp
+   timestamp: 1423058248524 // version.timestamp
   ,dtversion: 1502045311 // version.date
   ,svnrev: 512 // build.rev
 
@@ -7054,6 +7054,10 @@ function start_Main(){
 
   gvar.user = get_userdetail();
   gvar.fresh_st = $('*[id="securitytoken"]').val();
+  if( !gvar.fresh_st ){
+    // groupee has different selector
+    gvar.fresh_st = $('*[name="securitytoken"]').val();
+  }
   clog('type:'+gvar.thread_type+'; classbody:'+gvar.classbody+'; fresh_st:'+gvar.fresh_st);
 
   // do readonly if [not login, locked thread]
@@ -7069,33 +7073,10 @@ function start_Main(){
 
   clog("Injecting getCSS");
   GM_addGlobalStyle(rSRC.getCSS(), 'kqr-dynamic-css');
-  
-  // gvar.last_postwrap = $('#thread_post_list > [class*="row"][id]').last().attr('id');
-
-  // // may reffer to groupid
-  // gvar.pID = (function get_thread_id(){
-  //   // *.kaskus.*/show_post/{pID}/9121/-
-  //   // *.kaskus.*/group/reply_discussion/{pID}
-  //   // *.kaskus.*/post_reply/{pID}
-  //   var cck, href, tt = gvar.thread_type;
-  //   if( gvar.thread_type == 'forum' ){
-  //     href = $('#act-post').attr('href');
-  //     cck = /\/post_reply\/([^\/]+)\b/.exec( href );
-  //   }
-  //   else if( gvar.thread_type == 'singlepost' ){
-      
-  //     cck = /\/show_post\/([^\/]+)\b/.exec( location.href );
-  //   }
-  //   // [group]
-  //   else{
-  //     href = $('a[href*=reply_discussion]').attr('href');
-  //     cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
-  //     gvar.discID = (cck ? cck[1] : null);
-  //   }
-  //   return (cck ? cck[1] : false);
-  // })();
 
   getSettings( gvar.settings );
+  
+
   
   var maxTry = 50, iTry=0,
   wait_settings_done = function(){
@@ -7146,8 +7127,8 @@ function start_Main(){
             cck = /\/group\/reply_discussion\/([^\/]+)\b/i.exec( href );
             gvar.discID = (cck ? cck[1] : null);
 
-            $_1stlanded = $('.listing-wrapper > row').last();
-            if( !$_1stlanded.find(".user-tools") )
+            $_1stlanded = $('.listing-wrapper > .row').last();
+            if( !$_1stlanded.find(".user-tools").length )
               $_1stlanded = $_1stlanded.prev();
 
             // initialise the row-id
@@ -7156,14 +7137,6 @@ function start_Main(){
           return (cck ? cck[1] : false);
         })();
 
-        // put QR-tpl on last element of row
-        // if(gvar.last_postwrap){
-        //   // @thread
-        //   $_1stlanded = $('#'+gvar.last_postwrap);
-        // }else{
-        //   // @groups
-        //   $_1stlanded = $('.hfeed').last().closest('.row');
-        // }
 
         // prevent appending if we found dom-wrapper
         if( gID(gvar.qID) ){
@@ -7179,12 +7152,6 @@ function start_Main(){
         $('#quick-reply').remove();
         var isInGroup = (gvar.thread_type == 'group');
 
-        // if( isInGroup ){
-        //   if( !$_1stlanded.find(".user-tools").length ){
-        //     $_1stlanded = $_1stlanded.prev();
-        //     $_1stlanded.attr("id", 'grpost_'+$('.listing-wrapper > .row').length);
-        //   }
-        // }
         clog("Injecting getTPL");
         QR_put_after( $_1stlanded );
         
@@ -7299,9 +7266,6 @@ function start_Main(){
         });
         // end each of user-tools
 
-        if( isInGroup ){
-          $('#mnu_add_title, .markItUpSeparator:first').hide();
-        }
         
         // kill href inside markItUpHeader
         $('.markItUpHeader a').each(function(){
