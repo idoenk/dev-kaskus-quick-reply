@@ -8,8 +8,8 @@
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502055310
-// @timestamp      1423080719879
+// @dtversion      1502055311
+// @timestamp      1423143018456
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423080719879
+// v5.3.1.1 - 2015-02-05 . 1423143018456
+//   Fix markIt BBCode [img, url, media]
 //   Fix scrollTop issues (canceling prompt)
 // 
 // -/!latestupdate---
@@ -70,10 +71,10 @@ function main(mothership){
 // Initialize Global Variables
 var gvar = function(){};
 
-gvar.sversion = 'v' + '5.3.1';
+gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423080719879 // version.timestamp
+   timestamp: 1423143018456 // version.timestamp
   ,dtversion: 1502055310 // version.date
   ,svnrev: 524 // build.rev
 
@@ -5781,7 +5782,6 @@ function do_insertCustomTag($el){
         var is_mediaembed = function(media, text){
           var rx, rxNaCd;
           text = trimStr ( text );
-          clog( text);
 
           switch(media){
             case "YOUTUBE":
@@ -5798,7 +5798,11 @@ function do_insertCustomTag($el){
             break;
           }
 
-          text = ( rx && rx[1] ? rx[1] : null );
+          if( rx && rx[1] )
+            text = rx[1];
+          else if( rxNaCd )
+            text = null;
+          return text;
         };
         var is_youtube_link = function(text){
           var rx;
@@ -5838,7 +5842,7 @@ function do_insertCustomTag($el){
         };
         
 
-        if( !selected ){         
+        if( !selected ){
 
           var prompt_text = get_prompt_text(BBCode);
           text = prompt_text.text;
@@ -5856,14 +5860,14 @@ function do_insertCustomTag($el){
               }
             }
             else{
-              // prompting...
-              if(text==null) return endFocus();
-
-              if( ['YOUTUBE','SOUNDCLOUD','VIMEO'].indexOf(BBCode) ){
+              if( ['YOUTUBE','SOUNDCLOUD','VIMEO'].indexOf(BBCode) !== -1 ){
                 text = is_mediaembed(BBCode, text);
                 text = (text ? text : null);
               }else if(BBCode=='URL' || BBCode=='IMG')
                 text = (isLink(text) ? text : null);
+
+              // prompting text check...
+              if(text==null) return endFocus();
             }
 
             prehead = [('['+BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
@@ -5873,31 +5877,35 @@ function do_insertCustomTag($el){
           return endFocus();
         } // end selected==''
         else{
+          text = selected;
 
           // precheck of this BBCode upon selection if selected is a proper link
           if( ["URL","IMG"].indexOf(BBCode) !== -1 ){
+            tagprop = (BBCode == 'URL' ? trimStr(text) : '');
           
             var autotrim_selected = trimStr( selected );
 
-            if( !isLink(autotrim_selected) ){
+            if( !isLink(tagprop) ){
               var prompt_text = get_prompt_text(BBCode);
               text = prompt_text.text;
               tagprop = prompt_text.tagprop;
 
+              text = trimStr(text);
               if(text==null) return endFocus();
-
-              prehead = [('['+ BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
-              prehead[1] = (prehead[0]+text.length);
-              _TEXT.replaceSelected('['+BBCode + (tagprop!=''?'='+tagprop:'')+']'+autotrim_selected+'[/'+BBCode+']', prehead);
-              return endFocus();
             }
-            else{
 
-              _TEXT.replaceSelected('['+BBCode+']'+autotrim_selected+'[/'+BBCode+']');
-            }
+            prehead = [('['+ BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
+            prehead[1] = (prehead[0]+text.length);
+            _TEXT.replaceSelected(
+              '['+BBCode + (tagprop!=''?'='+tagprop:'')+']'+selected+'[/'+BBCode+']',
+              prehead
+            );
+            return endFocus();
           }
-          else
+          else{
+
             _TEXT.wrapValue( BBCode, (tagprop!='' ? tagprop:'') );
+          }
         }
       break;
     }
