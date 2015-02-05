@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502055311
-// @timestamp      1423147433940
+// @timestamp      1423148801955
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423147433940
+// v5.3.1.1 - 2015-02-05 . 1423148801955
 //   redirect link not found (on new post) Thanks:[Drupalorg]
 //   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
@@ -76,9 +76,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423147433940 // version.timestamp
+   timestamp: 1423148801955 // version.timestamp
   ,dtversion: 1502055310 // version.date
-  ,svnrev: 532 // build.rev
+  ,svnrev: 533 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -5178,7 +5178,10 @@ function isDefined(x)   { return !(x == null && x !== null); }
 function isUndefined(x) { return x == null && x !== null; }
 function isString(x) { return (typeof(x)!='object' && typeof(x)!='function'); }
 function trimStr(x) { return (typeof(x)=='string' && x ? x.replace(/^\s+|\s+$/g,"") : '') };
-function isLink(x) { return x.match(/((?:http(?:s|)|ftp):\/\/)(?:\w|\W)+(?:\.)(?:\w|\W)+/); }
+function isLink(x, strict) {
+  var re = new RegExp( (strict ? '^':'') + '((?:http(?:s|)|ftp):\\/\\/)(?:\\w|\\W)+(?:\\.)(?:\\w|\\W)+', "");
+  return x.match(re);
+}
 function is_good_json(x){
   return "undefined" != typeof x && /^[\],:{}\s]*$/.test(x.replace(/\\["\\\/bfnrtu]/g, '@').
     replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
@@ -5895,17 +5898,19 @@ function do_insertCustomTag($el){
           
             var autotrim_selected = trimStr( selected );
 
-            if( !isLink(autotrim_selected) ){
+            if( !isLink(autotrim_selected, true) ){
               var prompt_text = get_prompt_text(BBCode);
               text = prompt_text.text;
               tagprop = prompt_text.tagprop;
 
-              text = trimStr(text);
-              if(text==null) return endFocus();
+              text = (text ? trimStr(text) : null);
+              if( BBCode == 'IMG' )
+                selected = (text ? text : selected);
             }
+            if(text==null) return endFocus();
 
             prehead = [('['+ BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
-            prehead[1] = (prehead[0]+text.length);
+            prehead[1] = (prehead[0]+selected.length);
             _TEXT.replaceSelected(
               '['+BBCode + (tagprop!=''?'='+tagprop:'')+']'+selected+'[/'+BBCode+']',
               prehead
