@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502055311
-// @timestamp      1423144694601
+// @timestamp      1423145136068
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423144694601
+// v5.3.1.1 - 2015-02-05 . 1423145136068
 //   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
 //   Fix scrollTop issues (canceling prompt)
@@ -75,9 +75,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423144694601 // version.timestamp
+   timestamp: 1423145136068 // version.timestamp
   ,dtversion: 1502055310 // version.date
-  ,svnrev: 528 // build.rev
+  ,svnrev: 529 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -89,7 +89,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = !1; // development debug
+gvar.__DEBUG__ = 1; // development debug
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -5889,7 +5889,7 @@ function do_insertCustomTag($el){
           
             var autotrim_selected = trimStr( selected );
 
-            if( !isLink(tagprop) ){
+            if( !isLink(autotrim_selected) ){
               var prompt_text = get_prompt_text(BBCode);
               text = prompt_text.text;
               tagprop = prompt_text.tagprop;
@@ -7457,7 +7457,7 @@ function init(){
   gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
 
   // set true to simulate using css from googlecode, [debug-purpose]
-  gvar.force_live_css = null;
+  gvar.force_live_css = true;
 
   gvar.kqr_static = 'http://' + (!gvar.force_live_css && gvar.__DEBUG__ ? 
     '127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
