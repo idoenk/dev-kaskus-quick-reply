@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502055311
-// @timestamp      1423143018456
+// @timestamp      1423144694601
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423143018456
+// v5.3.1.1 - 2015-02-05 . 1423144694601
+//   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
 //   Fix scrollTop issues (canceling prompt)
 // 
@@ -74,7 +75,7 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423143018456 // version.timestamp
+   timestamp: 1423144694601 // version.timestamp
   ,dtversion: 1502055310 // version.date
   ,svnrev: 528 // build.rev
 
@@ -762,8 +763,8 @@ var rSRC = {
        +  '<li><div class="spacer" /></li>' // end list
        + '</ul>'
        +'</div>' // cs_left
-       +'<div class="col-xs-10 cs_right sid_beloweditor">'
-       + '<div id="uploader_container" style="max-width:auto;"></div>'
+       +'<div class="col-xs-10 cs_right sid_beloweditor" style="padding:0 10px;">'
+       + '<div id="uploader_container"></div>'
        +'</div>' // cs_right
        +'<span id="toggle-sideuploader" class="goog-btn goog-btn-default goog-btn-xs goog-btn-flat toggle-sidebar" data-state="hide">&#9664;</span>'
        +'<div class="clearfix"></div>'
@@ -3021,19 +3022,22 @@ var _UPL_ = {
       });
     });
     $('#toggle-sideuploader').click(function(){
-      var el, uc, ucs, todo = $(this).attr('data-state'), wleft=131;
-      ucw = parseInt( $('#uploader_container').css('width').replace(/px/,'') );
-      el = $(this).closest('.wraper_custom').find('.cs_left');
-      uc = '#uploader_container';
+      var $me, $sb, $uc, todo;
+      $me = $(this);
+      $sb = $me.closest('.wraper_custom').find('.cs_left');
+      $uc = $('#uploader_container');
+      todo = $me.attr('data-state')
+
       if(todo=='hide'){
-        $(el).hide();
-        $(uc).css('width', ucw + wleft ).css('max-width', ucw + wleft );
+        $sb.hide();
+        $uc.parent().removeClass('col-xs-10');
       }else{
-        $(el).show();
-        $(uc).css('width', ucw - wleft ).css('max-width', ucw - wleft );
+        $sb.show();
+        $uc.parent().addClass('col-xs-10');
       }
-      $(this).html( HtmlUnicodeDecode(todo=='hide' ? '&#9658;' : '&#9664;') );
-      $(this).attr('data-state', todo=='hide' ? 'show' : 'hide' );
+
+      $me.html( HtmlUnicodeDecode(todo=='hide' ? '&#9658;' : '&#9664;') );
+      $me.attr('data-state', todo=='hide' ? 'show' : 'hide' );
     });
   },
   tplcont: function(host){
