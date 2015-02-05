@@ -32,6 +32,12 @@
 //
 // -!--latestupdate
 //
+// v5.3.1.1 - 2015-02-05 . 1423080719879
+//   Fix scrollTop issues (canceling prompt)
+// 
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.3.1 - 2015-02-05 . 1423080719879
 //   Parse input text for BBCode media embed
 //   Adjust entry-body width on kaskus-switchview+cssFixups
@@ -47,10 +53,6 @@
 //   +markItUp tool: [vimeo, soundcloud]
 //   deprecated unsimplicity/unreliable uploader hosts
 // 
-// 
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v5.0.4.2 - 2014-08-05 . 1407185902609
 //   Rewrite defect-css of .post-quote; avoid interfering default style of quoted post; Thx=[Mendi Sadjo, KabeGoceng7033]
 //
@@ -2529,7 +2531,7 @@ var _TEXT = {
   content   : "",
   cursorPos   : [],
   last_scrollTop: 0,
-  last_wTop: 0,
+  last_wTop: null,
   init: function() {
     this.e = $('#'+gvar.tID);
     this.eNat = gID(gvar.tID);
@@ -2539,6 +2541,7 @@ var _TEXT = {
   rearmPos: function(){ return [this.getCaretPos(), gID(gvar.tID).selectionEnd]; },
   subStr: function(start, end){ return this.content.substring(start, end);},
   get_last_wTop: function(){ return this.last_wTop },
+  set_last_wTop: function(y){this.last_wTop = y},
   set_title: function(data){
     var $KTM = $("#"+gvar.qID).find("#kqr-title_message");
     $KTM.show();
@@ -2712,13 +2715,15 @@ var _TEXT = {
           return !1;
 
         yPos = getCurrentYPos();
+        clog("setElasticEvent[resizeEv]:before="+yPos);
 
         a.style.height = 'auto';
         a.style.height = a.scrollHeight+'px';
         a.style.setProperty('overflow-y', (!gvar.settings.elastic_editor && a.scrollHeight > max ? 'auto' : 'hidden'), 'important');
         
-        yrPos = getCurrentYPos();
-        if( yrPos != yPos )
+        // yrPos = getCurrentYPos();
+        // clog("setElasticEvent[resizeEv]:after="+yrPos);
+        if( !isNaN(yPos) && yPos > 0 && getCurrentYPos() != yPos )
           $('html,body').scrollTop(yPos);
       };
 
@@ -2771,25 +2776,26 @@ var _TEXT = {
         max = gvar.maxH_editor;
     }
 
-    var yPos, yrPos;
-    var resize = function() {
+    // cache lastYpos
+    var yPos = gvar.lastYpos;
 
-      // yPos = _TEXT.get_last_wTop();
-      clog("before:"+yPos)
+    var resize = function() {
+      // clog("setElastic[resize]:before="+yPos);
 
       a.style.height = 'auto';
       a.style.height = a.scrollHeight+'px';
       a.style.setProperty('overflow-y', (!gvar.settings.elastic_editor && a.scrollHeight > max ? 'auto' : 'hidden'), 'important');
 
-      yrPos = getCurrentYPos();
-      clog("after:"+yrPos);
-      if( yrPos != yPos )
+      // yrPos = getCurrentYPos();
+      // clog("setElastic[resize]:after="+yrPos);
+      if( !isNaN(yPos) && yPos > 0 && getCurrentYPos() != yPos )
         $('html,body').scrollTop(yPos);
     };
 
+
     if("undefined" != typeof justAdjust && justAdjust){
+      clog("justAdjust..");
       a.setAttribute('style', (!gvar.settings.elastic_editor && max ? 'max-height:'+max+'px;' : ''));
-      yPos = _TEXT.get_last_wTop();
       resize();
     }
 
@@ -5957,6 +5963,20 @@ function fixed_markItUp(){
       if( $XK.hasClass("fixed_markItUp") )
         fixed_reset()
     }
+
+    // tick lastY
+    if("undefined" == typeof gvar.lastYpos){
+      gvar.lastYpos = getCurrentYPos();
+      clog("lastYpos-new="+gvar.lastYpos);
+    }
+    else{
+      var lastYpos = getCurrentYPos();
+      if( lastYpos != gvar.lastYpos ){
+
+        gvar.lastYpos = lastYpos;
+        clog("lastYpos-upd="+gvar.lastYpos);
+      }
+    }
   }
   else{
     if( $XK.hasClass("fixed_markItUp") )
@@ -6204,6 +6224,7 @@ function eventsController(){
 
             _SML_.toggletab(false);
           }
+          _TEXT.focus();
         });
       break;
 
@@ -6233,6 +6254,7 @@ function eventsController(){
 
             _UPL_.toggletab(false);
           }
+          _TEXT.focus();
         });
       break;
     } // end switch
@@ -6245,6 +6267,10 @@ function eventsController(){
     });
   });
 
+  $XK.find('[data-noevent]').each(function(){
+    $(this).click(function(){ _TEXT.focus() })
+  })
+
   // scroll on click this in elastic editor on
   $XK.find(".markItUpContainer").click(function(e){
     if( !gvar.settings.fixed_toolbar ) return !1;
@@ -6254,7 +6280,9 @@ function eventsController(){
       // insist to focus, avoid timeout
       if( $e.attr("data-noevent") == "1" ){
 
-        $XK.find("#"+gvar.tID).focus();
+        setTimeout(function(){
+          $XK.find("#"+gvar.tID).focus();
+        }, 1);
       }
       else{
         // do scroll to top of QR ..
