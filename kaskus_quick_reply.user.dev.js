@@ -89,7 +89,7 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = 1; // development debug
+gvar.__DEBUG__ = !1; // development debug
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -7457,7 +7457,7 @@ function init(){
   gvar.kkcdn = kdomain.prot + '//'+ kdomain.statics + '/';
 
   // set true to simulate using css from googlecode, [debug-purpose]
-  gvar.force_live_css = true;
+  gvar.force_live_css = null;
 
   gvar.kqr_static = 'http://' + (!gvar.force_live_css && gvar.__DEBUG__ ? 
     '127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
