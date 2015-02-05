@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502055311
-// @timestamp      1423146085497
+// @timestamp      1423147433940
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423146085497
+// v5.3.1.1 - 2015-02-05 . 1423147433940
 //   redirect link not found (on new post) Thanks:[Drupalorg]
 //   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
@@ -76,9 +76,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423146085497 // version.timestamp
+   timestamp: 1423147433940 // version.timestamp
   ,dtversion: 1502055310 // version.date
-  ,svnrev: 531 // build.rev
+  ,svnrev: 532 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -1782,7 +1782,7 @@ var _BOX = {
               redirect = (data.redirect ? data.redirect : null);
               if( !redirect && data.post_id ){
                 // make it your self, then..
-                redirect = '/post/'+data.post_id+'/1#post'+data.post_id;
+                redirect = '/post/'+data.post_id+'#post'+data.post_id;
               }
             }
 
