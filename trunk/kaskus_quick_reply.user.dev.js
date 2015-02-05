@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.3.1.1
+// @version        5.3.1.2
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502055311
-// @timestamp      1423149612562
+// @dtversion      1502065312
+// @timestamp      1423165306114
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,15 +32,18 @@
 //
 // -!--latestupdate
 //
+// v5.3.1.2 - 2015-02-06 . 1423165306114
+//   Missing form-title while edit (post #1, field is mandatory). Thanks:[Drupalorg]
+// 
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.3.1.1 - 2015-02-05 . 1423149612562
 //   redirect link not found (on new post) Thanks:[Drupalorg]
 //   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
 //   Fix scrollTop issues (canceling prompt)
 // 
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v5.3.1 - 2015-02-05 . 1423080719879
 //   Parse input text for BBCode media embed
 //   Adjust entry-body width on kaskus-switchview+cssFixups
@@ -56,8 +59,6 @@
 //   +markItUp tool: [vimeo, soundcloud]
 //   deprecated unsimplicity/unreliable uploader hosts
 // 
-// v5.0.4.2 - 2014-08-05 . 1407185902609
-//   Rewrite defect-css of .post-quote; avoid interfering default style of quoted post; Thx=[Mendi Sadjo, KabeGoceng7033]
 //
 //
 // v0.1 - 2010-06-29
@@ -73,12 +74,12 @@ function main(mothership){
 // Initialize Global Variables
 var gvar = function(){};
 
-gvar.sversion = 'v' + '5.3.1.1';
+gvar.sversion = 'v' + '5.3.1.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423149612562 // version.timestamp
-  ,dtversion: 1502055310 // version.date
-  ,svnrev: 534 // build.rev
+   timestamp: 1423165306114 // version.timestamp
+  ,dtversion: 1502065312 // version.date
+  ,svnrev: 535 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -2158,7 +2159,7 @@ var _AJAX = {
 
             // check for title
             ttitle = false;
-            el = $('#title-message', $sdata);
+            el = $('input[name=title]', $sdata);
             if( el.length ){
               ttitle = {
                  icon: $('#title-message ul.dropdown-menu [name=iconid]:checked', $sdata).val()
@@ -2168,7 +2169,7 @@ var _AJAX = {
               clog(ttitle);
             }
             else
-              clog("#title-message not found")
+              clog("[name=title] not found")
 
             if( ttitle )
               _TEXT.set_title( ttitle );
