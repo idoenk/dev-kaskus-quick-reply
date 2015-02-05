@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.3.1
+// @version        5.3.1.1
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502055311
-// @timestamp      1423148801955
+// @timestamp      1423149612562
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.1 - 2015-02-05 . 1423148801955
+// v5.3.1.1 - 2015-02-05 . 1423149612562
 //   redirect link not found (on new post) Thanks:[Drupalorg]
 //   responsive uploader wrapper
 //   Fix markIt BBCode [img, url, media]
@@ -76,9 +76,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.1';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423148801955 // version.timestamp
+   timestamp: 1423149612562 // version.timestamp
   ,dtversion: 1502055310 // version.date
-  ,svnrev: 533 // build.rev
+  ,svnrev: 534 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
