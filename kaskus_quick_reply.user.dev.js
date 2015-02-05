@@ -76,7 +76,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423143018456 // version.timestamp
   ,dtversion: 1502055310 // version.date
-  ,svnrev: 524 // build.rev
+  ,svnrev: 528 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
