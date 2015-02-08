@@ -8,8 +8,8 @@
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502065312
-// @timestamp      1423165306114
+// @dtversion      1502085312
+// @timestamp      1423414235972
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,8 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.2 - 2015-02-06 . 1423165306114
+// v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Split General Settings, group for Smilies
 //   Missing form-title while edit (post #1, field is mandatory). Thanks:[Drupalorg]
 // 
 // -/!latestupdate---
@@ -77,14 +78,14 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423165306114 // version.timestamp
-  ,dtversion: 1502065312 // version.date
-  ,svnrev: 535 // build.rev
+   timestamp: 1423414235972 // version.timestamp
+  ,dtversion: 1502085312 // version.date
+  ,svnrev: 536 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1502055310 // css revision date; only change this when you change your external css
+  ,cssREV: 1502085312 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -709,71 +710,71 @@ var rSRC = {
   },
   getTPLCustom: function(menus){
     return ''
-      +'<div class="wraper_custom">'
-      +'<div class="col-xs-2 cs_left">'
-      + '<div id="dv_menu_disabler" class="hide" style="position:absolute; padding:0;margin:0;border:0; opacity:.15; filter:alpha(opacity=15); background:#000; width:100%; height:100%"></div>'
-      + '<ul id="ul_group" class="qrset_mnu">'
-      +   menus
-      + '</ul>'
-      +'</div>' // cs_left
-      +'<div class="col-xs-10 cs_right sid_beloweditor">'
-      +'<div role="form" class="form-manage">'
-       +'<div id="custom_bottom" class="hide">'
-        +'<div class="form-group relative">'
-         +'<input type="hidden" id="current_grup" />'
-         +'<input type="hidden" id="current_order" />'
-         +'<span id="title_group"></span>'
-         +'<a tabindex="502" href="javascript:;" id="manage_btn" class="goog-btn goog-btn-primary goog-btn-xs">Manage</a>'
-         +'<a tabindex="503" href="javascript:;" id="manage_cancel" class="goog-btn goog-btn-default goog-btn-xs hide">Cancel</a>'
-         +'<a tabindex="504" href="javascript:;" id="manage_help" class="goog-btn goog-btn-default goog-btn-xs pull-right hide" title="RTFM">[ ? ]</a>'
-         +'<span id="position_group" class="hide"></span>'
+    +'<div class="wraper_custom">'
+    +'<div class="col-xs-2 cs_left">'
+    + '<div id="dv_menu_disabler" class="hide" style="position:absolute; padding:0;margin:0;border:0; opacity:.15; filter:alpha(opacity=15); background:#000; width:100%; height:100%"></div>'
+    + '<ul id="ul_group" class="qrset_mnu">'
+    +   menus
+    + '</ul>'
+    +'</div>' // cs_left
+    +'<div class="col-xs-10 cs_right sid_beloweditor">'
+    +'<div role="form" class="form-manage">'
+     +'<div id="custom_bottom" class="hide">'
+      +'<div class="form-group relative">'
+       +'<input type="hidden" id="current_grup" />'
+       +'<input type="hidden" id="current_order" />'
+       +'<span id="title_group"></span>'
+       +'<a tabindex="502" href="javascript:;" id="manage_btn" class="goog-btn goog-btn-primary goog-btn-xs">Manage</a>'
+       +'<a tabindex="503" href="javascript:;" id="manage_cancel" class="goog-btn goog-btn-default goog-btn-xs hide">Cancel</a>'
+       +'<a tabindex="504" href="javascript:;" id="manage_help" class="goog-btn goog-btn-default goog-btn-xs pull-right hide" title="RTFM">[ ? ]</a>'
+       +'<span id="position_group" class="hide"></span>'
+      +'</div>' // .form-group
+     +'</div>' // #custom_bottom
+     +'<div id="custom_addgroup_container" class="hide">'
+      +'<div id="manage_container">'
+        +'<div class="form-group">'
+         +'<label id="label_group" for="input_grupname">Group</label>'
+         +'<input id="input_grupname" tabindex="500" class="twt-glow input_title" title="Group Name" style="width: 200px;"  />'
+         +'<a id="delete_grupname" tabindex="506" href="javascript:;" class="goog-btn goog-btn-red goog-btn-xs" style="margin-left:20px;" title="Delete this Group">delete</a>'
         +'</div>' // .form-group
-       +'</div>' // #custom_bottom
-       +'<div id="custom_addgroup_container" class="hide">'
-        +'<div id="manage_container">'
-          +'<div class="form-group">'
-           +'<label id="label_group" for="input_grupname">Group</label>'
-           +'<input id="input_grupname" tabindex="500" class="twt-glow input_title" title="Group Name" style="width: 200px;"  />'
-           +'<a id="delete_grupname" tabindex="506" href="javascript:;" class="goog-btn goog-btn-red goog-btn-xs" style="margin-left:20px;" title="Delete this Group">delete</a>'
-          +'</div>' // .form-group
-          +'<div class="form-group">'
-           +'<textarea id="textarea_scustom_container" tabindex="501" class="twt-glow kqr-txta_editor"></textarea>'
-          +'</div>' // .form-group
-        +'</div>' // #manage_container
-       +'</div>' // #custom_addgroup_container
-      +'</div>' // role[form]
+        +'<div class="form-group">'
+         +'<textarea id="textarea_scustom_container" tabindex="501" class="twt-glow kqr-txta_editor"></textarea>'
+        +'</div>' // .form-group
+      +'</div>' // #manage_container
+     +'</div>' // #custom_addgroup_container
+    +'</div>' // role[form]
 
-      +'<div id="scustom_container" role="form" class="form-thumb">'
-       +'<div class="notfound">'
-         +'<p>Custom Smiley Not Found, <a href="http://goo.gl/U5PPnD" target="_blank">what is this?</a></p>'
-         +'<p>Browse to <a href="http://kask.us/gWtme" target="_blank">Emoticon Corner</a></p>'
-       +'</div>'
-      +'</div>' // #scustom_container
+    +'<div id="scustom_container" role="form" class="form-thumb">'
+     +'<div class="notfound">'
+       +'<p>Custom Smiley Not Found, <a href="http://goo.gl/U5PPnD" target="_blank">what is this?</a></p>'
+       +'<p>Browse to <a href="http://kask.us/gWtme" target="_blank">Emoticon Corner</a></p>'
+     +'</div>'
+    +'</div>' // #scustom_container
 
-      +'</div>' // cs_right
-      +'</div>' // wraper_custom
+    +'</div>' // cs_right
+    +'</div>' // wraper_custom
     ;
   },
 
   // -=-=-=-=-=-=-!!!!!!!
   getTPLUpload: function(menus){
     return ''
-      +'<div class="wraper_custom relative">'
-       +'<div class="col-xs-2 cs_left">'
-       + '<ul id="ul_group" class="qrset_mnu">'
-       +   menus
-       +  '<li><div class="spacer" /></li>' // end list
-       + '</ul>'
-       +'</div>' // cs_left
-       +'<div class="col-xs-10 cs_right sid_beloweditor" style="padding:0 10px;">'
-       + '<div id="uploader_container"></div>'
-       +'</div>' // cs_right
-       +'<span id="toggle-sideuploader" class="goog-btn goog-btn-default goog-btn-xs goog-btn-flat toggle-sidebar" data-state="hide">&#9664;</span>'
-       +'<div class="clearfix"></div>'
-      +'</div>' // wraper_custom
+    +'<div class="wraper_custom relative">'
+     +'<div class="col-xs-2 cs_left">'
+     + '<ul id="ul_group" class="qrset_mnu">'
+     +   menus
+     +  '<li><div class="spacer" /></li>' // end list
+     + '</ul>'
+     +'</div>' // cs_left
+     +'<div class="col-xs-10 cs_right sid_beloweditor" style="padding:0 10px;">'
+     + '<div id="uploader_container"></div>'
+     +'</div>' // cs_right
+     +'<span id="toggle-sideuploader" class="goog-btn goog-btn-default goog-btn-xs goog-btn-flat toggle-sidebar" data-state="hide">&#9664;</span>'
+     +'<div class="clearfix"></div>'
+    +'</div>' // wraper_custom
     ;
   },
- 
+
 
   _TPLSettingGeneral: function(){
     var GVS = gvar.settings;
@@ -782,132 +783,155 @@ var rSRC = {
      cUL = String(gvar.settings.userLayout.config).split(','),
      cls_label = 'col-sm-4 control-label',
      cls_cont = 'col-sm-8',
-     GVS_aus = GVS.autoload_smiley
+     GVS_aus = GVS.autoload_smiley,
+     GVS_ftab = 'kecil'
     ;
 
     return ''
     +'<div role="form" class="form-horizontal">'
+    +'<div class="form-group fg-tabify">'
+     +'<div class="goog-tab-bar goog-tab-white">'
+      +'<div id="tstg-general" data-target="tabs-itemstg-general" class="goog-tab goog-tab-selected">General</div>'
+      +'<div id="tstg-smilies" data-target="tabs-itemstg-smilies" class="goog-tab">Smilies</div>'
+      +'<div class="clearfix"></div>'
+     +'</div>'
+     +'<div class="goog-tab-bar-clear"></div>'
+     +'<div class="goog-tab-content goog-tab-white">'
+      +'<div id="tabs-contentstg-inner">'
+      +'<div id="tabs-itemstg-general" class="itemtabcon active">'
 
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_updates" title="Check for latest QR Update">Enable Update Checker</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input type="checkbox" id="misc_updates" class="optchk" '+(GVS.updates ? ' checked="checked"':'')+'/>'
-     +   ( !gvar.noCrossDomain ? nb+nb+'<a id="chk_upd_now" class="goog-btn goog-btn-primary goog-btn-xs pull-right btn_check_upd" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking...</span>' : '')
-     +  '</div>'
-     +  '<div id="misc_updates_child" class="fg-sub'+(GVS.updates ? '':' hide')+'" title="Interval check update, 0 &lt; interval &lt;= 99">'
-     +   '<input id="misc_updates_interval" class="twt-glow" value="'+ GVS.updates_interval +'" maxlength="5" type="text" /> day interval'
-     +  '</div>' // fg-sub
-     + '</div>' // cls_cont
-     +'</div>' // fg
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_updates" title="Check for latest QR Update">Enable Update Checker</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input type="checkbox" id="misc_updates" class="optchk" '+(GVS.updates ? ' checked="checked"':'')+'/>'
+       +   ( !gvar.noCrossDomain ? nb+nb+'<a id="chk_upd_now" class="goog-btn goog-btn-primary goog-btn-xs pull-right btn_check_upd" href="javascript:;" title="Check Update Now">check now</a><span id="chk_upd_load" class="uloader" style="display:none">checking...</span>' : '')
+       +  '</div>'
+       +  '<div id="misc_updates_child" class="fg-sub'+(GVS.updates ? '':' hide')+'" title="Interval check update, 0 &lt; interval &lt;= 99">'
+       +   '<input id="misc_updates_interval" class="twt-glow" value="'+ GVS.updates_interval +'" maxlength="5" type="text" /> day interval'
+       +  '</div>' // fg-sub
+       + '</div>' // cls_cont
+       +'</div>' // fg
+  
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_hotkey">Enable QR-Hotkey</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input type="checkbox" id="misc_hotkey" class="optchk" '+(String(GVS.hotkeykey)!='0,0,0' ? ' checked="checked"' : '')+'/>'
+       +  '</div>'
+       +  '<div id="misc_hotkey_child" class="fg-sub fg-hotkey'+(String(GVS.hotkeykey)!='0,0,0' ? '':' hide')+'">'
+       +   '<div class="checkbox">'
+       +    '<label><input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Ctrl</label>'
+       +    '<label><input id="misc_hotkey_shift"'+ (hk[1]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Shift</label>'
+       +    '<label><input id="misc_hotkey_alt"'+ (hk[2]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Alt</label>'
+       +    '<label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ GVS.hotkeychar +'" class="twt-glow" style="width: 40px;" maxlength="1" type="text" /></label>'
+       +   '</div>'
+       +  '</div>' // fg-sub
+       + '</div>' // cls_cont
+       +'</div>' // fg
+  
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_txtcount">Enable Text Counter</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_txtcount" class="optchk" type="checkbox" '+(GVS.txtcount ? ' checked="checked"' : '')+'/>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+  
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_elastic_editor" title="Keep editor on elastic mode">Elastic Editor</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_elastic_editor" class="optchk" type="checkbox" '+(GVS.elastic_editor ? 'checked="checked"':'')+'/>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_fixed_toolbar">Fixed Toolbar</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_fixed_toolbar" class="optchk" type="checkbox" '+(GVS.fixed_toolbar ? 'checked="checked"':'')+'/>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+    
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_theme_fixups" title="Theme Fixup CSS, killing in the sidebar off">Theme Fixups</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<select id="misc_theme_fixups" class="form-control">'
+       +   '<option> - Select One - </option>'
+       +   '<option '+(GVS.theme_fixups == 'centered' ? ' selected="selected"':'')+' value="centered">Centered</option>'
+       +   '<option '+(GVS.theme_fixups == 'c1024px' ? ' selected="selected"':'')+' value="c1024px">Centered 1024px</option>'
+       +   '<option '+(GVS.theme_fixups == 'fullwidth' ? ' selected="selected"':'')+' value="fullwidth">Full Width</option>'
+       +  '</select>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+  
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_autolayout">Enable AutoLayout</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_autolayout" class="optchk" type="checkbox" '+(cUL[1]=='1' ? ' checked="checked"':'')+'/>'
+       +   '<a id="edit_tpl_cancel" href="javascript:;" class="goog-btn goog-btn-default goog-btn-xs cancel_layout" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a>'
+       +  '</div>'
+       +  '<div id="misc_autolayout_child" class="fg-sub'+(cUL[1]=='1' ? '':' hide')+'">'
+       +   '<textarea class="twt-glow kqr-txta_editor" id="edit_tpl_txta">'+gvar.settings.userLayout.template+'</textarea>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+      +'</div>' // .itemtabcon
 
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_hotkey">Enable QR-Hotkey</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input type="checkbox" id="misc_hotkey" class="optchk" '+(String(GVS.hotkeykey)!='0,0,0' ? ' checked="checked"' : '')+'/>'
-     +  '</div>'
-     +  '<div id="misc_hotkey_child" class="fg-sub fg-hotkey'+(String(GVS.hotkeykey)!='0,0,0' ? '':' hide')+'">'
-     +   '<div class="checkbox">'
-     +    '<label><input id="misc_hotkey_ctrl"'+ (hk[0]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Ctrl</label>'
-     +    '<label><input id="misc_hotkey_shift"'+ (hk[1]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Shift</label>'
-     +    '<label><input id="misc_hotkey_alt"'+ (hk[2]=='1' ? ' checked="checked"':'') +' type="checkbox" /> Alt</label>'
-     +    '<label><input title="alphnumeric [A-Z0-9]; blank=disable" id="misc_hotkey_char" value="'+ GVS.hotkeychar +'" class="twt-glow" style="width: 40px;" maxlength="1" type="text" /></label>'
-     +   '</div>'
-     +  '</div>' // fg-sub
-     + '</div>' // cls_cont
-     +'</div>' // fg
 
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_txtcount">Enable Text Counter</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_txtcount" class="optchk" type="checkbox" '+(GVS.txtcount ? ' checked="checked"' : '')+'/>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
+      +'<div id="tabs-itemstg-smilies" class="itemtabcon">'
+       // -=-=-=-=-=-=-=-
+       // +recent-smilies
+       // -=-=-=-=-=-=-=-
 
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_elastic_editor" title="Keep editor on elastic mode">Elastic Editor<span class="stage stage-beta"></span></label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_elastic_editor" class="optchk" type="checkbox" '+(GVS.elastic_editor ? 'checked="checked"':'')+'/>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_fixed_toolbar">Fixed Toolbar<span class="stage stage-beta"></span></label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_fixed_toolbar" class="optchk" type="checkbox" '+(GVS.fixed_toolbar ? 'checked="checked"':'')+'/>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_autoshow_smile">AutoShow Smiley</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(GVS_aus[0]=='1' ? 'checked="checked"':'')+'/>'
+       +  '</div>'
+       +  '<div id="misc_autoshow_smile_child" class="fg-sub'+(GVS_aus[0]=='1' ? '':' hide')+'">'
+       +   '<div class="radio">'
+       +    '<label><input name="aus" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(GVS_aus[1]=='kecil' ? 'checked':'')+'/> kecil</label>'
+       +    '<label><input name="aus" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(GVS_aus[1]=='besar' ? 'checked':'')+'/> besar</label>'
+       +    '<label><input name="aus" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(GVS_aus[1]=='custom' ? 'checked':'')+'/> custom</label>'
+       +   '</div>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
 
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_autoshow_smile">Show Smiley Tab</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(GVS_aus[0]=='1' ? 'checked="checked"':'')+'/>'
-     +  '</div>'
-     +  '<div id="misc_autoshow_smile_child" class="fg-sub'+(GVS_aus[0]=='1' ? '':' hide')+'">'
-     +   '<div class="radio">'
-     +    '<label><input name="aus" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(GVS_aus[1]=='kecil' ? 'checked':'')+'/> kecil</label>'
-     +    '<label><input name="aus" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(GVS_aus[1]=='besar' ? 'checked':'')+'/> besar</label>'
-     +    '<label><input name="aus" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(GVS_aus[1]=='custom' ? 'checked':'')+'/> custom</label>'
-     +   '</div>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
-
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_scustom_noparse" title="Custom Smiley BBCode will not be rendered">Ignore Custom BBCODE</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_scustom_noparse" class="optchk" type="checkbox" '+(GVS.scustom_noparse ? ' checked="checked"' : '')+'/>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
-
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_theme_fixups" title="Theme Fixup CSS, killing in the sidebar off">Theme Fixups</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<select id="misc_theme_fixups" class="form-control">'
-     +   '<option> - Select One - </option>'
-     +   '<option '+(GVS.theme_fixups == 'centered' ? ' selected="selected"':'')+' value="centered">Centered</option>'
-     +   '<option '+(GVS.theme_fixups == 'c1024px' ? ' selected="selected"':'')+' value="c1024px">Centered 1024px</option>'
-     +   '<option '+(GVS.theme_fixups == 'fullwidth' ? ' selected="selected"':'')+' value="fullwidth">Full Width</option>'
-     +  '</select>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
-
-     +'<div class="form-group">'
-     + '<label class="'+cls_label+'" for="misc_autolayout">Enable AutoLayout</label>'
-     + '<div class="'+cls_cont+'">'
-     +  '<div class="checkbox">'
-     +   '<input id="misc_autolayout" class="optchk" type="checkbox" '+(cUL[1]=='1' ? ' checked="checked"':'')+'/>'
-     +   '<a id="edit_tpl_cancel" href="javascript:;" class="goog-btn goog-btn-default goog-btn-xs cancel_layout" style="display:'+ (cUL[1]=='1' ? '' : 'none') +';"> cancel </a>'
-     +  '</div>'
-     +  '<div id="misc_autolayout_child" class="fg-sub'+(cUL[1]=='1' ? '':' hide')+'">'
-     +   '<textarea class="twt-glow kqr-txta_editor" id="edit_tpl_txta">'+gvar.settings.userLayout.template+'</textarea>'
-     +  '</div>'
-     + '</div>' // cls_cont
-     +'</div>' // fg
+       // -=-=-=-=-=-=-=-=-=
+       // +first-tab-smilies
+       // -=-=-=-=-=-=-=-=-=
+  
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_scustom_noparse" title="Custom Smiley BBCode will not be rendered">Noparse Custom BBCode</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_scustom_noparse" class="optchk" type="checkbox" '+(GVS.scustom_noparse ? ' checked="checked"' : '')+'/>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
+      +'</div>' // .itemtabcon
     +'</div>' // role[form]
     ;
   },
   _TPLSettingExim: function(){
     return ''
-      +'<div role="form" class="form-horizontal">'
-       +'<div class="form-group fg-exim">'
-       +'<p>To export your settings, copy the text below and save it in a file.</p>'
-       +'<p>To import your settings later, overwrite the text below with the text you saved previously and click "<b>Import</b>".</p>'
-       +'<textarea id="textarea_rawdata" class="twt-glow kqr-txta_editor textarea_rawdata" readonly="readonly"></textarea>'
-       +'</div>' // fg
-       +'<div class="form-group fg-exim">'
-       +'<a id="exim_select_all" class="goog-btn goog-btn-default goog-btn-xs" href="javascript:;">Select All</a>'
-       +'</div>' // fg
-      +'</div>' // role[form]
+    +'<div role="form" class="form-horizontal">'
+     +'<div class="form-group fg-exim">'
+     +'<p>To export your settings, copy the text below and save it in a file.</p>'
+     +'<p>To import your settings later, overwrite the text below with the text you saved previously and click "<b>Import</b>".</p>'
+     +'<textarea id="textarea_rawdata" class="twt-glow kqr-txta_editor textarea_rawdata" readonly="readonly"></textarea>'
+     +'</div>' // fg
+     +'<div class="form-group fg-exim">'
+     +'<a id="exim_select_all" class="goog-btn goog-btn-default goog-btn-xs" href="javascript:;">Select All</a>'
+     +'</div>' // fg
+    +'</div>' // role[form]
     ;
   },
   _TPLSettingShortcut: function(){
@@ -916,10 +940,11 @@ var rSRC = {
     };
     return ''
     +'<div role="form" class="form-horizontal">'
-    +'<div class="form-group fg-kbd">'
+    +'<div class="form-group fg-tabify fg-kbd">'
     +'<div class="goog-tab-bar">'
      +'<div id="tkbd-qr" data-target="tabs-itemkbd-qr" class="goog-tab goog-tab-selected">KQR Hotkeys</div>'
-     +'<div id="tkbd-kaskus" data-target="tabs-itemkbd-kaskus" class="goog-tab">Kaskus Hotkeys <a target="_blank" href="http://help.kaskus.co.id/kaskus-basic/kaskus_hotkeys.html" style="float:right; margin-right:5px;" title="Kaskus Hotkeys, Goto Help Center.."><i class="fa fa-question-circle"></i></a></div>'
+     +'<div id="tkbd-kaskus" data-target="tabs-itemkbd-kaskus" class="goog-tab">Kaskus Hotkeys <a target="_blank" href="http://help.kaskus.co.id/kaskus-basic/kaskus_hotkeys.html" style="float:right; margin:0 4px; line-height: 13px;" title="Kaskus Hotkeys, Goto Help Center.."><i class="fa fa-question-circle"></i></a></div>'
+     +'<div class="clearfix"></div>'
     +'</div>'
     +'<div class="goog-tab-bar-clear"></div>'
     +'<div class="goog-tab-content">'
@@ -969,10 +994,11 @@ var rSRC = {
       _sp = '<div class="spacer"></div>';
     return ''
     +'<div role="form" class="form-horizontal">'
-     +'<div class="form-group fg-about">'
+     +'<div class="form-group fg-tabify fg-about">'
      +'<div class="goog-tab-bar goog-tab-white">'
       +'<div id="tabt-about" data-target="tabs-itemabt-about" class="goog-tab goog-tab-selected">About</div>'
       +'<div id="tabt-contr" data-target="tabs-itemabt-contr" class="goog-tab">Contributor</div>'
+      +'<div class="clearfix"></div>'
      +'</div>'
      +'<div class="goog-tab-bar-clear"></div>'
      +'<div class="goog-tab-content goog-tab-white">'
@@ -982,8 +1008,8 @@ var rSRC = {
         +'<a href="'+'https://greasyfork.org/scripts/'+gvar.scriptMeta.scriptID_GF+'" class="brandlink" target="_blank">'+ gvar.scriptMeta.fullname +'</a> &#8212; '+ gvar.sversion +' &middot; <em>'+gvar.scriptMeta.dtversion+'</em>'
         +'<a href="http://code.google.com/p/dev-kaskus-quick-reply/" target="_blank" class="googlink pull-right"><img src="http://ssl.gstatic.com/codesite/ph/images/defaultlogo.png" title="dev-kaskus-quick-reply - Kaskus Quick Reply on Google Code" height="33"></a>'
        +'</h3>'
-       +'<p><a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a> &copy; 2010-15 Idx. '
-       +'Licensed under a Creative Commons <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">NC-SA 3.0 License</a></p>'
+       +'<p><a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank"><img src="http://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a> <span class="cpr">&copy;</span> 2010-15 Idx. '
+       +'Licensed under a Creative Commons&nbsp;<a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">NC-SA 3.0 License</a></p>'
        +_sp
        +'<p>KASKUS brand is a registered trademark of '+ksk+'</p>'
        +'<p>'+gvar.scriptMeta.fullname + ' (KQR) is not related to or endorsed by '+ksk+' in any way</p>'
@@ -1029,8 +1055,6 @@ var rSRC = {
     +'</div>' // role[form]
     ;
   },
-  
-
   getTPLSettingDialog: function(){
     // setting BOX
     return ''
@@ -1056,7 +1080,8 @@ var rSRC = {
     +''
     ;
   },
-  
+
+
   getTPLUpdateDialog: function(){
     // update BOX
     return ''
@@ -1092,7 +1117,7 @@ var rSRC = {
       return '<div class="kqr-dialog-base">'+rSRC[dialogname]()+'</div>';
   },
 
-  
+
   getCSS: function(){
     return ""
     +"#box_preview {max-height:" + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + "px;}"
@@ -1166,35 +1191,34 @@ var rSRC = {
   },
   getSCRIPT_UPL: function(){
     return ''
-      +'function ajaxFileUpload() {'
-      +'var $parent = $("#content_uploader_kaskus");'
-      +'var $throb = $parent.find(".throbber_wrp");'
-      +'var $imgc = $parent.find(".image-control");'
-      +'$throb.show(); $imgc.addClass("blured");'
-      +'$.ajaxFileUpload ({'
-      + 'url:"/misc/upload_image",'
-      + 'secureuri:false,'
-      + 'fileElementId:"browse",'
-      + 'dataType: "json",'
-      + 'success: function (data, status){'
-      +   '$imgc.removeClass("blured"); $throb.hide();'
-      +   'if(data.status == "ok"){'
-      +     'var t=\'\';'
-      +     't+=\'<div class="preview-image-unit">\';'
-      +     't+=\'<img src="\'+data.url+\'" width="46" height="46" alt="[IMG]\'+data.url+\'[/IMG]" />\';'
-      +     't+=\'<span title="remove" class="kqr-icon-close imgremover"/>\';'
-      +     't+=\'</div>\';'
-      +     '$parent.find(".preview-image-inner").prepend( t );'
-      +     '$("form[name*=\'jUploadForm\']").remove(); $("iframe[name*=\'jUploadFrame\']").remove();'
-      +   '}else{'
-      +     'console.log(data.error);'
-      +   '}'
-      +   '},'
-      + 'error: function (data, status, e){console.log(e)}'
-      +'});'
-      +'return false;'
-      +'}' // ajaxFileUpload
-      +''
+    +'function ajaxFileUpload() {'
+    +'var $parent = $("#content_uploader_kaskus");'
+    +'var $throb = $parent.find(".throbber_wrp");'
+    +'var $imgc = $parent.find(".image-control");'
+    +'$throb.show(); $imgc.addClass("blured");'
+    +'$.ajaxFileUpload ({'
+    + 'url:"/misc/upload_image",'
+    + 'secureuri:false,'
+    + 'fileElementId:"browse",'
+    + 'dataType: "json",'
+    + 'success: function (data, status){'
+    +   '$imgc.removeClass("blured"); $throb.hide();'
+    +   'if(data.status == "ok"){'
+    +     'var t=\'\';'
+    +     't+=\'<div class="preview-image-unit">\';'
+    +     't+=\'<img src="\'+data.url+\'" width="46" height="46" alt="[IMG]\'+data.url+\'[/IMG]" />\';'
+    +     't+=\'<span title="remove" class="kqr-icon-close imgremover"/>\';'
+    +     't+=\'</div>\';'
+    +     '$parent.find(".preview-image-inner").prepend( t );'
+    +     '$("form[name*=\'jUploadForm\']").remove(); $("iframe[name*=\'jUploadFrame\']").remove();'
+    +   '}else{'
+    +     'console.log(data.error);'
+    +   '}'
+    +   '},'
+    + 'error: function (data, status, e){console.log(e)}'
+    +'});'
+    +'return false;'
+    +'}' // ajaxFileUpload
     ;
   },
   getSetOf: function(type){
@@ -1275,8 +1299,6 @@ var rSRC = {
     }
   },
   getSmileySet: function(custom, cb){
-
-
     //Format will be valid like this:
     // 'keyname1|link1,keyname2|link2'
     //eg. 
