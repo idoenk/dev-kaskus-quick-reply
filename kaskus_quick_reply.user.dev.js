@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   +Options Smiley First Tab;
 //   Patch apply transparent color on selected text. Thanks:[booster.bs]
 //   +Options Hide Grey Origin Link;
 //   Patch QuickQuote cleanup grey-origin-link;
@@ -84,7 +85,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 544 // build.rev
+  ,svnrev: 545 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -120,6 +121,7 @@ var KS = 'KEY_SAVE_',
     ,KEY_SAVE_FIXED_TOOLBAR:    ['1'] // auto fixed toolbar
 
     ,KEY_SAVE_SHOW_SMILE:       ['0,kecil']   // [flag,type] of autoshow_smiley
+    ,KEY_SAVE_TABFIRST_SMILE:   ['kecil'] // first tab of smilies, preference of first load
     ,KEY_SAVE_LAYOUT_CONFIG:    [''] // flag of template_on
     ,KEY_SAVE_LAYOUT_TPL:       [''] // template layout, must contain: "{message}". eg. [B]{message}[/B]
     ,KEY_SAVE_THEME_FIXUP:      [''] // theme fixer, hack css theme for viewing purpose
@@ -788,8 +790,9 @@ var rSRC = {
      cls_label = 'col-sm-4 control-label',
      cls_cont = 'col-sm-8',
      GVS_aus = GVS.autoload_smiley,
-     GVS_ftab = 'kecil'
+     GVS_ftab = GVS.tabfirst_smiley
     ;
+    clog(GVS_ftab);
 
     return ''
     +'<div role="form" class="form-horizontal">'
@@ -873,7 +876,7 @@ var rSRC = {
        +'</div>' // fg
 
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_hide_greylink" title="Hide grey origin link">Hide Grey Origin Link</label>'
+       + '<label class="'+cls_label+'" for="misc_hide_greylink">Hide Grey Origin Link</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_hide_greylink" class="optchk" type="checkbox" '+(GVS.hide_greylink ? ' checked="checked"' : '')+'/>'
@@ -911,17 +914,26 @@ var rSRC = {
        +  '</div>'
        +  '<div id="misc_autoshow_smile_child" class="fg-sub'+(GVS_aus[0]=='1' ? '':' hide')+'">'
        +   '<div class="radio">'
-       +    '<label><input name="aus" id="misc_autoshow_smile_kecil" type="radio" value="kecil" '+(GVS_aus[1]=='kecil' ? 'checked':'')+'/> kecil</label>'
-       +    '<label><input name="aus" id="misc_autoshow_smile_besar" type="radio" value="besar" '+(GVS_aus[1]=='besar' ? 'checked':'')+'/> besar</label>'
-       +    '<label><input name="aus" id="misc_autoshow_smile_custom" type="radio" value="custom" '+(GVS_aus[1]=='custom' ? 'checked':'')+'/> custom</label>'
+       +    '<label><input name="aus" type="radio" value="kecil" '+(GVS_aus[1]=='kecil' ? 'checked':'')+'/> kecil</label>'
+       +    '<label><input name="aus" type="radio" value="besar" '+(GVS_aus[1]=='besar' ? 'checked':'')+'/> besar</label>'
+       +    '<label><input name="aus" type="radio" value="custom" '+(GVS_aus[1]=='custom' ? 'checked':'')+'/> custom</label>'
        +   '</div>'
        +  '</div>'
        + '</div>' // cls_cont
        +'</div>' // fg
 
-       // -=-=-=-=-=-=-=-=-=
-       // +first-tab-smilies
-       // -=-=-=-=-=-=-=-=-=
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" title="Alpha Stage, functionality: not working">First Tab Smiley<em class="stage stage-alpha"></em></label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="fg-sub">'
+       +   '<div class="radio">'
+       +    '<label><input name="ftab" type="radio" value="kecil" '+(GVS_ftab=='kecil' ? 'checked':'')+'/> kecil</label>'
+       +    '<label><input name="ftab" type="radio" value="besar" '+(GVS_ftab=='besar' ? 'checked':'')+'/> besar</label>'
+       +    '<label><input name="ftab" type="radio" value="custom" '+(GVS_ftab=='custom' ? 'checked':'')+'/> custom</label>'
+       +   '</div>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
   
        +'<div class="form-group">'
        + '<label class="'+cls_label+'" for="misc_scustom_noparse" title="Custom Smiley BBCode will not be rendered">Noparse Custom BBCode</label>'
@@ -3206,6 +3218,7 @@ var _SML_ = {
     _SML_.sibl = 'box-upload';
     if( !def ) def = 'tkecil';
 
+    _SML_.set_tabfirst( gvar.settings.tabfirst_smiley );
     _SML_.load_smiley( def );
   },
   init_scustom: function(target, smilies){
@@ -3709,6 +3722,15 @@ var _SML_ = {
     }
     $tgt.addClass('active').show();
   },
+  set_tabfirst: function(type){
+    var $tgt, $parNav = $(".fg-box-bottom .box-smiley .nav.nav-tabs");
+    var current_first = $parNav.find("li").first().find(">a").attr("href").replace("#t");
+    if( current_first == type ) return;
+
+    $tgt = $parNav.find("a[href='#t"+type+"']");
+    if( $tgt.length )
+      $parNav.prepend( $tgt.parent() )
+  },
   toggletab: function(doshow){
     var $tgt, $XK = $("#"+gvar.qID);
     var bs = '.'+_SML_.self,
@@ -3749,7 +3771,6 @@ var _STG = {
       .css('visibility', 'visible')
       .show();
 
-    // $('body').prepend( rSRC.getTPLSetting() );
     $('body').prepend( rSRC.getDialog("TPLSettingDialog") );
     
     _STG.design();
@@ -3863,18 +3884,20 @@ var _STG = {
     
     var val, pval, isChk = function(x){ return $(x).is(':checked') };
     $('#box_action').click(function(){
-      
+      var $me = $(this);
+      var $inner_setting = $('#tabs-contentstg-inner');
+
       // general setting
-      if( $(this).attr('data-act') == 'update' ){
+      if( $me.attr('data-act') == 'update' ){
         var misc, reserved_CSA, tpltext, errMsg='', isError = 0;
 
         var restore_save = function(){
-          $('#box_action').text('Save').removeClass('goog-btn-disabled');
+          $me.text('Save').removeClass('goog-btn-disabled');
           return false;
         };
         
         // box_action
-        $('#box_action')
+        $me
           .text('Saving..')
           .addClass('goog-btn-disabled');
 
@@ -3930,20 +3953,30 @@ var _STG = {
             setValue(KS+'QR_HOTKEY_CHAR', String( Chr ));
           });
         }
+
+
+        // -=-=-=-=-=-=-=-=-=-
+        // smilies-tab-thingie
+        misc = 'kecil,besar,custom'.split(',');
+        // recent? > add item:  misc.push("recent")
+
         
         // autoload smiley
-        misc = 'kecil,besar,custom'.split(',');
         value = [];
         value.push( isChk( $('#misc_autoshow_smile')) ? '1' : '0' );
-        oL = misc.length;
-        for(var id=0; id<oL; id++){
-          if( !isString(misc[id]) ) continue;
-          if(isChk( $('#misc_autoshow_smile_' + misc[id]) )){
-            value.push(misc[id]);
-            break;
-          }
-        }
+        value.push( $inner_setting.find("[name='aus']:checked").val() );
+        if( misc.indexOf(value[1]) === -1 )
+          value[1] = 'kecil';
         setValue(KS+'SHOW_SMILE', String( value ));
+
+        // tabfirst_smile
+        value = '';
+        value = $inner_setting.find("[name='ftab']:checked").val();
+        if( misc.indexOf(value) === -1 )
+          value = 'kecil';
+        setValue(KS+'TABFIRST_SMILE', String( value ));
+        gvar.settings.tabfirst_smiley = value;
+        _SML_.set_tabfirst( gvar.settings.tabfirst_smiley );
 
 
         // TXTCOUNTER
@@ -4108,7 +4141,7 @@ var _STG = {
        'UPDATES','UPDATES_INTERVAL'
       ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
       ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP','HIDE_GREYLINK'
-      ,'LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
+      ,'SHOW_SMILE','TABFIRST_SMILE','LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
     ];
     var keykomeng = {
        'UPDATES':'Check Update enabled? validValue=[1,0]'
@@ -4120,6 +4153,7 @@ var _STG = {
       ,'THEME_FIXUP':'Theme Fixed thread; validValue=[centered,c1024px,fullwidth]'
       ,'HIDE_GREYLINK':'Hide grey origin link; validValue=[1,0]'
       ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
+      ,'TABFIRST_SMILE':'Set First Tab on smilies boxset; validValue2=[kecil,besar,custom]'
       ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
       ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
       ,'LAYOUT_CONFIG':'Layout Config; [userid=isNaN,isEnable_autoLAYOUT]; isEnable\'s validValue=[1,0]'
@@ -4210,6 +4244,7 @@ var _STG = {
         ,'QR_LastUpdate'
         ,'UPLOAD_LOG','CSS_BULK','CSS_WIDE','CSS_META','SCUSTOM_NOPARSE'
         ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP','HIDE_GREYLINK'
+        ,'SHOW_SMILE','TABFIRST_SMILE'
         ];
         var kL=keys.length, waitfordel, alldone=0;
         for(var i=0; i<kL; i++){
@@ -6874,6 +6909,8 @@ function getSettings(stg){
   getValue(KS+'TXTCOUNTER', function(ret){ settings.txtcount=(ret=='1') });
   getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
   getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
+  getValue(KS+'TABFIRST_SMILE', function(ret){ settings.tabfirst_smiley=ret });
+
   getValue(KS+'ELASTIC_EDITOR', function(ret){ settings.elastic_editor=(ret=='1') });
   getValue(KS+'FIXED_TOOLBAR', function(ret){ settings.fixed_toolbar=(ret=='1') });
   getValue(KS+'THEME_FIXUP', function(ret){ settings.theme_fixups=ret });
@@ -6921,7 +6958,11 @@ function getSettings(stg){
     
     // smiley
     hVal = settings.autoload_smiley;
-    settings.autoload_smiley = (hVal && hVal.match(/^([01]{1}),(kecil|besar|custom)+/) ? hVal.split(',') : ['0,kecil'] );
+    settings.autoload_smiley = (hVal && hVal.match(/^([01]{1}),(kecil|besar|custom)+/) ? hVal.split(',') : '0,kecil'.split(',') );
+
+    // tabfirst-smiley
+    hVal = settings.tabfirst_smiley;
+    settings.tabfirst_smiley = (hVal && hVal.match(/(kecil|besar|custom)/) ? hVal : 'kecil');
 
     // is there any saved text
     gvar.tmp_text = settings.tmp_text;
