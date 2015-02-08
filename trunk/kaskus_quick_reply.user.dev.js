@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Patch apply transparent color on selected text. Thanks:[booster.bs]
 //   +Options Hide Grey Origin Link;
 //   Patch QuickQuote cleanup grey-origin-link;
 //   Avoid focus editor on autoshow smilies;
@@ -83,7 +84,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 543 // build.rev
+  ,svnrev: 544 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -5852,7 +5853,7 @@ function do_insertCustomTag($el){
       break;
       default:
         // BB Handler:
-        //  [URL,EMAIL,IMG, NOPARSE,TRANSPARENT, YOUTUBE,VIMEO,SOUNDCLOUD]
+        //  [URL,IMG, EMAIL,NOPARSE,TRANSPARENT, YOUTUBE,VIMEO,SOUNDCLOUD]
         
         var noPrompts = 'TRANSPARENT,NOPARSE,EMAIL'.split(",");
         var is_mediaembed = function(media, text){
@@ -5981,6 +5982,10 @@ function do_insertCustomTag($el){
             return endFocus();
           }
           else{
+            if( BBCode == 'TRANSPARENT' ){
+              tagprop = BBCode;
+              BBCode = "COLOR";
+            }
 
             _TEXT.wrapValue( BBCode, (tagprop!='' ? tagprop:'') );
           }
