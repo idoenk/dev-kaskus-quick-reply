@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Patch QuickQuote cleanup grey-origin-link;
 //   Avoid focus editor on autoshow smilies;
 //   Split General Settings, group for Smilies
 //   Missing form-title while edit (post #1, field is mandatory). Thanks:[Drupalorg]
@@ -81,7 +82,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 540 // build.rev
+  ,svnrev: 541 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -4504,7 +4505,7 @@ var _QQparse = {
     }
     this.cb = cb;
     this.mqs_id = mqs_id;
-    this.title = false;
+    this.title = false; // {icon:'{SRC}', text:'{TEXT}'}
     this.start();
   },
   start:function(){
@@ -4551,7 +4552,8 @@ var _QQparse = {
     
     _src = ( $(_src).get(0) ? basename( $(_src).attr('src') ).replace(/\./g,'') : '' );
     this.title = {
-      icon: _src, text: $(el).text()
+      icon: _src,
+      text: $(el).text()
     };
   },
   parseMSG: function(x){
@@ -4627,6 +4629,7 @@ var _QQparse = {
       return $(rvCon).html();
     }
     ,br2nl = function(text){
+
       return text.replace(/<br\s*(?:[^>]+|)>/gi, "\n")
     }
     ,revealCoders = function(html){
@@ -4894,7 +4897,6 @@ var _QQparse = {
       }else{
         return S;
       }
-
     }
     ,double_encode= function(x){
       x = br2nl(x);
@@ -4915,6 +4917,21 @@ var _QQparse = {
       el = els.snapshotItem(i);
       if( el ) Dom.remove(el);
     }
+
+    // clean messy from grey-ish, based on kaskus givin origin of every link
+    els = $D('.//span[contains(@style,"font-size:10px") and contains(@style,"#888")]', pCon);
+    nLength = (els.snapshotLength-1);
+    for(var i=nLength; i>=0; i--){
+      el = els.snapshotItem(i);
+      if( el ){
+        el2 = el.previousSibling;
+        if( el2 && el2.textContent && el2.textContent.trim().length == 0 )
+          Dom.remove(el2);
+
+        Dom.remove(el);
+      }
+    }
+
     
     $pCon = $(pCon);
     // reveal simple quote
