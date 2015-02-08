@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Fix CSS fjb;
 //   +Options Smiley First Tab;
 //   Patch apply transparent color on selected text. Thanks:[booster.bs]
 //   +Options Hide Grey Origin Link;
@@ -85,7 +86,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 545 // build.rev
+  ,svnrev: 547 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -392,7 +393,7 @@ var rSRC = {
       + '<div id="kqr-title_message" class="miu-unit tm relative" style="display:none">'
       +  '<input id="fakefocus_icon" type="text" class="demon" />'
 
-      +  '<div class="tm-sub forum-title">'
+      +  '<div class="tm-sub col-xs-8 forum-title">'
       +   '<div class="form-group">'
       +     '<div class="input-group">'
       +        '<ul class="ulpick_icon">'
@@ -401,7 +402,14 @@ var rSRC = {
       +        '</li>'
       +         rSRC.menuIcon()
       +        '</li></ul>'
-      +        '</span>'
+      +        '<div class="ts_fjb-type" style="display:none;">'
+      +        '<select name="prefixid" class="form-control selectbox" title="Status Item">'
+      +         '<option value="0">( no prefix )</option>'
+      +         '<option value="SOLD">TERJUAL</option>'
+      +         '<option value="WTB">BELI</option>'
+      +         '<option value="WTS">JUAL</option>'
+      +        '</select>'
+      +        '</div>'
       +        '<input id="form-title" type="text" name="title" class="form-control twt-glow form-title" title="Message Title" placeholder="'+gvar.def_title+'" autocomplete="off" />'
       +        '<span id="close_title" class="kqr-icon-close" title="Remove Title Message" style="display:none;" />'
       +     '</div>'
@@ -409,33 +417,25 @@ var rSRC = {
       +  '</div>' // .forum-title
 
           // title on fjb-thread
-      +  '<div class="tm-sub ts_fjb-price" style="display:none;">'
+      +  '<div class="tm-sub col-xs-2 ts_fjb-price" style="display:none;">'
       +   '<div class="form-group">'
       +     '<div class="input-group">'
       +        '<div class="input-group-addon" title="Price (Rp)"><i class="icon-shopping-cart"></i></div>'
-      +        '<input id="form-price" type="text" class="form-control twt-glow" name="harga" placeholder="Harga, eg. 30000" />'
+      +        '<input id="form-price" type="text" class="form-control twt-glow" title="Harga" name="harga" placeholder="Harga, eg. 30000" style="margin-left: 1px;" />'
       +     '</div>'
       +   '</div>' // fg
       +  '</div>' // .ts_fjb-price
-      +  '<div class="tm-sub title-righty">'
+      +  '<div class="tm-sub col-xs-2 title-righty">'
       +   '<div class="ts_fjb-kondisi" style="display:none;">'
-      +   '<select name="kondisi" class="selectbox" title="Kondisi Barang">'
+      +   '<select name="kondisi" class="form-control selectbox" title="Kondisi Barang">'
       +    '<option value="1">New</option>'
       +    '<option value="2">Second</option>'
-      +    '<option value="3">BNWOT</option>'
-      +    '<option value="4">Refurbish</option>'
-      +   '</select>'
-      +   '</div>'
-      +   '<div class="ts_fjb-type" style="display:none;">'
-      +   '<select name="prefixid" class="selectbox" title="FJB Thread">'
-      +    '<option value="0">( no prefix )</option>'
-      +    '<option value="SOLD">TERJUAL</option>'
-      +    '<option value="WTB">BELI</option>'
-      +    '<option value="WTS">JUAL</option>'
+      +    '<option value="4">Refurbished</option>'
       +   '</select>'
       +   '</div>'
       +  '</div>' // .title-righty
 
+      +  '<div class="clearfix"></div>'
       + '</div>' // .miu-unit.tm
 
 
@@ -531,9 +531,10 @@ var rSRC = {
       +       '<div class="tab-pane active" id="tupload"></div>'
       +       '<div class="clearfix"></div>'
       +      '</div>' // .tab-content
+      +     '</div>' // tabpanel
       +   '</div>' // .box-upload
       +  '</div>' // .box-bottom
-      +   '<div class="clearfix"></div>'
+      +  '<div class="clearfix"></div>'
       + '</div>' // .form-group.fg-box-bottom
 
 
@@ -547,22 +548,20 @@ var rSRC = {
       +    '<div class="form-group">'
       +     '<div class="input-group">'
       +      '<div class="input-group-addon"><i class="fa fa-edit"></i></div>'
-      +      '<input id="form-edit-reason" type="text" class="form-control twt-glow" name="reason" placeholder="Reason for editing" />'
+      +      '<input id="form-edit-reason" type="text" class="form-control twt-glow" name="reason" title="Reason" placeholder="Reason for editing" />'
       +     '</div>' // .input-group
       +    '</div>'
       +   '</div>' // .edit-reason
-      +   '</div>' // row
-
-      +   '<div class="row">'
       +   '<div class="ts_fjb-tags col-xs-11" style="display:none;">'
       +    '<div class="form-group">'
       +     '<div class="input-group">'
       +      '<div class="input-group-addon"><i class="fa fa-bookmark"></i></div>'
-      +      '<input id="form-tags" type="text" class="form-control twt-glow" name="tagsearch" placeholder="Eg: Electronics, Gadget, Cloths, etc" />'
+      +      '<input id="form-tags" type="text" class="form-control twt-glow" name="tagsearch" title="Tags" placeholder="Eg: Electronics, Gadget, Cloths, etc" />'
       +     '</div>' // .input-group
       +    '</div>'
       +   '</div>' // .ts_fjb-tags
       +   '</div>' // row
+
 
       +   '<div id="additionalopts" class="additional-opts" style="display:none">'
       +   '<div class="row">'
@@ -2106,6 +2105,7 @@ var _AJAX = {
       _NOFY.dismiss();
       
       // reset title
+      $XK.find(".ulpick_icon").show();
       $XK.find("#hid_iconid").val(0);
       $XK.find("#form-title").val("");
       $XK.find("#img_icon").attr("src", gvar.B.nocache_png);
@@ -2245,7 +2245,7 @@ var _AJAX = {
                 convertlink: $('input[name=parseurl]', $sdata).is(':checked')
               };
               _TEXT.set_additionl_opt( ttitle );
-              $XK.find('#additionalopts').show();
+              $XK.find('#additionalopts, .edit-options').show();
               $XK.find('.additional_opt_toggle').addClass('active');
             }
             else
@@ -2262,12 +2262,18 @@ var _AJAX = {
               };
               clog('got fjbdetail = ' + JSON.stringify(ttitle) )
               _TEXT.set_fjbdetail( ttitle );
+
+              // rating should be there for TS (seller)..
+              $XK.find(".adt-item.adt-rating").css("visibility", "hidden");
+              $XK.find(".edit-reason").hide();
             }
             else{
               if( el.length )
                 clog("[name=prefixid] not found");
 
               _TEXT.set_fjbdetail(null);
+              $XK.find(".adt-item.adt-rating").css("visibility", "visible");
+              $XK.find(".edit-reason").show();
             }
             
             // layouting ...
@@ -2633,19 +2639,21 @@ var _TEXT = {
     }
   },
   set_fjbdetail: function(data){
-    if(!data){
-      $('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').hide();
+    var $XK = $("#"+gvar.qID);
+    if( !data ){
+      $XK.find('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').hide();
+      $XK.find('.ulpick_icon').show();
     }
     else{
-      $('.ts_fjb-tags input[type="text"]').val(data['tags']);
-      $('.ts_fjb-price input[type="text"]').val(data['harga']);
-      $('.ts_fjb-type').find('option[selected="selected"]').removeAttr('selected');
-      $('.ts_fjb-type').find('option[value="'+data['tipe']+'"]').attr('selected', 'selected');
-
-      $('.ts_fjb-kondisi').find('option[selected="selected"]').removeAttr('selected');
-      $('.ts_fjb-kondisi').find('option[value="'+data['kondisi']+'"]').attr('selected', 'selected');
-
-      $('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').show();
+      $XK.find('.ts_fjb-tags [type=text]').val(data['tags']);
+      $XK.find('.ts_fjb-price [type=text]').val(data['harga']);
+      $XK.find('.ts_fjb-type').find('option[selected="selected"]').removeAttr('selected');
+      $XK.find('.ts_fjb-type').find('option[value="'+data['tipe']+'"]').attr('selected', 'selected');
+      $XK.find('.ts_fjb-kondisi').find('option[selected="selected"]').removeAttr('selected');
+      $XK.find('.ts_fjb-kondisi').find('option[value="'+data['kondisi']+'"]').attr('selected', 'selected');
+      $XK.find('.ts_fjb-tags, .ts_fjb-type, .ts_fjb-kondisi, .ts_fjb-price').show();
+      
+      $XK.find('.ulpick_icon').hide();
     }
   },
   set: function(value){
