@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   +Options Hide Grey Origin Link;
 //   Patch QuickQuote cleanup grey-origin-link;
 //   Avoid focus editor on autoshow smilies;
 //   Split General Settings, group for Smilies
@@ -82,7 +83,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 541 // build.rev
+  ,svnrev: 543 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -121,6 +122,7 @@ var KS = 'KEY_SAVE_',
     ,KEY_SAVE_LAYOUT_CONFIG:    [''] // flag of template_on
     ,KEY_SAVE_LAYOUT_TPL:       [''] // template layout, must contain: "{message}". eg. [B]{message}[/B]
     ,KEY_SAVE_THEME_FIXUP:      [''] // theme fixer, hack css theme for viewing purpose
+    ,KEY_SAVE_HIDE_GREYLINK:    ['1'] // hide grey origin link
 
     ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
 
@@ -868,6 +870,15 @@ var rSRC = {
        +  '</select>'
        + '</div>' // cls_cont
        +'</div>' // fg
+
+       +'<div class="form-group">'
+       + '<label class="'+cls_label+'" for="misc_hide_greylink" title="Hide grey origin link">Hide Grey Origin Link</label>'
+       + '<div class="'+cls_cont+'">'
+       +  '<div class="checkbox">'
+       +   '<input id="misc_hide_greylink" class="optchk" type="checkbox" '+(GVS.hide_greylink ? ' checked="checked"' : '')+'/>'
+       +  '</div>'
+       + '</div>' // cls_cont
+       +'</div>' // fg
   
        +'<div class="form-group">'
        + '<label class="'+cls_label+'" for="misc_autolayout">Enable AutoLayout</label>'
@@ -882,6 +893,8 @@ var rSRC = {
        + '</div>' // cls_cont
        +'</div>' // fg
       +'</div>' // .itemtabcon
+
+
 
 
       +'<div id="tabs-itemstg-smilies" class="itemtabcon">'
@@ -1121,7 +1134,8 @@ var rSRC = {
 
   getCSS: function(){
     return ""
-    +"#box_preview {max-height:" + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + "px;}"
+    +'#box_preview {max-height:' + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + 'px;}'
+    +'body.kqr-nogreylink span[style*="font-size:10px"][style*="#888"]{ display:none; }'
   },
   getCSS_Fixups: function(mode){
     var css='', i='!important';
@@ -3963,6 +3977,12 @@ var _STG = {
         gvar.settings.theme_fixups = value;
         set_theme_fixups();
 
+        // HIDE_GREYLINK
+        value = (isChk($('#misc_hide_greylink')) ? '1' : '0');
+        setValue(KS+'HIDE_GREYLINK', String( value ));
+        gvar.settings.hide_greylink = (value == '1' ? true : false);
+        $('body')[gvar.settings.hide_greylink ? 'addClass':'removeClass']('kqr-nogreylink')
+
         
         // last shot
         gvar.$w.setTimeout(function(){
@@ -4086,7 +4106,7 @@ var _STG = {
     var keys  = [
        'UPDATES','UPDATES_INTERVAL'
       ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
-      ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
+      ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP','HIDE_GREYLINK'
       ,'LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
     ];
     var keykomeng = {
@@ -4097,6 +4117,7 @@ var _STG = {
       ,'ELASTIC_EDITOR':'Keep editor in elastic mode; validValue=[1,0]'
       ,'FIXED_TOOLBAR':'Auto Fixed toolbar; validValue=[1,0]'
       ,'THEME_FIXUP':'Theme Fixed thread; validValue=[centered,c1024px,fullwidth]'
+      ,'HIDE_GREYLINK':'Hide grey origin link; validValue=[1,0]'
       ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
       ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
       ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
@@ -4187,7 +4208,7 @@ var _STG = {
         ,'LAYOUT_CONFIG','LAYOUT_TPL'
         ,'QR_LastUpdate'
         ,'UPLOAD_LOG','CSS_BULK','CSS_WIDE','CSS_META','SCUSTOM_NOPARSE'
-        ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
+        ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP','HIDE_GREYLINK'
         ];
         var kL=keys.length, waitfordel, alldone=0;
         for(var i=0; i<kL; i++){
@@ -4328,6 +4349,7 @@ var _CSS = {
   }
 };
 
+// toggle add/remove style node of theme fixups
 function set_theme_fixups(){
   clog("Injecting theme fixups");
   var fxcss_id = 'kqr-thmfixups-'+gvar.scriptMeta.cssREV;
@@ -6850,6 +6872,7 @@ function getSettings(stg){
   getValue(KS+'ELASTIC_EDITOR', function(ret){ settings.elastic_editor=(ret=='1') });
   getValue(KS+'FIXED_TOOLBAR', function(ret){ settings.fixed_toolbar=(ret=='1') });
   getValue(KS+'THEME_FIXUP', function(ret){ settings.theme_fixups=ret });
+  getValue(KS+'HIDE_GREYLINK', function(ret){ settings.hide_greylink=(ret=='1') });
 
   settings.plusquote = null;
   
@@ -7187,6 +7210,9 @@ function start_Main(){
 
       if( gvar.settings.theme_fixups )
         set_theme_fixups();
+
+      if( gvar.settings.hide_greylink )
+        $('body').addClass('kqr-nogreylink');
 
       // main identifier identify, or forget it.. 
       if( !$(".user-tools").length || ( $("#thread_post_list").length && !gvar.user.id ) ){
