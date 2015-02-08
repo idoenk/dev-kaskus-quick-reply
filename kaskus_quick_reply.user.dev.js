@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Fix preview, force image rendering from mls-img data-src;
 //   Fix CSS fjb;
 //   +Options Smiley First Tab;
 //   Patch apply transparent color on selected text. Thanks:[booster.bs]
@@ -86,7 +87,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 547 // build.rev
+  ,svnrev: 549 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -1702,6 +1703,17 @@ var _BOX = {
 
           if( parsed && !parsed.error && parsed.message ){
             $box_preview.html( parsed.message );
+
+            // render mls-img to its data-src
+            $box_preview.find(".mls-img").each(function(){
+              var $img = $(this);
+              $img
+                .attr("src", $img.attr("data-src"))
+                .removeClass("mls-img")
+                .removeAttr("data-src")
+                .addClass("rjn-img")
+              ;
+            });
             $('#cont_button').show();
 
             $btn_prepost.click(function(){
