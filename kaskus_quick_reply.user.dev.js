@@ -124,7 +124,6 @@ var KS = 'KEY_SAVE_',
 
     ,KEY_SAVE_SCUSTOM_NOPARSE:  ['0'] // dont parse custom smiley tag. eg. tag=babegenit. BBCODE=[[babegenit]
 
-    ,KEY_SAVE_WIDE_THREAD:  ['0'] // initial state of thread, widefix -S4nJi
     ,KEY_SAVE_TMP_TEXT:     [''] // temporary text before destroy maincontainer 
     ,KEY_SAVE_QR_LastUpdate:['0'] // lastupdate timestamp
 
@@ -4085,7 +4084,7 @@ var _STG = {
   load_rawsetting: function(){
     // collect all settings from storage,. 
     var keys  = [
-       'UPDATES','UPDATES_INTERVAL','WIDE_THREAD'
+       'UPDATES','UPDATES_INTERVAL'
       ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR','QR_DRAFT'
       ,'TXTCOUNTER','ELASTIC_EDITOR','FIXED_TOOLBAR','THEME_FIXUP'
       ,'LAYOUT_CONFIG','LAYOUT_TPL','SCUSTOM_NOPARSE','CUSTOM_SMILEY'
@@ -4099,7 +4098,6 @@ var _STG = {
       ,'FIXED_TOOLBAR':'Auto Fixed toolbar; validValue=[1,0]'
       ,'THEME_FIXUP':'Theme Fixed thread; validValue=[centered,c1024px,fullwidth]'
       ,'SHOW_SMILE':'Autoload smiley; [isEnable,smileytype]; validValue1=[1,0]; validValue2=[kecil,besar,custom]'
-      ,'WIDE_THREAD':'Expand thread with css_fixup; validValue=[1,0]'
       ,'QR_HOTKEY_KEY':'Key of QR-Hotkey; [Ctrl,Shift,Alt]; validValue=[1,0]'
       ,'QR_HOTKEY_CHAR':'Char of QR-Hotkey; validValue=[A-Z0-9]'
       ,'LAYOUT_CONFIG':'Layout Config; [userid=isNaN,isEnable_autoLAYOUT]; isEnable\'s validValue=[1,0]'
@@ -4184,7 +4182,7 @@ var _STG = {
         keys = [
          'SAVED_AVATAR','LAST_UPLOADER'
         ,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
-        ,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT','WIDE_THREAD'
+        ,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT'
         ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
         ,'LAYOUT_CONFIG','LAYOUT_TPL'
         ,'QR_LastUpdate'
@@ -6410,19 +6408,6 @@ function eventsTPL(){
       _TEXT.lastfocus();
     });
   });
-  $XK.find('#chk_fixups').click(function(e){
-    _CSS.init();
-    var chk, cssid = 'css_inject_widefix';
-    if( chk = $(this).is(':checked')) {
-      if( $('#'+cssid).get(0) )
-        $('#'+cssid).remove();
-
-      _CSS.widefix_add(e);
-    }else{
-      _CSS.widefix_remove();
-    }
-    setValue(KS+'WIDE_THREAD', (chk ? '1' : '0'));
-  });
 
   $XK.find('#squick_quote').click(function(){
     _QQparse.init();
@@ -6862,7 +6847,6 @@ function getSettings(stg){
   getValue(KS+'TXTCOUNTER', function(ret){ settings.txtcount=(ret=='1') });
   getValue(KS+'SCUSTOM_NOPARSE', function(ret){ settings.scustom_noparse=(ret=='1') });
   getValue(KS+'SHOW_SMILE', function(ret){ settings.autoload_smiley=ret });
-  getValue(KS+'WIDE_THREAD', function(ret){ settings.widethread=(ret=='1') });
   getValue(KS+'ELASTIC_EDITOR', function(ret){ settings.elastic_editor=(ret=='1') });
   getValue(KS+'FIXED_TOOLBAR', function(ret){ settings.fixed_toolbar=(ret=='1') });
   getValue(KS+'THEME_FIXUP', function(ret){ settings.theme_fixups=ret });
