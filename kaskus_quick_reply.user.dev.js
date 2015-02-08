@@ -33,6 +33,7 @@
 // -!--latestupdate
 //
 // v5.3.1.2 - 2015-02-08 . 1423414235972
+//   Avoid focus editor on autoshow smilies;
 //   Split General Settings, group for Smilies
 //   Missing form-title while edit (post #1, field is mandatory). Thanks:[Drupalorg]
 // 
@@ -80,7 +81,7 @@ gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
    timestamp: 1423414235972 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 536 // build.rev
+  ,svnrev: 540 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -3888,7 +3889,7 @@ var _STG = {
         // QR_HOTKEY_KEY QR_HOTKEY_CHAR
         var oL, value, el, Chr;
         if( isChk( $('#misc_hotkey')) ){
-          misc = ['misc_hotkey_ctrl','misc_hotkey_shift','misc_hotkey_alt'];    
+          misc = 'misc_hotkey_ctrl,misc_hotkey_shift,misc_hotkey_alt'.split(',');
           reserved_CSA = [(!gvar.isOpera ? '0,0,1' : '1,0,1'), '1,1,0']; /* Alt+Q OR Ctrl+Alt+Q -- Ctrl+Shift+Q */
           oL = misc.length;
           value = [];
@@ -3916,7 +3917,7 @@ var _STG = {
         }
         
         // autoload smiley
-        misc = ('kecil,besar,custom').split(',');
+        misc = 'kecil,besar,custom'.split(',');
         value = [];
         value.push( isChk( $('#misc_autoshow_smile')) ? '1' : '0' );
         oL = misc.length;
@@ -6236,6 +6237,9 @@ function eventsController(){
         $el.click(function(){
           var $boxSM = $XK.find('.box-smiley'), tgt_autoload = null;
 
+          if(gvar.settings.autoload_smiley[0] == 1)
+            tgt_autoload = gvar.settings.autoload_smiley[1];
+
           if( !$boxSM.is(':visible') ){
             if( !$boxSM.hasClass('events') ){
 
@@ -6254,8 +6258,6 @@ function eventsController(){
                 });
               });
 
-              if(gvar.settings.autoload_smiley[0] == 1)
-                tgt_autoload = gvar.settings.autoload_smiley[1];
 
               _SML_.init();
               $boxSM.addClass('events');
@@ -6272,7 +6274,9 @@ function eventsController(){
 
             _SML_.toggletab(false);
           }
-          _TEXT.focus();
+          
+          !gvar.freshload &&
+            _TEXT.focus();
         });
       break;
 
