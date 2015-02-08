@@ -107,8 +107,7 @@ gvar.$w = window;
 var KS = 'KEY_SAVE_',
   GMSTORAGE_PATH  = 'GM_',
   OPTIONS_BOX = {
-     KEY_SAVE_SAVED_AVATAR:  ['']
-    ,KEY_SAVE_LAST_UPLOADER: [''] // last used host-uploader
+     KEY_SAVE_LAST_UPLOADER: [''] // last used host-uploader
 
     ,KEY_SAVE_UPDATES:          ['1'] // check update
     ,KEY_SAVE_UPDATES_INTERVAL: ['1'] // update interval, default: 1 day
@@ -4244,7 +4243,7 @@ var _STG = {
       prmpt = (!("undefined" != typeof silent && silent) ? confirm(msg) : true);
       if( prmpt ){
         keys = [
-         'SAVED_AVATAR','LAST_UPLOADER'
+         'LAST_UPLOADER'
         ,'UPDATES_INTERVAL','UPDATES','TXT_COUNTER'
         ,'QUICK_QUOTE','CUSTOM_SMILEY','TMP_TEXT'
         ,'QR_HOTKEY_KEY','QR_HOTKEY_CHAR', 'QR_DRAFT'
