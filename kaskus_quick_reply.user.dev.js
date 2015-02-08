@@ -817,7 +817,7 @@ var rSRC = {
        + '<label class="'+cls_label+'" for="misc_hotkey">Enable QR-Hotkey</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
-       +   '<input type="checkbox" id="misc_hotkey" class="optchk" '+(String(GVS.hotkeykey)!='0,0,0' ? ' checked="checked"' : '')+'/>'
+       +   '<input type="checkbox" id="misc_hotkey" class="optchk" '+(String(GVS.hotkeykey)!='0,0,0' ? ' checked="checked"' : '')+'/> <em class="checkbox-text checkbox-desc">(require reload page)</em>'
        +  '</div>'
        +  '<div id="misc_hotkey_child" class="fg-sub fg-hotkey'+(String(GVS.hotkeykey)!='0,0,0' ? '':' hide')+'">'
        +   '<div class="checkbox">'
@@ -3902,8 +3902,10 @@ var _STG = {
               return restore_save();
           }
         }else{
+          Chr = '';
           value = ['0,0,0'];
         }
+
         if( Chr.length==0 || (Chr && Chr.match(/[A-Z0-9]{1}/)) ){
           gvar.settings.hotkeykey = String( value );
           gvar.settings.hotkeychar = String( Chr );
