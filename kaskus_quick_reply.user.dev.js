@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502085312
-// @timestamp      1423414235972
+// @timestamp      1423473091884
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.2 - 2015-02-08 . 1423414235972
+// v5.3.1.2 - 2015-02-08 . 1423473091884
 //   Fix preview, force image rendering from mls-img data-src;
 //   Fix CSS fjb;
 //   +Options Smiley First Tab;
@@ -85,9 +85,9 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.2';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423414235972 // version.timestamp
+   timestamp: 1423473091884 // version.timestamp
   ,dtversion: 1502085312 // version.date
-  ,svnrev: 549 // build.rev
+  ,svnrev: 550 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
@@ -277,7 +277,7 @@ var rSRC = {
   },
   menuGen: function(mnuData){
     var mCls = rSRC.mCls;
-    var mnu, addcls, buff = '', cls_sp = "markItUpSeparator";;
+    var mnu, addcls, buff = '', cls_sp = "markItUpSeparator";
     for(var i=0, iL=mnuData.length; i<iL; i++){
       mnu = mnuData[i];
       if( mnu["id"] ){
@@ -299,9 +299,9 @@ var rSRC = {
       else{
         addcls = (mnu["class"] ? mnu["class"] : "");
         if( addcls )
-          mCls[2] = mCls[2].replace(cls_sp, cls_sp+" "+addcls);
-
-        buff += mCls[2];
+          buff += mCls[2].replace(cls_sp, cls_sp+" "+addcls);
+        else
+          buff += mCls[2];
       }
     }
     return buff;
