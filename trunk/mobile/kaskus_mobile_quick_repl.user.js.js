@@ -2116,6 +2116,7 @@
 
     clog('POST '+(gvar.edit_mode ? 'edit':'')+'post...: ' + xhr.uri);
     var sdata = build_data_form(true);
+    clog(sdata);
     gvar.reqPID[xhr.pid] = xhr.request(sdata, 'POST', (gvar.edit_mode ? xhrpost_cb_update : xhrpost_cb_new));
   }
 
@@ -2124,21 +2125,26 @@
     if( par = $D('#mqrform') ){
       data = (toString ? '' : {});
       nodes = $D('.//*[@name]', par);
-      fields = ['title','message','psecuritytoken','sbutton']; // previews
+      fields = ['title','message','sbutton']; // previews // 'psecuritytoken','securitytoken',
       if(gvar.edit_mode)
         fields = fields.concat(['reason']);
       else
         fields = fields.concat(['recaptcha_challenge_field','recaptcha_response_field']);
       
       if( nodes.snapshotLength ){
+        var sec = $D('#mqr_securitytoken').value;
         for(var i=0; i<nodes.snapshotLength; ++i){
           node = nodes.snapshotItem(i);
           field = trimStr( String(getAttr('name', node)) );
           if( fields.indexOf(field) == -1) continue;
-          if(toString)
+          if(toString){
             data+='&' + field + '=' + encodeURIComponent( trimStr(node.value));
-          else
+            data+='&'+(gvar.edit_mode?'':'p')+'securitytoken=' + sec;
+          }
+          else{
             data[field] = trimStr(node.value);
+            data[(gvar.edit_mode ? '': '')+'securitytoken'] = sec;
+          }
         }
 
         // keep send this field
