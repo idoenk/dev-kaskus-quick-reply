@@ -3,9 +3,9 @@
 // @namespace      http://userscripts.org/scripts/show/91051
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
-// @version        2.2
-// @dtversion      140704220
-// @timestamp      1404492166878
+// @version        2.3
+// @dtversion      150213230
+// @timestamp      1423834414406
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @include        http://m.kaskus.co.id/lastpost/*
@@ -13,14 +13,17 @@
 //
 // -!--latestupdate
 //
-// v2.2 - 2014-07-04 . 1404492166878
-//  fix changed dom (avatar-wraper)
-//  handle defect-hash callback after posting
+// v2.3 - 2015-02-13 . 1423834414406
+//  Patch invalid security token, changed attribute:name
 //  
 // -/!latestupdate---
 // ==/UserScript==
 /*
 //
+// v2.2 - 2014-07-04 . 1404492166878
+//  fix changed dom (avatar-wraper)
+//  handle defect-hash callback after posting
+//  
 // v2.1 - 2014-06-22 . 1403371408997
 //  missing char on submit post
 //  
@@ -47,9 +50,9 @@
 (function(){
 
   var gvar = function(){};
-  gvar.sversion = 'v' + '2.2';
+  gvar.sversion = 'v' + '2.3';
   gvar.scriptMeta = {
-    timestamp: 1404492166878 // version.timestamp
+    timestamp: 1423834414406 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -802,7 +805,7 @@
         // fake capcay.controller [create,reload]
       + '<input id="hidrecap_btn" value="reCAPTCHA" type="button" onclick="showRecaptcha();" class="ninja" />' 
       + '<input id="hidrecap_reload_btn" value="reload_reCAPTCHA" type="button" onclick="Recaptcha.reload();" class="ninja" />'
-      + '<input type="hidden" name="securitytoken" id="mqr_securitytoken" value="" />'
+      + '<input type="hidden" name="psecuritytoken" id="mqr_securitytoken" value="" />'
       + '<input type="hidden" name="preview" value="Preview post" />'
 
       + '<div class="in-btn action">' // [btn-red,blue]
@@ -2121,7 +2124,7 @@
     if( par = $D('#mqrform') ){
       data = (toString ? '' : {});
       nodes = $D('.//*[@name]', par);
-      fields = ['title','message','securitytoken','sbutton']; // previews
+      fields = ['title','message','psecuritytoken','sbutton']; // previews
       if(gvar.edit_mode)
         fields = fields.concat(['reason']);
       else
