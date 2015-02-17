@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.3.1.2
+// @version        5.3.1.3
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502085312
-// @timestamp      1423473091884
+// @dtversion      1502175313
+// @timestamp      1424181552683
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,6 +32,13 @@
 //
 // -!--latestupdate
 //
+// v5.3.1.3 - 2015-02-17 . 1424181552683
+//   Redefine proper local var $, avoid jQuery document being overridden, opera-chromium need it. Thx:[Asep]
+//   Patch toggle spoiler (opera-chromium). Thx:[Asep]
+// 
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.3.1.2 - 2015-02-08 . 1423473091884
 //   Fix preview, force image rendering from mls-img data-src;
 //   Fix CSS fjb;
@@ -43,9 +50,6 @@
 //   Split General Settings, group for Smilies
 //   Missing form-title while edit (post #1, field is mandatory). Thanks:[Drupalorg]
 // 
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v5.3.1.1 - 2015-02-05 . 1423149612562
 //   redirect link not found (on new post) Thanks:[Drupalorg]
 //   responsive uploader wrapper
@@ -82,11 +86,11 @@ function main(mothership){
 // Initialize Global Variables
 var gvar = function(){};
 
-gvar.sversion = 'v' + '5.3.1.2';
+gvar.sversion = 'v' + '5.3.1.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1423473091884 // version.timestamp
-  ,dtversion: 1502085312 // version.date
+   timestamp: 1424181552683 // version.timestamp
+  ,dtversion: 1502175313 // version.date
   ,svnrev: 550 // build.rev
 
   ,titlename: 'Quick Reply'
@@ -99,7 +103,8 @@ window.alert(new Date().getTime());
 */
 //=-=-=-=--=
 //========-=-=-=-=--=========
-gvar.__DEBUG__ = !1; // development debug
+gvar.__DEBUG__ = !1; // development debug, author purpose
+gvar.__CLIENTDEBUG__ = !1; // client debug, w/o using local assets
 gvar.$w = window;
 //========-=-=-=-=--=========
 //=-=-=-=--=
@@ -7590,6 +7595,11 @@ function init(){
 
   // set true to simulate using css from googlecode, [debug-purpose]
   gvar.force_live_css = null;
+  if( gvar.__CLIENTDEBUG__ ){
+    gvar.__DEBUG__ = 1;
+    gvar.force_live_css = true;
+  }
+
 
   gvar.kqr_static = 'http://' + (!gvar.force_live_css && gvar.__DEBUG__ ? 
     '127.0.0.1/SVN/dev-kaskus-quick-reply/statics/kqr/' : 
@@ -7720,10 +7730,10 @@ function CSS_wait(refetch_only, cb){
 
 
 // -=-= ready..
-this.$ = jQuery ? jQuery.noConflict():null;
-if( this.$ ){
-  var $ = this.$;
-
+var _$ = jQuery ? jQuery.noConflict():null;
+if( _$ ){
+  var $ = _$;
+  _$ = null;
 }
 
 if( "undefined" === typeof $ ){
@@ -7731,9 +7741,13 @@ if( "undefined" === typeof $ ){
   return !1;
 }
 else{
-  clog("jQuery acknowledged as $ with noConflict");
+  gvar.__DEBUG__ &&
+    clog("jQuery acknowledged as $ with noConflict");
 }
-clog("commencing initializing with mothership="+mothership);
+
+gvar.__DEBUG__ &&
+  clog("commencing initializing with mothership="+mothership);
+  
 return init();
 }
 // main
