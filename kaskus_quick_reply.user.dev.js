@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502175313
-// @timestamp      1424181552683
+// @timestamp      1424208425123
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,9 +32,11 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.3 - 2015-02-17 . 1424181552683
+// v5.3.1.3 - 2015-02-17 . 1424208425123
 //   Redefine proper local var $, avoid jQuery document being overridden, opera-chromium need it. Thx:[Asep]
 //   Patch toggle spoiler (opera-chromium). Thx:[Asep]
+//   Avoid kill sidebar on unselected FixupTheme;
+//   Adjust entry-body width;
 // 
 // -/!latestupdate---
 // ==/UserScript==
@@ -89,14 +91,14 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1424181552683 // version.timestamp
+   timestamp: 1424208425123 // version.timestamp
   ,dtversion: 1502175313 // version.date
-  ,svnrev: 550 // build.rev
+  ,svnrev: 554 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1502085312 // css revision date; only change this when you change your external css
+  ,cssREV: 1502185313 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -629,6 +631,7 @@ var rSRC = {
       +  '<input type="'+(gvar.__DEBUG__?'text':'hidden')+'" class="form-control" id="current_ckck" placeholder="current_ckck" style="margin-top:5px;" />'
       +  '<textarea class="form-control'+(gvar.__DEBUG__?'':' ghost')+'" id="ifr_content" placeholder="ifr_content" style="margin-top:5px;"></textarea>'
 
+      + '<div class="clearfix"></div>'
       + '</form>'
       + '</div>' // #formqr
       + '</div>' // .reply-thread
@@ -794,7 +797,11 @@ var rSRC = {
      cls_label = 'col-sm-4 control-label',
      cls_cont = 'col-sm-8',
      GVS_aus = GVS.autoload_smiley,
-     GVS_ftab = GVS.tabfirst_smiley
+     GVS_ftab = GVS.tabfirst_smiley,
+     gen_helplink = function(hash, title){
+      var url = 'https://greasyfork.org/en/forum/discussion/3164/kaskus-quick-reply-features-how-to#'+hash;
+      return '<a href="'+url+'" title="'+(title ? title : '')+'" target="_blank"><i class="stage stage-help"></i></a>';
+     }
     ;
     clog(GVS_ftab);
 
@@ -812,7 +819,7 @@ var rSRC = {
       +'<div id="tabs-itemstg-general" class="itemtabcon active">'
 
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_updates" title="Check for latest QR Update">Enable Update Checker</label>'
+       + '<label class="'+cls_label+'" for="misc_updates" title="Check for latest QR Update">Enable Update Checker'+gen_helplink("checkupdate")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input type="checkbox" id="misc_updates" class="optchk" '+(GVS.updates ? ' checked="checked"':'')+'/>'
@@ -825,7 +832,7 @@ var rSRC = {
        +'</div>' // fg
   
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_hotkey">Enable QR-Hotkey</label>'
+       + '<label class="'+cls_label+'" for="misc_hotkey">Enable QR-Hotkey'+gen_helplink("qrhotkey")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input type="checkbox" id="misc_hotkey" class="optchk" '+(String(GVS.hotkeykey)!='0,0,0' ? ' checked="checked"' : '')+'/> <em class="checkbox-text checkbox-desc">(require reload page)</em>'
@@ -842,7 +849,7 @@ var rSRC = {
        +'</div>' // fg
   
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_txtcount">Enable Text Counter</label>'
+       + '<label class="'+cls_label+'" for="misc_txtcount">Enable Text Counter'+gen_helplink("textcounter")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_txtcount" class="optchk" type="checkbox" '+(GVS.txtcount ? ' checked="checked"' : '')+'/>'
@@ -851,7 +858,7 @@ var rSRC = {
        +'</div>' // fg
   
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_elastic_editor" title="Keep editor on elastic mode">Elastic Editor</label>'
+       + '<label class="'+cls_label+'" for="misc_elastic_editor" title="Keep editor on elastic mode">Elastic Editor'+gen_helplink("elasticeditor")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_elastic_editor" class="optchk" type="checkbox" '+(GVS.elastic_editor ? 'checked="checked"':'')+'/>'
@@ -859,7 +866,7 @@ var rSRC = {
        + '</div>' // cls_cont
        +'</div>' // fg
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_fixed_toolbar">Fixed Toolbar</label>'
+       + '<label class="'+cls_label+'" for="misc_fixed_toolbar">Fixed BBCode Toolbar'+gen_helplink("fixedtoolbar")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_fixed_toolbar" class="optchk" type="checkbox" '+(GVS.fixed_toolbar ? 'checked="checked"':'')+'/>'
@@ -868,7 +875,7 @@ var rSRC = {
        +'</div>' // fg
     
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_theme_fixups" title="Theme Fixup CSS, killing in the sidebar off">Theme Fixups</label>'
+       + '<label class="'+cls_label+'" for="misc_theme_fixups" title="Theme Fixup CSS, killing in the sidebar off">Theme Fixups'+gen_helplink("themefixups")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<select id="misc_theme_fixups" class="form-control">'
        +   '<option> - Select One - </option>'
@@ -880,7 +887,7 @@ var rSRC = {
        +'</div>' // fg
 
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_hide_greylink">Hide Grey Origin Link</label>'
+       + '<label class="'+cls_label+'" for="misc_hide_greylink">Hide Grey Origin Link'+gen_helplink("hidegreylink")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_hide_greylink" class="optchk" type="checkbox" '+(GVS.hide_greylink ? ' checked="checked"' : '')+'/>'
@@ -889,7 +896,7 @@ var rSRC = {
        +'</div>' // fg
   
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_autolayout">Enable AutoLayout</label>'
+       + '<label class="'+cls_label+'" for="misc_autolayout">Enable AutoLayout'+gen_helplink("autolayout")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_autolayout" class="optchk" type="checkbox" '+(cUL[1]=='1' ? ' checked="checked"':'')+'/>'
@@ -911,7 +918,7 @@ var rSRC = {
        // -=-=-=-=-=-=-=-
 
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_autoshow_smile">AutoShow Smiley</label>'
+       + '<label class="'+cls_label+'" for="misc_autoshow_smile">AutoShow Smiley'+gen_helplink("autoshowsmiley")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_autoshow_smile" class="optchk" type="checkbox" '+(GVS_aus[0]=='1' ? 'checked="checked"':'')+'/>'
@@ -927,7 +934,7 @@ var rSRC = {
        +'</div>' // fg
 
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" title="Alpha Stage, functionality: not working">First Tab Smiley<em class="stage stage-alpha"></em></label>'
+       + '<label class="'+cls_label+'">First Tab Smiley'+gen_helplink("tabfirst")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="fg-sub">'
        +   '<div class="radio">'
@@ -940,7 +947,7 @@ var rSRC = {
        +'</div>' // fg
   
        +'<div class="form-group">'
-       + '<label class="'+cls_label+'" for="misc_scustom_noparse" title="Custom Smiley BBCode will not be rendered">Noparse Custom BBCode</label>'
+       + '<label class="'+cls_label+'" for="misc_scustom_noparse" title="Custom Smiley BBCode will not be rendered">Noparse Custom BBCode'+gen_helplink("noparsecustom")+'</label>'
        + '<div class="'+cls_cont+'">'
        +  '<div class="checkbox">'
        +   '<input id="misc_scustom_noparse" class="optchk" type="checkbox" '+(GVS.scustom_noparse ? ' checked="checked"' : '')+'/>'
@@ -1152,26 +1159,24 @@ var rSRC = {
   getCSS: function(){
     return ""
     +'#box_preview {max-height:' + (parseInt( getHeight() ) - gvar.offsetMaxHeight - gvar.offsetLayer) + 'px;}'
-    +'body.kqr-nogreylink span[style*="font-size:10px"][style*="#888"]{ display:none; }'
+    +'body.kqr-nogreylink span[style*="font-size:10px"][style*="#888"], .ghost{ display:none; }'
   },
   getCSS_Fixups: function(mode){
     var css='', i='!important';
     var sb_kil = '#main .sidebar{display:none'+i+'}';
     var sgpost_sel = (gvar.thread_type == 'singlepost' ? ',.container > section':'');
-    var ctpost_sel = 'body.response #thread_post_list .row.nor-post .postlist .entry-body';
+    
     switch(mode){
       case "fullwidth":
         css+= ''
           +'.main-content,.user-control-stick{width:100%}'
           +'.user-control-stick{width:1170px}'
-          +ctpost_sel+'{width:1030px}'
         ;
       break;
       case "c1024px":
         css+= ''
           +'.main-content,.main-content-full'+sgpost_sel+'{float:none'+i+';margin:auto}'
           +'.main-content,.main-content-full,.user-control-stick'+sgpost_sel+'{width:1024px}'
-          +ctpost_sel+'{width:890px}'
         ;
       break;
       case "centered": // kaskus.default
@@ -1180,8 +1185,12 @@ var rSRC = {
           +'.main-content-full'+sgpost_sel+'{width:860px}'
         ;
       break;
+      default:
+        css='';
+      break;
     }
-    return sb_kil+css;
+
+    return (css ? sb_kil:'')+css;
   },
 
 
@@ -3842,12 +3851,17 @@ var _STG = {
     // menus
     $('#qr-box_setting .qrt').each(function(){
       $(this).click(function(){
-        var $btn, disb, par, tipe = $(this).attr('data-ref');
+        var $btn, $tgt,
+          $me = $(this),
+          tipe = $me.attr('data-ref'),
+          disb, par;
         par = $(this).parent();
         $('#qr-box_setting').find('.isopen').removeClass('isopen').hide();
-        $('#stg_content_' + tipe).addClass('isopen').show();
-        $(this).parent().find('.curent').removeClass('curent');
-        $(this).addClass('curent');
+        $tgt = $('#stg_content_' + tipe);
+        $tgt.addClass('isopen').show();
+        $tgt.parent().attr("data-tab", tipe);
+        $me.parent().find('.curent').removeClass('curent');
+        $me.addClass('curent');
         $('#box_preview_subtitle').html( ' ' + '&#187; ' +  $(this).find('div').html() );
         
         disb = 'goog-btn-disabled';
@@ -4418,6 +4432,27 @@ function set_theme_fixups(){
     $("#"+fxcss_id).remove();
   GM_addGlobalStyle(rSRC.getCSS_Fixups(gvar.settings.theme_fixups), fxcss_id, 1);
   $("#"+fxcss_id).attr('data-theme', gvar.settings.theme_fixups);
+
+
+  clog("adjusting entry-body..");
+  var css, cbodyWidth = (function(){
+    var trh=0, mcW, $sbauthor, $mc = $(".main-content");
+    mcW = $mc.outerWidth();
+    if( mcW == 860 ) return null;
+    if( mcW == 1097 ) trh = -3;
+
+    $sbauthor = $mc.find(".postlist .author").first();
+    clog('mcW='+mcW+'; '+$sbauthor.outerWidth());
+    return $mc.outerWidth() - $sbauthor.outerWidth() - 2 + trh;
+  })();
+
+  if( cbodyWidth ){
+    css = 'body.response #thread_post_list .row.nor-post .postlist .entry-body{width:'+cbodyWidth+'px}';
+
+    $("#"+fxcss_id).get(0)
+      .appendChild(createTextEl(css));
+  }
+  
 }
 
 /*
@@ -7278,7 +7313,7 @@ function start_Main(){
       // setting done? lets roll..
       clog(gvar.settings);
 
-      if( gvar.settings.theme_fixups )
+      // if( gvar.settings.theme_fixups )
         set_theme_fixups();
 
       if( gvar.settings.hide_greylink )
