@@ -9,7 +9,7 @@
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
 // @dtversion      1502175313
-// @timestamp      1424208425123
+// @timestamp      1424690577412
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,7 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.3 - 2015-02-17 . 1424208425123
+// v5.3.1.3 - 2015-02-17 . 1424690577412
 //   Redefine proper local var $, avoid jQuery document being overridden, opera-chromium need it. Thx:[Asep]
 //   Patch toggle spoiler (opera-chromium). Thx:[Asep]
 //   Avoid kill sidebar on unselected FixupTheme;
@@ -91,7 +91,7 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1424208425123 // version.timestamp
+   timestamp: 1424690577412 // version.timestamp
   ,dtversion: 1502175313 // version.date
   ,svnrev: 554 // build.rev
 
@@ -4441,9 +4441,9 @@ function set_theme_fixups(){
     if( mcW == 860 ) return null;
     if( mcW == 1097 ) trh = -3;
 
-    $sbauthor = $mc.find(".postlist .author").first();
-    clog('mcW='+mcW+'; '+$sbauthor.outerWidth());
-    return $mc.outerWidth() - $sbauthor.outerWidth() - 2 + trh;
+    $sbauthor = $mc.find(".postlist .author").eq(1);
+    clog('".main-content" width='+mcW+'; ".postlist .author".eq(1) width='+$sbauthor.outerWidth());
+    return mcW - $sbauthor.outerWidth() - 2 + trh;
   })();
 
   if( cbodyWidth ){
