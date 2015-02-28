@@ -4,8 +4,8 @@
 // @description    Provide Quick Reply on Kaskus Mobile
 // @author         idx (http://userscripts.org/users/idx)
 // @version        2.3
-// @dtversion      150224230
-// @timestamp      1424785368987
+// @dtversion      150301230
+// @timestamp      1425165905164
 // @include        http://m.kaskus.co.id/post/*
 // @include        http://m.kaskus.co.id/thread/*
 // @include        http://m.kaskus.co.id/lastpost/*
@@ -13,7 +13,8 @@
 //
 // -!--latestupdate
 //
-// v2.3 - 2015-02-24 . 1424785368987
+// v2.3 - 2015-03-01 . 1425165905164
+//  fix styles bbcode buttons;
 //  scrolltop on header-click;
 //  Fix header styles;
 //  Patch invalid security token, changed attribute:name
@@ -54,7 +55,7 @@
   var gvar = function(){};
   gvar.sversion = 'v' + '2.3';
   gvar.scriptMeta = {
-    timestamp: 1424785368987 // version.timestamp
+    timestamp: 1425165905164 // version.timestamp
 
    ,scriptID: 91051 // script-Id
   };
@@ -282,16 +283,12 @@
     cursorPos: [],
     last_scrollTop: 0,
     insert: {
-      tagBIU: function(title){
-        var pTag={
-          'bold' :'B',    'italic' :'I',      'underline':'U',
-          'left' :'LEFT', 'center' :'CENTER', 'right'    :'RIGHT'
-        };
-        if(title.indexOf('align ')!=-1) title = title.replace('align ','');
-        if( isUndefined( pTag[title]) ) return;
+      tagBIU: function(el){
+        var BBCode = ("string" !== typeof el && el ? getAttr('data-bb', el) : el);
+        if( !BBCode ) return !1;
 
         _TEXT.init();
-        _TEXT.wrapValue( pTag[title], '' );
+        _TEXT.wrapValue(BBCode, '' );
       },
       // action insert font/color/size/list
       tagHibrid: function(tag, value, $caleer){
@@ -306,7 +303,195 @@
         }
         _TEXT.pracheck();
       },
-      tagCustom: function(tag){
+      tagCustom: function (el){
+        _TEXT.init();
+        
+        var BBCode = ( "string" !== typeof el && el ? getAttr('data-bb', el) : el);
+        var text, prehead, tagprop, ptitle, selected, ret, prmpt;
+        var wrapped_bb = 'INDENT,QUOTE,CODE,HTML,PHP'.split(",");
+
+        var endFocus = function(){ _TEXT.focus(); return};
+        if("undefined" == typeof BBCode) return endFocus();
+
+
+        selected = _TEXT.getSelectedText();
+        tagprop = '';
+
+        if( wrapped_bb.indexOf(BBCode) !== -1 )
+          _TEXT.wrapValue( BBCode );
+        else{
+          switch(BBCode){
+            case "SPOILER":
+              prmpt = prompt('Enter the TITLE of your Spoiler:', '' );
+              prmpt = (prmpt ? prmpt : ' ');
+              _TEXT.wrapValue(BBCode, prmpt);
+            break;
+            case "STRIKE":
+              var strikeEm = function(_text){
+                var chrs = _text.split(''), r='';
+                for(var i=0, iL=chrs.length; i<iL; i++) 
+                  r += chrs[i]+'\u0336';
+                return String(r)
+              };
+
+              text = (!selected ? prompt('Enter Text to strikethrough:', 'coret-di-sini') : selected);
+
+              ret = (text ? strikeEm(text) : "");
+              prehead = [0, text.length*2];
+              if( !selected )
+                _TEXT.setValue( ret, prehead );
+              else
+                _TEXT.replaceSelected( ret, prehead );
+
+              return endFocus();
+            break;
+            default:
+              // BB Handler:
+              //  [URL,IMG, EMAIL,NOPARSE,TRANSPARENT, YOUTUBE,VIMEO,SOUNDCLOUD]
+              
+              var noPrompts = 'TRANSPARENT,NOPARSE,EMAIL'.split(",");
+              var is_mediaembed = function(media, text){
+                var rx, rxNaCd;
+                text = trimStr ( text );
+
+                switch(media){
+                  case "YOUTUBE":
+                    rx = text.match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i);
+                    rxNaCd = !/^[\d\w-]+$/.test(text);
+                  break;
+                  case "SOUNDCLOUD":
+                    rx = text.match(/\bsoundcloud\.com\/tracks\/(\d+)/i);
+                    rxNaCd = !/^[\d\w]+$/.test(text);
+                  break;
+                  case "VIMEO":
+                    rx = text.match(/\bvimeo\.com\/(\d+)/i);
+                    rxNaCd = !/^[\d\w]+$/.test(text);
+                  break;
+                }
+
+                if( rx && rx[1] )
+                  text = rx[1];
+                else if( rxNaCd )
+                  text = null;
+                return text;
+              };
+              var is_youtube_link = function(text){
+                var rx;
+                text = trimStr ( text );
+                clog( text);
+                
+                if( rx = text.match(/\byoutube\.com\/(?:watch\?v=)?(?:v\/)?([^&]+)/i) ){
+                  text = ( rx ? rx[1] : '');
+                }else if( !/^[\d\w-]+$/.test(text) )
+                  text = false;
+
+                clog("ytlink? text="+text);
+                return text;
+              };
+              var get_prompt_text = function(BBCode_){
+                var ret = {tagprop:'', text:''};
+
+                switch(BBCode){
+                  case 'URL':
+                    ret.text = prompt('Please enter the URL of your link:', 'http://');
+                    ret.tagprop = ret.text;
+                  break;
+                  case 'IMG':
+                    ret.text = prompt('Please enter the URL of your image:', 'http://');
+                  break;
+                  case 'YOUTUBE':
+                    ret.text = prompt('Please enter the Youtube URL or just the ID, \nhttp:/'+'/www.youtube.com/watch?v=########', '');
+                  break;
+                  case 'VIMEO':
+                    ret.text = prompt('Please enter Vimeo URL Link, \nhttps:/'+'/vimeo.com/#######', '');
+                  break;
+                  case 'SOUNDCLOUD':
+                    ret.text = prompt('Please enter [Soundcloud widget code, ID, API-URL]\neg.https:/'+'/api.soundcloud.com/tracks/#######', '');
+                  break;
+                }
+                return ret;
+              };
+              
+
+              if( !selected ){
+
+                var prompt_text = get_prompt_text(BBCode);
+                text = prompt_text.text;
+                tagprop = prompt_text.tagprop;
+
+                if( !text && noPrompts.indexOf(BBCode) === -1 ){
+
+                  return endFocus();
+                }else{
+                  // good-togo
+                  if( noPrompts.indexOf(BBCode) !== -1 ){
+                    if( BBCode=='TRANSPARENT' ){
+                      tagprop = BBCode;
+                      BBCode = "COLOR";
+                    }
+                  }
+                  else{
+                    if( ['YOUTUBE','SOUNDCLOUD','VIMEO'].indexOf(BBCode) !== -1 ){
+                      text = is_mediaembed(BBCode, text);
+                      text = (text ? text : null);
+                    }else if(BBCode=='URL' || BBCode=='IMG')
+                      text = (isLink(text) ? text : null);
+
+                    // prompting text check...
+                    if(text==null) return endFocus();
+                  }
+
+                  prehead = [('['+BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
+                  prehead[1] = (prehead[0]+text.length);
+                  _TEXT.setValue( '['+BBCode + (tagprop!=''?'='+tagprop:'')+']'+text+'[/'+BBCode+']', prehead );
+                }
+                return endFocus();
+              } // end selected==''
+              else{
+                text = selected;
+
+                // precheck of this BBCode upon selection if selected is a proper link
+                if( ["URL","IMG"].indexOf(BBCode) !== -1 ){
+                  tagprop = (BBCode == 'URL' ? trimStr(text) : '');
+                
+                  var autotrim_selected = trimStr( selected );
+
+                  if( !isLink(autotrim_selected, true) ){
+                    var prompt_text = get_prompt_text(BBCode);
+                    text = prompt_text.text;
+                    tagprop = prompt_text.tagprop;
+
+                    text = (text ? trimStr(text) : null);
+                    if( BBCode == 'IMG' )
+                      selected = (text ? text : selected);
+                  }
+                  if(text==null) return endFocus();
+
+                  prehead = [('['+ BBCode + (tagprop!=''?'='+tagprop:'')+']').length, 0];
+                  prehead[1] = (prehead[0]+selected.length);
+                  _TEXT.replaceSelected(
+                    '['+BBCode + (tagprop!=''?'='+tagprop:'')+']'+selected+'[/'+BBCode+']',
+                    prehead
+                  );
+                  return endFocus();
+                }
+                else{
+                  if( BBCode == 'TRANSPARENT' ){
+                    tagprop = BBCode;
+                    BBCode = "COLOR";
+                  }
+
+                  _TEXT.wrapValue( BBCode, (tagprop!='' ? tagprop:'') );
+                }
+              }
+            break;
+          }
+        }
+      },
+
+
+      // deprecated....
+      tagCustom_OLD: function(tag){
         _TEXT.init();
         
         var text, prehead, tagprop, ptitle, selected, ret;
@@ -764,12 +949,11 @@
       +'</div>'
       +'<form action="" name="postreply" id="mqrform" method="post">'
       +'<fieldset>'
-      +'<div class="in-txt liner" id="wrp_title">'
+      +'<div class="in-txt liner" id="wrp_title" '+(gvar.settings.toggle_menus ? '' : 'style="display:none;"')+'>'
       + '<input type="text" name="title" maxlength="85" placeholder="Title" />'
       + '<span class="Qxc tgctr" style="display:none;" title="Clear Title">&times;</span>'
-      + '<span class="Qct tgctr btn_stg'+(gvar.settings.toggle_menus ? ' active':'')+'" title="Toggle Menus"></span>'
       +'</div>'
-      +'<div class="in-txt liner" id="wrp_control" '+(gvar.settings.toggle_menus ? '' : 'style="display:none;"')+'>'
+      +'<div class="in-txt liner" id="wrp_control">'
       + rSRC.getControlers()
       +'</div>'
 
@@ -854,8 +1038,12 @@
       +'';
     },
 
-    _menuFont: function(id){
-      var li_cls = rSRC.mCls, item = ['Arial','Arial Black','Arial Narrow','Book Antiqua','Century Gothic','Comic Sans MS','Courier New','Georgia','Impact','Lucida Console','Times New Roman','Trebucher','Verdana'], buff, lf=item.length;
+    menuFont: function(id){
+      var li_cls = rSRC.mCls, buff, lf;
+      // item = ['Arial','Arial Black','Arial Narrow','Book Antiqua','Century Gothic','Comic Sans MS','Courier New','Georgia','Impact','Lucida Console','Times New Roman','Trebucher','Verdana']
+      item = ['Arial','Georgia','Arial Black','Impact','Arial Narrow','Lucida Console','Book Antiqua','Times New Roman','Century Gothic','Trebuchet MS','Comic Sans MS','Verdana','Courier New'];
+      lf = item.length;
+
       buff='<li class="'+li_cls[0]+' '+li_cls[0] + id + ' fonts '+li_cls[1]+'"><a title="Fonts" href="javascript:;">F</a><ul>';
       for(var i=0; i<lf; i++)
         buff+= ''
@@ -865,7 +1053,7 @@
       buff+='</ul></li>';
       return buff;
     },
-    _menuSize: function(id){
+    menuSize: function(id){
       var li_cls = rSRC.mCls, buff;
       buff='<li class="'+li_cls[0]+' '+li_cls[0] + id + ' size '+li_cls[1]+'"><a title="Size" href="javascript:;">Size</a><ul>';
       for(var i=1; i<=7; i++)
@@ -873,7 +1061,7 @@
       buff+='</ul></li>';
       return buff;
     },
-    _menuColor: function(id){
+    menuColor: function(id){
       var li_cls = rSRC.mCls, buff, capt, kolors = rSRC.getSetOf('color');
       buff='<li class="'+li_cls[0] + ' ' + li_cls[0] + id + ' color ' + li_cls[1]+'"><a title="Colors" href="javascript:;">Colors</a>';
       buff+='<ul class="mBT'+id+'-wrapper">';
@@ -884,67 +1072,94 @@
       buff+='</ul></li>';
       return buff;
     },
+    menuGen: function(mnuData){
+      var mCls = rSRC.mCls;
+      var mnu, addcls, buff = '', cls_sp = "markItUpSeparator";
+      for(var i=0, iL=mnuData.length; i<iL; i++){
+        mnu = mnuData[i];
+        if( mnu["id"] ){
+          if( "function" == typeof mnu["cb"] )
+            buff += mnu["cb"]( mnu["id"] );
+          else
+            buff += ''
+              +'<li class="'+mCls[0]+' '+mCls[0]+mnu["id"]+'">'
+              +'<a href="javascript:;" title="'+mnu["title"]+'" class="'+mnu["class"]+'"'
+                +(mnu["bb"] ? ' data-bb="'+mnu["bb"]+'"' : '')
+                +(mnu["shortcut"] && mnu["shortcut"]["key"] && mnu["shortcut"]["csa"] ? ''
+                  +' data-shortcut=\'{"key":"'+mnu["shortcut"]["key"]+'","csa":"'+mnu["shortcut"]["csa"]+'"}\''
+                 : '' // no-shortcut
+                )
+              +'></a>'
+              +'</li>'
+            ;
+        }
+        else{
+          addcls = (mnu["class"] ? mnu["class"] : "");
+          if( addcls )
+            buff += mCls[2].replace(cls_sp, cls_sp+" "+addcls);
+          else
+            buff += mCls[2];
+        }
+      }
+      return buff;
+    },
 
-    _menuBIU: function(start){
-      var li_cls = rSRC.mCls, item = ['Bold','Italic','Underline'], buff='', lf=item.length;
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(i+start)+'"><a title="'+item[i]+'" class="ev_biu" href="javascript:;">'+item[i]+'</a></li>';
-      return buff;
+    _menuTitleToggler: function(){
+      return ''
+        +'<li>'
+        + '<span class="Qct tgctr btn_stg'+(gvar.settings.toggle_menus ? ' active':'')+'" title="Toggle Title Message"></span>'
+        +'</li>'
+      ;
     },
-    _menuAlign: function(start){
-      var li_cls = rSRC.mCls, item = ['Align Left','Align Center','Align Right'], buff='', lf=item.length;
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(start+i)+'"><a title="'+item[i]+'" class="ev_align" href="javascript:;">'+item[i]+'</a></li>';
-      return buff;
-    },
-    _menuList: function(ids){
-      var li_cls = rSRC.mCls, item = ['Numeric list','Bulleted list'], buff='', lf=item.length;
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(ids[i])+'"><a title="'+item[i]+'" class="ev_list"  href="javascript:;">'+item[i]+'</a></li>';
-      return buff;
-    },
-    _menuMedia: function(ids){
-      var bbcode, li_cls = rSRC.mCls, item = ['Insert Link','Insert Picture','Embedding Youtube'], buff='', lf=item.length;
-      bbcode = ['link','picture','youtube'];
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(ids[i])+'"><a title="'+item[i]+'" class="ev_media" data-bbcode="'+bbcode[i]+'" href="javascript:;">'+item[i]+'</a></li>';
-      return buff;
-    },
-    _menuCode: function(ids){
-      var bbcode, li_cls = rSRC.mCls, item = ['CODE','HTML','PHP'], buff='', lf=item.length;
-      bbcode = ['code','html','php'];
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(ids[i])+'"><a title="Wrap ['+item[i]+'] around text" class="ev_codes" data-bbcode="'+bbcode[i]+'" href="javascript:;">Wrap ['+item[i]+'] around text</a></li>';
-      return buff;
-    },
-    _menuQuote: function(ids){
-      var bbcode, li_cls = rSRC.mCls, item = ['QUOTE','SPOILER'], buff='', lf=item.length;
-      bbcode = ['quote','spoiler','transparent','noparse'];
-      for(var i=0; i<lf; i++)
-        buff+='<li class="'+li_cls[0]+' '+li_cls[0] +(ids[i])+'"><a title="Wrap ['+item[i]+'] around text" class="ev_quotes" data-bbcode="'+bbcode[i]+'" href="javascript:;">Wrap ['+item[i]+'] around text</a></li>';
-      return buff;
-    },
+
     getControlers: function(){
       var _sp = rSRC.mCls[2], lc=rSRC.mCls[0], BTN = rSRC.getSetOf('button');
       return ''
       + '<div class="mktH">' 
       + "<ul>"
-      + rSRC._menuBIU(1) 
-      + _sp + rSRC._menuAlign(4) 
-      + _sp + rSRC._menuList([8,7]) 
-      + _sp
-      + rSRC._menuFont(19) 
-      + rSRC._menuSize(20) 
-      + rSRC._menuColor(95) 
-      + _sp + rSRC._menuMedia([11, 14, 22]) 
-      + _sp + rSRC._menuCode([16, 50, 51]) 
-      + _sp + rSRC._menuQuote([15, 21, 97, 52]) 
+      + rSRC._menuTitleToggler()
 
-      + _sp + '<li class="'+lc+ ' qplugin-togler"><span class="Qct tgctr btn_qplugin'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? ' active' : '')+'" title="Toggle Plugin Menus"></span></li>'
+      + rSRC.menuGen([
+        {id:null}, // spacer
+        {id:1, 'class': 'ev_biu', bb: 'B', title: 'Bold [Ctrl+B]', shortcut: {key: 'B', csa: 'ctrl'}},
+        {id:2, 'class': 'ev_biu', bb: 'I', title: 'Italic [Ctrl+I]', shortcut: {key: 'I', csa: 'ctrl'}},
+        {id:3, 'class': 'ev_biu', bb: 'U', title: 'Underline [Ctrl+U]', shortcut: {key: 'U', csa: 'ctrl'}},
+        {id:null}, // spacer
+        {id:4, 'class': 'ev_align', bb: 'LEFT', title: 'Align Left'},
+        {id:5, 'class': 'ev_align', bb: 'CENTER', title: 'Align Center [Ctrl+E]', shortcut: {key: 'E', csa: 'ctrl'}},
+        {id:6, 'class': 'ev_align', bb: 'RIGHT', title: 'Align Right [Ctrl+R]', shortcut: {key: 'R', csa: 'ctrl'}},
+        {id:null}, // spacer
+        {id:7, 'class': 'ev_list', bb: 'LIST-bullet', title: 'Bulleted list'},
+        {id:8, 'class': 'ev_list', bb: 'LIST-numeric', title: 'Numeric list'},
+        // {id:9, 'class': 'ev_indent', bb: 'INDENT', title: 'Increase Indent'},
+        {id:null}, // spacer
+        {id:11, 'class': 'ev_custom', bb: 'URL', title: 'Insert Link'},
+        // {id:13, 'class': 'ev_custom', bb: 'EMAIL', title: 'Insert Email Link'},
+        {id:14, 'class': 'ev_custom', bb: 'IMG', title: 'Picture'},
+        {id:null}, // spacer
+        {id:15, 'class': 'ev_custom', bb: 'QUOTE', title: 'Wrap [QUOTE] around text'},
+        {id:16, 'class': 'ev_custom', bb: 'CODE', title: 'Wrap [CODE] around text'},
+        {id:50, 'class': 'ev_custom', bb: 'HTML', title: 'Wrap [HTML] around text'},
+        {id:51, 'class': 'ev_custom', bb: 'PHP', title: 'Wrap [PHP] around text'},
+        {id:null}, // spacer
+        {id:95, 'class': 'ev_color', cb: rSRC.menuColor},
+        {id:19, 'class': 'ev_font', cb: rSRC.menuFont},
+        {id:20, 'class': 'ev_size', cb: rSRC.menuSize},
+        {id:null}, // spacer
+        {id:21, 'class': 'ev_custom', bb: 'SPOILER', title: 'Wrap [SPOILER] around text'},
+        {id:97, 'class': 'ev_custom', bb: 'TRANSPARENT', title: 'Wrap [TRANSPARENT] around text'},
+        {id:52, 'class': 'ev_custom', bb: 'NOPARSE', title: 'Wrap [NOPARSE] around text'},
+        {id:53, 'class': 'ev_custom', bb: 'STRIKE', title: 'Strikethrough text'},
+        {id:null}, // spacer
+        {id:22, 'class': 'ev_custom', bb:'YOUTUBE', title: 'Embedding video from Youtube'},
+        {id:23, 'class': 'ev_custom', bb:'VIMEO', title: 'Embedding video from Vimeo'},
+        {id:24, 'class': 'ev_custom', bb:'SOUNDCLOUD', title: 'Embedding audio from Soundcloud'}
+        ])
+
+
+      + '<li class="'+lc+ ' qplugin-togler"><span class="btn_qplugin'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? ' active' : '')+'" title="Toggle Plugin Menus"></span></li>'
       + '</ul>'
-      + '<div id="qr_plugins_container" class="qplugin" style="'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? '':'display:none;')+'">'
-      + '<img class="ev_strike" title="Strikethrough text" data-bbcode="strike" src="'+BTN.strikethrough+'" />'
-      + '</div>'
+      + '<div id="qr_plugins_container" class="qplugin" style="'+(gvar.settings.widethread || gvar.settings.toggle_plugins ? '':'display:none;')+'"></div>'
       + "</div>" // mktH
       ;
     },
@@ -1008,9 +1223,10 @@
       +'.mQR #txtLen{float:right;max-width:65px;display:block;}'
       +'.mQR #txtLen.ffc{color:#666!important;}'
       +'.mQR #wrp_control {padding-bottom:1px;}'
-      +'.mQR li.mBT a{outline:none}'
+      +'.mQR li.mBT a{outline:none; border:1px solid transparent}'
       +'.mQR li.mBT {border:1px solid transparent;}'
-      +'.mQR li.mBT:hover{border:1px solid #ddd;background-color:#f0f0f0;}'
+      +'.mQR li.mBT:hover {background-color:#f0f0f0;}'
+      +'.mQR li.mBT:hover > a{border:1px solid #ddd;}'
       +'.mQR #wrp_title input[type="text"]{width:94%;}'
       +'.mQR .in-txt input[type="text"], .mQR .in-txt #'+gvar.tID+'{color:#333;}'
       +'.mQR .tgctr{position:absolute;top:2px; right:3px;padding:5px 3px; font-size:1.2em; line-height:0.7em; cursor:pointer;}'
@@ -1062,10 +1278,25 @@
       +'.mQR .sayapkanan input[type="checkbox"]{height:14px;width:14px;display:inline;color:#333;padding:1px;-webkit-appearance:checkbox;}'
       +'.mQR .sayapkanan label{margin-left:2px;color:#999}'
       
-      +'.mktH{background-color:#fff;zoom:1;filter:progid:DXImageTransform.Microsoft.gradient(gradientType=0,startColorstr="#FFF9F9F9",endColorstr="#FFF0F0F0");background-image:linear-gradient(top,#f9f9f90%,#f0f0f0100%)}.mktH:after{content:"";display:block;clear:both;height:0;visibility:hidden}.mktH ul li{list-style:none;float:left;position:relative;height:20px;width:20px}.mktH ul .mDM{margin-right:5px;background:transparent url('+imgcdn2+'menu.png) no-repeat right center}.mktH ul .mDM ul{border:1px solid #ccc}.mktH ul .mDM.fonts ul{width:140px;}.mktH ul .mDM.fonts ul li,.mktH ul .mDM.size ul li{width:99%}.mktH ul .mDM li{margin-right:0;border:0;}.mktH ul .mDM li a{}.mktH ul .mDM.fonts ul li a, .mktH ul .mDM.size ul li a{padding:4px 0;width: 100%}.mktH ul .mDM.size ul{width:30px}.mktH ul .mSP{width:1px;height:22px;background-color:#ddd;overflow:hidden;text-indent:-999px;margin:0 2px}.mktH ul ul{display:none;position:absolute;top:18px;left:0;background:#f5f5f5;height:inherit;z-index:10}.mktH ul ul li{float:none;border-bottom:1px solid #d6d6d6}.mktH ul li:hover>ul{display:block}.mktH ul a{display:block;width:16px;height:16px;text-indent:-10000px;background-repeat:no-repeat;margin:0;padding:3px}.mktH ul ul a{display:block;text-indent:0;width:120px;padding:5px 5px 5px 25px}.mktH ul ul a:hover{background-color:#ddd;border:0}.mQR .mBT a{display:block}.mQR .mBT1 a{background-image:url('+imgcdn1+'bold.gif)}.mQR .mBT2 a{background-image:url('+imgcdn1+'italic.gif)}.mQR .mBT3 a{background-image:url('+imgcdn1+'underline.gif)}.mQR .mBT4 a{background-image:url('+imgcdn1+'justifyleft.gif)}.mQR .mBT5 a{background-image:url('+imgcdn1+'justifycenter.gif)}.mQR .mBT6 a{background-image:url('+imgcdn1+'justifyright.gif)}.mQR .mBT7 a{background-image:url('+imgcdn1+'insertunorderedlist.gif)}.mQR .mBT8 a{background-image:url('+imgcdn1+'insertorderedlist.gif)}.mQR .mBT9 a{background-image:url('+imgcdn1+'indent.gif)}.mQR .mBT10 a{background-image:url('+imgcdn1+'outdent.gif)}.mQR .mBT11 a{background-image:url('+imgcdn1+'createlink.gif)}.mQR .mBT12 a{background-image:url('+imgcdn1+'unlink.gif)}.mQR .mBT13 a{background-image:url('+imgcdn1+'email.gif)}.mQR .mBT14 a{background-image:url('+imgcdn1+'insertimage.gif)}.mQR .mBT15 a{background-image:url('+imgcdn1+'quote.gif)}.mQR .mBT16 a{background-image:url('+imgcdn1+'code.gif)}.mQR .mBT17 a{background-image:url('+imgcdn1+'removeformat.gif)}.mQR .mBT18{width:25px}.mQR .mBT18 a{background-image:url('+imgcdn1+'color.gif)}.mQR .mBT18 ul{width:81px;padding:1px}.mQR .mBT18 li{width:24px;height:24px;overflow:hidden;float:left;border:0;margin:1px 2px;padding:0}.mQR .mBT18 ul a{width:22px;height:22px;overflow:hidden;text-indent:-9999px;display:block;border-radius:3px;opacity:.68;border:solid 1px #ddd;margin:0;padding:0}.mQR .mBT18 ul a:hover{opacity:1;border-color:#ccc}.mQR .mBT18 .col1-1 a{background:#FF0}.mQR .mBT18 .col1-2 a{background:orange}.mQR .mBT18 .col1-3 a{background:red}.mQR .mBT18 .col2-1 a{background:blue}.mQR .mBT18 .col2-2 a{background:purple}.mQR .mBT18 .col2-3 a{background:green}.mQR .mBT18 .col3-1 a{background:#FFF}.mQR .mBT19{}.mQR .mBT19 a{font-size: 13px; text-indent:0;text-align:center;line-height:18px;background:#fff;padding:1px}.mQR .mBT19.mDM > a{font-size: 14px;font-style:italic; font-weight:bold;}.mQR .mBT19 li a{padding:4px 5px}.mQR .mBT19 ul a{width:120px;line-height:16px;height:16px;font-weight:500;text-indent:0!important;text-align:left}.mQR .mBT19 .font-arial a{font-family:Arial,"DejaVu Sans","Liberation Sans",Freesans,sans-serif}.mQR .mBT19 .font-arialblack a{font-family:"Arial Black",Gadget,sans-serif}.mQR .mBT19 .font-arialnarrow a{font-family:"Arial Narrow","Nimbus Sans L",sans-serif}.mQR .mBT19 .font-bookantiqua a{font-family:Times New Roman,Times,serif}.mQR .mBT19 .font-centurygothic a{font-family:"Century Gothic",futura,"URW Gothic L",Verdana,sans-serif}.mQR .mBT19 .font-comicsansms a{font-family:"Comic Sans MS",cursive}.mQR .mBT19 .font-couriernew a{font-family:"Courier New",Courier,"Nimbus Mono L",monospace}.mQR .mBT19 .font-georgia a{font-family:Constantina,Georgia,"Nimbus Roman No9 L",serif}.mQR .mBT19 .font-impact a{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif}.mQR .mBT19 .font-lucidaconsole a{font-family:"Lucida Sans Unicode","Lucida Grande","Lucida Sans","DejaVu Sans Condensed",sans-serif}.mQR .mBT19 .font-timesnewroman a{font-family:Cambria,"Times New Roman","Nimbus Roman No9 L",Freeserif,Times,serif}.mQR .mBT19 .font-Trebucher a{font-family:"Trebuchet MS",sans-serif}.mQR .mBT19 .font-Verdana a{font-family:Verdana,Geneva,"DejaVu Sans",sans-serif}.mQR .mBT20 a{background-image:url('+imgcdn3+'fonts.png);width:20px; background-position-y: 2px;}.mQR .mBT20 li{height:auto}.mQR .mBT20 ul a{height:auto;text-align:center;padding:5px;display:block;line-height:16px;background-image:none}.mQR .mBT20 .size-1 a{font-size:10px;line-height:10px}.mQR .mBT20 .size-2 a{font-size:12px;line-height:12px}.mQR .mBT20 .size-5 a{font-size:20px;line-height:20px}.mQR .mBT20 .size-6 a{font-size:24px;line-height:24px}.mQR .mBT20 .size-7 a{font-size:28px;line-height:28px}.mQR .mBT22 a{width:15px;background:url('+imgcdn3+'youtube.gif) top left no-repeat}.mQR .mBT23 a{background:url('+imgcdn3+'vimeo.gif) center top no-repeat;width:25px}.mQR .mBT95{width:25px}.mQR .mBT95-wrapper{width:160px!important;padding:5px 2px}.mQR .mBT95 li{float:left!important;border:0!important;padding:0 3px 3px;height:15px!important}.mQR .mBT95 li a{overflow:hidden;text-indent:-9999px!important;display:block;-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;opacity:.78;height:15px!important;width:20px!important;border:solid 1px #ddd;padding:0}.mQR .mBT95 li a:hover{opacity:1;border-color:#333!important;background:#fff}.mQR .mBT95>a{background-image:url('+imgcdn1+'color.gif); background-position-y: 2px;}.mQR .mBT50 a{background-image:url('+imgcdn1+'html.gif)}.mQR .mBT51 a{background-image:url('+imgcdn1+'php.gif)}.mQR .mBT95,.mQR .mBT20,.mQR .mBT19{height:auto; min-width:25px;}.mQR .mBT95 li a,.mQR .mBT20 li a,.mQR .mBT19 li a{background:#f5f5f5}'
+      +'.mktH{background-color:#fff;zoom:1;filter:progid:DXImageTransform.Microsoft.gradient(gradientType=0,startColorstr="#FFF9F9F9",endColorstr="#FFF0F0F0");background-image:linear-gradient(top,#f9f9f90%,#f0f0f0100%)}.mktH:after{content:"";display:block;clear:both;height:0;visibility:hidden}.mktH ul li{list-style:none;float:left;position:relative;height:20px;width:20px}.mktH ul .mDM{margin-right:2px;background:transparent url('+imgcdn2+'menu.png) no-repeat right center}.mktH ul .mDM ul{border:1px solid #ccc}.mktH ul .mDM.fonts ul{width:250px;}.mktH ul .mDM.fonts ul li,.mktH ul .mDM.size ul li{width:99%}.mktH ul .mDM.fonts ul li{float:left; width:46%; height: 22px;}.mktH ul .mDM li{margin-right:0;border:0;}.mktH ul .mDM li a{}.mktH ul .mDM.fonts ul li a, .mktH ul .mDM.size ul li a{padding:4px 0;width: 100%; color:#222;}.mktH ul .mDM.size ul li a{line-height:70%;}.mktH ul .mDM.fonts ul li a{font-size:12px;padding-left: 5px;line-height: 12px;}.mktH ul .mDM.size ul{width:30px}.mktH ul .mDM.mBT19{background-position-x: 16px;}.mktH ul .mSP{width:1px;height:22px;background-color:#ddd;overflow:hidden;text-indent:-999px;margin:0 2px}.mktH ul ul{display:none;position:absolute;top:26px;left:0;background:#f5f5f5;height:inherit;z-index:10}.mktH ul ul li{float:none;border-bottom:1px solid #d6d6d6}.mktH ul li:hover>ul{display:block}.mktH ul a{display:block;width:16px;height:16px;text-indent:-10000px;background-repeat:no-repeat;margin:0;padding:2px}.mktH ul ul a{display:block;text-indent:0;width:120px;padding:5px 5px 5px 25px}.mktH ul ul a:hover{background-color:#ddd;border:0}.mQR .mBT a{display:block}.mQR .mBT1 a{background-image:url('+imgcdn1+'bold.gif)}.mQR .mBT2 a{background-image:url('+imgcdn1+'italic.gif)}.mQR .mBT3 a{background-image:url('+imgcdn1+'underline.gif)}.mQR .mBT4 a{background-image:url('+imgcdn1+'justifyleft.gif)}.mQR .mBT5 a{background-image:url('+imgcdn1+'justifycenter.gif)}.mQR .mBT6 a{background-image:url('+imgcdn1+'justifyright.gif)}.mQR .mBT7 a{background-image:url('+imgcdn1+'insertunorderedlist.gif)}.mQR .mBT8 a{background-image:url('+imgcdn1+'insertorderedlist.gif)}.mQR .mBT9 a{background-image:url('+imgcdn1+'indent.gif)}.mQR .mBT10 a{background-image:url('+imgcdn1+'outdent.gif)}.mQR .mBT11 a{background-image:url('+imgcdn1+'createlink.gif)}.mQR .mBT12 a{background-image:url('+imgcdn1+'unlink.gif)}.mQR .mBT13 a{background-image:url('+imgcdn1+'email.gif)}.mQR .mBT14 a{background-image:url('+imgcdn1+'insertimage.gif)}.mQR .mBT15 a{background-image:url('+imgcdn1+'quote.gif)}.mQR .mBT16 a{background-image:url('+imgcdn1+'code.gif)}.mQR .mBT17 a{background-image:url('+imgcdn1+'removeformat.gif)}.mQR .mBT18{width:25px}.mQR .mBT18 a{background-image:url('+imgcdn1+'color.gif)}.mQR .mBT18 ul{width:81px;padding:1px}.mQR .mBT18 li{width:24px;height:24px;overflow:hidden;float:left;border:0;margin:1px 2px;padding:0}.mQR .mBT18 ul a{width:22px;height:22px;overflow:hidden;text-indent:-9999px;display:block;border-radius:3px;opacity:.68;border:solid 1px #ddd;margin:0;padding:0}.mQR .mBT18 ul a:hover{opacity:1;border-color:#ccc}.mQR .mBT18 .col1-1 a{background:#FF0}.mQR .mBT18 .col1-2 a{background:orange}.mQR .mBT18 .col1-3 a{background:red}.mQR .mBT18 .col2-1 a{background:blue}.mQR .mBT18 .col2-2 a{background:purple}.mQR .mBT18 .col2-3 a{background:green}.mQR .mBT18 .col3-1 a{background:#FFF}.mQR .mBT19{}.mQR .mBT19 a{font-size: 13px; text-indent:0;text-align:center;line-height:18px;background:#fff;padding:1px}.mQR .mBT19.mDM > a{font-size: 14px;font-style:italic; font-weight:bold; height:20px; line-height:20px;}.mQR .mBT19 li a{padding:4px 5px}.mQR .mBT19 ul a{width:120px;line-height:16px;height:16px;font-weight:500;text-indent:0!important;text-align:left}.mQR .mBT19 .font-arial a{font-family:Arial,"DejaVu Sans","Liberation Sans",Freesans,sans-serif}.mQR .mBT19 .font-arialblack a{font-family:"Arial Black",Gadget,sans-serif}.mQR .mBT19 .font-arialnarrow a{font-family:"Arial Narrow","Nimbus Sans L",sans-serif}.mQR .mBT19 .font-bookantiqua a{font-family:Times New Roman,Times,serif}.mQR .mBT19 .font-centurygothic a{font-family:"Century Gothic",futura,"URW Gothic L",Verdana,sans-serif}.mQR .mBT19 .font-comicsansms a{font-family:"Comic Sans MS",cursive}.mQR .mBT19 .font-couriernew a{font-family:"Courier New",Courier,"Nimbus Mono L",monospace}.mQR .mBT19 .font-georgia a{font-family:Constantina,Georgia,"Nimbus Roman No9 L",serif}.mQR .mBT19 .font-impact a{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif}.mQR .mBT19 .font-lucidaconsole a{font-family:"Lucida Sans Unicode","Lucida Grande","Lucida Sans","DejaVu Sans Condensed",sans-serif}.mQR .mBT19 .font-timesnewroman a{font-family:Cambria,"Times New Roman","Nimbus Roman No9 L",Freeserif,Times,serif}.mQR .mBT19 .font-Trebucher a{font-family:"Trebuchet MS",sans-serif}.mQR .mBT19 .font-Verdana a{font-family:Verdana,Geneva,"DejaVu Sans",sans-serif}.mQR .mBT20 a{background-image:url('+imgcdn3+'fonts.png);width:20px; background-position-y: 0;}.mQR .mBT20 li{height:auto}.mQR .mBT20 ul a{height:auto;text-align:center;padding:5px;display:block;line-height:16px;background-image:none}.mQR .mBT20 .size-1 a{font-size:10px;line-height:10px}.mQR .mBT20 .size-2 a{font-size:12px;line-height:12px}.mQR .mBT20 .size-5 a{font-size:20px;line-height:20px}.mQR .mBT20 .size-6 a{font-size:24px;line-height:24px}.mQR .mBT20 .size-7 a{font-size:28px;line-height:28px}.mQR .mBT22 a{width:15px;background:url('+imgcdn3+'youtube.gif) top left no-repeat}.mQR .mBT23 a{background:url('+imgcdn3+'vimeo.gif) center top no-repeat}.mQR .mBT24 a{background:url('+imgcdn3+'soundcloud.gif) center top no-repeat}.mQR .mBT95{width:25px}.mQR .mBT95-wrapper{width:170px!important;padding:5px 2px}.mQR .mBT95 > ul:before, .mQR .mBT19 > ul:before, .mQR .mBT20 > ul:before{content:"";position: absolute;top: -5px;left: -1px;width: 30px;height: 10px;}.mQR .mBT95 li{float:left;border:0!important;padding:0 3px 3px;height:15px;width:15px;}.mQR .mBT95 li a{overflow:hidden;text-indent:-9999px!important;display:block;-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;opacity:.78;height:14px;width:14px!important;border:solid 1px #ddd;padding:0}.mQR .mBT95 li a:hover{opacity:1;border-color:#333!important;background:#fff}.mQR .mBT95>a{background-image:url('+imgcdn1+'color.gif); background-position-y: 0;}.mQR .mBT50 a{background-image:url('+imgcdn1+'html.gif)}.mQR .mBT51 a{background-image:url('+imgcdn1+'php.gif)}.mQR .mBT95,.mQR .mBT20,.mQR .mBT19{height:auto; min-width:25px;}.mQR .mBT95 li a,.mQR .mBT20 li a,.mQR .mBT19 li a{background:#f5f5f5}.mQR .mBT95:hover > a, .mQR .mBT20:hover > a, .mQR .mBT19:hover >a{border:1px solid transparent!important}'
 
-      +'.mktH .mBT21 a {background-image:url('+BTN.spoiler+');}'
+      +'.mQR .mBT22, .mQR .mBT23, .mQR .mBT24 {width:24px}'
+      +'.mQR .mBT21 {width:22px}.mQR .mBT21 a {width:18px}'
+      +'.mQR .mBT21 a {background-image:url('+BTN.spoiler+')}'
+      +'.mQR .mBT21 a {background-image:url('+BTN.spoiler+')}'
+      +'.mQR .mBT16 a {background-image: url('+BTN.code+')}'
+      +'.mQR .mBT50 a {background-image: url('+BTN.html+')}'
+      +'.mQR .mBT95>a {background-image: url('+BTN.pickcolor+')}'
+      +'.mQR .mBT20 a {background-image: url('+BTN.picksize+')}'
+      +'.mQR .mBT97 a {background-image: url('+BTN.transparent+')}'
+      +'.mQR .mBT52 a {background-image: url('+BTN.noparse+')}'
+      +'.mQR .mBT53 a {background-image: url('+BTN.strikethrough+')}'
+
+      // default narrow-qr
+      +'.mQR .mBT23, .mQR .mBT24{display:none}'
+
       +'::-webkit-input-placeholder{color:#999!important;}:-moz-placeholder{color:#999!important;}:-ms-input-placeholder{color:#999!important;}'
+
 
       +'#content-wrapper .entry-content a{text-decoration:none;}'
       +'#content-wrapper .entry-content a:hover{text-decoration:underline;}'
@@ -1100,6 +1331,7 @@
       // wide to grid-12 as in default of full-web
       +'#wrapper, #wrapper.fx .main-h{max-width:940px'+i+';width:940px'+i+';}'
       +'.mQR .in-txt #'+gvar.tID+'{max-width:910px'+i+';width:910px'+i+';}'
+      +'.mQR .mBT23, .mQR .mBT24{display:inline-block'+i+'}'
     },
     getSCRIPT: function(){
       return ''
@@ -1164,7 +1396,14 @@
         case "button" :
         return {
           news_png : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAIAAAD5fKMWAAAABnRSTlMAAAAAAABupgeRAAAArklEQVR42mNkYGBgYGBob29/9OgRA14gJyfHAlHHz88/bdo0/KqzsrJYHj16lF/auG/Hmvv37587dw6XUiMjIwYGBhY4X1FRUVFREb/xLMic9knLGRgYKvMiT158jKbOXF+WgYGBiYEUgGJ2ZV4kCarR7B207ubn52dhYGB4ev+yh4fHhw8fIKLvPn4XFUAxRYif8/79+wwMDIxHjhzZsmXLx48f8buBn5/fw8MDAOiiPC0scvhsAAAAAElFTkSuQmCC",
-          spoiler : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAABnRSTlMA4QDhAOKdNtA9AAAACXBIWXMAAAsTAAALEwEAmpwYAAABg0lEQVR42tVUPUsDQRB9M7dBQi4iypWJhgQsU1lIUtklIgg2tmJhK3b+gLT+AtHaP2AqtUmwslGMTSJcUgaSKEc+bu/DYmGJMR+glVs8HrO8fTOzs0u23cRvF+MP609iodn1Y70SbC8UhL3O1a6vOOmaj6tWds32Xc9gigpDMEUYBvNyVESYIwZiERHaK6+1h8+P2unJ4WTaw6Hs9+WgL0cD6Q6lO/S8kRe4PqRP0mcvMNd7uf0tAC9v79/SBpDaWIUfEkMwM0AEMC0JJqKAMDBYMrHB3U53smYA7tMNMRNzIASBiJmIXabFDQNwfnRWbTm5hFlutAtpS3GNABR5vitNEVdbTj5pAgAsAID5A1FpwpVyyj3nEmal6YQhFN7W2xorTUcFZw5JudHOJ00iACBCMWMBKGYsFdFb08WFtKWPV24AdGSec7Z+r7pChHF/xVUvZjp77iiXMLXnuL/OYl7NynkWahKPxyZnG0Dp4tJx+vMfRjwe28ykDvZ2JsX/5zP4AtVMzoKTk38hAAAAAElFTkSuQmCC",
+          spoiler : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAUAgMAAAAfJZ6gAAAAAXNSR0IArs4c6QAAAAxQTFRFAgUB5ujl8PLu/P/7G5VRDQAAAH9JREFUCNcdzbENwlAQA1BLKejDAkxAvnRlhLIaG7ADC1BSfIncBmyA6CgovkTzJY7EOHFx1mt8IJmzIy5lnhwjvzWkohzhUBxDZVyBfXlEBVJK1gH2MeulXbuVOjvbINmzbYBDnhhAf2PlMtC4Dvk7aVP/Nlz0vq81vtaaSf8DcK9JFqd6yKMAAAAASUVORK5CYII=",
+          code : "data:image/gif;base64,R0lGODlhFQAUALMKAOjo6Nzc3JSUlKysrKCgoHBwcIiIiMTExPT09AAAAP///wAAAAAAAAAAAAAAAAAAACH5BAEAAAoALAAAAAAVABQAAARTUMlJq7046827t0kSIEo4bqEwAAoQHiQWGgasIMcbV3O94zpegmajABNFiStBYIEShaYxh9xJeknJMYm1TrakbganYgEGguwFETixT5+4fE6nRAAAOw==",
+          html : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVBAMAAABbObilAAAAAXNSR0IArs4c6QAAAA9QTFRFZXQtAAMAUVJQmZuY19nWovyXywAAAAF0Uk5TAEDm2GYAAAABYktHRACIBR1IAAAASElEQVQI12NgQAaMgkAggMQWRBYXQGIzIqsXQGIzIvRCdBPFNjR2MRZRgbAdHQ1NVKBsEyDbBCFu7IJgOzqbGCLMESLaLgQAAFOFDIrpvL90AAAAAElFTkSuQmCC",
+          pickcolor : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAVCAYAAABCIB6VAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAJFJREFUOMtjYBgFgwUIMDAwvIdiAWI0MBFpcALUQAEomyBgJNLg+wwMDBegbAMGBgZFagRDAAMDw38ojcymGOyHuhjZ9fspNdQA6sIGJLEGqJgBJQbPhxqCDc8n11AFqAH7GRgYHNDwfqicAjkGw7ycgCP5oQcR0QCWIciVpw3AlkF6yDSrhJwsTTJgYhgFtAYAn8MjLYLJYoUAAAAASUVORK5CYII=",
+          picksize : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAADlJREFUOMtjYBgFIxcwEqHmP6lmMQ0W3/0n5HqauJSFhDBkJNZQurmUEc3FjKQaShOXDh1DR8EQAQDI5gUVIb0QgAAAAABJRU5ErkJggg==",
+          transparent : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUAQMAAAC3R49OAAAAAXNSR0IArs4c6QAAAAZQTFRFAAAAgICAkmm5JAAAAAF0Uk5TAEDm2GYAAAApSURBVAjXY2BAArK3GxgEGCCYOYQBTAuGNIDlhLZAxBmuMMDVgNSjAQCJ+wmnBf0/pwAAAABJRU5ErkJggg==",
+          noparse : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUAQMAAAC3R49OAAAAAXNSR0IArs4c6QAAAAZQTFRFAAAAAAAApWe5zwAAAAF0Uk5TAEDm2GYAAAAhSURBVAjXY2DAAgoYHjAkQGF+XwJD2m1UnPcOIgdShwYAGGEOftajyo0AAAAASUVORK5CYII=",
+          strikethrough : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAATBAMAAABiojCGAAAAAXNSR0IArs4c6QAAAA9QTFRFZXQtNDQ0WVlZeHh4oaGhu1gqYwAAAAF0Uk5TAEDm2GYAAAA7SURBVAjXY2AgH5ggmCpYRA0NjJQZjByALBYGBWVGZxCLQRAKgExmBQFlRkcFkCiLkLCgMougAQPlAAC8+ARiMnVu5QAAAABJRU5ErkJggg==",
           contr_stg : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wMFxAYA6YinkAAAAE7SURBVDjLrZRBS8NAEIW/SRM1UDGgB0H6Bzz5X/SHe/IslKIHe4hQra3JeHkbh2Urgi68w5t9mczOvF0bxxEz4y/L3TF3x8xmwBUwhH0T1uLngAtpzYCVuw+4O8BCgk3ATrE7wRWLGgcW7k6tzJ/AEuhTtUADnABPij0CW2CvSgHO9O2UyCXahrJHfZBiH8I+aI7TUetCT3JeZTzXEBOZjtIEUeIW+JANbNqPiVqVHkVtqKgNkyLEDJjGfwTcpMZpVcKD+LX6NgZNDdy7+y5WdJo1MiWai88Lib6PnvnoVeiBd8VuBVesD7qij1bBRxR8tAw+4icfvQnRkEMYwKZgyOaQj6qQqAog43bIR4QEv7rweaAOf+sKZmuDbzo1O/aoSxUnH1XAZTbadB1exC8Kz0gFPLv7aP/1sH0BL4CCxuBHWEkAAAAASUVORK5CYII=",
           goog_stg : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wMFwwCGmdYlk8AAAHzSURBVDjLrdVLS5ZRFAXg53gJ00pJVKyMIqhBF0fdCCKiUT+gX9L/adQvaFCNAiEogmgUDSolKyNN0NLP2+dpsj56/aqZBw7n8u6z9tp7r3PeUmu1n63HPre+7o1SCtzGKSzgcePznv1/Rdf3DyfDuIuTWMYZzGU8iyG8wlgpZbF5sNb6B7CUIh5bObCLo7iKazH7hl+ZH4/NYQxiCd9Lh3YppRdtDOASbmIUB9EfRysBGcr4HucxhUe11ofNkC/GU39Y9QRgLfM2NlBiM4LrmcNkdw7vhd1G1isJ73OYrIXtueSzLyxrUvS8G3Ay3teSj3bAXtda5xu5bqE3vYWfeFZrfdcNOBPQAzHcxdcmWCo5V0oZjwq2o4SVTlF7GoYP8CQeN+JsJ7rs1mk739shcQETe25KDBcCuJuQRjDQAc04mP1OdL24g/vdIY82Kr2NHVzGIcyUUlaiyxsR+E4cb+f8YDfgFUwnjK0cGI+EJlLxIzgRVktJzQfMptp7AKcwho+RzHAqPoZbKdYmfmAx83m8iPPSDfgmzGbxKWz7Y9hqAK6nr4Xdam28Es2rV7LezbqTr9MB7kmYA3Gyk7v9tNa6+ddrEy/N96jdSPo6XuJLijedx+FYg/l/n69ma8V4AW9rrW0sRz6rEfXWHp3u9y/gN28Pu01Pz4YXAAAAAElFTkSuQmCC",
           strikethrough : "data:image/gif;base64,R0lGODlhFAATAPcAACQeJHx+fFRSVDQ2NLSytGxqbJSWlExGTKSipGRiZEQ+RHx6fDQuLDw+PHRydJyenIyKjFxaXDw2PGxudJyWnCQmJFRWVJza7GxubExKTKyqrGRmZDQuNIyOjDw6PJyanBbQIND2iGRJdHcBAABF4AAA63EAEgAAAAAYVQCI1QB0mQAAd3gApOYA63VxEgAAAPhY/omT/5Z0/wMA/wBoNAANAABJAAABAABFaAAAAAAAagAAAAAYYACIhQB0dAAAAAAAKAAAAgAAAAAAAAAjAgABAAAAAAAAAAAYAADoAHESAAAAAPhFaIkAAJYAAAMAAAAAAAAAAABxAAAAAHwYaOaIABJ0AAAAAAgYRADo6W8SEgAAABGFYAA0hQCddAB3AOouaMdnAGRpAHdmAcYARMRHOsQ0XFZ3AOAhcwKtZVFkcgB3c+AAU4kB35YAZAMAdwEAOgAAygAAxAAAVvCMAInnAJYSAAMAAHQ3AOY7ABKdAAB3AMc8yB87d52ddHd3APirAIlIcJY0dAN3AEkAVB8A6J0AEncAAAAAEQABAQAAAAAAAPAhsImt6JZkEgN3AIBkmufnkxISawAAd7wA4sIq/WRxsncAIQA6/gDF/3HE/wBW/wC0UwDn3wASZAAAd/iRSYms2JZkZAN3dwAAyAAAdwAAdAAAAAAAPgEA0gAAZQAAd8vgesKzymSZxHd3VsznAOdIABI0AAB3APh5AInpAJYSAAMAAAwMAJ6hAHtPAHcAAAEgAAAAAAAAAAAAAwIAAX8AAAAAAAAAAHOUkC3n6G0SEmUAAG4MzXWhq1xPugAA3DxgYAD7+wASEgAAAABVmgDVkwCZawB3dwHX8gCl8AG7swAAITb+/iX//8f//1b//zjgPuez0hKZZQB3d5RbiAp/gcVnQnZ3AATcyOfodxISdAAAAA5rAAF/AABnAAB3AAWNeQCt6QBkEgB3ABAAMQAArQAAZAAAdwAwZgAAygAAxAAAVkQAMToArQAAZAAAd1QuagxncUlpSAFmACH5BAEAABcALAAAAAAUABMARwhnAC8IHEiwoMGBGCRAuIAhwgEHAgMkQHCwosWLGC8YAHAAAAYPDBJA/MChQYCMKA1aoIhxgMuXMGMOSEmzps2bFydouOngAcoOAhNc2LBQAYICBCo6yHChwgUBCy4ooNBAKM6rWAkGBAA7",
@@ -1471,17 +1710,21 @@
 
     // toggle wrp_control
     Dom.Ev($D('.btn_stg',null,1), 'click', function(e){
-      var tgt = $D('#wrp_control');
+      var tgt = $D('#wrp_title');
       showhide( tgt );
+      
       e = e.target||e;
       gvar.settings.toggle_plugins = isVisible(tgt);
-      if( gvar.settings.toggle_plugins )
+      if( gvar.settings.toggle_plugins ){
         addClass('active', e);
-      else
+        $$('[name=title]', tgt).focus();
+      }
+      else{
         removeClass('active', e);
+        _TEXT.focus();
+      }
 
       setValue(KS+'TOGGLE_MENUS', gvar.settings.toggle_plugins ? '1' : '0');
-      _TEXT.focus();
     });
     // toggle qplugin
     Dom.Ev($D('.btn_qplugin',null,1), 'click', function(e){
@@ -1548,13 +1791,13 @@
       asocKey={
          '83':'sbutton'   // [S] Submit post
 
-        ,'66' : 'bold' // B
-        ,'73' : 'italic' // I
-        ,'85' : 'underline' // U
+        ,'66' : 'B' // Bold
+        ,'73' : 'I' // Italic
+        ,'85' : 'U' // Underline
 
-        ,'69' : 'center' // E
-        ,'76' : 'left' // L
-        ,'82' : 'right' // R
+        ,'69' : 'CENTER' // E (center)
+        ,'76' : 'LEFT' // L (left)
+        ,'82' : 'RIGHT' // R (right)
       };
       if(ev.ctrlKey){
         if( [13, 66,73,85, 69,76,82].indexOf(A) != -1 ){
@@ -1743,72 +1986,69 @@
     if( par = $D('.mktH',null,1) ){
       var tag, title, pTag;
       nodes = $D('.//a[starts-with(@class,"ev_")]', par);
-      if( nodes.snapshotLength ){
-        for(var i=0; i<nodes.snapshotLength; ++i){
-          node = nodes.snapshotItem(i);
-          switch( String(getAttr('class', node)).replace(/^ev_/,'') ){
-            case "biu": case "align":
-              Dom.Ev(node, 'click', function(e){
-                e = e.target||e;
-                title = getAttr('title', e).toLowerCase();
-                _TEXT.insert.tagBIU(title);
-              });
-            break;
-            case "font": case "size": case "color":
-              Dom.Ev(node, 'click', function(e){
-                var _cls, el = e.target||e;
-                _cls = String(getAttr('class', el)).replace(/^ev_/,'');
-                tag = _cls.toUpperCase();
+      if( nodes.snapshotLength )
+      for(var i=0; i<nodes.snapshotLength; ++i){
+        node = nodes.snapshotItem(i);
+        switch( String(getAttr('class', node)).replace(/^ev_/,'') ){
+          case "biu": case "align":
+            Dom.Ev(node, 'click', function(e){
 
-                _TEXT.insert.tagHibrid(tag, getAttr('title', el), el);
-                _TEXT.pracheck();
-                do_an_e(e);
-              });
-            break;
-            case "list":
-              Dom.Ev(node, 'click', function(e){
-                e = e.target||e;
-                _TEXT.init();
-                var selected, mode, title;
-                title = getAttr('title', e).toLowerCase().replace(' list', '')
-                mode = (title=='numeric' ? 'number':'dot');
-                selected = _TEXT.getSelectedText();
+              _TEXT.insert.tagBIU( e.target||e );
+            });
+          break;
+          case "font": case "size": case "color":
+            Dom.Ev(node, 'click', function(e){
+              var _cls, el = e.target||e;
+              _cls = String(getAttr('class', el)).replace(/^ev_/,'');
+              tag = _cls.toUpperCase();
 
-                if(selected=='') {
-                  var reInsert = function(pass){
-                    var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
-                    _TEXT.init();
-                    if( ins ){
-                      _TEXT.setValue( '\n' + '[*]' + ins + '');
-                      reInsert(true);
-                    }else{
-                      return; 
-                    }
-                  };  
-                  _TEXT.insert.tagHibrid('LIST', (mode=='number' ? 1:false) );
-                  window.setTimeout(function(){ reInsert(); }, 10);
-                }
-                else{
-                  var ret = '', parts = selected.split('\n');
-                  for(var i=0; i< parts.length; i++)
-                    if(trimStr(parts[i])) ret+= '\n' + '[*]' + parts[i] + '';
-                  ret = '[LIST'+(mode=='number' ? '="1"' : '')+']' + ret + '\n[/LIST]';
-                  _TEXT.replaceSelected( ret, [0, ret.length] );
-                }
-                _TEXT.pracheck();
-              });
-            break;
-            case "media": case "codes": case "quotes":
-              Dom.Ev(node, 'click', function(e){
-                e = e.target||e;
-                tag = getAttr('data-bbcode', e);
-                _TEXT.insert.tagCustom(tag);
-                _TEXT.pracheck();
-              });
-            break;
-          }
-          // end switch
+              _TEXT.insert.tagHibrid(tag, getAttr('title', el), el);
+              _TEXT.pracheck();
+              do_an_e(e);
+            });
+          break;
+          case "list":
+            Dom.Ev(node, 'click', function(e){
+              e = e.target||e;
+              var selected, bb = getAttr("data-bb", e);
+              if( bb )
+                bb = bb.replace("LIST-", "");
+              
+              _TEXT.init();
+              selected = _TEXT.getSelectedText();
+
+              if(selected=='') {
+                var reInsert = function(pass){
+                  var ins=prompt("Enter a list item.\nLeave the box empty or press 'Cancel' to complete the list:");
+                  _TEXT.init();
+                  if( ins ){
+                    _TEXT.setValue( '\n' + '[*]' + ins + '');
+                    reInsert(true);
+                  }else{
+                    return; 
+                  }
+                };  
+                _TEXT.insert.tagHibrid('LIST', (bb=='numeric' ? 1:false) );
+                window.setTimeout(function(){ reInsert(); }, 10);
+              }
+              else{
+                var ret = '', parts = selected.split('\n');
+                for(var i=0; i< parts.length; i++)
+                  if(trimStr(parts[i])) ret+= '\n' + '[*]' + parts[i] + '';
+                ret = '[LIST'+(bb=='numeric' ? '="1"' : '')+']' + ret + '\n[/LIST]';
+                _TEXT.replaceSelected( ret, [0, ret.length] );
+              }
+              _TEXT.pracheck();
+            });
+          break;
+          case "custom":
+            Dom.Ev(node, 'click', function(e){
+              _TEXT.insert.tagCustom(e.target||e);
+              _TEXT.pracheck();
+            });
+          break;
         }
+        // end switch
       }
 
       // qplugin inside
@@ -1835,7 +2075,6 @@
     } // mktH
 
     // shortcut
-
   } // end -eventsController
 
   function build_fetch_url(e, pattern){
