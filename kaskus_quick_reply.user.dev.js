@@ -8,8 +8,8 @@
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1502175313
-// @timestamp      1424690577412
+// @dtversion      1503015313
+// @timestamp      1425170995166
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,7 +32,10 @@
 //
 // -!--latestupdate
 //
-// v5.3.1.3 - 2015-02-17 . 1424690577412
+// v5.3.1.3 - 2015-03-01 . 1425170995166
+//   GF link of what's this? (custom smiley);
+//   Filter purpose: add subject ticket mail;
+//   Help links Setting;
 //   Redefine proper local var $, avoid jQuery document being overridden, opera-chromium need it. Thx:[Asep]
 //   Patch toggle spoiler (opera-chromium). Thx:[Asep]
 //   Avoid kill sidebar on unselected FixupTheme;
@@ -91,14 +94,14 @@ var gvar = function(){};
 gvar.sversion = 'v' + '5.3.1.3';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1424690577412 // version.timestamp
-  ,dtversion: 1502175313 // version.date
-  ,svnrev: 554 // build.rev
+   timestamp: 1425170995166 // version.timestamp
+  ,dtversion: 1503015313 // version.date
+  ,svnrev: 561 // build.rev
 
   ,titlename: 'Quick Reply'
   ,scriptID: 80409 // script-Id
   ,scriptID_GF: 96 // script-Id @Greasyfork
-  ,cssREV: 1502185313 // css revision date; only change this when you change your external css
+  ,cssREV: 1503015313 // css revision date; only change this when you change your external css
 }; gvar.scriptMeta.fullname = 'Kaskus ' + gvar.scriptMeta.titlename;
 /*
 window.alert(new Date().getTime());
@@ -759,7 +762,7 @@ var rSRC = {
 
     +'<div id="scustom_container" role="form" class="form-thumb">'
      +'<div class="notfound">'
-       +'<p>Custom Smiley Not Found, <a href="http://goo.gl/U5PPnD" target="_blank">what is this?</a></p>'
+       +'<p>Custom Smiley Not Found, <a href="http://goo.gl/TGyZmR" target="_blank">what is this?</a></p>'
        +'<p>Browse to <a href="http://kask.us/gWtme" target="_blank">Emoticon Corner</a></p>'
      +'</div>'
     +'</div>' // #scustom_container
@@ -1062,7 +1065,7 @@ var rSRC = {
         +'<li><a href="'+ gvar.kask_domain +'6849735" target="_blank" title="Emoticon Corner">Emoticon Corner</a> <a href="/profile/572275" target="_blank" title="TS: slifer2006"> * </a><br></li>'
        +'</ul></p>'
        +_sp
-       +'<p class="malu">Having problems, complaints, questions or just compliments? Just drop me an email :) <a href="mailto:&#097;&#118;&#114;&#105;&#108;&#099;&#111;&#100;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#097;&#118;&#114;&#105;&#108;&#099;&#111;&#100;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></p>'
+       +'<p class="malu">Having problems, complaints, questions or just compliments? Just drop me an email :) <a onclick="return kqrmailto(this)" href="mailto:&#097;&#118;&#114;&#105;&#108;&#099;&#111;&#100;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109">&#097;&#118;&#114;&#105;&#108;&#099;&#111;&#100;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></p>'
       +'</div>' // itemabt
 
       +'<div id="tabs-itemabt-contr" class="itemtabcon">'
@@ -1227,7 +1230,16 @@ var rSRC = {
     +'$("#ifr_content").val( $(el).contents().find("textarea[name=message]").first().val() );'
     +'SimulateMouse( $("#qr_getcont").get(0), "click", true); $(el).remove();'
     +'}'
-    +''
+
+    +'function kqrmailto(el){'
+    +'var pwin, p_url = el.getAttribute("href")+"?subject="+encodeURIComponent("#KQR: suggestion, bugs")+"&body=%0A%0A"+encodeURIComponent("UAString: "+window.navigator.userAgent)+"%0A"+encodeURIComponent("Via: QR-'+gvar.sversion+'; r'+gvar.scriptMeta.svnrev+'");'
+    +'var c = screen.height,d = screen.width,e = 0;'
+    +'360 < c && (e = Math.round(c / 2 - 200));'
+    +'c = ["scrollbars=yes,resizable=yes,toolbar=no,location=yes,width=640,height=400", "left=" + Math.round(d / 2 - 300), "top=" + e].join();'
+    +'pwin = window.open(p_url, "kqrmailto", c);'
+    +'pwin.focus();'
+    +'return !1;'
+    +'}'
     ;
   },
   getSCRIPT_UPL: function(){
