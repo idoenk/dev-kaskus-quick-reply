@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name           Kaskus Quick Reply (Evo)
 // @icon           http://code.google.com/p/dev-kaskus-quick-reply/logo?cct=110309324
-// @version        5.3.1.3
+// @version        5.3.1.4
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_deleteValue
 // @grant          GM_xmlhttpRequest
 // @grant          GM_log
 // @namespace      http://userscripts.org/scripts/show/KaskusQuickReplyNew
-// @dtversion      1503015313
-// @timestamp      1425170995166
+// @dtversion      1503035314
+// @timestamp      1425370429433
 // @homepageURL    https://greasyfork.org/scripts/96
 // @updateURL      https://greasyfork.org/scripts/96/code.meta.js
 // @downloadURL    https://greasyfork.org/scripts/96/code.user.js
@@ -32,6 +32,12 @@
 //
 // -!--latestupdate
 //
+// v5.3.1.4 - 2015-03-03 . 1425370429433
+//   Patch adjust entry-body width, mismatch width on single post on page;
+// 
+// -/!latestupdate---
+// ==/UserScript==
+//
 // v5.3.1.3 - 2015-03-01 . 1425170995166
 //   GF link of what's this? (custom smiley);
 //   Filter purpose: add subject ticket mail;
@@ -41,9 +47,6 @@
 //   Avoid kill sidebar on unselected FixupTheme;
 //   Adjust entry-body width;
 // 
-// -/!latestupdate---
-// ==/UserScript==
-//
 // v5.3.1.2 - 2015-02-08 . 1423473091884
 //   Fix preview, force image rendering from mls-img data-src;
 //   Fix CSS fjb;
@@ -91,11 +94,11 @@ function main(mothership){
 // Initialize Global Variables
 var gvar = function(){};
 
-gvar.sversion = 'v' + '5.3.1.3';
+gvar.sversion = 'v' + '5.3.1.4';
 gvar.scriptMeta = {
    // timestamp: 999 // version.timestamp for test update
-   timestamp: 1425170995166 // version.timestamp
-  ,dtversion: 1503015313 // version.date
+   timestamp: 1425370429433 // version.timestamp
+  ,dtversion: 1503035313 // version.date
   ,svnrev: 561 // build.rev
 
   ,titlename: 'Quick Reply'
@@ -4448,14 +4451,24 @@ function set_theme_fixups(){
 
   clog("adjusting entry-body..");
   var css, cbodyWidth = (function(){
-    var trh=0, mcW, $sbauthor, $mc = $(".main-content");
+    var trh=0, mcW, sbaW, $sbauthor, $mc = $(".main-content");
     mcW = $mc.outerWidth();
     if( mcW == 860 ) return null;
     if( mcW == 1097 ) trh = -3;
 
     $sbauthor = $mc.find(".postlist .author").eq(1);
-    clog('".main-content" width='+mcW+'; ".postlist .author".eq(1) width='+$sbauthor.outerWidth());
-    return mcW - $sbauthor.outerWidth() - 2 + trh;
+    if( !$sbauthor.length ){
+      $sbauthor = $mc.find(".postlist .author").eq(0);
+      sbaW = $sbauthor.outerWidth();
+      clog("one post in page, sbaW="+sbaW);
+    }
+    else{
+      sbaW = $sbauthor.outerWidth();
+      clog("second post found in page, sbaW="+sbaW);
+    }
+
+    clog('".main-content" width='+mcW);
+    return mcW - sbaW - 2 + trh;
   })();
 
   if( cbodyWidth ){
@@ -4464,7 +4477,6 @@ function set_theme_fixups(){
     $("#"+fxcss_id).get(0)
       .appendChild(createTextEl(css));
   }
-  
 }
 
 /*
